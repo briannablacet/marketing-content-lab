@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ScreenTemplate } from '../../shared/UIComponents';
 
+// Smart defaults for B2B tech companies
 const CHANNEL_BENCHMARKS = {
   B2B_TECH: {
     'Content Marketing': {
@@ -108,6 +110,7 @@ const BudgetModule = () => {
   const [activeChannel, setActiveChannel] = useState(null);
   const [showEventPlanner, setShowEventPlanner] = useState(false);
 
+  // Helper Components with full implementations
   const ChannelAllocation = ({ value, onChange, benchmarks }) => (
     <div className="space-y-4">
       {Object.entries(benchmarks).map(([channel, data]) => (
@@ -286,7 +289,6 @@ const BudgetModule = () => {
                 <p className="text-2xl font-bold text-green-600">2.4x</p>
               </div>
             </div>
-            
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
@@ -306,79 +308,84 @@ const BudgetModule = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Budget Allocation</h1>
-        <p className="text-slate-600">Plan your marketing budget across channels and events</p>
-      </div>
+    <ScreenTemplate
+      title="Budget Planning"
+      subtitle="Plan and allocate your marketing budget across channels"
+      aiInsights={[
+        "Based on your industry benchmarks, we recommend allocating 25-30% to content marketing",
+        "Companies in your sector typically see best ROI from event marketing"
+      ]}
+      isWalkthrough={false}
+    >
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Budget</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-4">
+              <span className="text-slate-600">$</span>
+              <input
+                type="number"
+                value={budget.totalBudget}
+                onChange={(e) => setBudget(prev => ({
+                  ...prev,
+                  totalBudget: e.target.value
+                }))}
+                className="w-48 p-2 border rounded"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Budget</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4">
-            <span className="text-slate-600">$</span>
-            <input
-              type="number"
-              value={budget.totalBudget}
-              onChange={(e) => setBudget(prev => ({
-                ...prev,
-                totalBudget: e.target.value
-              }))}
-              className="w-48 p-2 border rounded"
+        <Card>
+          <CardHeader>
+            <CardTitle>Channel Allocation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-slate-900">Channel Distribution</h3>
+              <button
+                onClick={() => setShowEventPlanner(!showEventPlanner)}
+                className="text-blue-600 hover:text-blue-700"
+              >
+                {showEventPlanner ? 'Hide Event Planner' : 'Plan Events →'}
+              </button>
+            </div>
+
+            <ChannelAllocation
+              value={budget.channelAllocation}
+              onChange={(channel, value) => {
+                setBudget(prev => ({
+                  ...prev,
+                  channelAllocation: {
+                    ...prev.channelAllocation,
+                    [channel]: { allocation: value }
+                  }
+                }));
+              }}
+              benchmarks={CHANNEL_BENCHMARKS.B2B_TECH}
             />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Channel Allocation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">Channel Distribution</h3>
-            <button
-              onClick={() => setShowEventPlanner(!showEventPlanner)}
-              className="text-blue-600 hover:text-blue-700"
-            >
-              {showEventPlanner ? 'Hide Event Planner' : 'Plan Events →'}
-            </button>
-          </div>
-
-          <ChannelAllocation
-            value={budget.channelAllocation}
-            onChange={(channel, value) => {
-              setBudget(prev => ({
-                ...prev,
-                channelAllocation: {
-                  ...prev.channelAllocation,
-                  [channel]: { allocation: value }
-                }
-              }));
-            }}
-            benchmarks={CHANNEL_BENCHMARKS.B2B_TECH}
+        {showEventPlanner && (
+          <EventPlanner
+            events={budget.events}
+            onUpdate={(newEvents) => setBudget(prev => ({
+              ...prev,
+              events: newEvents
+            }))}
           />
-        </CardContent>
-      </Card>
+        )}
 
-      {showEventPlanner && (
-        <EventPlanner
+        <BudgetProjections
+          totalBudget={Number(budget.totalBudget)}
+          allocation={budget.channelAllocation}
           events={budget.events}
-          onUpdate={(newEvents) => setBudget(prev => ({
-            ...prev,
-            events: newEvents
-          }))}
         />
-      )}
-
-      <BudgetProjections
-        totalBudget={Number(budget.totalBudget)}
-        allocation={budget.channelAllocation}
-        events={budget.events}
-      />
-    </div>
+      </div>
+    </ScreenTemplate>
   );
 };
 

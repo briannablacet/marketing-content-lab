@@ -1,8 +1,6 @@
 import React from 'react';
-import CompetitorAnalysisDashboard from '@/components/features/CompetitorAnalysisDashboard';
+import CompetitorAnalysisDashboard from '../components/features/CompetitorAnalysisDashboard';
 
-const CompetitorAnalysisPage: React.FC = () => {
-  return <CompetitorAnalysisDashboard />;
-};
+const CompetitorAnalysisPage = () => <CompetitorAnalysisDashboard />;
 
 export default CompetitorAnalysisPage;

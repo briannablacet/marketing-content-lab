@@ -1,7 +1,13 @@
 // src/contexts/MarketingContext.tsx
 import React, { createContext, useContext, useState } from 'react';
 
-const MarketingProgramContext = createContext();
+const MarketingProgramContext = createContext<{
+  programData: any;
+  updateData: (screen: string, newData: any) => void;
+  getAISuggestions: (screen: string) => string[];
+} | undefined>(undefined);
+
+
 
 export const MarketingProgramProvider = ({ children }) => {
   const [programData, setProgramData] = useState({

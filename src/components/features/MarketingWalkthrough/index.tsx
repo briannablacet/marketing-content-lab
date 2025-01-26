@@ -1,4 +1,3 @@
-// src/components/features/MarketingWalkthrough/index.tsx
 import React from 'react';
 import { useRouter } from 'next/router';
 import { ScreenTemplate } from '../../shared/UIComponents';
@@ -66,21 +65,20 @@ const MarketingWalkthrough = () => {
 
   return (
     <ScreenTemplate
-    title={currentStep.title}
-    subtitle="Let's build your marketing program together."
-    currentStep={currentStepIndex + 1}
-    totalSteps={STEPS.length}
-    aiInsights={[
-      "Based on successful marketing programs, we'll guide you through each essential step."
-    ]}
-    onNext={handleNext}
-    onBack={handleBack}
-    isWalkthrough={true}
-    nextText={currentStep.id === '9' ? 'Complete Program' : undefined}  // Add this line
-  >
-    {React.createElement(currentStep.component)}
-  </ScreenTemplate>
-);
+      title={currentStep.title}
+      subtitle="Let's build your marketing program together."
+      currentStep={currentStepIndex + 1}
+      totalSteps={STEPS.length}
+      aiInsights={[
+        "Based on successful marketing programs, we'll guide you through each essential step."
+      ]}
+      onNext={handleNext}
+      onBack={handleBack}
+      isWalkthrough={true}
+    >
+      {React.createElement(currentStep.component)}
+    </ScreenTemplate>
+  );
 };
 
 export default MarketingWalkthrough;

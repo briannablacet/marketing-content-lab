@@ -1,5 +1,5 @@
 import React from 'react';
-import MarketingROICalculator from '@/components/features/MarketingROICalculator';
+import MarketingROICalculator from '@/src/components/features/MarketingROICalculator';
 
 const MarketingROIPage: React.FC = () => {
   return <MarketingROICalculator />;

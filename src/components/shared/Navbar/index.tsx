@@ -1,6 +1,7 @@
 // src/components/shared/Navbar/index.tsx
 import React from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 const Navbar = () => {
   const router = useRouter();
@@ -8,7 +9,7 @@ const Navbar = () => {
     { label: 'Dashboard', path: '/' },
     { label: 'Lead Scoring', path: '/lead-scoring' },
     { label: 'Content Strategy', path: '/content-strategy' },
-    { label: 'Channel Mix', path: '/channel-selection' },
+    { label: 'Channel Mix', path: '/channel-mix' },
     { label: 'Timeline', path: '/timeline' }
   ];
 
@@ -18,7 +19,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             {navItems.map((item) => (
-              
+              <Link
                 key={item.path}
                 href={item.path}
                 className={`inline-flex items-center px-4 pt-1 border-b-2 text-sm font-medium ${
@@ -28,7 +29,7 @@ const Navbar = () => {
                 }`}
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </div>
           <div className="flex items-center">

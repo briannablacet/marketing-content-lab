@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const TimelinePlanner = () => {
-  // Project phases with default durations and dependencies
   const [phases, setPhases] = useState([
     {
       id: 1,
       name: 'Content Development',
-      duration: 4, // weeks
+      duration: 4,
       dependencies: [],
       tasks: [
         { name: 'Create eBooks', duration: 3 },
@@ -36,38 +35,10 @@ const TimelinePlanner = () => {
         { name: 'Initiate Content Promotion', duration: 2 },
         { name: 'Begin Social Media Strategy', duration: 3 }
       ]
-    },
-    {
-      id: 4,
-      name: 'Lead Generation',
-      duration: 12,
-      dependencies: [3],
-      tasks: [
-        { name: 'Run Webinars', duration: 12 },
-        { name: 'Monitor Campaign Performance', duration: 12 },
-        { name: 'Optimize Based on Results', duration: 12 }
-      ]
     }
   ]);
 
   const generateTimeline = () => {
-    let timeline = [];
-    let currentWeek = 0;
-
-    const addPhaseToTimeline = (phase, startWeek) => {
-      return {
-        ...phase,
-        startWeek,
-        endWeek: startWeek + phase.duration,
-        tasks: phase.tasks.map(task => ({
-          ...task,
-          startWeek,
-          endWeek: startWeek + task.duration
-        }))
-      };
-    };
-
-    // Process phases in order of dependencies
     const processedPhases = new Set();
     const timelinePhases = [];
 
@@ -87,9 +58,16 @@ const TimelinePlanner = () => {
               })
             );
 
-            timelinePhases.push(
-              addPhaseToTimeline(phase, dependencyEndWeek)
-            );
+            timelinePhases.push({
+              ...phase,
+              startWeek: dependencyEndWeek,
+              endWeek: dependencyEndWeek + phase.duration,
+              tasks: phase.tasks.map(task => ({
+                ...task,
+                startWeek: dependencyEndWeek,
+                endWeek: dependencyEndWeek + task.duration
+              }))
+            });
             processedPhases.add(phase.id);
           }
         }
@@ -99,12 +77,12 @@ const TimelinePlanner = () => {
     return timelinePhases;
   };
 
-  const timeline = generateTimeline();
+  const timeline = useMemo(() => generateTimeline(), [phases]);
   const totalWeeks = Math.max(...timeline.map(phase => phase.endWeek));
 
   const TimelineBar = ({ startWeek, endWeek, color = "bg-blue-500" }) => {
-    const width = `${(endWeek - startWeek) * 100}%`;
-    const marginLeft = `${startWeek * 100}%`;
+    const width = `${((endWeek - startWeek) / totalWeeks) * 100}%`;
+    const marginLeft = `${(startWeek / totalWeeks) * 100}%`;
     
     return (
       <div
@@ -113,6 +91,33 @@ const TimelinePlanner = () => {
       />
     );
   };
+
+  const AIInsights = () => (
+    <Card className="mb-6 bg-slate-50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <span className="text-blue-600">✨</span>
+          AI Insights
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <span className="text-lg">📅</span>
+            <p className="text-slate-600">Project duration: {totalWeeks} weeks</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-lg">⚡</span>
+            <p className="text-slate-600">Critical path: Content Development → Campaign Setup</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-lg">📊</span>
+            <p className="text-slate-600">Resource utilization peaks in week {Math.floor(totalWeeks / 2)}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const TimelineChart = () => (
     <div className="mt-8">
@@ -161,63 +166,29 @@ const TimelinePlanner = () => {
     </div>
   );
 
-  const ResourceAllocation = () => {
-    const resourceTypes = ['Content Creator', 'Designer', 'Campaign Manager', 'Developer'];
-    
-    return (
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Resource Allocation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {resourceTypes.map(resource => {
-              const allocations = timeline.flatMap(phase => 
-                phase.tasks.map(task => ({
-                  phase: phase.name,
-                  task: task.name,
-                  weeks: task.endWeek - task.startWeek
-                }))
-              );
-
-              return (
-                <div key={resource} className="p-4 bg-slate-50 rounded">
-                  <h4 className="font-medium mb-2">{resource}</h4>
-                  <div className="space-y-2">
-                    {allocations.map((allocation, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{allocation.task}</span>
-                        <span className="text-slate-600">{allocation.weeks} weeks</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const MilestoneTracker = () => (
+  const ResourceAllocation = () => (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle>Key Milestones</CardTitle>
+        <CardTitle>Resource Allocation</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {timeline.map(phase => (
-            <div key={phase.id} className="flex items-center justify-between p-4 bg-slate-50 rounded">
-              <div>
-                <h4 className="font-medium">{phase.name}</h4>
-                <p className="text-sm text-slate-600">
-                  Week {phase.startWeek + 1} - Week {phase.endWeek}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium">Duration</p>
-                <p className="text-lg text-blue-600">{phase.duration} weeks</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {['Content Creator', 'Designer', 'Campaign Manager'].map(resource => (
+            <div key={resource} className="p-4 bg-slate-50 rounded">
+              <h4 className="font-medium mb-2">{resource}</h4>
+              <div className="space-y-2">
+                {timeline.flatMap(phase => 
+                  phase.tasks.map(task => ({
+                    phase: phase.name,
+                    task: task.name,
+                    weeks: task.endWeek - task.startWeek
+                  }))
+                ).map((allocation, index) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <span>{allocation.task}</span>
+                    <span className="text-slate-600">{allocation.weeks} weeks</span>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -226,10 +197,9 @@ const TimelinePlanner = () => {
     </Card>
   );
 
-  return (
-    <div className="max-w-7xl mx-auto p-8">
-      <h1 className="text-2xl font-bold text-slate-900 mb-8">Marketing Timeline</h1>
-      
+  const content = (
+    <>
+      <AIInsights />
       <Card>
         <CardHeader>
           <CardTitle>Project Timeline</CardTitle>
@@ -257,9 +227,32 @@ const TimelinePlanner = () => {
           <TimelineChart />
         </CardContent>
       </Card>
-
       <ResourceAllocation />
-      <MilestoneTracker />
+    </>
+  );
+
+  // If being used in a walkthrough, wrap with ScreenTemplate
+  if (typeof ScreenTemplate !== 'undefined') {
+    return (
+      <ScreenTemplate
+        title="Marketing Timeline"
+        subtitle="Plan and track your marketing program timeline"
+        aiInsights={[
+          `Total project duration: ${totalWeeks} weeks`,
+          "Critical path identified through content and campaign setup",
+          "Resource allocation optimized for efficiency"
+        ]}
+      >
+        {content}
+      </ScreenTemplate>
+    );
+  }
+
+  // Standalone version
+  return (
+    <div className="max-w-7xl mx-auto p-8">
+      <h1 className="text-2xl font-bold text-slate-900 mb-8">Marketing Timeline</h1>
+      {content}
     </div>
   );
 };
