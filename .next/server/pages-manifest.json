@@ -1,5 +1,7 @@
 {
   "/_app": "pages/_app.js",
   "/_document": "pages/_document.js",
-  "/content-strategy": "pages/content-strategy.js"
+  "/content-strategy": "pages/content-strategy.js",
+  "/walkthrough/[step]": "pages/walkthrough/[step].js",
+  "/walkthrough/complete": "pages/walkthrough/complete.js"
 }
