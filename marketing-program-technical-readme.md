@@ -37,7 +37,9 @@ src/
 - State Management: React Context
 
 ### Content Creation Features
-- Multiple content type support
+- Multiple content type support with improved UI
+- Clear content type descriptions and examples
+- Visual selection feedback (checkmark for selected items)
 - AI-driven content enhancement
 - Research integration
 - Social media optimization
@@ -52,3 +54,8 @@ src/
 - Refining AI content enhancement
 - Expanding content type flexibility
 - Improving research integration
+
+## Debugging Notes
+- Fixed state persistence between components using localStorage
+- Resolved visual feedback issues in ContentStrategyStep
+- Improved UI clarity by replacing tags with bullet lists for content examples

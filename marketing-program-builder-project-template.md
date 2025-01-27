@@ -19,6 +19,7 @@
 - Budget allocation tools
 - Lead scoring integration
 - ROI tracking for events
+- Improved content type selection UI with clear descriptions and examples
 
 ### 3. Planned Enhancements
 - Advanced ROI calculations

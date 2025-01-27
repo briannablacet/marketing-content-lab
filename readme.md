@@ -11,6 +11,9 @@ MarketMultiplier.ai is an innovative platform designed to revolutionize marketin
 #### Content Selection
 - **ContentStrategyStep**: 
   - Selects content types to create
+  - Displays content types as clickable cards
+  - Shows description and example content for each type
+  - Provides visual feedback for selected items
   - Stores selections in ContentContext
   - Shows CTA when content types selected
   - Routes to CreationHub
