@@ -1,12 +1,16 @@
-// src/components/features/ContentStrategyStep/index.tsx
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import ContentCreator from '../ContentCreator';
-import { CreationHub } from '../CreationHub';
+import { useContent } from '../../../context/ContentContext';
+import { useRouter } from 'next/router';
 
 const ContentStrategyStep = () => {
-  const [selectedTypes, setSelectedTypes] = useState([]);
-  const [showCreationHub, setShowCreationHub] = useState(false);
+  const router = useRouter();
+  const { selectedContentTypes, setSelectedContentTypes } = useContent();
+  console.log('ContentStrategyStep:', selectedContentTypes);
+
+  useEffect(() => {
+    console.log('ContentStrategyStep useEffect:', selectedContentTypes);
+  }, [selectedContentTypes]);
 
   const channels = [
     {
@@ -31,84 +35,70 @@ const ContentStrategyStep = () => {
     }
   ];
 
-  const handleSelectAll = () => {
-    setSelectedTypes(channels.map(channel => channel.name));
-  };
-
   const toggleChannel = (channelName) => {
-    setSelectedTypes(prev => 
-      prev.includes(channelName) 
+    setSelectedContentTypes(prev => {
+      const newTypes = prev.includes(channelName) 
         ? prev.filter(name => name !== channelName)
-        : [...prev, channelName]
-    );
+        : [...prev, channelName];
+      console.log('Selected types:', newTypes);
+      return newTypes;
+    });
   };
 
   const startCreating = () => {
-    setShowCreationHub(true);
+    console.log('Starting creation with:', selectedContentTypes);
+    router.push('/creation-hub');
   };
 
-  if (showCreationHub) {
-    return <CreationHub selectedTypes={selectedTypes} />;
-  }
-
+  console.log('Rendering ContentStrategyStep, selectedContentTypes:', selectedContentTypes);
+  
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="space-x-4">
-          <button 
-            onClick={handleSelectAll}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Select All
-          </button>
-          <span className="text-slate-600">
-            Selected: {selectedTypes.length}
-          </span>
-        </div>
-      </div>
-
+    <div className="space-y-6 pb-24">
       <div className="grid grid-cols-2 gap-4">
         {channels.map(channel => (
-          <Card
-            key={channel.name}
-            className={`p-6 cursor-pointer ${
-              selectedTypes.includes(channel.name)
-                ? 'border-blue-500 bg-blue-50'
-                : ''
-            }`}
-            onClick={() => toggleChannel(channel.name)}
-          >
-            <h3 className="font-semibold mb-2">{channel.name}</h3>
-            <p className="text-sm text-slate-600 mb-4">{channel.description}</p>
-            <div className="flex flex-wrap gap-2">
-              {channel.activities.map(activity => (
-                <span
-                  key={activity}
-                  className="px-2 py-1 bg-white rounded text-sm border"
-                >
-                  {activity}
-                </span>
-              ))}
-            </div>
-          </Card>
+   <Card
+   key={channel.name}
+   className={`p-6 cursor-pointer transition-all ${
+     selectedContentTypes.includes(channel.name)
+       ? 'border-2 border-blue-500 bg-blue-50 shadow-md'
+       : 'border border-gray-200 hover:border-blue-300'
+   }`}
+   onClick={() => toggleChannel(channel.name)}
+ >
+   <div className="flex justify-between items-start">
+     <h3 className="font-semibold mb-2">{channel.name}</h3>
+     {selectedContentTypes.includes(channel.name) && (
+       <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+       </svg>
+     )}
+   </div>
+   <p className="text-sm text-slate-600 mb-2">{channel.description}, such as:</p>
+   <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+     {channel.activities.map(activity => (
+       <li key={activity}>{activity}</li>
+     ))}
+   </ul>
+ </Card>
         ))}
       </div>
 
-      {/* CTA Section */}
-      {selectedTypes.length > 0 && (
-        <div className="text-center p-6 bg-slate-50 rounded-lg">
-          <h3 className="text-lg font-semibold mb-2">
-            Great selection! Ready to start creating?
-          </h3>
-          <p className="text-slate-600 mb-4">
-            You've selected {selectedTypes.length} content types
-          </p>
-          <button
-            onClick={startCreating}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Start Creating Content →
-          </button>
+      {selectedContentTypes.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow-2xl border-t">
+          <div className="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+              <p className="text-lg font-semibold">
+                {selectedContentTypes.length} content type{selectedContentTypes.length !== 1 ? 's' : ''} selected
+              </p>
+              <p className="text-sm text-slate-600">Ready to start creating?</p>
+            </div>
+            <button
+              onClick={startCreating}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Start Creating →
+            </button>
+          </div>
         </div>
       )}
     </div>

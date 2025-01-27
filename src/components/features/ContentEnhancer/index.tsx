@@ -5,6 +5,29 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CONTENT_GUIDELINES, validateContent } from './contentGuidelines';
 
+// Function to add transitions between paragraphs
+const addTransitions = (content: string) => {
+  const transitions = [
+    'Building on this foundation',
+    'This leads us to',
+    'Understanding this concept',
+    'Taking this further',
+    'This reveals why',
+    'Here\'s how this works'
+  ];
+
+  // Split content into paragraphs
+  const paragraphs = content.split('\n\n');
+  
+  // Add transitions between paragraphs
+  for (let i = 1; i < paragraphs.length; i++) {
+    const randomTransition = transitions[Math.floor(Math.random() * transitions.length)];
+    paragraphs[i] = `${randomTransition}, ${paragraphs[i].toLowerCase()}`;
+  }
+
+  return paragraphs.join('\n\n');
+};
+
 const ContentEnhancer = () => {
   const [selectedTool, setSelectedTool] = useState(null);
   
@@ -45,7 +68,7 @@ const ContentEnhancer = () => {
       
       if (analysis.needsRevision) {
         // Transform lists into narrative flow
-        const enhanced = content
+        let enhanced = content
           .replace(/^[-*•]\s(.+)$/gm, (match, p1) => `This capability ${p1.toLowerCase()} by...`)
           .replace(/\n\n[-*•]/g, '\n\nAdditionally, ');
           
@@ -216,10 +239,10 @@ const ContentEnhancer = () => {
     );
   }
 
-  return (
+   return (
     <div className="max-w-7xl mx-auto p-8">
       <h1 className="text-2xl font-bold text-slate-900 mb-8">Enhance Your Content</h1>
-      {content}
+      {/* Existing content rendering logic */}
     </div>
   );
 };

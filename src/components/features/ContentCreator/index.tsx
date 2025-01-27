@@ -1,7 +1,7 @@
 // src/components/features/ContentCreator/index.tsx
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ContentEnhancer } from '../ContentEnhancer';
+import ContentEnhancer from '../ContentEnhancer';
 
 const ContentCreator = ({ contentType }) => {
   const [step, setStep] = useState('outline');

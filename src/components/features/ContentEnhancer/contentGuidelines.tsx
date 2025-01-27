@@ -35,7 +35,7 @@ export const CONTENT_GUIDELINES = {
       'Understanding this concept',
       'Taking this further',
       'This reveals why',
-      'Here's how this works'
+      'Here\'s how this works'
     ]
   };
   
