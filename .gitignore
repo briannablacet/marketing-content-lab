@@ -1,2 +1,64 @@
-node_modules
-node_modules
+# Dependency Directories
+node_modules/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js Build Output
+.next/
+out/
+build/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript Compilation Artifacts
+*.tsbuildinfo
+
+# Logging
+logs/
+*.log
+
+# Editor and IDE Specific Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+.tmp/
+.temp/
+
+# Miscellaneous
+.cache/
+.turbo/
+.vercel/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Package Lock Files (optional, but recommended to prevent inconsistencies)
+package-lock.json
+yarn.lock
+
+# Backup Files
+*.bak
+*.backup
+
+# Local Development Artifacts
+*.local
+
+# Deployment and CI/CD
+.netlify/
+.cache/
