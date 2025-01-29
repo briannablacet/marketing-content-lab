@@ -1,4 +1,10 @@
 # MarketMultiplier.ai Project Plan
+## Project Repository
+
+Local Path: ~/Documents/Github/market-multiplier
+GitHub: https://github.com/briannablacet/market-multiplier
+
+
 
 ## Business Overview
 

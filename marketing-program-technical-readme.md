@@ -1,7 +1,10 @@
-# MarketMultiplier.ai Technical Documentation
+MarketMultiplier.ai Technical Documentation
+Project Repository
+
+Local Path: ~/Documents/Github/market-multiplier
+GitHub: https://github.com/briannablacet/market-multiplier
 
 ## System Architecture
-
 ### Content Creation Workflow
 1. Content Type Selection (ContentStrategyStep)
 2. Creation Queue Management (CreationHub)

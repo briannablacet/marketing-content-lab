@@ -1,13 +1,5 @@
 {
   "/_app": "pages/_app.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/content-strategy": "pages/content-strategy.js",
-  "/walkthrough/[step]": "pages/walkthrough/[step].js",
-  "/walkthrough/complete": "pages/walkthrough/complete.js",
-  "/creation-hub": "pages/creation-hub.js",
-  "/channel-mix": "pages/channel-mix.js",
-  "/lead-scoring": "pages/lead-scoring.js",
-  "/sdr": "pages/sdr.js",
-  "/timeline": "pages/timeline.js"
+  "/": "pages/index.js"
 }

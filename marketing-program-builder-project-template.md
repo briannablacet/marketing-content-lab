@@ -1,4 +1,8 @@
-# Marketing Program Builder Project Overview: MarketMultiplier.ai
+Marketing Program Builder Project Overview: MarketMultiplier.ai
+Project Repository
+
+Location: ~/Documents/Github/market-multiplier
+GitHub: https://github.com/briannablacet/market-multiplier
 
 ## Project Basics
 - **Project Name**: MarketMultiplier.ai
