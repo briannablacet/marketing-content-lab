@@ -2,6 +2,7 @@
 import { MarketingProgramProvider } from '../context/MarketingContext';
 import { WalkthroughProvider } from '../context/WalkthroughContext';
 import { SDRProvider } from '../context/SDRContext';
+import { ContentProvider } from '../context/ContentContext';
 import '../styles/globals.css';
 import Navbar from '../components/shared/Navbar';
 
@@ -10,8 +11,10 @@ function MyApp({ Component, pageProps }) {
     <MarketingProgramProvider>
       <WalkthroughProvider>
         <SDRProvider>
-          <Navbar />
-          <Component {...pageProps} />
+          <ContentProvider>
+            <Navbar />
+            <Component {...pageProps} />
+          </ContentProvider>
         </SDRProvider>
       </WalkthroughProvider>
     </MarketingProgramProvider>

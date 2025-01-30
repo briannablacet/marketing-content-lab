@@ -1,11 +1,15 @@
+// src/components/features/CreationHub/index.tsx
 import React, { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
+import { useRouter } from 'next/router';
 import ContentCreator from '../ContentCreator';
 
 const CreationHub = () => {
   const { selectedContentTypes } = useContent();
-  console.log('CreationHub received:', selectedContentTypes);
+  const router = useRouter();
   const [activeContent, setActiveContent] = useState<string | null>(null);
+
+  console.log('CreationHub received:', selectedContentTypes);
 
   // If a specific content type is being created, show its creator
   if (activeContent) {
@@ -13,7 +17,7 @@ const CreationHub = () => {
   }
 
   // No content types selected
-  if (selectedContentTypes.length === 0) {
+  if (!selectedContentTypes || selectedContentTypes.length === 0) {
     return (
       <div className="max-w-4xl mx-auto p-8 text-center">
         <h2 className="text-2xl font-bold mb-4">No Content Types Selected</h2>
@@ -21,7 +25,7 @@ const CreationHub = () => {
           Please go back to the Content Strategy step and choose your content mix.
         </p>
         <button 
-          onClick={() => window.history.back()}
+          onClick={() => router.back()}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Return to Content Strategy

@@ -1,89 +1,87 @@
-import React, { useEffect } from 'react';
+// src/components/features/ContentStrategyModule/index.tsx
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { CONTENT_TYPES } from '../../../data/contentTypesData';
 import { useContent } from '../../../context/ContentContext';
 import { useRouter } from 'next/router';
 
-const ContentStrategyStep = () => {
+const ContentStrategyModule = () => {
   const router = useRouter();
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
-  console.log('ContentStrategyStep:', selectedContentTypes);
+  const [activeContent, setActiveContent] = useState<string | null>(null);
 
-  useEffect(() => {
-    console.log('ContentStrategyStep useEffect:', selectedContentTypes);
-  }, [selectedContentTypes]);
-
-  const channels = [
-    {
-      name: 'Blog Post',
-      description: 'Build authority through valuable content',
-      activities: ['Industry Insights', 'How-to Guides', 'Thought Leadership']
-    },
-    {
-      name: 'Case Study',
-      description: 'Showcase customer success stories',
-      activities: ['Customer Wins', 'Implementation Stories', 'ROI Analysis']
-    },
-    {
-      name: 'eBook',
-      description: 'Deep dive into key topics',
-      activities: ['Comprehensive Guides', 'Industry Reports', 'Best Practices']
-    },
-    {
-      name: 'Social Media',
-      description: 'Engage and build community',
-      activities: ['LinkedIn', 'Twitter', 'Community Management']
-    }
-  ];
-
-  const toggleChannel = (channelName) => {
-    setSelectedContentTypes(prev => {
+  const toggleChannel = (channelName: string) => {
+    setSelectedContentTypes((prev: string[]) => {
       const newTypes = prev.includes(channelName) 
-        ? prev.filter(name => name !== channelName)
+        ? prev.filter((name: string) => name !== channelName)
         : [...prev, channelName];
-      console.log('Selected types:', newTypes);
       return newTypes;
     });
   };
 
   const startCreating = () => {
-    console.log('Starting creation with:', selectedContentTypes);
     router.push('/creation-hub');
   };
 
-  console.log('Rendering ContentStrategyStep, selectedContentTypes:', selectedContentTypes);
-  
   return (
     <div className="space-y-6 pb-24">
-      <div className="grid grid-cols-2 gap-4">
-        {channels.map(channel => (
-   <Card
-   key={channel.name}
-   className={`p-6 cursor-pointer transition-all ${
-     selectedContentTypes.includes(channel.name)
-       ? 'border-2 border-blue-500 bg-blue-50 shadow-md'
-       : 'border border-gray-200 hover:border-blue-300'
-   }`}
-   onClick={() => toggleChannel(channel.name)}
- >
-   <div className="flex justify-between items-start">
-     <h3 className="font-semibold mb-2">{channel.name}</h3>
-     {selectedContentTypes.includes(channel.name) && (
-       <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-       </svg>
-     )}
-   </div>
-   <p className="text-sm text-slate-600 mb-2">{channel.description}, such as:</p>
-   <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
-     {channel.activities.map(activity => (
-       <li key={activity}>{activity}</li>
-     ))}
-   </ul>
- </Card>
-        ))}
-      </div>
+      {!activeContent ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.entries(CONTENT_TYPES).map(([type, details]) => (
+            <Card
+              key={type}
+              className={`p-6 cursor-pointer transition-all ${
+                selectedContentTypes.includes(type)
+                  ? 'border-2 border-blue-500 bg-blue-50 shadow-md'
+                  : 'border border-gray-200 hover:border-blue-300'
+              }`}
+              onClick={() => toggleChannel(type)}
+            >
+              <div className="flex justify-between items-start">
+                <h3 className="font-semibold mb-2">{type}</h3>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  selectedContentTypes.includes(type)
+                    ? 'border-blue-600 bg-blue-600'
+                    : 'border-gray-300'
+                }`}>
+                  {selectedContentTypes.includes(type) && (
+                    <span className="text-white">✓</span>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm text-slate-600 mb-2">{details.description}, such as:</p>
+              <ul className="list-disc list-inside text-sm text-gray-700 pl-2 mb-4">
+                {details.activities.map(activity => (
+                  <li key={activity}>{activity}</li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-2">
+                {details.aiSupport.map(feature => (
+                  <span key={feature} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                    ✨ {feature}
+                  </span>
+                ))}
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card className="mt-6">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">{activeContent}</h2>
+              <button 
+                onClick={() => setActiveContent(null)}
+                className="text-sm text-slate-500 hover:text-slate-700"
+              >
+                ← Back to Types
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
 
-      {selectedContentTypes.length > 0 && (
+      {selectedContentTypes.length > 0 && !activeContent && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow-2xl border-t">
           <div className="max-w-4xl mx-auto flex justify-between items-center">
             <div>
@@ -105,4 +103,4 @@ const ContentStrategyStep = () => {
   );
 };
 
-export default ContentStrategyStep;
+export default ContentStrategyModule;

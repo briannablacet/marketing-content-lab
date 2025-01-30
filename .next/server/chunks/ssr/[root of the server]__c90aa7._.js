@@ -566,226 +566,250 @@ function CardContent({ children, className = '', ...props }) {
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, x: __turbopack_external_require__, y: __turbopack_external_import__, z: __turbopack_require_stub__ } = __turbopack_context__;
 {
+// src/components/features/ContentStrategyModule/index.tsx
 __turbopack_esm__({
     "default": (()=>__TURBOPACK__default__export__)
 });
 var __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__ = __turbopack_import__("[externals]/react/jsx-dev-runtime [external] (react/jsx-dev-runtime, cjs)");
 var __TURBOPACK__imported__module__$5b$externals$5d2f$react__$5b$external$5d$__$28$react$2c$__cjs$29$__ = __turbopack_import__("[externals]/react [external] (react, cjs)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$ssr$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/components/ui/card.tsx [ssr] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$ContentContext$2e$tsx__$5b$ssr$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/context/ContentContext.tsx [ssr] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$router$2e$js__$5b$ssr$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/next/router.js [ssr] (ecmascript)");
+(()=>{
+    const e = new Error("Cannot find module '@/data/contentTypesData'");
+    e.code = 'MODULE_NOT_FOUND';
+    throw e;
+})();
 ;
 ;
 ;
 ;
-;
-const ContentStrategyStep = ()=>{
-    const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$router$2e$js__$5b$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
-    const { selectedContentTypes, setSelectedContentTypes } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$ContentContext$2e$tsx__$5b$ssr$5d$__$28$ecmascript$29$__["useContent"])();
-    console.log('ContentStrategyStep:', selectedContentTypes);
-    (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react__$5b$external$5d$__$28$react$2c$__cjs$29$__["useEffect"])(()=>{
-        console.log('ContentStrategyStep useEffect:', selectedContentTypes);
-    }, [
-        selectedContentTypes
-    ]);
-    const channels = [
-        {
-            name: 'Blog Post',
-            description: 'Build authority through valuable content',
-            activities: [
-                'Industry Insights',
-                'How-to Guides',
-                'Thought Leadership'
-            ]
-        },
-        {
-            name: 'Case Study',
-            description: 'Showcase customer success stories',
-            activities: [
-                'Customer Wins',
-                'Implementation Stories',
-                'ROI Analysis'
-            ]
-        },
-        {
-            name: 'eBook',
-            description: 'Deep dive into key topics',
-            activities: [
-                'Comprehensive Guides',
-                'Industry Reports',
-                'Best Practices'
-            ]
-        },
-        {
-            name: 'Social Media',
-            description: 'Engage and build community',
-            activities: [
-                'LinkedIn',
-                'Twitter',
-                'Community Management'
-            ]
-        }
-    ];
-    const toggleChannel = (channelName)=>{
-        setSelectedContentTypes((prev)=>{
-            const newTypes = prev.includes(channelName) ? prev.filter((name)=>name !== channelName) : [
+const ContentStrategyModule = ()=>{
+    const [selectedTypes, setSelectedTypes] = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react__$5b$external$5d$__$28$react$2c$__cjs$29$__["useState"])([]);
+    const [activeContent, setActiveContent] = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react__$5b$external$5d$__$28$react$2c$__cjs$29$__["useState"])(null);
+    const toggleType = (type)=>{
+        setSelectedTypes((prev)=>{
+            if (prev.includes(type)) {
+                setActiveContent(type);
+                return prev;
+            }
+            return [
                 ...prev,
-                channelName
+                type
             ];
-            console.log('Selected types:', newTypes);
-            return newTypes;
         });
     };
-    const startCreating = ()=>{
-        console.log('Starting creation with:', selectedContentTypes);
-        router.push('/creation-hub');
-    };
-    console.log('Rendering ContentStrategyStep, selectedContentTypes:', selectedContentTypes);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
-        className: "space-y-6 pb-24",
+        className: "max-w-7xl mx-auto p-8",
         children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("h1", {
+                className: "text-2xl font-bold text-slate-900 mb-8",
+                children: "Choose Your Content Mix"
+            }, void 0, false, {
+                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                lineNumber: 24,
+                columnNumber: 7
+            }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
-                className: "grid grid-cols-2 gap-4",
-                children: channels.map((channel)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$ssr$5d$__$28$ecmascript$29$__["Card"], {
-                        className: `p-6 cursor-pointer transition-all ${selectedContentTypes.includes(channel.name) ? 'border-2 border-blue-500 bg-blue-50 shadow-md' : 'border border-gray-200 hover:border-blue-300'}`,
-                        onClick: ()=>toggleChannel(channel.name),
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
-                                className: "flex justify-between items-start",
+                className: "space-y-6 pb-24",
+                children: [
+                    !activeContent ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                        className: "grid grid-cols-1 md:grid-cols-2 gap-4",
+                        children: Object.entries(CONTENT_TYPES).map(([type, details])=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$ssr$5d$__$28$ecmascript$29$__["Card"], {
+                                className: `p-6 cursor-pointer transition-all ${selectedTypes.includes(type) ? 'border-2 border-blue-500 bg-blue-50 shadow-md' : 'border border-gray-200 hover:border-blue-300'}`,
+                                onClick: ()=>toggleType(type),
                                 children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("h3", {
-                                        className: "font-semibold mb-2",
-                                        children: channel.name
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                                        className: "flex justify-between items-start",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("h3", {
+                                                className: "font-semibold mb-2",
+                                                children: type
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                                lineNumber: 40,
+                                                columnNumber: 19
+                                            }, this),
+                                            selectedTypes.includes(type) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                                                className: "w-6 h-6 rounded-full border-2 border-blue-600 bg-blue-600 flex items-center justify-center",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
+                                                    className: "text-white",
+                                                    children: "✓"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                                    lineNumber: 43,
+                                                    columnNumber: 23
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                                lineNumber: 42,
+                                                columnNumber: 21
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                        lineNumber: 39,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("p", {
+                                        className: "text-sm text-slate-600 mb-2",
+                                        children: [
+                                            details.description,
+                                            ", such as:"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                        lineNumber: 47,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("ul", {
+                                        className: "list-disc list-inside text-sm text-gray-700 pl-2 mb-4",
+                                        children: details.activities.map((activity)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("li", {
+                                                children: activity
+                                            }, activity, false, {
+                                                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                                lineNumber: 50,
+                                                columnNumber: 21
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                        lineNumber: 48,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                                        className: "flex flex-wrap gap-2",
+                                        children: details.aiSupport.map((feature)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
+                                                className: "px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs",
+                                                children: [
+                                                    "✨ ",
+                                                    feature
+                                                ]
+                                            }, feature, true, {
+                                                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                                lineNumber: 55,
+                                                columnNumber: 21
+                                            }, this))
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                        lineNumber: 53,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, type, true, {
+                                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                lineNumber: 30,
+                                columnNumber: 15
+                            }, this))
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                        lineNumber: 28,
+                        columnNumber: 11
+                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$ssr$5d$__$28$ecmascript$29$__["Card"], {
+                        className: "mt-6",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                            className: "p-6",
+                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                                className: "flex justify-between items-center mb-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("h2", {
+                                        className: "text-xl font-semibold",
+                                        children: activeContent
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                        lineNumber: 68,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("button", {
+                                        onClick: ()=>setActiveContent(null),
+                                        className: "text-sm text-slate-500 hover:text-slate-700",
+                                        children: "← Back to Types"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
                                         lineNumber: 69,
-                                        columnNumber: 6
-                                    }, this),
-                                    selectedContentTypes.includes(channel.name) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("svg", {
-                                        className: "w-6 h-6 text-blue-500",
-                                        fill: "none",
-                                        stroke: "currentColor",
-                                        viewBox: "0 0 24 24",
-                                        xmlns: "http://www.w3.org/2000/svg",
-                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("path", {
-                                            strokeLinecap: "round",
-                                            strokeLinejoin: "round",
-                                            strokeWidth: 2,
-                                            d: "M5 13l4 4L19 7"
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                                            lineNumber: 72,
-                                            columnNumber: 10
-                                        }, this)
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                                        lineNumber: 71,
-                                        columnNumber: 8
+                                        columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                                lineNumber: 68,
-                                columnNumber: 4
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("p", {
-                                className: "text-sm text-slate-600 mb-2",
-                                children: [
-                                    channel.description,
-                                    ", such as:"
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                                lineNumber: 76,
-                                columnNumber: 4
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("ul", {
-                                className: "list-disc list-inside text-sm text-gray-700 pl-2",
-                                children: channel.activities.map((activity)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("li", {
-                                        children: activity
-                                    }, activity, false, {
-                                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                                        lineNumber: 79,
-                                        columnNumber: 8
-                                    }, this))
-                            }, void 0, false, {
-                                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                                lineNumber: 77,
-                                columnNumber: 4
+                                lineNumber: 67,
+                                columnNumber: 15
                             }, this)
-                        ]
-                    }, channel.name, true, {
+                        }, void 0, false, {
+                            fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                            lineNumber: 66,
+                            columnNumber: 13
+                        }, this)
+                    }, void 0, false, {
                         fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                        lineNumber: 59,
-                        columnNumber: 4
-                    }, this))
-            }, void 0, false, {
-                fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                lineNumber: 57,
-                columnNumber: 7
-            }, this),
-            selectedContentTypes.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
-                className: "fixed bottom-0 left-0 right-0 p-4 bg-white shadow-2xl border-t",
-                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
-                    className: "max-w-4xl mx-auto flex justify-between items-center",
-                    children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                        lineNumber: 64,
+                        columnNumber: 11
+                    }, this),
+                    selectedTypes.length > 0 && !activeContent && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                        className: "fixed bottom-0 left-0 right-0 p-4 bg-white shadow-2xl border-t",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                            className: "max-w-4xl mx-auto flex justify-between items-center",
                             children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("p", {
-                                    className: "text-lg font-semibold",
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                     children: [
-                                        selectedContentTypes.length,
-                                        " content type",
-                                        selectedContentTypes.length !== 1 ? 's' : '',
-                                        " selected"
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("p", {
+                                            className: "text-lg font-semibold",
+                                            children: [
+                                                selectedTypes.length,
+                                                " content type",
+                                                selectedTypes.length !== 1 ? 's' : '',
+                                                " selected"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                            lineNumber: 85,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("p", {
+                                            className: "text-sm text-slate-600",
+                                            children: "Ready to start creating?"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                                            lineNumber: 88,
+                                            columnNumber: 17
+                                        }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                                    lineNumber: 90,
+                                    lineNumber: 84,
                                     columnNumber: 15
                                 }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("p", {
-                                    className: "text-sm text-slate-600",
-                                    children: "Ready to start creating?"
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("button", {
+                                    onClick: ()=>setActiveContent(selectedTypes[0]),
+                                    className: "px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700",
+                                    children: "Start Creating →"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                                    lineNumber: 93,
+                                    lineNumber: 90,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                            lineNumber: 89,
-                            columnNumber: 13
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("button", {
-                            onClick: startCreating,
-                            className: "px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700",
-                            children: "Start Creating →"
-                        }, void 0, false, {
-                            fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                            lineNumber: 95,
+                            lineNumber: 83,
                             columnNumber: 13
                         }, this)
-                    ]
-                }, void 0, true, {
-                    fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                    lineNumber: 88,
-                    columnNumber: 11
-                }, this)
-            }, void 0, false, {
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
+                        lineNumber: 82,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
                 fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-                lineNumber: 87,
-                columnNumber: 9
+                lineNumber: 26,
+                columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/features/ContentStrategyModule/index.tsx",
-        lineNumber: 56,
+        lineNumber: 23,
         columnNumber: 5
     }, this);
 };
-const __TURBOPACK__default__export__ = ContentStrategyStep;
+const __TURBOPACK__default__export__ = ContentStrategyModule;
 }}),
 "[project]/src/components/shared/UIComponents.js [ssr] (ecmascript)": ((__turbopack_context__) => {
 "use strict";

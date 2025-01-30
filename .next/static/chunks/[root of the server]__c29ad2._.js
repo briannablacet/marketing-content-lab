@@ -779,235 +779,125 @@ var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_
 {
 // src/components/shared/UIComponents.js
 __turbopack_esm__({
-    "AIInsight": (()=>AIInsight),
-    "MetricsCard": (()=>MetricsCard),
-    "NavigationButtons": (()=>NavigationButtons),
-    "ProgressBar": (()=>ProgressBar),
     "ScreenTemplate": (()=>ScreenTemplate)
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/react/jsx-dev-runtime.js [client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/react/index.js [client] (ecmascript)");
 ;
 ;
-function ProgressBar({ currentStep, totalSteps }) {
+const ScreenTemplate = ({ title, subtitle, children, currentStep, totalSteps, aiInsights, onNext, onBack, isWalkthrough, nextButtonText = 'Next →' // Default text if not provided
+ })=>{
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "w-full h-2 bg-slate-200 rounded",
-        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-            className: "h-full bg-blue-600 rounded",
-            style: {
-                width: `${currentStep / totalSteps * 100}%`
-            }
-        }, void 0, false, {
-            fileName: "[project]/src/components/shared/UIComponents.js",
-            lineNumber: 7,
-            columnNumber: 7
-        }, this)
-    }, void 0, false, {
-        fileName: "[project]/src/components/shared/UIComponents.js",
-        lineNumber: 6,
-        columnNumber: 5
-    }, this);
-}
-_c = ProgressBar;
-function AIInsight({ insights }) {
-    if (!insights?.length) return null;
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200",
-        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-            className: "text-sm text-slate-600",
-            children: [
-                "✨ ",
-                insights[0]
-            ]
-        }, void 0, true, {
-            fileName: "[project]/src/components/shared/UIComponents.js",
-            lineNumber: 20,
-            columnNumber: 7
-        }, this)
-    }, void 0, false, {
-        fileName: "[project]/src/components/shared/UIComponents.js",
-        lineNumber: 19,
-        columnNumber: 5
-    }, this);
-}
-_c1 = AIInsight;
-function NavigationButtons({ onBack, onNext, currentStep, totalSteps, isWalkthrough, nextText }) {
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "flex justify-between items-center w-full mt-8",
+        className: "max-w-screen-xl mx-auto p-8",
         children: [
-            onBack && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                onClick: onBack,
-                className: "px-6 py-2 rounded-full border border-blue-600 text-blue-600",
-                children: "← Back"
-            }, void 0, false, {
-                fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 31,
-                columnNumber: 9
-            }, this),
-            !onBack && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {}, void 0, false, {
-                fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 38,
-                columnNumber: 19
-            }, this),
-            isWalkthrough && currentStep && totalSteps && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                className: "text-slate-500",
-                children: [
-                    "Step ",
-                    currentStep,
-                    " of ",
-                    totalSteps
-                ]
-            }, void 0, true, {
-                fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 41,
-                columnNumber: 9
-            }, this),
-            onNext && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                onClick: onNext,
-                className: "px-6 py-2 rounded-full bg-blue-600 text-white",
-                children: nextText || 'Next →'
-            }, void 0, false, {
-                fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 45,
-                columnNumber: 9
-            }, this)
-        ]
-    }, void 0, true, {
-        fileName: "[project]/src/components/shared/UIComponents.js",
-        lineNumber: 29,
-        columnNumber: 5
-    }, this);
-}
-_c2 = NavigationButtons;
-function MetricsCard({ title, metrics }) {
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "p-6 bg-white rounded-lg border border-slate-200",
-        children: [
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                className: "text-lg font-semibold text-slate-900 mb-4",
-                children: title
-            }, void 0, false, {
-                fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 59,
-                columnNumber: 7
-            }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "grid grid-cols-2 gap-4",
-                children: Object.entries(metrics).map(([label, value])=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                className: "text-sm text-slate-600",
-                                children: label
-                            }, void 0, false, {
-                                fileName: "[project]/src/components/shared/UIComponents.js",
-                                lineNumber: 63,
-                                columnNumber: 13
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                className: "text-2xl font-bold text-slate-900",
-                                children: value
-                            }, void 0, false, {
-                                fileName: "[project]/src/components/shared/UIComponents.js",
-                                lineNumber: 64,
-                                columnNumber: 13
-                            }, this)
-                        ]
-                    }, label, true, {
-                        fileName: "[project]/src/components/shared/UIComponents.js",
-                        lineNumber: 62,
-                        columnNumber: 11
-                    }, this))
-            }, void 0, false, {
-                fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 60,
-                columnNumber: 7
-            }, this)
-        ]
-    }, void 0, true, {
-        fileName: "[project]/src/components/shared/UIComponents.js",
-        lineNumber: 58,
-        columnNumber: 5
-    }, this);
-}
-_c3 = MetricsCard;
-const ScreenTemplate = ({ title, subtitle, currentStep, totalSteps, aiInsights, onNext, onBack, isWalkthrough = false, nextText, children })=>{
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "max-w-4xl mx-auto p-8",
-        children: [
-            isWalkthrough && currentStep && totalSteps && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ProgressBar, {
-                currentStep: currentStep,
-                totalSteps: totalSteps
-            }, void 0, false, {
-                fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 87,
-                columnNumber: 9
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "mt-16",
+                className: "mb-8",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                        className: "text-2xl font-bold text-slate-900",
+                        className: "text-3xl font-bold",
                         children: title
                     }, void 0, false, {
                         fileName: "[project]/src/components/shared/UIComponents.js",
-                        lineNumber: 91,
+                        lineNumber: 19,
                         columnNumber: 9
                     }, this),
                     subtitle && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                        className: "mt-2 text-slate-600",
+                        className: "text-slate-600 mt-2",
                         children: subtitle
                     }, void 0, false, {
                         fileName: "[project]/src/components/shared/UIComponents.js",
-                        lineNumber: 92,
+                        lineNumber: 20,
                         columnNumber: 22
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 90,
+                lineNumber: 18,
                 columnNumber: 7
             }, this),
             aiInsights && aiInsights.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "mt-8 mb-8",
-                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])(AIInsight, {
-                    insights: aiInsights
-                }, void 0, false, {
-                    fileName: "[project]/src/components/shared/UIComponents.js",
-                    lineNumber: 98,
-                    columnNumber: 5
-                }, this)
+                className: "mb-8 p-4 bg-blue-50 rounded-lg border border-blue-100",
+                children: aiInsights.map((insight, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex items-start",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "mr-2",
+                                children: "✨"
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/shared/UIComponents.js",
+                                lineNumber: 27,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                className: "text-slate-700",
+                                children: insight
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/shared/UIComponents.js",
+                                lineNumber: 28,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, index, true, {
+                        fileName: "[project]/src/components/shared/UIComponents.js",
+                        lineNumber: 26,
+                        columnNumber: 13
+                    }, this))
             }, void 0, false, {
                 fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 97,
-                columnNumber: 3
+                lineNumber: 24,
+                columnNumber: 9
             }, this),
             children,
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])(NavigationButtons, {
-                onBack: onBack,
-                onNext: onNext,
-                currentStep: currentStep,
-                totalSteps: totalSteps,
-                isWalkthrough: isWalkthrough,
-                nextText: nextText
-            }, void 0, false, {
+            isWalkthrough && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "mt-8 flex justify-between items-center",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        onClick: onBack,
+                        className: "text-blue-600 hover:text-blue-700 flex items-center",
+                        children: "← Back"
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/shared/UIComponents.js",
+                        lineNumber: 38,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "text-slate-600",
+                        children: [
+                            "Step ",
+                            currentStep,
+                            " of ",
+                            totalSteps
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/components/shared/UIComponents.js",
+                        lineNumber: 44,
+                        columnNumber: 11
+                    }, this),
+                    onNext && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        onClick: onNext,
+                        className: "bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700",
+                        children: nextButtonText
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/shared/UIComponents.js",
+                        lineNumber: 48,
+                        columnNumber: 13
+                    }, this)
+                ]
+            }, void 0, true, {
                 fileName: "[project]/src/components/shared/UIComponents.js",
-                lineNumber: 104,
-                columnNumber: 7
+                lineNumber: 37,
+                columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/shared/UIComponents.js",
-        lineNumber: 85,
+        lineNumber: 17,
         columnNumber: 5
     }, this);
 };
-_c4 = ScreenTemplate;
-var _c, _c1, _c2, _c3, _c4;
-__turbopack_refresh__.register(_c, "ProgressBar");
-__turbopack_refresh__.register(_c1, "AIInsight");
-__turbopack_refresh__.register(_c2, "NavigationButtons");
-__turbopack_refresh__.register(_c3, "MetricsCard");
-__turbopack_refresh__.register(_c4, "ScreenTemplate");
+_c = ScreenTemplate;
+var _c;
+__turbopack_refresh__.register(_c, "ScreenTemplate");
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_refresh__.registerExports(module, globalThis.$RefreshHelpers$);
 }

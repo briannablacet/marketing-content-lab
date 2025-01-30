@@ -1,21 +1,30 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+// src/context/ContentContext.tsx
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const ContentContext = createContext(null);
+interface ContentContextType {
+  selectedContentTypes: string[];
+  setSelectedContentTypes: (types: string[]) => void;
+}
 
-export const ContentProvider = ({ children }) => {
-  const [selectedContentTypes, setSelectedContentTypes] = useState([]);
+const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
+export const ContentProvider = ({ children }: { children: ReactNode }) => {
+  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
+
+  // Move localStorage operations to useEffect to ensure they only run client-side
   useEffect(() => {
+    // Load initial state from localStorage
     const saved = localStorage.getItem('selectedContentTypes');
-    if (saved) setSelectedContentTypes(JSON.parse(saved));
+    if (saved) {
+      setSelectedContentTypes(JSON.parse(saved));
+    }
   }, []);
 
+  // Save to localStorage whenever state changes
   useEffect(() => {
-    localStorage.setItem('selectedContentTypes', JSON.stringify(selectedContentTypes));
-  }, [selectedContentTypes]);
-
-  useEffect(() => {
-    console.log('ContentStrategyStep useEffect:', selectedContentTypes);
+    if (selectedContentTypes.length > 0) {
+      localStorage.setItem('selectedContentTypes', JSON.stringify(selectedContentTypes));
+    }
   }, [selectedContentTypes]);
 
   return (
@@ -27,6 +36,8 @@ export const ContentProvider = ({ children }) => {
 
 export const useContent = () => {
   const context = useContext(ContentContext);
-  console.log('useContent:', context.selectedContentTypes);
+  if (!context) {
+    throw new Error('useContent must be used within a ContentProvider');
+  }
   return context;
 };

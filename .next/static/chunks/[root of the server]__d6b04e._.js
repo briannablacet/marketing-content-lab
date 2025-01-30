@@ -554,6 +554,7 @@ function triggerUpdate(msg) {
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, k: __turbopack_refresh__, m: module, z: __turbopack_require_stub__ } = __turbopack_context__;
 {
+// src/context/ContentContext.tsx
 __turbopack_esm__({
     "ContentProvider": (()=>ContentProvider),
     "useContent": (()=>useContent)
@@ -563,26 +564,26 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$ind
 ;
 var _s = __turbopack_refresh__.signature(), _s1 = __turbopack_refresh__.signature();
 ;
-const ContentContext = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["createContext"])(null);
+const ContentContext = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["createContext"])(undefined);
 const ContentProvider = ({ children })=>{
     _s();
     const [selectedContentTypes, setSelectedContentTypes] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useState"])([]);
+    // Move localStorage operations to useEffect to ensure they only run client-side
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "ContentProvider.useEffect": ()=>{
+            // Load initial state from localStorage
             const saved = localStorage.getItem('selectedContentTypes');
-            if (saved) setSelectedContentTypes(JSON.parse(saved));
+            if (saved) {
+                setSelectedContentTypes(JSON.parse(saved));
+            }
         }
     }["ContentProvider.useEffect"], []);
+    // Save to localStorage whenever state changes
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "ContentProvider.useEffect": ()=>{
-            localStorage.setItem('selectedContentTypes', JSON.stringify(selectedContentTypes));
-        }
-    }["ContentProvider.useEffect"], [
-        selectedContentTypes
-    ]);
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useEffect"])({
-        "ContentProvider.useEffect": ()=>{
-            console.log('ContentStrategyStep useEffect:', selectedContentTypes);
+            if (selectedContentTypes.length > 0) {
+                localStorage.setItem('selectedContentTypes', JSON.stringify(selectedContentTypes));
+            }
         }
     }["ContentProvider.useEffect"], [
         selectedContentTypes
@@ -595,16 +596,18 @@ const ContentProvider = ({ children })=>{
         children: children
     }, void 0, false, {
         fileName: "[project]/src/context/ContentContext.tsx",
-        lineNumber: 22,
+        lineNumber: 31,
         columnNumber: 5
     }, this);
 };
-_s(ContentProvider, "kEaTJr5DYuUg1Bn3RFLQmUnww24=");
+_s(ContentProvider, "4lnSfSQFwduHdWjMVUMBou83IaI=");
 _c = ContentProvider;
 const useContent = ()=>{
     _s1();
     const context = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useContext"])(ContentContext);
-    console.log('useContent:', context.selectedContentTypes);
+    if (!context) {
+        throw new Error('useContent must be used within a ContentProvider');
+    }
     return context;
 };
 _s1(useContent, "b9L3QQ+jgeyIrH0NfHrJ8nn7VMU=");
@@ -1521,35 +1524,39 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, k: __turbopack_refresh__, m: module, z: __turbopack_require_stub__ } = __turbopack_context__;
 {
+// src/components/features/CreationHub/index.tsx
 __turbopack_esm__({
     "default": (()=>__TURBOPACK__default__export__)
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/react/jsx-dev-runtime.js [client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/react/index.js [client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$ContentContext$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/context/ContentContext.tsx [client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$router$2e$js__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/next/router.js [client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$features$2f$ContentCreator$2f$index$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/components/features/ContentCreator/index.tsx [client] (ecmascript)");
 ;
 var _s = __turbopack_refresh__.signature();
 ;
 ;
 ;
+;
 const CreationHub = ()=>{
     _s();
     const { selectedContentTypes } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$ContentContext$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__["useContent"])();
-    console.log('CreationHub received:', selectedContentTypes);
+    const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$router$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useRouter"])();
     const [activeContent, setActiveContent] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    console.log('CreationHub received:', selectedContentTypes);
     // If a specific content type is being created, show its creator
     if (activeContent) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$features$2f$ContentCreator$2f$index$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__["default"], {
             contentType: activeContent
         }, void 0, false, {
             fileName: "[project]/src/components/features/CreationHub/index.tsx",
-            lineNumber: 12,
+            lineNumber: 16,
             columnNumber: 12
         }, this);
     }
     // No content types selected
-    if (selectedContentTypes.length === 0) {
+    if (!selectedContentTypes || selectedContentTypes.length === 0) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "max-w-4xl mx-auto p-8 text-center",
             children: [
@@ -1558,7 +1565,7 @@ const CreationHub = ()=>{
                     children: "No Content Types Selected"
                 }, void 0, false, {
                     fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                    lineNumber: 19,
+                    lineNumber: 23,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1566,22 +1573,22 @@ const CreationHub = ()=>{
                     children: "Please go back to the Content Strategy step and choose your content mix."
                 }, void 0, false, {
                     fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                    lineNumber: 20,
+                    lineNumber: 24,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                    onClick: ()=>window.history.back(),
+                    onClick: ()=>router.back(),
                     className: "px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700",
                     children: "Return to Content Strategy"
                 }, void 0, false, {
                     fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                    lineNumber: 23,
+                    lineNumber: 27,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/features/CreationHub/index.tsx",
-            lineNumber: 18,
+            lineNumber: 22,
             columnNumber: 7
         }, this);
     }
@@ -1594,7 +1601,7 @@ const CreationHub = ()=>{
                 children: "Your Content Creation Queue"
             }, void 0, false, {
                 fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                lineNumber: 36,
+                lineNumber: 40,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1609,7 +1616,7 @@ const CreationHub = ()=>{
                                         children: type
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                                        lineNumber: 44,
+                                        lineNumber: 48,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1617,13 +1624,13 @@ const CreationHub = ()=>{
                                         children: "Ready to create"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                                        lineNumber: 45,
+                                        lineNumber: 49,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                                lineNumber: 43,
+                                lineNumber: 47,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1636,30 +1643,31 @@ const CreationHub = ()=>{
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                                lineNumber: 47,
+                                lineNumber: 51,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, type, true, {
                         fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                        lineNumber: 39,
+                        lineNumber: 43,
                         columnNumber: 11
                     }, this))
             }, void 0, false, {
                 fileName: "[project]/src/components/features/CreationHub/index.tsx",
-                lineNumber: 37,
+                lineNumber: 41,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/features/CreationHub/index.tsx",
-        lineNumber: 35,
+        lineNumber: 39,
         columnNumber: 5
     }, this);
 };
-_s(CreationHub, "SW7bBv33FkohWO/seuRMoA4aMGQ=", false, function() {
+_s(CreationHub, "dAx+ZBiQybG2DXOiXzRp5AMLoDc=", false, function() {
     return [
-        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$ContentContext$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__["useContent"]
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$ContentContext$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__["useContent"],
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$router$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useRouter"]
     ];
 });
 _c = CreationHub;
@@ -1675,27 +1683,19 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, k: __turbopack_refresh__, m: module, z: __turbopack_require_stub__ } = __turbopack_context__;
 {
-// pages/creation-hub.tsx
+// src/pages/creation-hub.tsx
 __turbopack_esm__({
     "default": (()=>CreationHubPage)
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/react/jsx-dev-runtime.js [client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$ContentContext$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/context/ContentContext.tsx [client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$features$2f$CreationHub$2f$index$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/components/features/CreationHub/index.tsx [client] (ecmascript)");
 ;
 ;
-;
 function CreationHubPage() {
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$ContentContext$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__["ContentProvider"], {
-        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$features$2f$CreationHub$2f$index$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
-            fileName: "[project]/src/pages/creation-hub.tsx",
-            lineNumber: 10,
-            columnNumber: 7
-        }, this)
-    }, void 0, false, {
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$features$2f$CreationHub$2f$index$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
         fileName: "[project]/src/pages/creation-hub.tsx",
-        lineNumber: 9,
-        columnNumber: 5
+        lineNumber: 5,
+        columnNumber: 10
     }, this);
 }
 _c = CreationHubPage;

@@ -1,9 +1,10 @@
+// src/components/features/MarketingWalkthrough/index.tsx
 import React from 'react';
 import { useRouter } from 'next/router';
 import { ScreenTemplate } from '../../shared/UIComponents';
 import dynamic from 'next/dynamic';
 
-// Dynamic imports
+// Dynamic imports for step components
 const WelcomeStep = dynamic(() => import('./components/WelcomeStep'), { ssr: false });
 const PersonaStep = dynamic(() => import('./components/PersonaStep'), { ssr: false });
 const CompetitiveStep = dynamic(() => import('./components/CompetitiveStep'), { ssr: false });
@@ -14,6 +15,11 @@ const ContentStrategyStep = dynamic(() => import('./components/ContentStrategySt
 const TimelinePlanningStep = dynamic(() => import('./components/TimelinePlanningStep'), { ssr: false });
 const ReviewStep = dynamic(() => import('./components/ReviewStep'), { ssr: false });
 
+interface StepProps {
+  onNext?: () => void;
+  onBack?: () => void;
+}
+
 const STEPS = [
   { id: '1', component: WelcomeStep, title: 'Welcome' },
   { id: '2', component: PersonaStep, title: 'Target Persona' },
@@ -21,12 +27,16 @@ const STEPS = [
   { id: '4', component: MessagingStep, title: 'Key Messages' },
   { id: '5', component: BudgetStep, title: 'Your Budget' },
   { id: '6', component: ChannelSelectionStep, title: 'Channel Selection' },
-  { id: '7', component: ContentStrategyStep, title: 'Content Strategy' },
+  { 
+    id: '7', 
+    component: (props: StepProps) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
+    title: 'Content Strategy' 
+  },
   { id: '8', component: TimelinePlanningStep, title: 'Project Planner' },
   { id: '9', component: ReviewStep, title: 'Putting it All Together' }
 ];
 
-const MarketingWalkthrough = () => {
+const MarketingWalkthrough: React.FC = () => {
   const router = useRouter();
   const { step } = router.query;
   
@@ -41,7 +51,7 @@ const MarketingWalkthrough = () => {
 
   const handleNext = () => {
     if (currentStep.id === '9') {
-      router.push('/walkthrough/complete');
+      router.push('/walkthrough/complete');  // Changed from /creation-hub
       return;
     }
     
@@ -75,8 +85,11 @@ const MarketingWalkthrough = () => {
       onNext={handleNext}
       onBack={handleBack}
       isWalkthrough={true}
+      nextButtonText={currentStep.id === '9' ? 'Finish Walkthrough →' : 'Next →'}
     >
-      {React.createElement(currentStep.component)}
+      {typeof currentStep.component === 'function' 
+        ? currentStep.component({ onNext: handleNext, onBack: handleBack })
+        : React.createElement(currentStep.component, { onNext: handleNext, onBack: handleBack })}
     </ScreenTemplate>
   );
 };

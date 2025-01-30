@@ -81,41 +81,17 @@ __turbopack_esm__({
     "default": (()=>__TURBOPACK__default__export__)
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/react/jsx-dev-runtime.js [client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/react/index.js [client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/components/ui/card.tsx [client] (ecmascript)");
 ;
 var _s = __turbopack_refresh__.signature();
 ;
-;
 const ReviewStep = ()=>{
     _s();
-    const [checklist, setChecklist] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$index$2e$js__$5b$client$5d$__$28$ecmascript$29$__["useState"])([
-        {
-            id: 1,
-            label: 'Review goals and budget',
-            completed: false
-        },
-        {
-            id: 2,
-            label: 'Confirm target persona',
-            completed: false
-        },
-        {
-            id: 3,
-            label: 'Validate channel mix',
-            completed: false
-        },
-        {
-            id: 4,
-            label: 'Check content strategy',
-            completed: false
-        },
-        {
-            id: 5,
-            label: 'Approve timeline',
-            completed: false
-        }
-    ]);
+    const router = useRouter();
+    const { selectedContentTypes } = useContent();
+    const handleComplete = ()=>{
+        router.push('/creation-hub.tsx');
+    };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "space-y-6",
         children: [
@@ -127,7 +103,7 @@ const ReviewStep = ()=>{
                         children: "Launch Checklist"
                     }, void 0, false, {
                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                        lineNumber: 17,
+                        lineNumber: 16,
                         columnNumber: 8
                     }, this),
                     checklist.map((item)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -147,7 +123,7 @@ const ReviewStep = ()=>{
                                     className: "h-4 w-4"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                    lineNumber: 29,
+                                    lineNumber: 28,
                                     columnNumber: 12
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -155,19 +131,19 @@ const ReviewStep = ()=>{
                                     children: item.label
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                    lineNumber: 35,
+                                    lineNumber: 34,
                                     columnNumber: 12
                                 }, this)
                             ]
                         }, item.id, true, {
                             fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                            lineNumber: 19,
+                            lineNumber: 18,
                             columnNumber: 10
                         }, this))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                lineNumber: 16,
+                lineNumber: 15,
                 columnNumber: 6
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -178,7 +154,7 @@ const ReviewStep = ()=>{
                         children: "Summary"
                     }, void 0, false, {
                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                        lineNumber: 43,
+                        lineNumber: 42,
                         columnNumber: 8
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -191,7 +167,7 @@ const ReviewStep = ()=>{
                                         children: "Total Budget:"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                        lineNumber: 46,
+                                        lineNumber: 45,
                                         columnNumber: 12
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -199,13 +175,13 @@ const ReviewStep = ()=>{
                                         children: "$50,000"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                        lineNumber: 47,
+                                        lineNumber: 46,
                                         columnNumber: 12
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                lineNumber: 45,
+                                lineNumber: 44,
                                 columnNumber: 10
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -215,7 +191,7 @@ const ReviewStep = ()=>{
                                         children: "Timeline:"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                        lineNumber: 50,
+                                        lineNumber: 49,
                                         columnNumber: 12
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -223,13 +199,13 @@ const ReviewStep = ()=>{
                                         children: "12 months"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                        lineNumber: 51,
+                                        lineNumber: 50,
                                         columnNumber: 12
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                lineNumber: 49,
+                                lineNumber: 48,
                                 columnNumber: 10
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -239,7 +215,7 @@ const ReviewStep = ()=>{
                                         children: "Selected Channels:"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                        lineNumber: 54,
+                                        lineNumber: 53,
                                         columnNumber: 12
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -247,25 +223,25 @@ const ReviewStep = ()=>{
                                         children: "4"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                        lineNumber: 55,
+                                        lineNumber: 54,
                                         columnNumber: 12
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                                lineNumber: 53,
+                                lineNumber: 52,
                                 columnNumber: 10
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                        lineNumber: 44,
+                        lineNumber: 43,
                         columnNumber: 8
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                lineNumber: 42,
+                lineNumber: 41,
                 columnNumber: 6
             }, this),
             checklist.every((item)=>item.completed) ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -275,12 +251,12 @@ const ReviewStep = ()=>{
                     children: "✅ Ready to launch your marketing program!"
                 }, void 0, false, {
                     fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                    lineNumber: 62,
+                    lineNumber: 61,
                     columnNumber: 10
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                lineNumber: 61,
+                lineNumber: 60,
                 columnNumber: 8
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "p-4 bg-blue-50 rounded-lg",
@@ -289,22 +265,22 @@ const ReviewStep = ()=>{
                     children: "Complete all checklist items to launch your program."
                 }, void 0, false, {
                     fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                    lineNumber: 68,
+                    lineNumber: 67,
                     columnNumber: 10
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-                lineNumber: 67,
+                lineNumber: 66,
                 columnNumber: 8
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx",
-        lineNumber: 15,
+        lineNumber: 14,
         columnNumber: 4
     }, this);
 };
-_s(ReviewStep, "1nE8JYwSKmqZk0OgjVc3DvI9uwQ=");
+_s(ReviewStep, "LaVuNVZznGIXFj1PXrBIE4U0TkU=", true);
 _c = ReviewStep;
 const __TURBOPACK__default__export__ = ReviewStep;
 var _c;
