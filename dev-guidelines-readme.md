@@ -98,3 +98,12 @@ Our development approach prioritizes:
 - Implement performance profiling
 - Monitor bundle sizes
 - Optimize asset loading
+
+## UI/UX Best Practices
+
+### User Feedback
+- Implement real-time save indicators using AutosaveIndicator component
+- Use consistent feedback patterns across standalone modules
+- AutosaveIndicator should be used in all standalone feature modules (not in walkthrough steps)
+- Keep feedback subtle but visible (bottom-right corner positioning)
+- Provide clear visual states for saving/saved conditions

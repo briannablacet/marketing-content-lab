@@ -1,12 +1,9 @@
 {
   "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/content-strategy": "pages/content-strategy.js",
-  "/walkthrough/[step]": "pages/walkthrough/[step].js",
-  "/walkthrough/complete": "pages/walkthrough/complete.js",
   "/": "pages/index.js",
-  "/creation-hub": "pages/creation-hub.js",
+  "/pipeline-forecast": "pages/pipeline-forecast.js",
   "/lead-scoring": "pages/lead-scoring.js",
-  "/channel-mix": "pages/channel-mix.js",
-  "/timeline": "pages/timeline.js"
+  "/walkthrough/[step]": "pages/walkthrough/[step].js"
 }

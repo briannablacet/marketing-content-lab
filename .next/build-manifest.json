@@ -1,89 +1,42 @@
 {
-  "pages": {
-    "/_app": [
-      "static/chunks/node_modules_next_0f88d9._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_1b7400._.js",
-      "static/chunks/[root of the server]__dcfc9b._.js",
-      "static/chunks/src_styles_globals_473809.css",
-      "static/chunks/src_pages__app_5771e1._.js",
-      "static/chunks/src_pages__app_8ce678._.js"
-    ],
-    "/content-strategy": [
-      "static/chunks/node_modules_next_71458a._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_1b7400._.js",
-      "static/chunks/[root of the server]__15bb62._.js",
-      "static/chunks/src_pages_content-strategy_5771e1._.js",
-      "static/chunks/src_pages_content-strategy_90e215._.js"
-    ],
-    "/walkthrough/[step]": [
-      "static/chunks/node_modules_next_b16674._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_1b7400._.js",
-      "static/chunks/[root of the server]__ad6d12._.js",
-      "static/chunks/src_components_features_MarketingWalkthrough_components_86867c._.js",
-      "static/chunks/src_pages_walkthrough_[step]_tsx_5771e1._.js",
-      "static/chunks/src_pages_walkthrough_[step]_tsx_e87cee._.js"
-    ],
-    "/walkthrough/complete": [
-      "static/chunks/node_modules_next_71458a._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_1b7400._.js",
-      "static/chunks/[root of the server]__d4ae10._.js",
-      "static/chunks/src_pages_walkthrough_complete_tsx_5771e1._.js",
-      "static/chunks/src_pages_walkthrough_complete_tsx_5d2669._.js"
-    ],
-    "/": [
-      "static/chunks/node_modules_next_f80f03._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_1b7400._.js",
-      "static/chunks/[root of the server]__f43e32._.js",
-      "static/chunks/src_pages_index_5771e1._.js",
-      "static/chunks/src_pages_index_bb0ac1._.js"
-    ],
-    "/creation-hub": [
-      "static/chunks/node_modules_next_71458a._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_1b7400._.js",
-      "static/chunks/[root of the server]__d6b04e._.js",
-      "static/chunks/src_pages_creation-hub_5771e1._.js",
-      "static/chunks/src_pages_creation-hub_d888df._.js"
-    ],
-    "/lead-scoring": [
-      "static/chunks/node_modules_next_71458a._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_1b7400._.js",
-      "static/chunks/[root of the server]__c484b8._.js",
-      "static/chunks/src_pages_lead-scoring_5771e1._.js",
-      "static/chunks/src_pages_lead-scoring_12604d._.js"
-    ],
-    "/channel-mix": [
-      "static/chunks/node_modules_next_dist_b8496e._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_lodash_e48d5e._.js",
-      "static/chunks/node_modules_recharts_es6_b6d368._.js",
-      "static/chunks/node_modules_95c432._.js",
-      "static/chunks/[root of the server]__590663._.js",
-      "static/chunks/src_pages_channel-mix_5771e1._.js",
-      "static/chunks/src_pages_channel-mix_e06c97._.js"
-    ],
-    "/timeline": [
-      "static/chunks/node_modules_next_dist_f1b02b._.js",
-      "static/chunks/node_modules_react-dom_82bb97._.js",
-      "static/chunks/node_modules_1b7400._.js",
-      "static/chunks/[root of the server]__c29ad2._.js",
-      "static/chunks/src_pages_timeline_5771e1._.js",
-      "static/chunks/src_pages_timeline_27789f._.js"
-    ]
-  },
-  "devFiles": [],
+  "polyfillFiles": [
+    "static/chunks/polyfills.js"
+  ],
+  "devFiles": [
+    "static/chunks/react-refresh.js"
+  ],
   "ampDevFiles": [],
-  "polyfillFiles": [],
   "lowPriorityFiles": [
-    "static/development/_ssgManifest.js",
-    "static/development/_buildManifest.js"
+    "static/development/_buildManifest.js",
+    "static/development/_ssgManifest.js"
   ],
   "rootMainFiles": [],
+  "pages": {
+    "/": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/index.js"
+    ],
+    "/_app": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/_app.js"
+    ],
+    "/_error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/_error.js"
+    ],
+    "/pipeline-forecast": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/pipeline-forecast.js"
+    ],
+    "/walkthrough/[step]": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/walkthrough/[step].js"
+    ]
+  },
   "ampFirstPages": []
 }

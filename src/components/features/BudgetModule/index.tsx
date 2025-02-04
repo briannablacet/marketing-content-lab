@@ -1,7 +1,9 @@
+// src/components/features/BudgetModule/index.tsx
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ScreenTemplate } from '../../shared/UIComponents';
+import { AutosaveIndicator } from '../../shared/AutosaveIndicator';
 
 // Smart defaults for B2B tech companies
 const CHANNEL_BENCHMARKS = {
@@ -308,84 +310,87 @@ const BudgetModule = () => {
   };
 
   return (
-    <ScreenTemplate
-      title="Budget Planning"
-      subtitle="Plan and allocate your marketing budget across channels"
-      aiInsights={[
-        "Based on your industry benchmarks, we recommend allocating 25-30% to content marketing",
-        "Companies in your sector typically see best ROI from event marketing"
-      ]}
-      isWalkthrough={false}
-    >
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Budget</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-4">
-              <span className="text-slate-600">$</span>
-              <input
-                type="number"
-                value={budget.totalBudget}
-                onChange={(e) => setBudget(prev => ({
-                  ...prev,
-                  totalBudget: e.target.value
-                }))}
-                className="w-48 p-2 border rounded"
+    <>
+      <ScreenTemplate
+        title="Budget Planning"
+        subtitle="Plan and allocate your marketing budget across channels"
+        aiInsights={[
+          "Based on your industry benchmarks, we recommend allocating 25-30% to content marketing",
+          "Companies in your sector typically see best ROI from event marketing"
+        ]}
+        isWalkthrough={false}
+      >
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Budget</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-4">
+                <span className="text-slate-600">$</span>
+                <input
+                  type="number"
+                  value={budget.totalBudget}
+                  onChange={(e) => setBudget(prev => ({
+                    ...prev,
+                    totalBudget: e.target.value
+                  }))}
+                  className="w-48 p-2 border rounded"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Channel Allocation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">Channel Distribution</h3>
+                <button
+                  onClick={() => setShowEventPlanner(!showEventPlanner)}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  {showEventPlanner ? 'Hide Event Planner' : 'Plan Events →'}
+                </button>
+              </div>
+
+              <ChannelAllocation
+                value={budget.channelAllocation}
+                onChange={(channel, value) => {
+                  setBudget(prev => ({
+                    ...prev,
+                    channelAllocation: {
+                      ...prev.channelAllocation,
+                      [channel]: { allocation: value }
+                    }
+                  }));
+                }}
+                benchmarks={CHANNEL_BENCHMARKS.B2B_TECH}
               />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Channel Allocation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Channel Distribution</h3>
-              <button
-                onClick={() => setShowEventPlanner(!showEventPlanner)}
-                className="text-blue-600 hover:text-blue-700"
-              >
-                {showEventPlanner ? 'Hide Event Planner' : 'Plan Events →'}
-              </button>
-            </div>
-
-            <ChannelAllocation
-              value={budget.channelAllocation}
-              onChange={(channel, value) => {
-                setBudget(prev => ({
-                  ...prev,
-                  channelAllocation: {
-                    ...prev.channelAllocation,
-                    [channel]: { allocation: value }
-                  }
-                }));
-              }}
-              benchmarks={CHANNEL_BENCHMARKS.B2B_TECH}
+          {showEventPlanner && (
+            <EventPlanner
+              events={budget.events}
+              onUpdate={(newEvents) => setBudget(prev => ({
+                ...prev,
+                events: newEvents
+              }))}
             />
-          </CardContent>
-        </Card>
+          )}
 
-        {showEventPlanner && (
-          <EventPlanner
+          <BudgetProjections
+            totalBudget={Number(budget.totalBudget)}
+            allocation={budget.channelAllocation}
             events={budget.events}
-            onUpdate={(newEvents) => setBudget(prev => ({
-              ...prev,
-              events: newEvents
-            }))}
           />
-        )}
-
-        <BudgetProjections
-          totalBudget={Number(budget.totalBudget)}
-          allocation={budget.channelAllocation}
-          events={budget.events}
-        />
-      </div>
-    </ScreenTemplate>
+        </div>
+      </ScreenTemplate>
+      <AutosaveIndicator />
+    </>
   );
 };
 

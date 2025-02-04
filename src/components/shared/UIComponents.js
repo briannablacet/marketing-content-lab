@@ -10,8 +10,8 @@ export const ScreenTemplate = ({
   aiInsights,
   onNext,
   onBack,
-  isWalkthrough,
-  nextButtonText = 'Next →'  // Default text if not provided
+  hideNavigation = false,
+  nextButtonText = 'Next →'
 }) => {
   return (
     <div className="max-w-screen-xl mx-auto p-8">
@@ -33,14 +33,17 @@ export const ScreenTemplate = ({
 
       {children}
 
-      {isWalkthrough && (
+      {!hideNavigation && (
         <div className="mt-8 flex justify-between items-center">
-          <button
-            onClick={onBack}
-            className="text-blue-600 hover:text-blue-700 flex items-center"
-          >
-            ← Back
-          </button>
+          {currentStep > 1 && (
+            <button
+              onClick={onBack}
+              className="text-blue-600 hover:text-blue-700 flex items-center"
+            >
+              ← Back
+            </button>
+          )}
+          {currentStep === 1 && <div />} {/* Empty div for spacing when no back button */}
           <div className="text-slate-600">
             Step {currentStep} of {totalSteps}
           </div>
