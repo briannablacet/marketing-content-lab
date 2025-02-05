@@ -1,72 +1,105 @@
-# MarketMultiplier.ai Technical Documentation
+# MarketMultiplier.ai
 
-## System Architecture
+## Project Overview
+MarketMultiplier.ai is a sophisticated marketing program builder designed for SMBs, with a focus on B2B tech and cybersecurity sectors. Built with Next.js, React, and Tailwind CSS.
 
-### Content Creation Workflow
-1. Content Type Selection (ContentStrategyStep)
-2. Creation Queue Management (CreationHub)
-3. Specific Content Generation (ContentCreator)
-4. AI-Powered Content Enhancement (ContentEnhancer)
-
-## Key Components
-
-### State Management
-- Uses React Context API
-- `ContentContext` manages global content selections
-- Centralized state for content types and creation process
-
-### Component Structure
+## Directory Structure
 ```
-src/
-├── components/
-│   └── features/
-│       ├── ContentStrategyStep/
-│       ├── CreationHub/
-│       ├── ContentCreator/
-│       └── ContentEnhancer/
-└── context/
-    └── ContentContext.tsx
+project-root/
+├── .env.local                      # Environment variables (API keys)
+├── src/
+│   ├── components/
+│   │   ├── features/
+│   │   │   ├── ContentStrategyModule/
+│   │   │   │   └── index.tsx       # Content strategy selection
+│   │   │   ├── CreationHub/
+│   │   │   │   └── index.tsx       # Content creation interface
+│   │   │   └── ContentCreator/
+│   │   │       └── index.tsx       # Individual content type creator
+│   │   ├── shared/
+│   │   │   ├── AutosaveIndicator.tsx
+│   │   │   └── UIComponents.tsx
+│   │   └── ui/                     # shadcn/ui components
+│   ├── context/
+│   │   ├── ContentContext.tsx      # Content management state
+│   │   └── MarketingContext.tsx    # Marketing program state
+│   ├── services/
+│   │   └── contentService.tsx      # Content generation API client
+│   └── pages/
+│       ├── api/
+│       │   └── generate-content.ts  # Content generation API endpoint
+│       ├── content-strategy.tsx     # Content strategy page
+│       └── creation-hub.tsx        # Content creation page
 ```
 
-## Technical Specifications
+## Features
 
-### Technology Stack
-- Language: TypeScript
-- Framework: React
-- Styling: Tailwind CSS
-- State Management: React Context API
+### Content Strategy
+- Selection of content types
+- AI-assisted content creation
+- Dual rendering support (standalone and walkthrough)
 
-### Content Creation Features
-- Multiple content type support
-- Clear content type descriptions and examples
-- Visual selection feedback
-- AI-driven content enhancement
-- Research integration
-- Social media optimization
+### Content Creation
+- API-based content generation
+- Support for multiple content types
+- Real-time content preview
+- Integration with OpenAI's GPT-4
 
-## Development Guidelines
-- Modular component design
-- Consistent state management
-- AI-powered content improvement
-- Extensible architecture
+## Setup Requirements
+1. Node.js and npm installed
+2. OpenAI API key
+3. Environment variables configured
 
-## Current Challenges
-- Refining AI content enhancement
-- Expanding content type flexibility
-- Improving research integration
+## Environment Setup
+1. Create `.env.local` in project root:
+```
+OPENAI_API_KEY=your_api_key_here
+```
 
-## Debugging Notes
-- Implemented state persistence between components
-- Resolved visual feedback issues in ContentStrategyStep
-- Improved UI clarity with component redesigns
+2. Install dependencies:
+```bash
+npm install openai
+```
 
-## Performance Considerations
-- Lightweight React Context for state management
-- Minimal re-renders through careful state updates
-- Lazy loading of content creation components
+## API Routes
+The application uses Next.js API routes for server-side functionality:
 
-## Future Technical Roadmap
-- Implement advanced AI content generation
-- Add comprehensive error handling
-- Develop robust content validation mechanisms
-- Explore server-side rendering optimizations
+### /api/generate-content
+- Purpose: Generates content using OpenAI's GPT-4
+- Method: POST
+- Body: 
+  ```typescript
+  {
+    contentType: string;
+    topic: string;
+    keywords: string[];
+  }
+  ```
+- Response: Generated content as string
+
+## Services
+Content generation is handled through a dedicated service layer:
+
+### contentService
+- Location: `src/services/contentService.tsx`
+- Purpose: Client-side API wrapper for content generation
+- Methods:
+  - generateContent(): Handles content generation requests
+
+## Testing
+To test the content generation:
+1. Ensure environment variables are set
+2. Navigate to the Creation Hub
+3. Use the test button in the interface
+4. Check console for any errors
+
+## Development Notes
+- Keep API keys secure and never commit .env files
+- Content generation uses GPT-4 for optimal results
+- API routes should be monitored for rate limiting
+
+## Future Enhancements
+- Additional content type support
+- Enhanced error handling
+- Content revision history
+- Template management

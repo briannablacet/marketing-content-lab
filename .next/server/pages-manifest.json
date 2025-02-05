@@ -1,9 +1,1 @@
-{
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/pipeline-forecast": "pages/pipeline-forecast.js",
-  "/lead-scoring": "pages/lead-scoring.js",
-  "/walkthrough/[step]": "pages/walkthrough/[step].js"
-}
+{}
