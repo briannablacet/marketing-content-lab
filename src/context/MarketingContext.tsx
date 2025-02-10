@@ -1,98 +1,44 @@
-// src/contexts/MarketingContext.tsx
-import React, { createContext, useContext, useState } from 'react';
+// src/context/MarketingContext.tsx
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-const MarketingProgramContext = createContext<{
-  programData: any;
-  updateData: (screen: string, newData: any) => void;
-  getAISuggestions: (screen: string) => string[];
-} | undefined>(undefined);
+interface MarketingProgramData {
+  title?: string;
+  description?: string;
+  targetPersona?: string;
+  keyMessages?: string[];
+  contentTypes?: string[];
+  // Add other fields as needed
+}
 
+interface MarketingContextType {
+  programData: MarketingProgramData;
+  setProgramData: (data: MarketingProgramData) => void;
+}
 
-
-export const MarketingProgramProvider = ({ children }) => {
-  const [programData, setProgramData] = useState({
-    goals: {
-      targetRevenue: '',
-      timeframe: '',
-      pipelineTarget: ''
-    },
-    persona: {
-      role: '',
-      industry: '',
-      challenges: [],
-      buyingCriteria: []
-    },
-    competition: {
-      primaryCompetitor: '',
-      otherCompetitors: [],
-      winRates: {}
-    },
-    messaging: {
-      valueProposition: '',
-      differentiators: []
-    },
-    budget: {
-      totalBudget: '',
-      channelAllocation: {},
-      expectedROI: ''
-    },
-    pipeline: {
-      leadScoring: {
-        criteria: [],
-        weights: {}
-      },
-      projections: {
-        monthly: [],
-        quarterly: [],
-        conversion: {}
-      }
-    },
-    events: {
-      planned: [],
-      budget: {
-        allocated: 0,
-        spent: 0,
-        projected: 0
-      },
-      metrics: {
-        attendance: 0,
-        leads: 0,
-        opportunities: 0
-      }
-    }
-  });
-
-  const updateData = (screen, newData) => {
-    setProgramData(prev => ({
-      ...prev,
-      [screen]: { ...prev[screen], ...newData }
-    }));
-  };
-
-  const getAISuggestions = (screen) => {
-    switch(screen) {
-      case 'messaging':
-        return programData.competition.primaryCompetitor 
-          ? [`Differentiate from ${programData.competition.primaryCompetitor} by focusing on...`]
-          : ['Add competitor information to get targeted suggestions'];
-      case 'budget':
-        return programData.goals.targetRevenue
-          ? [`Recommended budget based on ${programData.goals.targetRevenue} target...`]
-          : ['Set revenue goals to get budget recommendations'];
-      default:
-        return [];
-    }
-  };
-
-  return (
-    <MarketingProgramContext.Provider value={{
-      programData,
-      updateData,
-      getAISuggestions
-    }}>
-      {children}
-    </MarketingProgramContext.Provider>
-  );
+const defaultProgramData: MarketingProgramData = {
+  title: '',
+  description: '',
+  targetPersona: '',
+  keyMessages: [],
+  contentTypes: []
 };
 
-export const useMarketingProgram = () => useContext(MarketingProgramContext);
+const MarketingContext = createContext<MarketingContextType | undefined>(undefined);
+
+export function MarketingProgramProvider({ children }: { children: ReactNode }) {
+  const [programData, setProgramData] = useState<MarketingProgramData>(defaultProgramData);
+
+  return (
+    <MarketingContext.Provider value={{ programData, setProgramData }}>
+      {children}
+    </MarketingContext.Provider>
+  );
+}
+
+export function useMarketingProgram() {
+  const context = useContext(MarketingContext);
+  if (context === undefined) {
+    throw new Error('useMarketingProgram must be used within a MarketingProgramProvider');
+  }
+  return context;
+}
