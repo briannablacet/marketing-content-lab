@@ -1,24 +1,24 @@
 // src/pages/_app.tsx
-import type { AppProps } from 'next/app';
-import React from 'react';
-import '../styles/globals.css';
-import { DemoModeProvider } from '../context/DemoModeContext';
+import { AppProps } from 'next/app';
+import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { MarketingProgramProvider } from '../context/MarketingContext';
-import { ContentProvider } from '../context/ContentContext';
-import { BrandVoiceProvider } from '../context/BrandVoiceContext';
+import { WalkthroughProvider } from '../context/WalkthroughContext';
+import { SDRProvider } from '../context/SDRContext';
+import '../styles/globals.css';
 import Navbar from '../components/shared/Navbar';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
+    // These providers wrap your entire app to provide context
     <MarketingProgramProvider>
-      <DemoModeProvider>
-        <BrandVoiceProvider>
-          <ContentProvider>
+      <WalkthroughProvider>
+        <WritingStyleProvider>
+          <SDRProvider>
             <Navbar />
             <Component {...pageProps} />
-          </ContentProvider>
-        </BrandVoiceProvider>
-      </DemoModeProvider>
+          </SDRProvider>
+        </WritingStyleProvider>
+      </WalkthroughProvider>
     </MarketingProgramProvider>
   );
 }

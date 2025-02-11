@@ -170,7 +170,7 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
                 Brand Archetype
                 <HelpText 
                   text="Brand archetypes are universal character patterns that help define your brand's personality and connect with your audience." 
-                  link="https://www.brandarchetype.com/learn-more"
+                  link="https://iconicfox.com.au/brand-archetypes/"
                 />
                 <span className="text-gray-500 text-sm ml-2">(Optional)</span>
               </label>

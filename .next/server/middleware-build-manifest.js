@@ -19,10 +19,10 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/brand-voice": [
+    "/writing-style": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/brand-voice.js"
+      "static/chunks/pages/writing-style.js"
     ]
   },
   "ampFirstPages": []
