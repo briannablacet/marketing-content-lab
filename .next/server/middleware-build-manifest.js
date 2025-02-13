@@ -10,6 +10,11 @@ self.__BUILD_MANIFEST = {
   "rootMainFiles": [],
   "rootMainFilesTree": {},
   "pages": {
+    "/": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/index.js"
+    ],
     "/_app": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
@@ -20,10 +25,15 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/test-writing-style": [
+    "/walkthrough/[step]": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/test-writing-style.js"
+      "static/chunks/pages/walkthrough/[step].js"
+    ],
+    "/walkthrough/complete": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/walkthrough/complete.js"
     ]
   },
   "ampFirstPages": []

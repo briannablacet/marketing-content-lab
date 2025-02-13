@@ -2,5 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/test-writing-style": "pages/test-writing-style.js"
+  "/walkthrough/[step]": "pages/walkthrough/[step].js",
+  "/walkthrough/complete": "pages/walkthrough/complete.js",
+  "/": "pages/index.js"
 }

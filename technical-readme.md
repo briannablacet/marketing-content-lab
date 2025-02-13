@@ -1,105 +1,117 @@
-# MarketMultiplier.ai
+# Market Multiplier Technical Documentation
 
 ## Project Overview
-MarketMultiplier.ai is a sophisticated marketing program builder designed for SMBs, with a focus on B2B tech and cybersecurity sectors. Built with Next.js, React, and Tailwind CSS.
+Market Multiplier is a Next.js application designed to help businesses create sophisticated marketing programs. Built with React, TypeScript, and MongoDB, it uses Tailwind CSS for styling.
 
-## Directory Structure
+## Technical Stack
+- **Frontend**: Next.js with TypeScript
+- **Database**: MongoDB Atlas
+- **Styling**: Tailwind CSS
+- **State Management**: React Context
+- **API**: Next.js API Routes
+
+## Project Structure
 ```
-project-root/
-├── .env.local                      # Environment variables (API keys)
+market-multiplier/
 ├── src/
-│   ├── components/
-│   │   ├── features/
-│   │   │   ├── ContentStrategyModule/
-│   │   │   │   └── index.tsx       # Content strategy selection
-│   │   │   ├── CreationHub/
-│   │   │   │   └── index.tsx       # Content creation interface
-│   │   │   └── ContentCreator/
-│   │   │       └── index.tsx       # Individual content type creator
-│   │   ├── shared/
-│   │   │   ├── AutosaveIndicator.tsx
-│   │   │   └── UIComponents.tsx
-│   │   └── ui/                     # shadcn/ui components
+│   ├── pages/
+│   │   ├── _app.tsx                 # App configuration and providers
+│   │   ├── api/
+│   │   │   ├── test-connection.ts   # MongoDB connection test
+│   │   │   └── writing-style.ts     # Writing style CRUD operations
+│   │   └── test-writing-style.tsx   # Test page for MongoDB operations
+│   ├── lib/
+│   │   └── mongodb.ts               # MongoDB connection configuration
+│   ├── types/
+│   │   └── writingStyle.ts          # TypeScript interfaces and types
 │   ├── context/
-│   │   ├── ContentContext.tsx      # Content management state
-│   │   └── MarketingContext.tsx    # Marketing program state
-│   ├── services/
-│   │   └── contentService.tsx      # Content generation API client
-│   └── pages/
-│       ├── api/
-│       │   └── generate-content.ts  # Content generation API endpoint
-│       ├── content-strategy.tsx     # Content strategy page
-│       └── creation-hub.tsx        # Content creation page
+│   │   ├── StyleGuideContext.tsx    # Style guide state management
+│   │   └── MarketingContext.tsx     # Marketing program state management
+│   └── styles/
+│       └── globals.css              # Global styles
+├── .env.local                       # Environment variables (not in git)
+├── .env.example                     # Example environment variables
+└── tsconfig.json                    # TypeScript configuration
 ```
 
-## Features
-
-### Content Strategy
-- Selection of content types
-- AI-assisted content creation
-- Dual rendering support (standalone and walkthrough)
-
-### Content Creation
-- API-based content generation
-- Support for multiple content types
-- Real-time content preview
-- Integration with OpenAI's GPT-4
-
-## Setup Requirements
-1. Node.js and npm installed
-2. OpenAI API key
-3. Environment variables configured
-
-## Environment Setup
-1. Create `.env.local` in project root:
-```
-OPENAI_API_KEY=your_api_key_here
-```
-
-2. Install dependencies:
-```bash
-npm install openai
-```
+## Database Configuration
+- **Platform**: MongoDB Atlas
+- **Connection**: Environment variables in `.env.local`
+- **Collections**:
+  - `writingStyles`: Writing style preferences and rules
 
 ## API Routes
-The application uses Next.js API routes for server-side functionality:
+### Writing Style API (`/api/writing-style`)
+- **GET**: Retrieve writing style
+- **POST**: Create new writing style
+- **PUT**: Update existing writing style
 
-### /api/generate-content
-- Purpose: Generates content using OpenAI's GPT-4
-- Method: POST
-- Body: 
-  ```typescript
-  {
-    contentType: string;
-    topic: string;
-    keywords: string[];
-  }
-  ```
-- Response: Generated content as string
+## Context Providers
+1. **MarketingProgramProvider**
+   - Manages marketing program state
+   - Required for all pages using marketing features
 
-## Services
-Content generation is handled through a dedicated service layer:
+2. **StyleGuideProvider**
+   - Manages writing style preferences
+   - Integrates with MongoDB for persistence
 
-### contentService
-- Location: `src/services/contentService.tsx`
-- Purpose: Client-side API wrapper for content generation
-- Methods:
-  - generateContent(): Handles content generation requests
+## Environment Variables
+Required variables in `.env.local`:
+```
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
+```
+
+## Recent Updates (February 12, 2025)
+1. **MongoDB Integration**
+   - Set up MongoDB Atlas cluster
+   - Configured database connection
+   - Added connection testing endpoint
+   - Created first collection (writingStyles)
+
+2. **Type Definitions**
+   - Added WritingStyle interface
+   - Created StyleGuideType enum
+   - Added API response types
+
+3. **Testing**
+   - Added test page for writing style operations
+   - Implemented basic CRUD operations
+   - Added error handling and loading states
+
+## Development Guidelines
+1. **File Naming**
+   - TypeScript files: camelCase (`writingStyle.ts`)
+   - Page components: kebab-case (`test-writing-style.tsx`)
+   - React components: PascalCase (`TestWritingStyle`)
+
+2. **Database Operations**
+   - Use provided MongoDB client from `lib/mongodb.ts`
+   - Always include error handling
+   - Use TypeScript interfaces for data validation
+
+3. **Environment Variables**
+   - Never commit `.env.local`
+   - Use `.env.example` for documentation
+   - Always validate environment variables before use
+
+## Getting Started
+1. Clone repository
+2. Install dependencies: `npm install`
+3. Create `.env.local` with MongoDB credentials
+4. Run development server: `npm run dev`
+5. Visit http://localhost:3000
 
 ## Testing
-To test the content generation:
-1. Ensure environment variables are set
-2. Navigate to the Creation Hub
-3. Use the test button in the interface
-4. Check console for any errors
+- MongoDB connection: `/api/test-connection`
+- Writing style operations: `/test-writing-style`
 
-## Development Notes
-- Keep API keys secure and never commit .env files
-- Content generation uses GPT-4 for optimal results
-- API routes should be monitored for rate limiting
+## Notes
+- MongoDB passwords should not contain special characters like `@` to avoid connection string parsing issues
+- All API routes should include proper error handling and type checking
+- Context providers must wrap components using their hooks
 
-## Future Enhancements
-- Additional content type support
-- Enhanced error handling
-- Content revision history
-- Template management
+## Next Steps
+1. Complete MVP feature definition
+2. Migrate existing localStorage data to MongoDB
+3. Implement remaining API routes
+4. Add user authentication
