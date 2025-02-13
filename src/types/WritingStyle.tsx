@@ -1,26 +1,30 @@
-// src/types/WritingStyle.tsx
-import React from 'react';
+// src/types/writingStyle.ts
 
-export interface WritingStyleData {
-  styleGuide: {
-    primary: string;
-    overrides: boolean;
-  };
-  formatting: {
-    headings: string;
-    numbers: string;
-    dates: string;
-    lists: string;
-  };
-  punctuation: {
-    oxfordComma: boolean;
-    bulletPoints: string;
-    quotes: string;
-  };
+// Enum for predefined style guides
+export enum StyleGuideType {
+  AP = 'AP',
+  Chicago = 'Chicago',
+  Custom = 'Custom'
 }
 
-export interface WritingStyleProps {
-  isWalkthrough?: boolean;
-  onNext?: () => void;
-  onBack?: () => void;
+// Interface for writing style data
+export interface WritingStyle {
+  _id?: string;                    // MongoDB ID
+  userId: string;                  // Future: for user authentication
+  styleGuideType: StyleGuideType;  // Which style guide they're using
+  customRules?: string;            // For custom style guide rules
+  preferences?: {                  // Additional style preferences
+    tone?: string;
+    vocabulary?: string;
+    formatting?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Interface for API responses
+export interface WritingStyleResponse {
+  success: boolean;
+  data?: WritingStyle;
+  error?: string;
 }

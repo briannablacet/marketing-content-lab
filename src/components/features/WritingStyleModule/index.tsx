@@ -1,9 +1,11 @@
 // src/components/features/WritingStyleModule/index.tsx
 import React, { useState, useEffect } from 'react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
+import { useNotification } from '../../../context/NotificationContext';
 import { useRouter } from 'next/router';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, AlertCircle } from 'lucide-react';
 import { checkStyleGuideOverrides, getStyleGuideRules } from '../../../utils/StyleGuides';
+import { validateWritingStyle, getFieldError, hasFieldError } from '../../../utils/WritingStyleValidation';
 import { ScreenTemplate } from '../../shared/UIComponents';
 import { WritingStyleProps, WritingStyleData } from '../../../types/WritingStyle';
 
@@ -24,8 +26,10 @@ const HEADING_STYLES = [
 
 const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext, onBack }) => {
   const { writingStyle, updateWritingStyle, applyStyleGuideRules } = useWritingStyle();
+  const { showNotification } = useNotification();
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [hasOverrides, setHasOverrides] = useState<boolean>(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const router = useRouter();
 
   // Set Chicago as default on first load if no style is selected
@@ -48,9 +52,14 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
     }
   }, [writingStyle, updateWritingStyle]);
 
+  // Validate on content change
+  useEffect(() => {
+    const errors = validateWritingStyle(writingStyle);
+    setValidationErrors(errors);
+  }, [writingStyle]);
+
   const handleStyleGuideUpdate = (value: string) => {
     if (value === 'Custom Style Guide') {
-      // For custom style, keep current settings but mark as custom
       updateWritingStyle({
         styleGuide: {
           primary: value,
@@ -81,19 +90,26 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
   };
 
   const handleSave = async () => {
+    // Validate before saving
+    const errors = validateWritingStyle(writingStyle);
+    if (errors.length > 0) {
+      showNotification('error', 'Please correct the validation errors before saving');
+      setValidationErrors(errors);
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Save to local storage for persistence
       localStorage.setItem('writingStyle', JSON.stringify(writingStyle));
+      showNotification('success', 'Writing style settings saved successfully');
       
       if (isWalkthrough && onNext) {
         onNext();
       }
     } catch (error) {
       console.error('Error saving:', error);
+      showNotification('error', 'Failed to save writing style settings. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -118,23 +134,48 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
       );
     }
 
-    // Add default style guide insight
     if (!writingStyle.styleGuide.primary) {
       insights.push(
         "The Chicago Manual of Style will be used as your default if no other style guide is selected."
       );
     }
 
+    // Add validation error insights
+    if (validationErrors.length > 0) {
+      insights.push(
+        "There are some validation issues to address. Check the highlighted fields for details."
+      );
+    }
+
     return insights;
   };
 
-  // Get the default value for the selected style guide
   const getDefaultValue = (field: string, section: 'formatting' | 'punctuation') => {
     if (!writingStyle.styleGuide.primary || writingStyle.styleGuide.primary === 'Custom Style Guide') {
       return '';
     }
     const rules = getStyleGuideRules(writingStyle.styleGuide.primary);
     return rules?.[section]?.[field] || '';
+  };
+
+  // Helper to render error message for a field
+  const renderFieldError = (field: string) => {
+    const error = getFieldError(validationErrors, field);
+    if (!error) return null;
+
+    return (
+      <div className="mt-1 flex items-center text-red-600 text-sm">
+        <AlertCircle className="h-4 w-4 mr-1" />
+        <span>{error}</span>
+      </div>
+    );
+  };
+
+  // Helper to get error styles for a field
+  const getFieldErrorStyles = (field: string) => {
+    return hasFieldError(validationErrors, field)
+      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
   };
 
   return (
@@ -159,13 +200,14 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
             <select
               value={writingStyle.styleGuide.primary}
               onChange={(e) => handleStyleGuideUpdate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3"
+              className={`w-full px-3 py-2 rounded-md mb-3 ${getFieldErrorStyles('styleGuide')}`}
             >
               <option value="">Choose a starting point... (defaults to Chicago)</option>
               {STYLE_GUIDES.map(guide => (
                 <option key={guide.value} value={guide.value}>{guide.label}</option>
               ))}
             </select>
+            {renderFieldError('styleGuide')}
             <div className="text-sm text-gray-600 space-y-2">
               <p>
                 ℹ️ Select how you want to define your style guide:
@@ -204,13 +246,14 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
               <select
                 value={writingStyle.formatting.headings}
                 onChange={(e) => handleFormattingUpdate('headings', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className={`w-full px-3 py-2 rounded-md ${getFieldErrorStyles('headings')}`}
               >
                 <option value="">Use style guide default</option>
                 {HEADING_STYLES.map(style => (
                   <option key={style} value={style}>{style}</option>
                 ))}
               </select>
+              {renderFieldError('headings')}
             </div>
 
             <div>
@@ -227,13 +270,14 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
               <select
                 value={writingStyle.formatting.numbers}
                 onChange={(e) => handleFormattingUpdate('numbers', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className={`w-full px-3 py-2 rounded-md ${getFieldErrorStyles('numbers')}`}
               >
                 <option value="">Use style guide default</option>
                 <option value="Spell out numbers under 10">Spell out numbers under 10</option>
                 <option value="Numerals for 10 and above">Numerals for 10 and above</option>
                 <option value="Always use numerals">Always use numerals</option>
               </select>
+              {renderFieldError('numbers')}
             </div>
 
             <div>
@@ -241,107 +285,112 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
                 <label className="block text-sm font-medium">
                   Date Format <span className="text-gray-500">(optional)</span>
                 </label>
-                {getDefaultValue('dates', 'formatting') && (
+                
+                  {getDefaultValue('dates', 'formatting') && (
+                    <span className="text-xs text-gray-500">
+                      Style guide default: {getDefaultValue('dates', 'formatting')}
+                    </span>
+                  )}
+                </div>
+                <select
+                  value={writingStyle.formatting.dates}
+                  onChange={(e) => handleFormattingUpdate('dates', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-md ${getFieldErrorStyles('dates')}`}
+                >
+                  <option value="">Use style guide default</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                  <option value="Month DD, YYYY">Month DD, YYYY</option>
+                </select>
+                {renderFieldError('dates')}
+              </div>
+            </div>
+          </div>
+  
+          {/* Punctuation and Grammar Section */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold">Punctuation and Grammar</h2>
+              <p className="text-sm text-gray-600 mt-2">
+                {writingStyle.styleGuide.primary && writingStyle.styleGuide.primary !== 'Custom Style Guide'
+                  ? `Using ${writingStyle.styleGuide.primary} defaults. Override any specific rules below as needed.`
+                  : 'Set your custom punctuation preferences below. All fields are optional.'}
+              </p>
+            </div>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="oxford-comma"
+                    checked={writingStyle.punctuation.oxfordComma}
+                    onChange={(e) => handlePunctuationUpdate('oxfordComma', e.target.checked)}
+                    className={`h-4 w-4 text-blue-600 rounded ${getFieldErrorStyles('oxfordComma')}`}
+                  />
+                  <label htmlFor="oxford-comma" className="ml-2 block text-sm text-gray-900">
+                    Use Oxford Comma <span className="text-gray-500">(optional)</span>
+                  </label>
+                </div>
+                {getDefaultValue('oxfordComma', 'punctuation') !== '' && (
                   <span className="text-xs text-gray-500">
-                    Style guide default: {getDefaultValue('dates', 'formatting')}
+                    Style guide default: {getDefaultValue('oxfordComma', 'punctuation') ? 'Yes' : 'No'}
                   </span>
                 )}
               </div>
-              <select
-                value={writingStyle.formatting.dates}
-                onChange={(e) => handleFormattingUpdate('dates', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Use style guide default</option>
-                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                <option value="Month DD, YYYY">Month DD, YYYY</option>
-              </select>
+              {renderFieldError('oxfordComma')}
+  
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium">
+                    Bullet Point Style <span className="text-gray-500">(optional)</span>
+                  </label>
+                  {getDefaultValue('bulletPoints', 'punctuation') && (
+                    <span className="text-xs text-gray-500">
+                      Style guide default: {getDefaultValue('bulletPoints', 'punctuation')}
+                    </span>
+                  )}
+                </div>
+                <select
+                  value={writingStyle.punctuation.bulletPoints}
+                  onChange={(e) => handlePunctuationUpdate('bulletPoints', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-md ${getFieldErrorStyles('bulletPoints')}`}
+                >
+                  <option value="">Use style guide default</option>
+                  <option value="Period if complete sentence">Period if complete sentence</option>
+                  <option value="No punctuation">No punctuation</option>
+                  <option value="Always use periods">Always use periods</option>
+                </select>
+                {renderFieldError('bulletPoints')}
+              </div>
+  
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium">
+                    Quotation Marks <span className="text-gray-500">(optional)</span>
+                  </label>
+                  {getDefaultValue('quotes', 'punctuation') && (
+                    <span className="text-xs text-gray-500">
+                      Style guide default: {getDefaultValue('quotes', 'punctuation')}
+                    </span>
+                  )}
+                </div>
+                <select
+                  value={writingStyle.punctuation.quotes}
+                  onChange={(e) => handlePunctuationUpdate('quotes', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-md ${getFieldErrorStyles('quotes')}`}
+                >
+                  <option value="">Use style guide default</option>
+                  <option value="Double quotes">Double quotes ("example")</option>
+                  <option value="Single quotes">Single quotes ('example')</option>
+                </select>
+                {renderFieldError('quotes')}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Punctuation and Grammar Section */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold">Punctuation and Grammar</h2>
-            <p className="text-sm text-gray-600 mt-2">
-              {writingStyle.styleGuide.primary && writingStyle.styleGuide.primary !== 'Custom Style Guide'
-                ? `Using ${writingStyle.styleGuide.primary} defaults. Override any specific rules below as needed.`
-                : 'Set your custom punctuation preferences below. All fields are optional.'}
-            </p>
-          </div>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="oxford-comma"
-                  checked={writingStyle.punctuation.oxfordComma}
-                  onChange={(e) => handlePunctuationUpdate('oxfordComma', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                />
-                <label htmlFor="oxford-comma" className="ml-2 block text-sm text-gray-900">
-                  Use Oxford Comma <span className="text-gray-500">(optional)</span>
-                </label>
-              </div>
-              {getDefaultValue('oxfordComma', 'punctuation') !== '' && (
-                <span className="text-xs text-gray-500">
-                  Style guide default: {getDefaultValue('oxfordComma', 'punctuation') ? 'Yes' : 'No'}
-                </span>
-              )}
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium">
-                  Bullet Point Style <span className="text-gray-500">(optional)</span>
-                </label>
-                {getDefaultValue('bulletPoints', 'punctuation') && (
-                  <span className="text-xs text-gray-500">
-                    Style guide default: {getDefaultValue('bulletPoints', 'punctuation')}
-                  </span>
-                )}
-              </div>
-              <select
-                value={writingStyle.punctuation.bulletPoints}
-                onChange={(e) => handlePunctuationUpdate('bulletPoints', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Use style guide default</option>
-                <option value="Period if complete sentence">Period if complete sentence</option>
-                <option value="No punctuation">No punctuation</option>
-                <option value="Always use periods">Always use periods</option>
-              </select>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium">
-                  Quotation Marks <span className="text-gray-500">(optional)</span>
-                </label>
-                {getDefaultValue('quotes', 'punctuation') && (
-                  <span className="text-xs text-gray-500">
-                    Style guide default: {getDefaultValue('quotes', 'punctuation')}
-                  </span>
-                )}
-              </div>
-              <select
-                value={writingStyle.punctuation.quotes}
-                onChange={(e) => handlePunctuationUpdate('quotes', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Use style guide default</option>
-                <option value="Double quotes">Double quotes ("example")</option>
-                <option value="Single quotes">Single quotes ('example')</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </ScreenTemplate>
-  );
-};
-
-export default WritingStyleModule;
+      </ScreenTemplate>
+    );
+  };
+  
+  export default WritingStyleModule;
