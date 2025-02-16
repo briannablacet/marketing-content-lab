@@ -1,4 +1,34 @@
 {
+  "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/ContentStrategyStep": {
+    "id": "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/ContentStrategyStep",
+    "files": [
+      "static/chunks/src_components_features_MarketingWalkthrough_components_ContentStrategyStep_index_tsx.js"
+    ]
+  },
+  "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/MessagingStep": {
+    "id": "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/MessagingStep",
+    "files": [
+      "static/chunks/src_components_features_MarketingWalkthrough_components_MessagingStep_index_tsx.js"
+    ]
+  },
+  "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/PersonaStep": {
+    "id": "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/PersonaStep",
+    "files": [
+      "static/chunks/src_components_features_MarketingWalkthrough_components_PersonaStep_index_tsx.js"
+    ]
+  },
+  "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/ReviewStep": {
+    "id": "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/ReviewStep",
+    "files": [
+      "static/chunks/src_components_features_MarketingWalkthrough_components_ReviewStep_index_tsx.js"
+    ]
+  },
+  "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/WelcomeStep": {
+    "id": "components/features/DemoWalkthrough/index.tsx -> ../../../components/features/MarketingWalkthrough/components/WelcomeStep",
+    "files": [
+      "static/chunks/src_components_features_MarketingWalkthrough_components_WelcomeStep_index_tsx.js"
+    ]
+  },
   "components/features/MarketingWalkthrough/index.tsx -> ./components/BudgetStep": {
     "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/BudgetStep",
     "files": [
@@ -51,6 +81,12 @@
     "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/WelcomeStep",
     "files": [
       "static/chunks/src_components_features_MarketingWalkthrough_components_WelcomeStep_index_tsx.js"
+    ]
+  },
+  "pages/demo/[step].js -> ../../components/features/DemoWalkthrough": {
+    "id": "pages/demo/[step].js -> ../../components/features/DemoWalkthrough",
+    "files": [
+      "static/chunks/src_components_features_DemoWalkthrough_index_tsx.js"
     ]
   }
 }
