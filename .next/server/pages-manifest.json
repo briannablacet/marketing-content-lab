@@ -3,8 +3,11 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/walkthrough/[step]": "pages/walkthrough/[step].js",
-  "/demo": "pages/demo.js",
   "/walkthrough/complete": "pages/walkthrough/complete.js",
-  "/demo/[step]": "pages/demo/[step].js",
-  "/content-engine": "pages/content-engine.js"
+  "/creation-hub": "pages/creation-hub.js",
+  "/content-strategy": "pages/content-strategy.js",
+  "/timeline": "pages/timeline.js",
+  "/channel-mix": "pages/channel-mix.js",
+  "/lead-scoring": "pages/lead-scoring.js",
+  "/": "pages/index.js"
 }

@@ -10,6 +10,11 @@ self.__BUILD_MANIFEST = {
   "rootMainFiles": [],
   "rootMainFilesTree": {},
   "pages": {
+    "/": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/index.js"
+    ],
     "/_app": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
@@ -20,20 +25,30 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/content-engine": [
+    "/channel-mix": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/content-engine.js"
+      "static/chunks/pages/channel-mix.js"
     ],
-    "/demo": [
+    "/content-strategy": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/demo.js"
+      "static/chunks/pages/content-strategy.js"
     ],
-    "/demo/[step]": [
+    "/creation-hub": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/demo/[step].js"
+      "static/chunks/pages/creation-hub.js"
+    ],
+    "/lead-scoring": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/lead-scoring.js"
+    ],
+    "/timeline": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/timeline.js"
     ],
     "/walkthrough/[step]": [
       "static/chunks/webpack.js",
