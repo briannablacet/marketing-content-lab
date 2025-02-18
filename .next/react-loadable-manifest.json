@@ -1,16 +1,4 @@
 {
-  "components/features/MarketingWalkthrough/index.tsx -> ./components/BudgetStep": {
-    "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/BudgetStep",
-    "files": [
-      "static/chunks/src_components_features_MarketingWalkthrough_components_BudgetStep_index_tsx.js"
-    ]
-  },
-  "components/features/MarketingWalkthrough/index.tsx -> ./components/ChannelSelectionStep": {
-    "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/ChannelSelectionStep",
-    "files": [
-      "static/chunks/src_components_features_MarketingWalkthrough_components_ChannelSelectionStep_index_tsx.js"
-    ]
-  },
   "components/features/MarketingWalkthrough/index.tsx -> ./components/CompetitiveStep": {
     "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/CompetitiveStep",
     "files": [
@@ -41,10 +29,10 @@
       "static/chunks/src_components_features_MarketingWalkthrough_components_ReviewStep_index_tsx.js"
     ]
   },
-  "components/features/MarketingWalkthrough/index.tsx -> ./components/TimelinePlanningStep": {
-    "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/TimelinePlanningStep",
+  "components/features/MarketingWalkthrough/index.tsx -> ./components/SeoKeywordsStep": {
+    "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/SeoKeywordsStep",
     "files": [
-      "static/chunks/src_components_features_MarketingWalkthrough_components_TimelinePlanningStep_index_tsx.js"
+      "static/chunks/src_components_features_MarketingWalkthrough_components_SeoKeywordsStep_index_tsx.js"
     ]
   },
   "components/features/MarketingWalkthrough/index.tsx -> ./components/WelcomeStep": {

@@ -2,12 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/walkthrough/[step]": "pages/walkthrough/[step].js",
   "/walkthrough/complete": "pages/walkthrough/complete.js",
-  "/creation-hub": "pages/creation-hub.js",
-  "/content-strategy": "pages/content-strategy.js",
-  "/timeline": "pages/timeline.js",
-  "/channel-mix": "pages/channel-mix.js",
-  "/lead-scoring": "pages/lead-scoring.js",
-  "/": "pages/index.js"
+  "/": "pages/index.js",
+  "/walkthrough/[step]": "pages/walkthrough/[step].js"
 }

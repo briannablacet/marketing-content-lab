@@ -25,31 +25,6 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/channel-mix": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/channel-mix.js"
-    ],
-    "/content-strategy": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/content-strategy.js"
-    ],
-    "/creation-hub": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/creation-hub.js"
-    ],
-    "/lead-scoring": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/lead-scoring.js"
-    ],
-    "/timeline": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/timeline.js"
-    ],
     "/walkthrough/[step]": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",

@@ -1,7 +1,6 @@
 // src/components/features/MarketingWalkthrough/components/WelcomeStep/index.tsx
 import React from 'react';
 
-
 interface WelcomeStepProps {
   onNext: () => void;
   onBack: () => void;
@@ -9,13 +8,13 @@ interface WelcomeStepProps {
 
 const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, onBack }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-3xl mx-auto">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900">
-          Congratulations on your launch! 🚀
+          Welcome to Your Content Marketing Journey! ✨
         </h2>
         <p className="mt-2 text-gray-600">
-          Let's set up your full-funnel marketing program. At the end, you'll have:
+          Let's create a content strategy that engages your audience and establishes your expertise. Here's what you'll get:
         </p>
       </div>
 
@@ -25,8 +24,8 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, onBack }) => {
             <div className="w-2 h-2 rounded-full bg-blue-600" />
           </div>
           <div>
-            <p className="text-gray-800">Complete marketing plan</p>
-            <p className="text-sm text-gray-600">Tailored to your business goals and target audience</p>
+            <p className="text-gray-800">Comprehensive Content Strategy</p>
+            <p className="text-sm text-gray-600">Tailored to your audience and business goals</p>
           </div>
         </div>
 
@@ -35,8 +34,8 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, onBack }) => {
             <div className="w-2 h-2 rounded-full bg-blue-600" />
           </div>
           <div>
-            <p className="text-gray-800">Budget breakdown and ROI projections</p>
-            <p className="text-sm text-gray-600">Clear allocation of resources and expected returns</p>
+            <p className="text-gray-800">Content Type Mix</p>
+            <p className="text-sm text-gray-600">Optimized selection of content formats for your audience</p>
           </div>
         </div>
 
@@ -45,8 +44,8 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, onBack }) => {
             <div className="w-2 h-2 rounded-full bg-blue-600" />
           </div>
           <div>
-            <p className="text-gray-800">Recommended media mix</p>
-            <p className="text-sm text-gray-600">Optimized channel strategy for your audience</p>
+            <p className="text-gray-800">Competitive Content Analysis</p>
+            <p className="text-sm text-gray-600">Understanding your content positioning in the market</p>
           </div>
         </div>
 
@@ -55,29 +54,20 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, onBack }) => {
             <div className="w-2 h-2 rounded-full bg-blue-600" />
           </div>
           <div>
-            <p className="text-gray-800">Lead & pipeline forecasts</p>
-            <p className="text-sm text-gray-600">Projected results and growth metrics</p>
+            <p className="text-gray-800">AI-Powered Content Creation</p>
+            <p className="text-sm text-gray-600">Tools to help you create and enhance your content</p>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800">
-          Tell us about your marketing goals. Shoot high! 🎯
+      <div className="bg-blue-50 p-6 rounded-lg">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+          Ready to start creating content that resonates? 🎯
         </h3>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="revenue" className="block text-sm font-medium text-gray-700">
-              Target revenue for year 1
-            </label>
-            <input
-              type="text"
-              id="revenue"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Enter target revenue"
-            />
-          </div>
-        </div>
+        <p className="text-gray-600">
+          We'll guide you through building a content strategy that helps you connect with your audience 
+          and achieve your goals. Click "Next" to begin!
+        </p>
       </div>
     </div>
   );

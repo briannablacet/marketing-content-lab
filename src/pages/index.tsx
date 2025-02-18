@@ -11,74 +11,78 @@ export default function Home() {
           Market Multiplier AI 
         </h1>
         <p className="text-lg text-gray-600 mb-8">
-          Welcome to MarketMultiplier!
+          Craft compelling content that resonates with your audience
         </p>
 
         {/* Primary CTA Card */}
         <div className="bg-white rounded-lg shadow-sm p-8 mb-8 text-center">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-            Ready to accelerate your growth?
+            Ready to create engaging content?
           </h2>
           <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Let's create your customized marketing program. We'll guide you through each step, 
-            from strategy to execution.
+            Let's build your content marketing strategy. We'll guide you through understanding your audience, 
+            crafting your message, and creating content that connects.
           </p>
           <Link 
-            href="/walkthrough/welcome"
+            href="/walkthrough/1"
             className="inline-flex items-center justify-center px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium shadow-sm hover:shadow"
           >
-            Build My Marketing Program →
+            Build My Content Strategy →
           </Link>
         </div>
 
-        {/* Tools Section - Temporary layout until we decide on final navigation */}
+        {/* Content Tools Section */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-medium text-gray-800 mb-4">
-            Marketing Tools
+            Content Creation Tools
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            <Link 
-              href="/budget"
-              className="p-3 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700"
-            >
-              Budget Planner
-            </Link>
-            <Link 
-              href="/competitor-analysis"
-              className="p-3 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700"
-            >
-              Competitor Analysis
-            </Link>
-            <Link 
-              href="/marketing-roi"
-              className="p-3 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700"
-            >
-              Marketing ROI
-            </Link>
-            <Link 
-              href="/sdr"
-              className="p-3 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700"
-            >
-              SDR Workspace
-            </Link>
-            <Link 
-              href="/pipeline-forecast"
-              className="p-3 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700"
-            >
-              Pipeline Forecast
-            </Link>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Link 
               href="/content-strategy"
-              className="p-3 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700"
+              className="p-4 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700 flex items-center justify-center"
             >
               Content Strategy
             </Link>
             <Link 
-              href="/lead-scoring"
-              className="p-3 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700"
+              href="/key-messages"
+              className="p-4 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700 flex items-center justify-center"
             >
-              Lead Scoring
+              Key Messages
             </Link>
+            <Link 
+              href="/seo-keywords"
+              className="p-4 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700 flex items-center justify-center"
+            >
+              SEO Keywords
+            </Link>
+            <Link 
+              href="/creation-hub"
+              className="p-4 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700 flex items-center justify-center"
+            >
+              Creation Hub
+            </Link>
+            <Link 
+              href="/competitor-analysis"
+              className="p-4 bg-gray-100 rounded hover:bg-gray-200 transition-colors text-center text-sm font-medium text-gray-700 flex items-center justify-center"
+            >
+              Competitor Analysis
+            </Link>
+          </div>
+        </div>
+
+        {/* AI Assistant Preview */}
+        <div className="mt-8 grid gap-4">
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <p className="text-sm text-blue-800 flex items-center">
+              <span className="mr-2">🤖</span>
+              AI Assistant available to help with competitor analysis, key messages, and SEO keywords!
+            </p>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <p className="text-sm text-blue-800 flex items-center">
+              <span className="mr-2">✨</span>
+              More features coming soon! We're continually expanding our content creation capabilities.
+            </p>
           </div>
         </div>
       </div>

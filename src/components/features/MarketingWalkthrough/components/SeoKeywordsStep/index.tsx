@@ -1,8 +1,7 @@
-// File: src/components/features/MarketingWalkthrough/components/SeoKeywordsStep/index.tsx
-
+// src/components/features/MarketingWalkthrough/components/SeoKeywordsStep/index.tsx
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../../../../../components/ui/card';
-import { HelpCircle, Plus, X } from 'lucide-react';
+import { HelpCircle, Plus, X, Sparkles } from 'lucide-react';
 
 interface KeywordGroup {
   category: string;
@@ -30,12 +29,46 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSav
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (initialData) {
       setKeywordData(initialData);
     }
   }, [initialData]);
+
+  const handleGenerateKeywords = async () => {
+    setIsGenerating(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/generate-keywords', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // We'll get this context from our global state later
+          context: {
+            messages: ['Value prop 1', 'Value prop 2'],
+            personas: ['Persona 1', 'Persona 2'],
+            competitors: ['Competitor 1', 'Competitor 2']
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate keywords');
+      }
+
+      const data = await response.json();
+      setKeywordData(data);
+    } catch (err) {
+      setError('Failed to generate keywords. Please try manual entry.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +89,6 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSav
       };
 
       await onSave(cleanedData);
-      onNext();
     } catch (err) {
       setError('Failed to save SEO keywords. Please try again.');
     } finally {
@@ -135,11 +167,27 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSav
               Let's optimize your content for search! 🔍
             </h2>
             <p className="text-gray-600">
-              Define your SEO keywords to help your content reach the right audience.
+              Enter your keywords if you have them, or let AI suggest the perfect keywords based on your strategy.
             </p>
           </div>
 
+          {/* AI Generation Button */}
+          <button
+            type="button"
+            onClick={handleGenerateKeywords}
+            disabled={isGenerating}
+            className="w-full mb-8 p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 group disabled:bg-blue-400"
+          >
+            <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
+            {isGenerating ? 'Analyzing Your Strategy...' : 'Do This For Me'}
+          </button>
+
+          <div className="mb-6 text-center text-gray-600">
+            - or enter keywords manually below -
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Rest of the form content remains the same */}
             {/* Primary Keywords */}
             <div className="space-y-4">
               <label className="block text-lg font-medium text-gray-900">
@@ -304,23 +352,6 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSav
                 {error}
               </div>
             )}
-
-            <div className="flex justify-between pt-4">
-              <button
-                type="button"
-                onClick={onBack}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                ← Back
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loading ? 'Saving...' : 'Next →'}
-              </button>
-            </div>
           </form>
         </CardContent>
       </Card>
