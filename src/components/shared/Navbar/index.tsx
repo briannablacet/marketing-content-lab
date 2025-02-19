@@ -9,10 +9,10 @@ const Navbar = () => {
   // Updated navigation items
   const navItems = [
     { label: 'Dashboard', path: '/' },
+    { label: 'Define Product', path: '/product' },
     { label: 'Content Strategy', path: '/content-strategy' },
     { label: 'Key Messages', path: '/key-messages' },
-    { label: 'SEO Keywords', path: '/seo-keywords' },
-    { label: 'Competitor Analysis', path: '/competitor-analysis' }
+    { label: 'SEO Keywords', path: '/seo-keywords' }
   ];
 
   // Check if we're in the walkthrough

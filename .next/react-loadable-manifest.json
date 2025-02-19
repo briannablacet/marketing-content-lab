@@ -23,6 +23,12 @@
       "static/chunks/src_components_features_MarketingWalkthrough_components_PersonaStep_index_tsx.js"
     ]
   },
+  "components/features/MarketingWalkthrough/index.tsx -> ./components/ProductStep": {
+    "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/ProductStep",
+    "files": [
+      "static/chunks/src_components_features_MarketingWalkthrough_components_ProductStep_index_tsx.js"
+    ]
+  },
   "components/features/MarketingWalkthrough/index.tsx -> ./components/ReviewStep": {
     "id": "components/features/MarketingWalkthrough/index.tsx -> ./components/ReviewStep",
     "files": [

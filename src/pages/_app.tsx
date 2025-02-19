@@ -1,26 +1,46 @@
-// src/pages/_app.tsx
-import type { AppProps } from 'next/app';
-import { StyleGuideProvider } from '../context/StyleGuideContext';
-import { MarketingProgramProvider } from '../context/MarketingContext';
-import { ContentProvider } from '../context/ContentContext';
-import Navbar from '../components/shared/Navbar'; // ✅ Import Navbar
-import '../styles/globals.css';
+/**
+ * File: src/pages/_app.tsx
+ * 
+ * Application wrapper component that provides all necessary contexts
+ */
 
-// Note: MongoDB connection is handled in lib/mongodb.ts
-// Connection string is stored in .env.local
+import { AppProps } from 'next/app';
+import '../styles/globals.css';
+import { MarketingProvider } from '../context/MarketingContext';
+import { WalkthroughProvider } from '../context/WalkthroughContext';
+import { NotificationProvider } from '../context/NotificationContext';
+import { ContentProvider } from '../context/ContentContext';
+import { DemoModeProvider } from '../context/DemoModeContext';
+import { MessagingProvider } from '../context/MessagingContext';
+import { StyleGuideProvider } from '../context/StyleGuideContext';
+import { BrandVoiceProvider } from '../context/BrandVoiceContext';
+import Navbar from '../components/shared/Navbar';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <MarketingProgramProvider>
-      <StyleGuideProvider>
-        <ContentProvider>
-          <>
-            <Navbar /> {/* ✅ Added Navbar here */}
-            <Component {...pageProps} />
-          </>
-        </ContentProvider>
-      </StyleGuideProvider>
-    </MarketingProgramProvider>
+    // Wrap providers in order of dependency
+    <NotificationProvider>
+      <DemoModeProvider>
+        <MarketingProvider>
+          <ContentProvider>
+            <MessagingProvider>
+              <StyleGuideProvider>
+                <BrandVoiceProvider>
+                  <WalkthroughProvider>
+                    <div className="min-h-screen bg-gray-50">
+                      <Navbar />
+                      <main className="container mx-auto px-4 py-8">
+                        <Component {...pageProps} />
+                      </main>
+                    </div>
+                  </WalkthroughProvider>
+                </BrandVoiceProvider>
+              </StyleGuideProvider>
+            </MessagingProvider>
+          </ContentProvider>
+        </MarketingProvider>
+      </DemoModeProvider>
+    </NotificationProvider>
   );
 }
 

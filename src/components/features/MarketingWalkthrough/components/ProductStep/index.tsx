@@ -1,111 +1,170 @@
 // src/components/features/MarketingWalkthrough/components/ProductStep/index.tsx
 import React, { useState, useEffect } from "react";
+import { Card } from '@/components/ui/card';
+import { Sparkles, Plus, X } from 'lucide-react';
 
-const ProductStep = ({ onNext, onBack, onSkip, onExit }) => {
-  console.log("🔍 ProductStep component is rendering...");
+interface ProductStepProps {
+  onNext: () => void;
+  onBack: () => void;
+}
 
+const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
   const [productName, setProductName] = useState("");
+  const [productType, setProductType] = useState("");
   const [valueProposition, setValueProposition] = useState("");
   const [keyBenefits, setKeyBenefits] = useState([""]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const userId = "user123"; // Replace with actual user ID when authentication is added
 
   useEffect(() => {
-    console.log("🔍 Fetching product info...");
     fetch(`/api/product-info?userId=${userId}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        console.log("✅ API Response:", data);
         if (data.product) {
-          setProductName(data.product.name || "");  
+          setProductName(data.product.name || "");
+          setProductType(data.product.type || "");
           setValueProposition(data.product.valueProposition || "");
           setKeyBenefits(data.product.keyBenefits?.length ? data.product.keyBenefits : [""]);
         }
       })
       .catch((error) => {
-        console.error("❌ Error fetching product info:", error);
+        console.error("Error fetching product info:", error);
       });
   }, []);
 
+  const handleGenerateValueProp = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-value-prop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productName,
+          productType,
+          keyBenefits: keyBenefits.filter(b => b.trim())
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setValueProposition(data.valueProposition);
+      }
+    } catch (error) {
+      console.error('Error generating value proposition:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const saveProductInfo = async () => {
-    console.log("💾 Saving product info...");
     await fetch("/api/product-info", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId,
         name: productName,
+        type: productType,
         valueProposition,
-        keyBenefits,
+        keyBenefits: keyBenefits.filter(b => b.trim()),
       }),
     });
-
-    console.log("✅ Product info saved!");
     onNext();
   };
 
   return (
-    <div className="product-form">
-      <h2 className="text-xl font-bold mb-4">Tell us about your product or service</h2>
+    <div className="space-y-6 max-w-3xl mx-auto">
+      <Card className="p-6">
+        <div className="space-y-6">
+          {/* Product/Service Details */}
+          <div>
+            <label className="block font-medium mb-2">What's your product or service called?</label>
+            <input
+              type="text"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              placeholder="Enter the name of your product or service"
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
 
-      <div className="form-group">
-        <label className="block font-medium">Product Name:</label>
-        <input
-          type="text"
-          value={productName}
-          onChange={(e) => setProductName(e.target.value)}
-          placeholder="Enter your product name"
-          className="w-full border border-gray-300 rounded-lg p-2 mb-4"
-        />
-      </div>
+          <div>
+            <label className="block font-medium mb-2">What type of product/service is it?</label>
+            <input
+              type="text"
+              value={productType}
+              onChange={(e) => setProductType(e.target.value)}
+              placeholder="e.g., SaaS, Consulting Service, Physical Product"
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
 
-      <div className="form-group">
-        <label className="block font-medium">Value Proposition:</label>
-        <textarea
-          value={valueProposition}
-          onChange={(e) => setValueProposition(e.target.value)}
-          placeholder="What makes your product unique?"
-          className="w-full border border-gray-300 rounded-lg p-2 mb-4"
-        />
-      </div>
+          {/* Key Benefits */}
+          <div>
+            <label className="block font-medium mb-2">What are the key benefits?</label>
+            <p className="text-sm text-gray-600 mb-4">
+              List the main benefits your product/service provides to users
+            </p>
+            <div className="space-y-3">
+              {keyBenefits.map((benefit, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={benefit}
+                    onChange={(e) => {
+                      const updatedBenefits = [...keyBenefits];
+                      updatedBenefits[index] = e.target.value;
+                      setKeyBenefits(updatedBenefits);
+                    }}
+                    placeholder={`Benefit ${index + 1}`}
+                    className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {keyBenefits.length > 1 && (
+                    <button
+                      onClick={() => setKeyBenefits(keyBenefits.filter((_, i) => i !== index))}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={() => setKeyBenefits([...keyBenefits, ""])}
+                className="text-blue-600 hover:text-blue-700 flex items-center"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Another Benefit
+              </button>
+            </div>
+          </div>
 
-      <div className="form-group">
-        <label className="block font-medium">Key Benefits:</label>
-        {keyBenefits.map((benefit, index) => (
-          <input
-            key={index}
-            type="text"
-            value={benefit}
-            onChange={(e) => {
-              const updatedBenefits = [...keyBenefits];
-              updatedBenefits[index] = e.target.value;
-              setKeyBenefits(updatedBenefits);
-            }}
-            placeholder={`Benefit ${index + 1}`}
-            className="w-full border border-gray-300 rounded-lg p-2 mb-2"
-          />
-        ))}
-        <button 
-          onClick={() => setKeyBenefits([...keyBenefits, ""])} 
-          className="text-blue-500 hover:underline mt-2"
-        >
-          + Add Benefit
-        </button>
-      </div>
-
-      <div className="flex justify-between items-center mt-6">
-        <button onClick={onBack} className="text-blue-600 hover:text-blue-700">← Back</button>
-        <button onClick={onSkip} className="text-gray-500 hover:text-gray-700">Skip This Step</button>
-        <button onClick={saveProductInfo} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-          Next →
-        </button>
-      </div>
-
-      <div className="flex justify-center">
-        <button onClick={onExit} className="mt-4 text-red-600 hover:text-red-800">
-          Exit Walkthrough
-        </button>
-      </div>
+          {/* Value Proposition */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block font-medium">Value Proposition</label>
+              <button
+                onClick={handleGenerateValueProp}
+                disabled={isGenerating}
+                className="text-blue-600 hover:text-blue-700 flex items-center gap-2 text-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                {isGenerating ? 'Generating...' : 'Get AI Help'}
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              What makes your solution extraordinary? What unique value do you provide?
+            </p>
+            <textarea
+              value={valueProposition}
+              onChange={(e) => setValueProposition(e.target.value)}
+              placeholder="Enter your value proposition"
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              rows={4}
+            />
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };

@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 
 // Dynamic imports for step components
 const WelcomeStep = dynamic(() => import('./components/WelcomeStep'), { ssr: false });
+const ProductStep = dynamic(() => import('./components/ProductStep'), { ssr: false });
 const PersonaStep = dynamic(() => import('./components/PersonaStep'), { ssr: false });
 const MessagingStep = dynamic(() => import('./components/MessagingStep'), { ssr: false });
 const CompetitiveStep = dynamic(() => import('./components/CompetitiveStep'), { ssr: false });
@@ -18,21 +19,22 @@ interface StepProps {
   onBack?: () => void;
 }
 
-// Define which steps can be skipped (Competitive Analysis and SEO)
-const SKIPPABLE_STEPS = ['4', '6'];
+// Define which steps can be skippable
+const SKIPPABLE_STEPS = ['5', '7']; // Competitive Analysis and SEO are skippable
 
 const STEPS = [
   { id: '1', component: WelcomeStep, title: 'Welcome' },
-  { id: '2', component: PersonaStep, title: 'Target Persona' },
-  { id: '3', component: MessagingStep, title: 'Key Messages' },
-  { id: '4', component: CompetitiveStep, title: 'Competitive Analysis', skippable: true },
+  { id: '2', component: ProductStep, title: 'Your Product/Service' },
+  { id: '3', component: PersonaStep, title: 'Target Persona' },
+  { id: '4', component: MessagingStep, title: 'Key Messages' },
+  { id: '5', component: CompetitiveStep, title: 'Competitive Analysis', skippable: true },
   { 
-    id: '5', 
+    id: '6', 
     component: (props: StepProps) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
     title: 'Content Strategy' 
   },
-  { id: '6', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
-  { id: '7', component: ReviewStep, title: 'Putting it All Together' }
+  { id: '7', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
+  { id: '8', component: ReviewStep, title: 'Putting it All Together' }
 ];
 
 const MarketingWalkthrough: React.FC = () => {
@@ -49,7 +51,7 @@ const MarketingWalkthrough: React.FC = () => {
   }, [step, currentStep, router]);
 
   const handleNext = () => {
-    if (currentStep.id === '7') {
+    if (currentStep.id === '8') {
       router.push('/walkthrough/complete');
       return;
     }
@@ -99,16 +101,16 @@ const MarketingWalkthrough: React.FC = () => {
       subtitle="Let's build your content marketing plan together."
       currentStep={currentStepIndex + 1}
       totalSteps={STEPS.length}
-      aiInsights={[
+      aiInsights={currentStep.id === '1' ? [
         "Based on successful content strategies, we'll guide you through each essential step."
-      ]}
+      ] : undefined}
       onNext={handleNext}
       onBack={handleBack}
       onSkip={isSkippable ? handleSkip : undefined}
       onExit={handleExit}
       showSkip={isSkippable}
       isWalkthrough={true}
-      nextButtonText={currentStep.id === '7' ? 'Finish Walkthrough →' : 'Next →'}
+      nextButtonText={currentStep.id === '8' ? 'Finish Walkthrough →' : 'Next →'}
     >
       {typeof currentStep.component === 'function' 
         ? currentStep.component({ onNext: handleNext, onBack: handleBack })

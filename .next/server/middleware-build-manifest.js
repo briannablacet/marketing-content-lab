@@ -25,6 +25,21 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
+    "/content-strategy": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/content-strategy.js"
+    ],
+    "/creation-hub": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/creation-hub.js"
+    ],
+    "/style-checker": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/style-checker.js"
+    ],
     "/walkthrough/[step]": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
