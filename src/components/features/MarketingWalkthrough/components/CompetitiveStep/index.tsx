@@ -1,170 +1,266 @@
-// CompetitiveStep/index.tsx
+// src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Sparkles, Globe, AlertCircle } from 'lucide-react';
+import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw } from 'lucide-react';
 
 interface Competitor {
   name: string;
-  url: string;
-  strengths: string;
-  weaknesses: string;
-  messaging: string[];
+  description: string;
+  knownMessages: string[];
+  strengths: string[];
+  weaknesses: string[];
+  isLoading?: boolean;
 }
 
-interface AIAnalysis {
-  keyThemes: string[];
-  gaps: string[];
-  opportunities: string[];
-  differentiators: string[];
-}
-
-const CompetitiveStep = () => {
+const CompetitiveStep: React.FC = () => {
   const [competitors, setCompetitors] = useState<Competitor[]>([
-    { name: '', url: '', strengths: '', weaknesses: '', messaging: [] }
+    { name: '', description: '', knownMessages: [], strengths: [], weaknesses: [] }
   ]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [error, setError] = useState('');
 
   const addCompetitor = () => {
-    setCompetitors([...competitors, { name: '', url: '', strengths: '', weaknesses: '', messaging: [] }]);
+    setCompetitors([
+      ...competitors,
+      { name: '', description: '', knownMessages: [], strengths: [], weaknesses: [] }
+    ]);
   };
 
-  const handleAnalyzeCompetitors = async () => {
-    setIsAnalyzing(true);
+  const removeCompetitor = (index: number) => {
+    setCompetitors(competitors.filter((_, i) => i !== index));
+  };
+
+  const handleAnalyzeCompetitor = async (index: number, name: string) => {
+    if (!name.trim()) return;
+
+    setCompetitors(prev => prev.map((comp, i) => 
+      i === index ? { ...comp, isLoading: true } : comp
+    ));
     setError('');
 
     try {
-      // TODO: Replace with actual API call to your OpenAI endpoint
-      const response = await fetch('/api/analyze-competitors', {
+      const requestData = {
+        endpoint: 'analyze-competitors',
+        data: {
+          competitors: [{
+            name,
+            description: '',
+            knownMessages: [],
+            strengths: [],
+            weaknesses: []
+          }],
+          industry: 'technology',
+          userMessages: ['']
+        }
+      };
+
+      const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          competitors: competitors.map(c => ({
-            name: c.name,
-            url: c.url
-          }))
-        })
+        body: JSON.stringify(requestData)
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to analyze competitors');
+      const responseText = await response.text();
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        setError('Sorry, we encountered an error. Please try again in a moment.');
+        return;
       }
 
-      const data = await response.json();
-      setAnalysis(data);
+      if (response.status === 500) {
+        console.error('Server error:', data);
+        setCompetitors(prev => prev.map((comp, i) => 
+          i === index ? {
+            ...comp,
+            isLoading: false,
+            description: "We're having trouble analyzing this competitor right now.",
+            knownMessages: ["Please try again in a moment"],
+            strengths: [],
+            weaknesses: []
+          } : comp
+        ));
+        return;
+      }
+
+      if (!response.ok) {
+        setError(data.message || 'Unable to analyze competitor. Please try again.');
+        return;
+      }
+
+      if (!data.competitorInsights?.[0]) {
+        setCompetitors(prev => prev.map((comp, i) => 
+          i === index ? {
+            ...comp,
+            isLoading: false,
+            description: "Limited information available for this competitor.",
+            knownMessages: ["No key messages found"],
+            strengths: ["Information not available"],
+            weaknesses: ["Information not available"]
+          } : comp
+        ));
+        return;
+      }
+
+      const competitorInsight = data.competitorInsights[0];
+      
+      // Check if we have meaningful data
+      const hasContent = competitorInsight.uniquePositioning?.length > 0 || 
+                        competitorInsight.keyThemes?.length > 0 ||
+                        competitorInsight.gaps?.length > 0;
+
+      if (!hasContent) {
+        setCompetitors(prev => prev.map((comp, i) => 
+          i === index ? {
+            ...comp,
+            isLoading: false,
+            description: "We couldn't find detailed information about this competitor.",
+            knownMessages: ["Try entering a more specific company name"],
+            strengths: ["Information not available"],
+            weaknesses: ["Information not available"]
+          } : comp
+        ));
+        return;
+      }
+
+      setCompetitors(prev => prev.map((comp, i) => 
+        i === index ? {
+          ...comp,
+          isLoading: false,
+          description: competitorInsight.uniquePositioning.join(' '),
+          knownMessages: competitorInsight.keyThemes || [],
+          strengths: competitorInsight.uniquePositioning || [],
+          weaknesses: competitorInsight.gaps || []
+        } : comp
+      ));
     } catch (err) {
-      setError('Failed to analyze competitors. Please check the URLs and try again.');
-      console.error('Error analyzing competitors:', err);
+      console.error('Error in handleAnalyzeCompetitor:', err);
+      setError('Failed to analyze competitor. Please try again.');
     } finally {
-      setIsAnalyzing(false);
+      setCompetitors(prev => prev.map((comp, i) => 
+        i === index ? { ...comp, isLoading: false } : comp
+      ));
+    }
+  };
+
+  const handleNameChange = (index: number, name: string) => {
+    setCompetitors(prev => prev.map((comp, i) => 
+      i === index ? { ...comp, name } : comp
+    ));
+    
+    if (name.length > 2) {
+      handleAnalyzeCompetitor(index, name);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* AI Analysis Button */}
-      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+      {/* AI Analysis Card - At the top */}
+      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 mb-8">
         <div className="flex flex-col items-center text-center">
           <Sparkles className="w-10 h-10 text-blue-600 mb-4" />
           <h3 className="text-xl font-semibold mb-2">AI Competitor Analysis</h3>
           <p className="text-gray-600 mb-4">
-            Let AI analyze your competitors' content and compare it with your key messages
+            Let AI analyze your competitors and provide strategic insights
           </p>
-          <button
-            onClick={handleAnalyzeCompetitors}
-            disabled={isAnalyzing || competitors.every(c => !c.url)}
-            className={`px-6 py-3 rounded-lg flex items-center gap-2 ${
-              isAnalyzing
-                ? 'bg-blue-100 text-blue-400'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            {isAnalyzing ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-b-transparent border-white" />
-                Analyzing Content...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Analyze Competitors
-              </>
-            )}
-          </button>
+          <div className="text-sm text-gray-600 space-y-2">
+            <p>Here's how it works:</p>
+            <ul className="list-disc text-left pl-4 space-y-1">
+              <li>Start typing a competitor's name below</li>
+              <li>AI will automatically analyze them after you type 3 characters</li>
+              <li>You'll see insights about their positioning, messages, and gaps</li>
+              <li>Add more competitors to build a complete analysis</li>
+            </ul>
+          </div>
         </div>
       </Card>
 
-      {/* Competitor Forms */}
+      {/* Competitor Cards */}
       {competitors.map((competitor, index) => (
         <Card key={index} className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Competitor {index + 1}</h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Company Name</label>
+          <div className="space-y-6">
+            {/* Name Input */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
                 <input
                   type="text"
                   value={competitor.name}
-                  onChange={(e) => {
-                    const newCompetitors = [...competitors];
-                    newCompetitors[index].name = e.target.value;
-                    setCompetitors(newCompetitors);
-                  }}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter competitor name"
+                  onChange={(e) => handleNameChange(index, e.target.value)}
+                  placeholder="Type competitor name for instant AI analysis..."
+                  className="w-full p-3 border rounded-lg pr-12"
                 />
+                {competitor.isLoading && (
+                  <div className="absolute right-2 top-2 bg-blue-50 rounded-full p-2">
+                    <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Website URL</label>
-                <div className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-gray-400" />
-                  <input
-                    type="url"
-                    value={competitor.url}
-                    onChange={(e) => {
-                      const newCompetitors = [...competitors];
-                      newCompetitors[index].url = e.target.value;
-                      setCompetitors(newCompetitors);
-                    }}
-                    className="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="https://example.com"
-                  />
-                </div>
+              {competitors.length > 1 && (
+                <button
+                  onClick={() => removeCompetitor(index)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-full"
+                >
+                  <X size={20} />
+                </button>
+              )}
+            </div>
+
+            {/* AI Generated Content */}
+            {competitor.name && !competitor.isLoading && (competitor.description || competitor.knownMessages.length > 0) && (
+              <div className="space-y-6 bg-gray-50 p-4 rounded-lg">
+                {competitor.description && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Key Positioning</h4>
+                    <p className="text-gray-600">{competitor.description}</p>
+                  </div>
+                )}
+
+                {competitor.knownMessages.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Key Messages</h4>
+                    <ul className="space-y-2">
+                      {competitor.knownMessages.map((message, i) => (
+                        <li key={i} className="bg-white p-3 rounded text-gray-600">
+                          {message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {competitor.strengths.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Strengths</h4>
+                    <ul className="space-y-2">
+                      {competitor.strengths.map((strength, i) => (
+                        <li key={i} className="bg-white p-3 rounded text-gray-600">
+                          {strength}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {competitor.weaknesses.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Gaps</h4>
+                    <ul className="space-y-2">
+                      {competitor.weaknesses.map((weakness, i) => (
+                        <li key={i} className="bg-white p-3 rounded text-gray-600">
+                          {weakness}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Content Strengths</label>
-              <textarea
-                value={competitor.strengths}
-                onChange={(e) => {
-                  const newCompetitors = [...competitors];
-                  newCompetitors[index].strengths = e.target.value;
-                  setCompetitors(newCompetitors);
-                }}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
-                placeholder="What do they do well in their content?"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Content Gaps</label>
-              <textarea
-                value={competitor.weaknesses}
-                onChange={(e) => {
-                  const newCompetitors = [...competitors];
-                  newCompetitors[index].weaknesses = e.target.value;
-                  setCompetitors(newCompetitors);
-                }}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
-                placeholder="What opportunities do you see in their content strategy?"
-              />
-            </div>
+            )}
           </div>
         </Card>
       ))}
@@ -172,76 +268,29 @@ const CompetitiveStep = () => {
       {/* Add Competitor Button */}
       <button
         onClick={addCompetitor}
-        className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-500 flex items-center justify-center gap-2"
+        className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 flex items-center justify-center gap-2 mt-4"
       >
-        + Add Another Competitor
+        <PlusCircle size={20} />
+        Add Another Competitor
       </button>
 
-      {/* AI Analysis Results */}
-      {analysis && (
-        <Card className="p-6 bg-blue-50">
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-blue-600" />
-            AI Analysis Results
-          </h3>
-          
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-medium mb-2">Key Themes Found</h4>
-              <div className="flex flex-wrap gap-2">
-                {analysis.keyThemes.map((theme, i) => (
-                  <span key={i} className="px-3 py-1 bg-white rounded-full text-blue-700 text-sm">
-                    {theme}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">Content Gaps</h4>
-              <ul className="space-y-2">
-                {analysis.gaps.map((gap, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-blue-600">•</span>
-                    {gap}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">Opportunities</h4>
-              <ul className="space-y-2">
-                {analysis.opportunities.map((opportunity, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-green-600">✓</span>
-                    {opportunity}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">Your Differentiators</h4>
-              <ul className="space-y-2">
-                {analysis.differentiators.map((diff, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-purple-600">★</span>
-                    {diff}
-                  </li>
-                ))}
-              </ul>
+      {/* Error Display */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <div className="flex items-center gap-3 p-4">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-medium text-red-900">Analysis Error</h4>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+              <button
+                onClick={() => setError('')}
+                className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         </Card>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 p-4 bg-red-50 rounded-lg">
-          <AlertCircle className="w-5 h-5" />
-          <p>{error}</p>
-        </div>
       )}
     </div>
   );

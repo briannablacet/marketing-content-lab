@@ -7,7 +7,12 @@ const WalkthroughContext = createContext({
     persona: {},
     channels: { selected: [] },
     budget: { allocations: [] },
-    content: { types: [] }
+    content: { types: [] },
+    styleGuide: {
+      primary: '',
+      overrides: false,
+      uploadedGuide: null
+    }
   },
   updateStep: (step: string, data: any) => {}
 });
@@ -20,7 +25,12 @@ export const WalkthroughProvider = ({ children }) => {
     persona: {},
     channels: { selected: [] },
     budget: { allocations: [] },
-    content: { types: [] }
+    content: { types: [] },
+    styleGuide: {
+      primary: '',
+      overrides: false,
+      uploadedGuide: null
+    }
   });
 
   const updateStep = (step: string, newData: any) => {

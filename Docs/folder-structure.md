@@ -989,7 +989,7 @@ bblacet-a02:src briannablacet$ tree
 │   ├── brand-voice.tsx
 │   ├── budget.js
 │   ├── channel-mix.tsx
-│   ├── competitor-analysis.tsx
+│   ├── competitive-analysis.tsx
 │   ├── content-engine.tsx
 │   ├── content-strategy.tsx
 │   ├── creation-hub.tsx

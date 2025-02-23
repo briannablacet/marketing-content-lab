@@ -1,4 +1,4 @@
-// File: src/pages/test-competitor-analysis.tsx
+// File: src/pages/test-competitive-analysis.tsx
 
 import React, { useState } from 'react';
 
@@ -68,7 +68,7 @@ const TestCompetitorAnalysis: React.FC = () => {
   const getAnalysis = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/competitor-analysis');
+      const response = await fetch('/api/competitive-analysis');
       const data = await response.json();
       if (data.success) {
         setCompetitorInfo(data.data);

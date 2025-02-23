@@ -1,14 +1,63 @@
-// src/pages/writing-style.tsx
-import React from 'react';
-import WritingStyleModule from '../components/features/WritingStyleModule';
+import React, { createContext, useState, useContext, ReactNode } from 'react';
 
-const WritingStylePage = () => {
+interface StyleRule {
+  name: string;
+  pattern: string;
+  suggestion?: string;
+}
+
+interface StyleGuide {
+  id: string;
+  name: string;
+  rules: StyleRule[];
+}
+
+interface WritingStyleContextType {
+  styleGuide: StyleGuide | null;
+  styleRules: StyleRule[];
+  setStyleGuide: (guide: StyleGuide) => void;
+  updateRules: (rules: StyleRule[]) => void;
+}
+
+const defaultContext: WritingStyleContextType = {
+  styleGuide: null,
+  styleRules: [],
+  setStyleGuide: () => {},
+  updateRules: () => {}
+};
+
+export const WritingStyleContext = createContext<WritingStyleContextType>(defaultContext);
+
+interface WritingStyleProviderProps {
+  children: ReactNode;
+}
+
+export const WritingStyleProvider: React.FC<WritingStyleProviderProps> = ({ children }) => {
+  const [styleGuide, setStyleGuide] = useState<StyleGuide | null>(null);
+  const [styleRules, setStyleRules] = useState<StyleRule[]>([]);
+
+  const updateRules = (rules: StyleRule[]) => {
+    setStyleRules(rules);
+  };
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Writing Style Guide</h1>
-      <WritingStyleModule />
-    </div>
+    <WritingStyleContext.Provider 
+      value={{
+        styleGuide,
+        styleRules,
+        setStyleGuide,
+        updateRules
+      }}
+    >
+      {children}
+    </WritingStyleContext.Provider>
   );
 };
 
-export default WritingStylePage;
+export const useWritingStyle = () => {
+  const context = useContext(WritingStyleContext);
+  if (context === undefined) {
+    throw new Error('useWritingStyle must be used within a WritingStyleProvider');
+  }
+  return context;
+};

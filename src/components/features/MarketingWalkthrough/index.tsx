@@ -11,6 +11,7 @@ const PersonaStep = dynamic(() => import('./components/PersonaStep'), { ssr: fal
 const MessagingStep = dynamic(() => import('./components/MessagingStep'), { ssr: false });
 const CompetitiveStep = dynamic(() => import('./components/CompetitiveStep'), { ssr: false });
 const ContentStrategyStep = dynamic(() => import('./components/ContentStrategyStep'), { ssr: false });
+const StyleGuideStep = dynamic(() => import('./components/StyleGuideStep'), { ssr: false }); // New import
 const SeoKeywordsStep = dynamic(() => import('./components/SeoKeywordsStep'), { ssr: false });
 const ReviewStep = dynamic(() => import('./components/ReviewStep'), { ssr: false });
 
@@ -20,7 +21,7 @@ interface StepProps {
 }
 
 // Define which steps can be skippable
-const SKIPPABLE_STEPS = ['5', '7']; // Competitive Analysis and SEO are skippable
+const SKIPPABLE_STEPS = ['5', '8']; // Competitive Analysis and SEO are skippable
 
 const STEPS = [
   { id: '1', component: WelcomeStep, title: 'Welcome' },
@@ -33,8 +34,13 @@ const STEPS = [
     component: (props: StepProps) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
     title: 'Content Strategy' 
   },
-  { id: '7', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
-  { id: '8', component: ReviewStep, title: 'Putting it All Together' }
+  { 
+    id: '7', 
+    component: (props: StepProps) => <StyleGuideStep isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
+    title: 'Writing Style Guide' 
+  },
+  { id: '8', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
+  { id: '9', component: ReviewStep, title: 'Putting it All Together' }
 ];
 
 const MarketingWalkthrough: React.FC = () => {
@@ -51,7 +57,7 @@ const MarketingWalkthrough: React.FC = () => {
   }, [step, currentStep, router]);
 
   const handleNext = () => {
-    if (currentStep.id === '8') {
+    if (currentStep.id === '9') {
       router.push('/walkthrough/complete');
       return;
     }
@@ -110,7 +116,7 @@ const MarketingWalkthrough: React.FC = () => {
       onExit={handleExit}
       showSkip={isSkippable}
       isWalkthrough={true}
-      nextButtonText={currentStep.id === '8' ? 'Finish Walkthrough →' : 'Next →'}
+      nextButtonText={currentStep.id === '9' ? 'Finish Walkthrough →' : 'Next →'}
     >
       {typeof currentStep.component === 'function' 
         ? currentStep.component({ onNext: handleNext, onBack: handleBack })
