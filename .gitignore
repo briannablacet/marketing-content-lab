@@ -63,3 +63,6 @@ yarn.lock
 # Deployment and CI/CD
 .netlify/
 .cache/
+
+#APIs
+api
