@@ -132,11 +132,11 @@ export default function Home() {
           )}
 
           {renderToolCard(
-            "Messaging Framework",
-            "Generate comprehensive messaging frameworks that resonate",
-            "/messaging-framework",
-            true
-          )}
+  "Campaign Builder",
+  "Create comprehensive multi-channel campaigns with coordinated assets",
+  "/campaign-builder",  // We'll implement this page later
+  true
+)}
         </div>
       </div>
 
@@ -160,9 +160,9 @@ export default function Home() {
           )}
 
           {renderToolCard(
-            "Content Repurposer",
-            "Scale your content by transforming existing pieces into multiple formats",
-            "/content-repurposer",
+            "SEO Keywords",
+            "Optimize your content with targeted keyword research and analysis",
+            "/seo-keywords",
             true
           )}
 
