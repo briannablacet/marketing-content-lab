@@ -1,105 +1,111 @@
 // src/components/shared/UIComponents.js
 import React from 'react';
+import { Card } from '../../components/ui/card';
+import { Sparkles } from 'lucide-react';
 
 export const ScreenTemplate = ({
   title,
   subtitle,
   children,
-  currentStep,
-  totalSteps,
   aiInsights,
   onNext,
   onBack,
   onSkip,
   onExit,
-  hideNavigation = false,
+  isWalkthrough = false,
+  currentStep,
+  totalSteps,
   nextButtonText = 'Next →',
+  hideNavigation = false,
   showSkip = false,
-  isWalkthrough = false
+  showExitButton = true // Default to showing the exit button
 }) => {
   return (
-    <div className="max-w-screen-xl mx-auto p-8">
-      {/* Header Section */}
-      <div className="mb-8 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">{title}</h1>
-          {subtitle && <p className="text-slate-600 mt-2">{subtitle}</p>}
+    <div className="max-w-6xl mx-auto">
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+            {subtitle && <p className="text-gray-600">{subtitle}</p>}
+          </div>
+
+          {/* Exit button - only show in walkthrough and if showExitButton is true */}
+          {isWalkthrough && showExitButton !== false && (
+            <button
+              onClick={onExit}
+              className="px-4 py-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Exit Walkthrough
+            </button>
+          )}
         </div>
-        
-        {/* Exit button - only show in walkthrough mode */}
-        {isWalkthrough && onExit && (
-          <button
-            onClick={onExit}
-            className="text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 flex items-center"
-          >
-            <span className="mr-2">✕</span>
-            Exit Walkthrough
-          </button>
+
+        {/* Step progress indicator for walkthrough */}
+        {isWalkthrough && currentStep && totalSteps && (
+          <div className="mt-4">
+            <div className="flex justify-between text-sm text-gray-500 mb-1">
+              <span>Step {currentStep} of {totalSteps}</span>
+              <span>{Math.round((currentStep / totalSteps) * 100)}% Complete</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              ></div>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Progress indicator */}
-      {currentStep && totalSteps && (
-        <div className="mb-6">
-          <div className="text-sm text-gray-600">
-            Step {currentStep} of {totalSteps}
-          </div>
-          <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* AI Insights Section */}
+      {/* AI Insights panel */}
       {aiInsights && aiInsights.length > 0 && (
-        <div className="mb-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
-          {aiInsights.map((insight, index) => (
-            <div key={index} className="flex items-start">
-              <span className="mr-2">✨</span>
-              <p className="text-slate-700">{insight}</p>
+        <Card className="mb-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+          <div className="flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="font-medium text-blue-800 mb-2">AI Insights</h3>
+              <ul className="space-y-2">
+                {aiInsights.map((insight, index) => (
+                  <li key={index} className="text-blue-700 text-sm flex items-start gap-2">
+                    <span className="text-blue-500">•</span>
+                    <span>{insight}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
-        </div>
+          </div>
+        </Card>
       )}
 
-      {children}
+      {/* Main content */}
+      <div className="mb-8">{children}</div>
 
-      {/* Navigation Section */}
+      {/* Navigation buttons */}
       {!hideNavigation && (
-        <div className="mt-8 flex justify-between items-center">
-          {/* Left side - Back button */}
-          <div>
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="text-gray-600 hover:text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-100 flex items-center"
-              >
-                <span className="mr-1">←</span> Back
-              </button>
-            )}
-          </div>
+        <div className="flex justify-between items-center mt-8 border-t pt-6">
+          <button
+            onClick={onBack}
+            className="px-4 py-2 text-gray-700 hover:text-gray-900 flex items-center"
+          >
+            ← Back
+          </button>
 
-          {/* Right side - Skip and Next buttons */}
-          <div className="flex gap-4 items-center">
+          <div className="flex items-center gap-4">
             {showSkip && onSkip && (
               <button
                 onClick={onSkip}
-                className="text-gray-600 hover:text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-100"
+                className="text-gray-500 hover:text-gray-700"
               >
-                Skip This Step
+                Skip this step
               </button>
             )}
-            {onNext && (
-              <button
-                onClick={onNext}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center"
-              >
-                {nextButtonText}
-              </button>
-            )}
+            
+            <button
+              onClick={onNext}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+            >
+              {nextButtonText}
+            </button>
           </div>
         </div>
       )}

@@ -1,283 +1,158 @@
 // src/components/features/CreationHub/index.tsx
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
-// Content types a user might want to create or repurpose
-const CONTENT_FORMATS = [
-  { 
-    id: 'blog', 
-    name: 'Blog Posts', 
-    icon: '📝',
-    description: 'Engage your audience with SEO-friendly articles'
-  },
-  { 
-    id: 'email', 
-    name: 'Email Sequences', 
-    icon: '📧',
-    description: 'Nurture leads with automated email campaigns'
-  },
-  { 
-    id: 'social', 
-    name: 'Social Media', 
-    icon: '📱',
-    description: 'Create engaging posts for multiple platforms'
-  },
-  { 
-    id: 'whitepaper', 
-    name: 'Whitepapers', 
-    icon: '📄',
-    description: 'Establish thought leadership with in-depth research'
-  },
-  { 
-    id: 'video', 
-    name: 'Video Scripts', 
-    icon: '🎬',
-    description: 'Draft compelling scripts for video content'
-  }
-];
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { ScreenTemplate } from '../../shared/UIComponents';
 
 const CreationHub = () => {
-  const [activeTab, setActiveTab] = useState('create'); // 'create' or 'repurpose'
-  const [selectedFormat, setSelectedFormat] = useState(null);
-  const [sourceFormat, setSourceFormat] = useState(null);
-  const [targetFormat, setTargetFormat] = useState(null);
+  const router = useRouter();
+  const { 
+    source, 
+    campaignName, 
+    campaignTarget, 
+    campaignGoal, 
+    selectedAssets, 
+    assetDetails 
+  } = router.query;
+  
+  const [testResult, setTestResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [content, setContent] = useState('');
-  const [result, setResult] = useState(null);
+  const [isFromCampaignBuilder, setIsFromCampaignBuilder] = useState(false);
+  const [campaignData, setCampaignData] = useState(null);
+  
+  // Process query params from campaign builder
+  useEffect(() => {
+    if (source === 'campaign-builder' && selectedAssets) {
+      setIsFromCampaignBuilder(true);
+      try {
+        const parsedAssets = JSON.parse(selectedAssets as string);
+        const parsedDetails = JSON.parse(assetDetails as string);
+        
+        setCampaignData({
+          name: campaignName,
+          target: campaignTarget,
+          goal: campaignGoal,
+          selectedAssets: parsedAssets,
+          assetDetails: parsedDetails
+        });
+      } catch (e) {
+        console.error('Error parsing campaign data', e);
+      }
+    }
+  }, [router.query]);
 
-  const handleCreateContent = async () => {
-    if (!selectedFormat) return;
-    
+  const testContentGeneration = async () => {
     setIsLoading(true);
-    // In a real implementation, this would call your API
+    // Simulated API call
     setTimeout(() => {
-      setResult({
-        title: `Sample ${selectedFormat.name}`,
-        content: `This is a sample ${selectedFormat.name.toLowerCase()} generated for demonstration purposes. In the real implementation, this would be AI-generated content based on your marketing strategy and messaging.`
-      });
+      setTestResult("This is a test result from content generation.");
       setIsLoading(false);
     }, 2000);
   };
 
-  const handleRepurposeContent = async () => {
-    if (!sourceFormat || !targetFormat || !content) return;
+  // Standard creation hub view
+  const renderStandardCreationHub = () => (
+    <div className="p-8 text-center">
+      <h2 className="text-2xl font-bold mb-4">Content Creation Hub</h2>
+      <button 
+        onClick={testContentGeneration}
+        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 mb-4"
+        disabled={isLoading}
+      >
+        {isLoading ? 'Testing...' : 'Test Content Generation'}
+      </button>
+      {testResult && (
+        <div className="mt-4 p-4 border rounded bg-gray-50 text-left">
+          <h3 className="font-bold mb-2">Test Result:</h3>
+          <pre className="whitespace-pre-wrap">{testResult}</pre>
+        </div>
+      )}
+    </div>
+  );
+
+  // Campaign builder specialized view
+  const renderCampaignCreationHub = () => {
+    if (!campaignData) return <div>Loading campaign data...</div>;
     
-    setIsLoading(true);
-    // In a real implementation, this would call your API
-    setTimeout(() => {
-      setResult({
-        title: `Repurposed from ${sourceFormat.name} to ${targetFormat.name}`,
-        content: `This is the repurposed content from ${sourceFormat.name.toLowerCase()} to ${targetFormat.name.toLowerCase()}. The original content: "${content.substring(0, 50)}..." has been transformed.`
-      });
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Content Creation Hub</h1>
-        <p className="text-gray-600">Create or repurpose content with AI assistance</p>
-      </div>
-
-      {/* Tab navigation */}
-      <div className="flex mb-6 border-b">
-        <button
-          className={`px-4 py-2 ${activeTab === 'create' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-          onClick={() => setActiveTab('create')}
-        >
-          Create New Content
-        </button>
-        <button
-          className={`px-4 py-2 ${activeTab === 'repurpose' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-          onClick={() => setActiveTab('repurpose')}
-        >
-          Repurpose Existing Content
-        </button>
-      </div>
-
-      {/* Create Content Tab */}
-      {activeTab === 'create' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Content Type</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {CONTENT_FORMATS.map(format => (
-                  <div
-                    key={format.id}
-                    className={`p-4 border rounded-lg cursor-pointer ${
-                      selectedFormat?.id === format.id 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'hover:border-blue-300'
-                    }`}
-                    onClick={() => setSelectedFormat(format)}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">{format.icon}</span>
-                      <h3 className="font-medium">{format.name}</h3>
-                    </div>
-                    <p className="text-sm text-gray-600">{format.description}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {selectedFormat && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Configure {selectedFormat.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Here you would add specific configuration options based on the content type */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Topic</label>
-                    <input
-                      type="text"
-                      className="w-full p-2 border rounded"
-                      placeholder={`Enter topic for your ${selectedFormat.name.toLowerCase()}`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Target Audience</label>
-                    <select className="w-full p-2 border rounded">
-                      <option value="">Select audience</option>
-                      <option>Technical Decision Makers</option>
-                      <option>Business Executives</option>
-                      <option>End Users</option>
-                    </select>
-                  </div>
-                  <div className="mt-6">
-                    <button
-                      onClick={handleCreateContent}
-                      disabled={isLoading}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-                    >
-                      {isLoading ? 'Generating...' : `Generate ${selectedFormat.name}`}
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Repurpose Content Tab */}
-      {activeTab === 'repurpose' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Convert Content Format</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Source Format</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {CONTENT_FORMATS.map(format => (
-                      <div
-                        key={format.id}
-                        className={`p-3 border rounded-lg cursor-pointer ${
-                          sourceFormat?.id === format.id 
-                            ? 'border-blue-500 bg-blue-50' 
-                            : 'hover:border-blue-300'
-                        }`}
-                        onClick={() => setSourceFormat(format)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{format.icon}</span>
-                          <span>{format.name}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Target Format</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {CONTENT_FORMATS.map(format => (
-                      <div
-                        key={format.id}
-                        className={`p-3 border rounded-lg cursor-pointer ${
-                          format.id === sourceFormat?.id ? 'opacity-50 cursor-not-allowed' : ''
-                        } ${
-                          targetFormat?.id === format.id 
-                            ? 'border-blue-500 bg-blue-50' 
-                            : 'hover:border-blue-300'
-                        }`}
-                        onClick={() => {
-                          if (format.id !== sourceFormat?.id) {
-                            setTargetFormat(format);
-                          }
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{format.icon}</span>
-                          <span>{format.name}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {sourceFormat && targetFormat && (
-                <div className="mt-6">
-                  <label className="block text-sm font-medium mb-2">Content to Repurpose</label>
-                  <textarea
-                    className="w-full p-3 border rounded h-40"
-                    placeholder={`Paste your existing ${sourceFormat.name} content here`}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                  ></textarea>
-                  
-                  <div className="mt-4">
-                    <button
-                      onClick={handleRepurposeContent}
-                      disabled={isLoading || !content}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-                    >
-                      {isLoading ? 'Converting...' : `Convert to ${targetFormat?.name}`}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Results Section */}
-      {result && (
-        <Card className="mt-6">
+    return (
+      <div className="space-y-8">
+        <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
-            <CardTitle>{result.title}</CardTitle>
+            <CardTitle>Campaign: {campaignData.name}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="p-4 bg-gray-50 rounded border whitespace-pre-wrap">
-              {result.content}
-            </div>
-            <div className="mt-4 flex gap-4">
-              <button className="px-4 py-2 border rounded hover:bg-gray-50">
-                Copy to Clipboard
-              </button>
-              <button className="px-4 py-2 border rounded hover:bg-gray-50">
-                Download
-              </button>
-              <button className="px-4 py-2 border rounded hover:bg-gray-50">
-                Edit Further
-              </button>
+            <div className="flex flex-col md:flex-row md:justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Target Audience</p>
+                <p className="text-lg">{campaignData.target}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-700">Campaign Goal</p>
+                <p className="text-lg">{String(campaignData.goal).replace('_', ' ')}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
-      )}
-    </div>
+        
+        <h2 className="text-xl font-bold">Campaign Assets to Create</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {campaignData.selectedAssets.map((asset, index) => (
+            <Card key={index} className="hover:shadow-md transition-all">
+              <CardHeader>
+                <CardTitle className="flex justify-between">
+                  <span>{asset}</span>
+                  {asset === 'Email Sequence' && campaignData.assetDetails[asset]?.variations > 1 && (
+                    <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                      {campaignData.assetDetails[asset].variations} emails
+                    </span>
+                  )}
+                  {(asset === 'Social Media' || asset === 'Paid Ads') && campaignData.assetDetails[asset]?.variations > 1 && (
+                    <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                      {campaignData.assetDetails[asset].variations} variations
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-600 mb-4">
+                  {campaignData.assetDetails[asset]?.description || 'No description provided'}
+                </p>
+                <button 
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full flex items-center justify-center"
+                >
+                  <span className="text-yellow-300 mr-2">✨</span>
+                  Create {asset}
+                </button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Determine which view to render
+  return (
+    <ScreenTemplate
+      title={isFromCampaignBuilder ? `Creating ${campaignData?.name || 'Campaign'}` : "Content Creation Hub"}
+      subtitle={isFromCampaignBuilder 
+        ? `Let's create all the assets for your campaign` 
+        : "Generate content with AI assistance"
+      }
+      aiInsights={isFromCampaignBuilder ? [
+        "Your campaign contains multiple assets that work together",
+        "We'll maintain consistent messaging across all content",
+        "Each asset will be optimized for its specific format"
+      ] : [
+        "Explore different content types to reach your audience",
+        "Start with a clear content structure for best results",
+        "Use AI assistance to enhance your content quality"
+      ]}
+    >
+      {isFromCampaignBuilder ? renderCampaignCreationHub() : renderStandardCreationHub()}
+    </ScreenTemplate>
   );
 };
 

@@ -11,7 +11,7 @@ const PersonaStep = dynamic(() => import('./components/PersonaStep'), { ssr: fal
 const MessagingStep = dynamic(() => import('./components/MessagingStep'), { ssr: false });
 const CompetitiveStep = dynamic(() => import('./components/CompetitiveStep'), { ssr: false });
 const ContentStrategyStep = dynamic(() => import('./components/ContentStrategyStep'), { ssr: false });
-const StyleGuideStep = dynamic(() => import('./components/StyleGuideStep'), { ssr: false }); // New import
+const StyleGuideStep = dynamic(() => import('./components/StyleGuideStep'), { ssr: false }); 
 const SeoKeywordsStep = dynamic(() => import('./components/SeoKeywordsStep'), { ssr: false });
 const ReviewStep = dynamic(() => import('./components/ReviewStep'), { ssr: false });
 
@@ -117,6 +117,8 @@ const MarketingWalkthrough: React.FC = () => {
       showSkip={isSkippable}
       isWalkthrough={true}
       nextButtonText={currentStep.id === '9' ? 'Finish Walkthrough →' : 'Next →'}
+      // Remove the Exit Walkthrough button, since we'll use the navbar button instead
+      showExitButton={false}
     >
       {typeof currentStep.component === 'function' 
         ? currentStep.component({ onNext: handleNext, onBack: handleBack })
