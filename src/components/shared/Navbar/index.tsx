@@ -1,56 +1,42 @@
 // src/components/shared/Navbar/index.tsx
 import React from 'react';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
-const Navbar = () => {
+const Navbar: React.FC = () => {
   const router = useRouter();
   
-  // Updated navigation items
-  const navItems = [
-    { label: 'Dashboard', path: '/' },
-    { label: 'Define Product', path: '/product' },
-    { label: 'Content Strategy', path: '/content-strategy' },
-    { label: 'Key Messages', path: '/key-messages' },
-    { label: 'SEO Keywords', path: '/seo-keywords' }
-  ];
-
-  // Check if we're in the walkthrough
-  const isInWalkthrough = router.pathname.startsWith('/walkthrough') || 
-                         router.pathname === '/walkthrough/complete';
-
+  // Check if a link is active
+  const isActive = (path: string) => router.pathname === path;
+  
   return (
-    <nav className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4">
+    <nav className="bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          {/* Navigation Links */}
-          <div className="flex overflow-x-auto hide-scrollbar">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={`inline-flex items-center px-4 pt-1 border-b-2 text-sm font-medium whitespace-nowrap ${
-                  router.pathname === item.path
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                {item.label}
+          <div className="flex">
+            <Link href="/" className="flex-shrink-0 flex items-center">
+              <span className="text-xl font-bold text-blue-600">Market Multiplier</span>
+            </Link>
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <Link href="/product" className={`${isActive('/product') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
+                Your Product/Service
               </Link>
-            ))}
-          </div>
-
-          {/* Start Walkthrough Button - only show when not in walkthrough */}
-          {!isInWalkthrough && (
-            <div className="flex items-center">
-              <button
-                onClick={() => router.push('/walkthrough/1')}
-                className="ml-4 px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-full hover:bg-blue-50"
-              >
-                Start Walkthrough
-              </button>
+              <Link href="/competitor-analysis" className={`${isActive('/competitor-analysis') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
+                Competitive Analysis
+              </Link>
+              <Link href="/content-strategy" className={`${isActive('/content-strategy') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
+                Content Strategy
+              </Link>
+              <Link href="/creation-hub" className={`${isActive('/creation-hub') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
+                Creation Hub
+              </Link>
             </div>
-          )}
+          </div>
+          <div className="flex items-center">
+            <Link href="/walkthrough/1" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+              Start Walkthrough
+            </Link>
+          </div>
         </div>
       </div>
     </nav>

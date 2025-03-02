@@ -125,9 +125,9 @@ export default function Home() {
           )}
           
           {renderToolCard(
-            "Value Proposition Builder",
+            "Your Product/Service",
             "Craft compelling value propositions backed by market insights",
-            "/value-proposition",
+            "/product",
             true
           )}
 
