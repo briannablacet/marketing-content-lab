@@ -1,7 +1,7 @@
 // src/components/features/CompetitorAnalysisDashboard/index.tsx
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ScreenTemplate } from '../../shared/UIComponents.js';
+import { ScreenTemplate } from '../../shared/UIComponents';
 import { AutosaveIndicator } from '../../shared/AutosaveIndicator';
 
 const CompetitorAnalysisDashboard: React.FC = () => {
@@ -36,25 +36,17 @@ const CompetitorAnalysisDashboard: React.FC = () => {
   );
 
   return (
-    <>
-      <ScreenTemplate
-        title="Competitive Analysis"
-        subtitle="Analyze your competition and track win rates"
-        isWalkthrough={false}
-      >
-        <div className="max-w-4xl mx-auto space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Market Position Map</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <MarketPositionChart />
-            </CardContent>
-          </Card>
-        </div>
-      </ScreenTemplate>
+    <div className="max-w-4xl mx-auto space-y-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Market Position Map</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MarketPositionChart />
+        </CardContent>
+      </Card>
       <AutosaveIndicator />
-    </>
+    </div>
   );
 };
 

@@ -21,7 +21,7 @@ const Navbar: React.FC = () => {
               <Link href="/product" className={`${isActive('/product') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
                 Your Product/Service
               </Link>
-              <Link href="/competitor-analysis" className={`${isActive('/competitor-analysis') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
+              <Link href="/competitive-analysis" className={`${isActive('/competitive-analysis') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
                 Competitive Analysis
               </Link>
               <Link href="/content-strategy" className={`${isActive('/content-strategy') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
