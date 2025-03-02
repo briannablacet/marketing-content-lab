@@ -6,7 +6,17 @@ import { useContent } from '../../../context/ContentContext';
 import { useRouter } from 'next/router';
 import { AutosaveIndicator } from '../../shared/AutosaveIndicator';
 
-const ContentStrategyModule = () => {
+interface ContentStrategyModuleProps {
+  hideCreationLinks?: boolean; // Add this prop
+  onNext?: () => void; // Add for walkthrough navigation
+  isWalkthrough?: boolean; // Add to identify when in walkthrough
+}
+
+const ContentStrategyModule: React.FC<ContentStrategyModuleProps> = ({ 
+  hideCreationLinks = false,
+  onNext,
+  isWalkthrough = false
+}) => {
   const router = useRouter();
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
   const [activeContent, setActiveContent] = useState<string | null>(null);
@@ -22,6 +32,13 @@ const ContentStrategyModule = () => {
 
   const startCreating = () => {
     router.push('/creation-hub');
+  };
+
+  // Handle next in walkthrough
+  const handleNext = () => {
+    if (onNext) {
+      onNext();
+    }
   };
 
   return (
@@ -83,7 +100,8 @@ const ContentStrategyModule = () => {
           </Card>
         )}
 
-        {selectedContentTypes.length > 0 && !activeContent && (
+        {/* Only show this if creation links aren't hidden */}
+        {selectedContentTypes.length > 0 && !activeContent && !hideCreationLinks && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow-2xl border-t">
             <div className="max-w-4xl mx-auto flex justify-between items-center">
               <div>
@@ -99,6 +117,18 @@ const ContentStrategyModule = () => {
                 Start Creating →
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Add a next button for walkthrough if needed */}
+        {isWalkthrough && selectedContentTypes.length > 0 && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={handleNext}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Continue →
+            </button>
           </div>
         )}
       </div>
