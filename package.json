@@ -1,5 +1,5 @@
 {
-  "name": "marketing-program",
+  "name": "market-multiplier",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,31 +9,30 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "install": "^0.13.0",
-    "lucide-react": "^0.475.0",
-    "mongodb": "^6.3.0",
-    "next": "^15.1.7",
-    "npm": "^11.1.0",
-    "openai": "^4.83.0",
-    "picocolors": "^1.1.1",
-    "picomatch": "^4.0.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "recharts": "^2.15.1",
-    "tailwindcss-animate": "^1.0.7"
+    "@headlessui/react": "^1.7.17",
+    "@types/node": "20.4.5",
+    "@types/react": "18.2.17",
+    "@types/react-dom": "18.2.7",
+    "autoprefixer": "10.4.14",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "eslint": "8.46.0",
+    "eslint-config-next": "13.4.12",
+    "lucide-react": "^0.263.1",
+    "mongodb": "^5.7.0",
+    "next": "13.4.12",
+    "openai": "^4.0.0",
+    "papaparse": "^5.4.1",
+    "postcss": "8.4.27",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "recharts": "^2.7.2",
+    "tailwind-merge": "^1.14.0",
+    "tailwindcss": "3.3.3",
+    "tailwindcss-animate": "^1.0.6",
+    "typescript": "5.1.6"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@shadcn/ui": "^0.0.4",
-    "@types/node": "^20",
-    "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
-    "autoprefixer": "^10.4.20",
-    "eslint": "^9",
-    "eslint-config-next": "15.1.5",
-    "next-themes": "^0.4.4",
-    "postcss": "^8.5.2",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3"
+    "@types/papaparse": "^5.3.7"
   }
 }

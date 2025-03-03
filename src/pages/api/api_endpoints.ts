@@ -1,4 +1,4 @@
-//src/pages/api/api_endpoints.ts
+// src/pages/api/api_endpoints.ts - Updated with A/B Testing support
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
@@ -51,6 +51,16 @@ interface ValuePropositionRequest extends BaseRequest {
   };
 }
 
+// New interface for A/B testing request
+interface ABTestingRequest extends BaseRequest {
+  data: {
+    contentType: string;
+    contentContext: string;
+    targetAudience?: string;
+    numVariations: number;
+  };
+}
+
 // Validation functions
 const validateContentRepurposerRequest = (data: any): boolean => {
   return !!(data.content && data.sourceFormat && data.targetFormat);
@@ -67,6 +77,11 @@ const validateValuePropositionRequest = (data: any): boolean => {
     data.productInfo?.benefits?.length &&
     data.industry
   );
+};
+
+// New validation function for A/B testing
+const validateABTestingRequest = (data: any): boolean => {
+  return !!(data.contentType && data.contentContext && data.numVariations);
 };
 
 // Enhanced prompt generators
@@ -163,6 +178,50 @@ Create a response in this JSON format:
 }`;
 };
 
+// New prompt generator for A/B testing
+const generateABTestingPrompt = (data: ABTestingRequest['data']): string => {
+  // Get the appropriate prompt prefix based on content type
+  let promptPrefix = "";
+  switch (data.contentType) {
+    case 'email_subject':
+      promptPrefix = "Create email subject line variations that will improve open rates.";
+      break;
+    case 'cta':
+      promptPrefix = "Create call-to-action button text variations that will improve click-through rates.";
+      break;
+    case 'headline':
+      promptPrefix = "Create headline variations for content that will improve engagement.";
+      break;
+    case 'value_prop':
+      promptPrefix = "Create value proposition variations that clearly communicate the unique value.";
+      break;
+    case 'ad_copy':
+      promptPrefix = "Create ad copy variations that will drive conversions.";
+      break;
+    default:
+      promptPrefix = "Create variations of the following content:";
+  }
+
+  const audienceContext = data.targetAudience ? `for ${data.targetAudience}` : "for a general audience";
+  
+  return `${promptPrefix}
+
+Content to communicate: "${data.contentContext}"
+Target audience: ${audienceContext}
+
+Generate ${data.numVariations} different high-quality variations that would be effective for A/B testing. 
+Make each variation distinct and optimized for the specific content type.
+
+Return the variations in this JSON format:
+{
+  "variations": [
+    "first variation text",
+    "second variation text",
+    etc.
+  ]
+}`;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -209,6 +268,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           alternativeVersions: [],
           keyDifferentiators: [],
           targetedMessages: {},
+        };
+        break;
+
+      // New case for A/B testing
+      case 'generate-variations':
+        isValid = validateABTestingRequest(data);
+        prompt = generateABTestingPrompt(data);
+        responseFormat = {
+          variations: [],
         };
         break;
 

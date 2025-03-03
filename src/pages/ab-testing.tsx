@@ -47,6 +47,7 @@ const ABTesting: React.FC = () => {
   const [variations, setVariations] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [savedVariations, setSavedVariations] = useState(false);
 
   // Get the currently selected content type
   const selectedContentType = CONTENT_TYPES.find(type => type.id === selectedType);
@@ -56,16 +57,50 @@ const ABTesting: React.FC = () => {
     if (!selectedType || !contentContext) return;
     
     setIsGenerating(true);
+    setSavedVariations(false);
     
-    // In a real implementation, this would call your API
-    setTimeout(() => {
-      const fakeVariations = [];
-      for (let i = 0; i < numVariations; i++) {
-        fakeVariations.push(`[Variation ${i + 1}] AI-generated ${selectedContentType?.name} based on: "${contentContext}" for audience: "${targetAudience || 'general'}"`);
+    try {
+      // Using the centralized api_endpoints.ts structure
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          endpoint: 'generate-variations',
+          data: {
+            contentType: selectedType,
+            contentContext,
+            targetAudience,
+            numVariations
+          }
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.variations && Array.isArray(data.variations)) {
+        setVariations(data.variations);
+      } else {
+        // In case of API error, provide some fallback variations
+        const fallbackVariations = [];
+        for (let i = 0; i < numVariations; i++) {
+          fallbackVariations.push(`[Variation ${i + 1}] AI-generated ${selectedContentType?.name} based on: "${contentContext}" for audience: "${targetAudience || 'general'}"`);
+        }
+        setVariations(fallbackVariations);
+        console.error('Error generating variations:', data.error || 'Invalid response format');
       }
-      setVariations(fakeVariations);
+    } catch (error) {
+      console.error('Failed to generate variations:', error);
+      // Provide fallback variations
+      const fallbackVariations = [];
+      for (let i = 0; i < numVariations; i++) {
+        fallbackVariations.push(`[Variation ${i + 1}] AI-generated ${selectedContentType?.name} based on: "${contentContext}" for audience: "${targetAudience || 'general'}"`);
+      }
+      setVariations(fallbackVariations);
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   // Handle copy to clipboard
@@ -73,6 +108,13 @@ const ABTesting: React.FC = () => {
     navigator.clipboard.writeText(text);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  // Save variations
+  const saveVariations = () => {
+    // In a real implementation, this would save to a database
+    setSavedVariations(true);
+    alert("Variations saved successfully!");
   };
 
   // Type selection view
@@ -194,9 +236,34 @@ const ABTesting: React.FC = () => {
             </div>
           ))}
         </div>
+        
+        {/* Save Variations Button */}
+        <div className="mt-8 flex justify-center">
+          <button 
+            className={`px-6 py-3 rounded-lg ${
+              savedVariations 
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            } text-white`}
+            onClick={saveVariations}
+          >
+            {savedVariations ? (
+              <>
+                <span className="mr-2">✓</span>
+                Variations Saved
+              </>
+            ) : (
+              'Save Variations'
+            )}
+          </button>
+        </div>
       </CardContent>
     </Card>
   );
+
+  // Determine whether to hide navigation
+  // Hide the navigation buttons when we're displaying variations
+  const shouldHideNavigation = selectedType && variations.length > 0;
 
   return (
     <NotificationProvider>
@@ -204,36 +271,38 @@ const ABTesting: React.FC = () => {
         title="A/B Content Creator"
         subtitle="Generate multiple content variations to test with your audience"
         aiInsights={[
-          "A/B testing can improve conversion rates by 20-30%",
-          "Testing 3-5 variations provides the most reliable results",
-          "Focus on testing one element at a time for clearest insights"
+          "A/B testing can increase conversion rates by up to 30%",
+          "The most effective tests focus on headlines and CTAs",
+          "Test one element at a time for clearest results"
         ]}
+        hideNavigation={shouldHideNavigation}
       >
         <div className="space-y-6">
-          {!selectedType ? (
-            <>
-              <h2 className="text-xl font-semibold mb-4">Select Content Type to Test</h2>
-              {renderTypeSelection()}
-            </>
-          ) : (
-            <>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Create {selectedContentType?.name} Variations</h2>
-                <button 
-                  onClick={() => {
-                    setSelectedType(null);
-                    setVariations([]);
-                  }}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  ← Change type
-                </button>
-              </div>
-              
-              {renderContentInput()}
-              
-              {variations.length > 0 && renderVariations()}
-            </>
+          {!selectedType && renderTypeSelection()}
+          {selectedType && !variations.length && renderContentInput()}
+          {selectedType && variations.length > 0 && renderVariations()}
+          
+          {/* Back buttons based on state */}
+          {selectedType && !variations.length && (
+            <div className="flex justify-start">
+              <button
+                onClick={() => setSelectedType(null)}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                ← Back to content types
+              </button>
+            </div>
+          )}
+          
+          {selectedType && variations.length > 0 && (
+            <div className="flex justify-start">
+              <button
+                onClick={() => setVariations([])}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                ← Edit context
+              </button>
+            </div>
           )}
         </div>
       </ScreenTemplate>

@@ -400,6 +400,27 @@ const CampaignBuilder: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      return (
+  <>
+    <ScreenTemplate
+      title={getStepTitle()}
+      subtitle="Build an integrated marketing campaign"
+      currentStep={Object.values(CampaignStep).indexOf(currentStep) + 1}
+      totalSteps={Object.values(CampaignStep).length}
+      aiInsights={getAIInsights()}
+      onNext={handleNext}
+      onBack={handleBack}
+      nextButtonText={getNextButtonText()}
+      isWalkthrough={false}
+      // Hide navigation buttons on Review step
+      hideNavigation={currentStep === CampaignStep.REVIEW}
+    >
+      {renderCurrentStep()}
+    </ScreenTemplate>
+    <AutosaveIndicator />
+  </>
+);
       
       <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
         <div className="flex items-start space-x-4">
