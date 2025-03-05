@@ -3,15 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-// Correct Lucide imports
+// Remove problematic imports and just keep the ones we know work
 import { 
   Pencil, 
-  FileText, 
   Zap, 
-  // ArrowsExpand doesn't exist in Lucide, let's use a different icon
-  Maximize2, // This is a good alternative to ArrowsExpand
+  Maximize2, 
   Target, 
-  Sparkles, 
   Plus 
 } from 'lucide-react';
 
@@ -29,7 +26,7 @@ const CONTENT_TOOLS = [
     name: 'Content Enhancer',
     description: 'Improve your existing content',
     path: '/content-enhancer',
-    icon: <Sparkles className="w-6 h-6 text-green-600" />
+    icon: <span className="text-2xl">✨</span> // Simple emoji
   },
   {
     id: 'content-humanizer',
@@ -43,7 +40,7 @@ const CONTENT_TOOLS = [
     name: 'Content Repurposer',
     description: 'Transform content from one format to another',
     path: '/content-repurposer',
-    icon: <Maximize2 className="w-6 h-6 text-amber-600" /> // Using Maximize2 instead of ArrowsExpand
+    icon: <Maximize2 className="w-6 h-6 text-amber-600" />
   }
 ];
 
@@ -247,17 +244,17 @@ const CreationHub = () => {
         <h2 className="text-xl font-bold">Campaign Assets to Create</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {campaignData.selectedAssets.map((asset, index) => (
+          {campaignData.selectedAssets && campaignData.selectedAssets.map((asset, index) => (
             <Card key={index} className="hover:shadow-md transition-all">
               <CardHeader>
                 <CardTitle className="flex justify-between">
                   <span>{asset}</span>
-                  {asset === 'Email Sequence' && campaignData.assetDetails[asset]?.variations > 1 && (
+                  {asset === 'Email Sequence' && campaignData.assetDetails && campaignData.assetDetails[asset]?.variations > 1 && (
                     <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                       {campaignData.assetDetails[asset].variations} emails
                     </span>
                   )}
-                  {(asset === 'Social Media' || asset === 'Paid Ads') && campaignData.assetDetails[asset]?.variations > 1 && (
+                  {(asset === 'Social Media' || asset === 'Paid Ads') && campaignData.assetDetails && campaignData.assetDetails[asset]?.variations > 1 && (
                     <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                       {campaignData.assetDetails[asset].variations} variations
                     </span>
@@ -266,7 +263,7 @@ const CreationHub = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600 mb-4">
-                  {campaignData.assetDetails[asset]?.description || 'No description provided'}
+                  {campaignData.assetDetails && campaignData.assetDetails[asset]?.description || 'No description provided'}
                 </p>
                 <button 
                   onClick={() => {
@@ -337,7 +334,7 @@ const CreationHub = () => {
         {/* AI Insights */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
           <h3 className="font-medium mb-2 flex items-center">
-            <Sparkles className="w-5 h-5 text-blue-600 mr-2" />
+            <span className="text-2xl mr-2">✨</span>
             AI Insights
           </h3>
           <ul className="space-y-2">

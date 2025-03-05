@@ -1,4 +1,4 @@
-// src/pages/content-humanizer.tsx
+// src/pages/content-enhancer.tsx
 
 import React from 'react';
 import dynamic from 'next/dynamic';
@@ -7,17 +7,17 @@ import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { MessagingProvider } from '../context/MessagingContext';
 
 // Use dynamic import with SSR disabled to prevent SSR-related issues
-const ContentHumanizer = dynamic(() => import('../components/features/ContentHumanizer'), {
+const ContentEnhancer = dynamic(() => import('../components/features/ContentEnhancer'), {
   ssr: false,
-  loading: () => <div className="p-8 text-center">Loading Content Humanizer...</div>
+  loading: () => <div className="p-8 text-center">Loading Content Enhancer...</div>
 });
 
-export default function ContentHumanizerPage() {
+export default function ContentEnhancerPage() {
   return (
     <NotificationProvider>
       <WritingStyleProvider>
         <MessagingProvider>
-          <ContentHumanizer />
+          <ContentEnhancer />
         </MessagingProvider>
       </WritingStyleProvider>
     </NotificationProvider>

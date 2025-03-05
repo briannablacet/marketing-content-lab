@@ -1,449 +1,281 @@
 // src/components/features/ContentHumanizer/index.tsx
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { Card, CardContent } from '../../ui/card';
-import { Alert, AlertDescription } from '../../ui/alert';
-import { Check, AlertTriangle, X, Copy, Eye, EyeOff } from 'lucide-react';
-import { useWritingStyle } from '../../../context/WritingStyleContext';
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useNotification } from '../../../context/NotificationContext';
-
-// Enhanced TypeScript interfaces
-interface HumanizerOptions {
-  tone: string;
-  formality: 'formal' | 'neutral' | 'casual';
-  simplify: boolean;
-  styleGuideId?: string;
-  industryContext?: string;
-}
-
-interface ContentState {
-  original: string;
-  enhanced: string | null;
-  processing: boolean;
-  error: string | null;
-  progress: number;
-  changes: Array<{
-    original: string;
-    modified: string;
-    reason: string;
-  }>;
-  statistics: {
-    originalLength: number;
-    enhancedLength: number;
-    readabilityScore?: number;
-    styleCompliance?: number;
-  };
-}
-
-interface StyleViolation {
-  text: string;
-  rule: string;
-  suggestion: string;
-}
+import { useWritingStyle } from '../../../context/WritingStyleContext';
+import { useMessaging } from '../../../context/MessagingContext';
+import { AlertCircle, ArrowRight, Copy, RefreshCw } from 'lucide-react';
 
 const ContentHumanizer: React.FC = () => {
-  // Context and state management
-  const { styleGuide, styleRules } = useWritingStyle();
   const { showNotification } = useNotification();
-  const [content, setContent] = useState<ContentState>({
-    original: '',
-    enhanced: null,
-    processing: false,
-    error: null,
-    progress: 0,
-    changes: [],
-    statistics: {
-      originalLength: 0,
-      enhancedLength: 0
-    }
-  });
+  const { writingStyle } = useWritingStyle();
+  const { messaging } = useMessaging();
 
-  const [options, setOptions] = useState<HumanizerOptions>({
+  const [content, setContent] = useState('');
+  const [humanizedContent, setHumanizedContent] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [styleWarning, setStyleWarning] = useState<string | null>(null);
+  const [options, setOptions] = useState({
     tone: 'conversational',
     formality: 'neutral',
     simplify: false,
-    styleGuideId: styleGuide?.id,
-    industryContext: ''
+    preserveKeyPoints: true
   });
 
-  const [showComparison, setShowComparison] = useState(false);
-  const [keywords, setKeywords] = useState<string>('');
-  const [violations, setViolations] = useState<StyleViolation[]>([]);
-  const [showDiffView, setShowDiffView] = useState(false);
-  const router = useRouter();
-
-  // Effect to update statistics when content changes
+  // Check if writing style and messaging are configured
   useEffect(() => {
-    setContent(prev => ({
-      ...prev,
-      statistics: {
-        ...prev.statistics,
-        originalLength: prev.original.length,
-        enhancedLength: prev.enhanced?.length || 0
-      }
-    }));
-  }, [content.original, content.enhanced]);
-
-  // Handle keyword updates
-  const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setKeywords(e.target.value);
-    setOptions(prev => ({
-      ...prev,
-      preserveKeywords: e.target.value.split(',').map(k => k.trim()).filter(k => k)
-    }));
-  };
-
-  // Enhanced file upload handler
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const text = await file.text();
-        setContent(prev => ({
-          ...prev,
-          original: text,
-          enhanced: null,
-          statistics: {
-            ...prev.statistics,
-            originalLength: text.length,
-            enhancedLength: 0
-          }
-        }));
-      } catch (err) {
-        showNotification('Error reading file', 'error');
-        setContent(prev => ({
-          ...prev,
-          error: 'Failed to read file content'
-        }));
-      }
+    const hasWritingStyle = !!(writingStyle && (
+      (writingStyle.styleGuide && writingStyle.styleGuide.primary) || 
+      (writingStyle.formatting && Object.keys(writingStyle.formatting).length > 0)
+    ));
+    
+    const hasMessaging = !!(messaging && (
+      messaging.valueProposition || 
+      (messaging.keyMessages && messaging.keyMessages.length > 0)
+    ));
+    
+    if (!hasWritingStyle && !hasMessaging) {
+      setStyleWarning('No Writing Style or Messaging configured. Content will use generic styling.');
+    } else if (!hasWritingStyle) {
+      setStyleWarning('No Writing Style configured. Content will use generic styling.');
+    } else if (!hasMessaging) {
+      setStyleWarning('No Messaging configured. Content may not align with your key messages.');
+    } else {
+      setStyleWarning(null);
     }
-  };
 
-  // Style compliance checker
-  const checkStyleCompliance = (text: string): StyleViolation[] => {
-    const violations: StyleViolation[] = [];
-    if (styleRules) {
-      // Check each style rule against the text
-      styleRules.forEach(rule => {
-        // This is a simplified example - expand based on your style rules
-        if (rule.pattern && new RegExp(rule.pattern, 'gi').test(text)) {
-          violations.push({
-            text: text.match(new RegExp(rule.pattern, 'gi'))?.[0] || '',
-            rule: rule.name,
-            suggestion: rule.suggestion || 'Consider revising'
-          });
-        }
-      });
+    // If writing style is configured, use its tone
+    if (writingStyle?.brandVoice?.tone) {
+      setOptions(prev => ({
+        ...prev,
+        tone: writingStyle.brandVoice.tone.toLowerCase()
+      }));
     }
-    return violations;
-  };
+  }, [writingStyle, messaging]);
 
   // Enhanced humanization process
   const humanizeContent = async () => {
-    if (!content.original.trim()) {
+    if (!content.trim()) {
       showNotification('Please enter content to humanize', 'warning');
       return;
     }
 
-    setContent(prev => ({
-      ...prev,
-      processing: true,
-      error: null,
-      progress: 0
-    }));
+    setIsProcessing(true);
 
     try {
-      // Simulated progress updates
-      const progressInterval = setInterval(() => {
-        setContent(prev => ({
-          ...prev,
-          progress: Math.min(prev.progress + 10, 90)
-        }));
-      }, 500);
-
-      console.log('Sending request to humanize content:', {
-        content: content.original,
-        parameters: options
-      });
+      // Prepare writing style and messaging parameters
+      const styleParameters = {
+        styleGuide: writingStyle?.styleGuide?.primary || 'Default',
+        tone: writingStyle?.brandVoice?.tone || options.tone,
+        formatting: writingStyle?.formatting || {},
+        punctuation: writingStyle?.punctuation || {}
+      };
+      
+      const messagingParameters = {
+        valueProposition: messaging?.valueProposition || '',
+        keyMessages: messaging?.keyMessages || [],
+        keyBenefits: messaging?.keyBenefits || [],
+        targetAudience: messaging?.targetAudience || ''
+      };
 
       const response = await fetch('/api/content-humanizer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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'
+          'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
         },
         body: JSON.stringify({
-          content: content.original,
+          content: content,
           parameters: {
             ...options,
-            styleGuideParameters: styleGuide ? {
-              prohibited: styleGuide.prohibited || [],
-              required: styleGuide.required || []
-            } : undefined
+            styleGuideParameters: styleParameters,
+            messagingParameters: messagingParameters
           }
         })
       });
 
-      clearInterval(progressInterval);
-
-      console.log('Response status:', response.status);
-      const responseData = await response.json();
-      console.log('Response data:', responseData);
-
       if (!response.ok) {
-        throw new Error(responseData.error?.message || 'Failed to humanize content');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Check style compliance
-      const styleViolations = checkStyleCompliance(responseData.content);
-      setViolations(styleViolations);
-
-      setContent(prev => ({
-        ...prev,
-        enhanced: responseData.content,
-        processing: false,
-        progress: 100,
-        changes: responseData.changes || [],
-        statistics: {
-          ...prev.statistics,
-          enhancedLength: responseData.content.length,
-          readabilityScore: responseData.readabilityScore,
-          styleCompliance: styleViolations.length ? 
-            100 - (styleViolations.length * 5) : 100
-        }
-      }));
-
+      const responseData = await response.json();
+      setHumanizedContent(responseData.content);
       showNotification('Content humanized successfully', 'success');
-      setShowComparison(true);
-    } catch (err) {
+    } catch (error) {
+      console.error('Error in humanizeContent:', error);
       showNotification('Failed to humanize content', 'error');
-      setContent(prev => ({
-        ...prev,
-        processing: false,
-        error: 'Failed to humanize content. Please try again.',
-        progress: 0
-      }));
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // UI Components
-  const renderProgressBar = () => (
-    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-      <div 
-        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-        style={{ width: `${content.progress}%` }}
-      />
-    </div>
-  );
-
-  const renderStatistics = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div className="p-4 bg-gray-50 rounded">
-        <h4 className="text-sm font-medium">Original Length</h4>
-        <p className="text-2xl">{content.statistics.originalLength}</p>
-      </div>
-      <div className="p-4 bg-gray-50 rounded">
-        <h4 className="text-sm font-medium">Enhanced Length</h4>
-        <p className="text-2xl">{content.statistics.enhancedLength}</p>
-      </div>
-      {content.statistics.readabilityScore && (
-        <div className="p-4 bg-gray-50 rounded">
-          <h4 className="text-sm font-medium">Readability</h4>
-          <p className="text-2xl">{content.statistics.readabilityScore}%</p>
-        </div>
-      )}
-      {content.statistics.styleCompliance && (
-        <div className="p-4 bg-gray-50 rounded">
-          <h4 className="text-sm font-medium">Style Compliance</h4>
-          <p className="text-2xl">{content.statistics.styleCompliance}%</p>
-        </div>
-      )}
-    </div>
-  );
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Content Humanizer</h1>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Content Humanizer</h1>
+        <p className="text-gray-600">Make AI-generated content sound more natural and human-written</p>
+        
+        {/* Style Warning Alert */}
+        {styleWarning && (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
+            <AlertCircle className="w-5 h-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-yellow-700">{styleWarning}</p>
+              <p className="text-sm text-yellow-600 mt-1">
+                Consider setting up your <a href="/writing-style" className="underline">Writing Style</a> and <a href="/messaging" className="underline">Messaging</a> first.
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* AI Insights */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <h3 className="font-medium mb-2 flex items-center">
+            <span className="text-2xl mr-2">✨</span>
+            AI Insights
+          </h3>
+          <ul className="space-y-2">
+            {[
+              "Humanizing AI content improves engagement by up to 40%",
+              "The AI will maintain your key messages while making the text flow naturally",
+              writingStyle?.styleGuide?.primary 
+                ? `Using your "${writingStyle.styleGuide.primary}" style guide for consistent brand voice` 
+                : "Tone will be adjusted to sound authentic and conversational"
+            ].map((insight, index) => (
+              <li key={index} className="text-sm text-slate-700 flex items-start">
+                <span className="text-blue-600 mr-2">•</span>
+                {insight}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
       
-      {/* Enhanced Options Panel */}
+      {/* Options Panel */}
       <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardHeader>
+          <CardTitle>Humanization Options</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Tone</label>
               <select 
                 className="w-full p-2 border rounded"
                 value={options.tone}
                 onChange={(e) => setOptions(prev => ({ ...prev, tone: e.target.value }))}
+                disabled={!!writingStyle?.brandVoice?.tone}
               >
-                <option value="Conversational">Conversational</option>
-                <option value="Professional">Professional</option>
-                <option value="Casual">Casual</option>
-                <option value="Authoritative">Authoritative</option>
-                <option value="Friendly">Friendly</option>
+                <option value="conversational">Conversational</option>
+                <option value="professional">Professional</option>
+                <option value="friendly">Friendly</option>
+                <option value="authoritative">Authoritative</option>
+                <option value="casual">Casual</option>
               </select>
+              {writingStyle?.brandVoice?.tone && (
+                <p className="text-xs text-slate-500 mt-1">Using tone from your brand voice settings</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Formality</label>
               <select 
                 className="w-full p-2 border rounded"
                 value={options.formality}
-                onChange={(e) => setOptions(prev => ({ 
-                  ...prev, 
-                  formality: e.target.value as 'formal' | 'neutral' | 'casual' 
-                }))}
+                onChange={(e) => setOptions(prev => ({ ...prev, formality: e.target.value as any }))}
               >
                 <option value="formal">Formal</option>
                 <option value="neutral">Neutral</option>
                 <option value="casual">Casual</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Industry Context</label>
+          </div>
+          
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center">
               <input
-                type="text"
-                className="w-full p-2 border rounded"
-                value={options.industryContext}
-                onChange={(e) => setOptions(prev => ({ 
-                  ...prev, 
-                  industryContext: e.target.value 
-                }))}
-                placeholder="e.g., Technology, Healthcare"
+                type="checkbox"
+                id="simplify"
+                checked={options.simplify}
+                onChange={(e) => setOptions(prev => ({ ...prev, simplify: e.target.checked }))}
+                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
               />
+              <label htmlFor="simplify" className="ml-2 block text-sm text-gray-900">
+                Simplify language
+              </label>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="preserveKeyPoints"
+                checked={options.preserveKeyPoints}
+                onChange={(e) => setOptions(prev => ({ ...prev, preserveKeyPoints: e.target.checked }))}
+                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+              <label htmlFor="preserveKeyPoints" className="ml-2 block text-sm text-gray-900">
+                Preserve key points
+              </label>
             </div>
           </div>
-
-
         </CardContent>
       </Card>
 
       {/* Content Input */}
       <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="mb-4">
-            <input
-              type="file"
-              accept=".txt,.doc,.docx,.md"
-              onChange={handleFileUpload}
-              className="mb-4"
-            />
-          </div>
+        <CardHeader>
+          <CardTitle>Original Content</CardTitle>
+        </CardHeader>
+        <CardContent>
           <textarea
-            value={content.original}
-            onChange={(e) => setContent(prev => ({
-              ...prev,
-              original: e.target.value,
-              enhanced: null
-            }))}
-            placeholder="Upload or paste your content here..."
-            className="w-full h-64 p-4 border rounded"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Paste your AI-generated content here..."
+            className="w-full h-64 p-4 border rounded-md"
+            disabled={isProcessing}
           />
-          <div className="mt-4 flex justify-between items-center">
-            <button
-              onClick={() => setShowDiffView(!showDiffView)}
-              className="px-4 py-2 border rounded hover:bg-gray-50"
-            >
-              {showDiffView ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showDiffView ? ' Hide Changes' : ' View Detailed Changes'}
-            </button>
-            <button
-              onClick={humanizeContent}
-              disabled={content.processing || !content.original.trim()}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              {content.processing ? 'Processing...' : 'Humanize Content'}
-            </button>
-          </div>
+          
+          <button
+            onClick={humanizeContent}
+            disabled={isProcessing || !content.trim()}
+            className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            {isProcessing ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Humanizing Content...
+              </>
+            ) : (
+              <>
+                <span>Humanize Content</span>
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </>
+            )}
+          </button>
         </CardContent>
       </Card>
 
-      {/* Progress and Errors */}
-      {content.processing && renderProgressBar()}
-      
-      {content.error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{content.error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Style Violations */}
-      {violations.length > 0 && (
-        <Alert className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <div className="font-medium">Style Guide Violations:</div>
-            <ul className="list-disc pl-4">
-              {violations.map((v, i) => (
-                <li key={i} className="text-sm">
-                  {v.text}: {v.suggestion}
-                </li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Results Section */}
-      {content.enhanced && showComparison && (
-        <>
-          {renderStatistics()}
-          
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-xl font-semibold mb-4">Enhanced Content</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-medium mb-2">Original</h3>
-                  <div className="p-4 bg-gray-50 rounded">
-                    {content.original}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-medium mb-2">Enhanced</h3>
-                  <div className="p-4 bg-gray-50 rounded">
-                    {content.enhanced}
-                  </div>
-                </div>
-              </div>
-
-              {/* Changes List */}
-              {content.changes.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="font-medium mb-2">Changes Made</h3>
-                  <ul className="space-y-2">
-                    {content.changes.map((change, index) => (
-                      <li key={index} className="text-sm">
-                        <span className="line-through text-red-500">{change.original}</span>
-                        {' → '}
-                        <span className="text-green-500">{change.modified}</span>
-                        <span className="text-gray-500 ml-2">({change.reason})</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="mt-4 flex justify-end space-x-4">
-                <button
-                  onClick={() => navigator.clipboard.writeText(content.enhanced || '')}
-                  className="px-4 py-2 border rounded hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy Enhanced
-                </button>
-                <button
-                  onClick={() => setShowComparison(false)}
-                  className="px-4 py-2 border rounded hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Hide Comparison
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        </>
+      {/* Humanized Result */}
+      {humanizedContent && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Humanized Content</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 bg-gray-50 rounded-md whitespace-pre-wrap">
+              {humanizedContent}
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(humanizedContent);
+                showNotification('Copied to clipboard', 'success');
+              }}
+              className="mt-4 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 flex items-center"
+            >
+              <Copy className="mr-2 w-4 h-4" />
+              Copy to Clipboard
+            </button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
