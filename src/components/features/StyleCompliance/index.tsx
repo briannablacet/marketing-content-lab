@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+// src/components/features/StyleCompliance/index.tsx
+import React, { useState, useRef } from 'react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
 import { Alert, AlertTitle, AlertDescription } from '../../ui/alert';
-import { CheckCircle, AlertCircle, Upload } from 'lucide-react';
+import { CheckCircle, AlertCircle, Upload, FileText, X, Loader } from 'lucide-react';
 
 interface ComplianceResult {
   rule: string;
@@ -13,6 +14,79 @@ interface ComplianceResult {
   severity: 'error' | 'warning';
 }
 
+const FileUploader = ({ onFileContent, onError }) => {
+  const [fileName, setFileName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFileName(file.name);
+      
+      try {
+        const fileSize = file.size / 1024 / 1024; // size in MB
+        if (fileSize > 5) {
+          onError('File size exceeds 5MB limit');
+          return;
+        }
+        
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['txt', 'doc', 'docx', 'md', 'rtf', 'html'];
+        
+        if (!allowedExtensions.includes(fileExtension)) {
+          onError('Unsupported file format. Please upload a text document.');
+          return;
+        }
+        
+        const text = await file.text();
+        onFileContent(text);
+      } catch (error) {
+        console.error('Error reading file:', error);
+        onError('Failed to read file. Please try again.');
+      }
+    }
+  };
+  
+  const clearFile = () => {
+    setFileName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  return (
+    <div className="mb-4">
+      <p className="text-sm text-gray-500 mb-2">Upload a document to check against style guidelines:</p>
+      <div className="flex items-center gap-2">
+        <label className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100">
+          <Upload className="w-5 h-5 mr-2" />
+          <span>Upload File</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileUpload}
+            className="hidden"
+            accept=".txt,.doc,.docx,.md,.rtf,.html"
+          />
+        </label>
+        {fileName && (
+          <div className="flex items-center p-2 bg-gray-50 rounded">
+            <FileText className="w-4 h-4 text-gray-500 mr-2" />
+            <span className="text-sm text-gray-600">{fileName}</span>
+            <button 
+              onClick={clearFile}
+              className="ml-2 text-gray-400 hover:text-red-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+      <p className="text-xs text-gray-500 mt-2">Supports .txt, .doc, .docx, .md, .rtf, .html (max 5MB)</p>
+    </div>
+  );
+};
+
 const StyleComplianceChecker: React.FC = () => {
   // Access existing writing style context
   const { writingStyle } = useWritingStyle();
@@ -20,28 +94,19 @@ const StyleComplianceChecker: React.FC = () => {
 
   // Local state
   const [content, setContent] = useState('');
-  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [results, setResults] = useState<ComplianceResult[]>([]);
   const [isChecking, setIsChecking] = useState(false);
   const [isFileUploaded, setIsFileUploaded] = useState(false);
 
-  // Handle document upload
-  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setDocumentFile(file);
-      setIsFileUploaded(true);
+  // Handle document upload via the component
+  const handleFileContent = (fileContent: string) => {
+    setContent(fileContent);
+    setIsFileUploaded(true);
+    showNotification('success', 'Document uploaded successfully');
+  };
 
-      // Read file content
-      try {
-        const text = await file.text();
-        setContent(text);
-        showNotification('success', 'Document uploaded successfully');
-      } catch (error) {
-        console.error('Error reading file:', error);
-        showNotification('error', 'Error reading document. Please try again.');
-      }
-    }
+  const handleFileError = (errorMessage: string) => {
+    showNotification('error', errorMessage);
   };
 
   // Check content against style rules
@@ -55,7 +120,7 @@ const StyleComplianceChecker: React.FC = () => {
     const results: ComplianceResult[] = [];
 
     // Check formatting rules
-    if (writingStyle.formatting.headings) {
+    if (writingStyle.formatting?.headings) {
       const headingMatch = content.match(/^[A-Z]/gm);
       results.push({
         rule: 'Heading Style',
@@ -67,7 +132,7 @@ const StyleComplianceChecker: React.FC = () => {
     }
 
     // Check punctuation rules
-    if (writingStyle.punctuation.oxfordComma) {
+    if (writingStyle.punctuation?.oxfordComma) {
       const oxfordCommaCheck = content.match(/[^,]+ and /g);
       results.push({
         rule: 'Oxford Comma',
@@ -79,7 +144,7 @@ const StyleComplianceChecker: React.FC = () => {
     }
 
     // Check bullet point style
-    if (writingStyle.punctuation.bulletPoints) {
+    if (writingStyle.punctuation?.bulletPoints) {
       const bulletPointCheck = content.match(/•.*[.]/g);
       results.push({
         rule: 'Bullet Point Style',
@@ -90,33 +155,64 @@ const StyleComplianceChecker: React.FC = () => {
       });
     }
 
+    // Add a slight delay to simulate processing for better UX
+    await new Promise(resolve => setTimeout(resolve, 1000));
     setResults(results);
     setIsChecking(false);
+    
+    // Show notification based on results
+    if (results.every(r => r.passed)) {
+      showNotification('success', 'Content complies with all style guidelines!');
+    } else {
+      const violationCount = results.filter(r => !r.passed).length;
+      showNotification('warning', `Found ${violationCount} style guide violations.`);
+    }
   };
 
   // Clear all
   const handleClear = () => {
     setContent('');
-    setDocumentFile(null);
     setResults([]);
     setIsFileUploaded(false);
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4">
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Style Compliance Checker</h1>
+        <p className="text-gray-600">Check your content against {writingStyle.styleGuide?.primary || 'default'} style guide rules</p>
+        
+        {/* AI Insights */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <h3 className="font-medium mb-2 flex items-center">
+            <span className="text-2xl mr-2">✨</span>
+            AI Insights
+          </h3>
+          <ul className="space-y-2">
+            {[
+              "Style consistency improves brand recognition by up to 30%",
+              "Proper style usage increases content professionalism and credibility",
+              "Consistent writing style reduces reader cognitive load by 20%"
+            ].map((insight, index) => (
+              <li key={index} className="text-sm text-slate-700 flex items-start">
+                <span className="text-blue-600 mr-2">•</span>
+                {insight}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      
       <Card>
         <CardHeader>
-          <CardTitle>Style Compliance Checker</CardTitle>
-          <p className="text-sm text-gray-600 mt-2">
-            Check your content against {writingStyle.styleGuide.primary || 'default'} style guide rules
-          </p>
+          <CardTitle>Style Check</CardTitle>
         </CardHeader>
         <CardContent>
           {/* Upload Section */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium">Check Content</label>
-              {isFileUploaded && (
+              {(isFileUploaded || content) && (
                 <button
                   onClick={handleClear}
                   className="text-sm text-blue-600 hover:text-blue-800"
@@ -127,23 +223,10 @@ const StyleComplianceChecker: React.FC = () => {
             </div>
             <div className="flex flex-col gap-4">
               {/* File Upload */}
-              <div className="flex items-center gap-2">
-                <label className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100">
-                  <Upload className="w-5 h-5 mr-2" />
-                  <span>Upload Document</span>
-                  <input
-                    type="file"
-                    onChange={handleDocumentUpload}
-                    className="hidden"
-                    accept=".txt,.doc,.docx,.pdf"
-                  />
-                </label>
-                {documentFile && (
-                  <span className="text-sm text-gray-600">
-                    {documentFile.name}
-                  </span>
-                )}
-              </div>
+              <FileUploader 
+                onFileContent={handleFileContent}
+                onError={handleFileError}
+              />
 
               {/* Text Input */}
               <div>
@@ -162,9 +245,16 @@ const StyleComplianceChecker: React.FC = () => {
           <button
             onClick={checkCompliance}
             disabled={!content || isChecking}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isChecking ? 'Checking...' : 'Check Style Compliance'}
+            {isChecking ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              'Check Style Compliance'
+            )}
           </button>
 
           {/* Results Section */}
@@ -174,22 +264,35 @@ const StyleComplianceChecker: React.FC = () => {
               {results.map((result, index) => (
                 <Alert 
                   key={index}
-                  variant={result.passed ? 'success' : 'error'}
+                  variant={result.passed ? 'default' : result.severity === 'error' ? 'destructive' : 'default'}
+                  className={result.passed ? 'bg-green-50 border-green-200' : 
+                            result.severity === 'error' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}
                 >
-                  <div className="mr-3 mt-1">
-                    {result.passed ? (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                    )}
-                  </div>
-                  <div>
-                    <AlertTitle>
-                      {result.rule}
-                    </AlertTitle>
-                    <AlertDescription>
-                      {result.message}
-                    </AlertDescription>
+                  <div className="flex items-start">
+                    <div className="mr-3 mt-1">
+                      {result.passed ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <AlertCircle className={`w-5 h-5 ${result.severity === 'error' ? 'text-red-600' : 'text-yellow-600'}`} />
+                      )}
+                    </div>
+                    <div>
+                      <AlertTitle>
+                        {result.rule}
+                      </AlertTitle>
+                      <AlertDescription>
+                        {result.message}
+                        {!result.passed && (
+                          <div className="mt-2 text-sm">
+                            <span className="font-medium">{result.severity === 'error' ? 'Required action:' : 'Suggestion:'}</span> {
+                              result.category === 'formatting' ? 'Check document formatting.' :
+                              result.category === 'punctuation' ? 'Review punctuation usage.' :
+                              'Review grammar rules.'
+                            }
+                          </div>
+                        )}
+                      </AlertDescription>
+                    </div>
                   </div>
                 </Alert>
               ))}

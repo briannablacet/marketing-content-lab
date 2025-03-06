@@ -1,20 +1,20 @@
 // src/pages/style-checker.tsx
 import React from 'react';
-import StyleComplianceChecker from '../components/features/StyleCompliance';
-import { WritingStyleProvider } from '../context/WritingStyleContext';
+import dynamic from 'next/dynamic';
 import { NotificationProvider } from '../context/NotificationContext';
+import { WritingStyleProvider } from '../context/WritingStyleContext';
+
+// Use dynamic import with SSR disabled to prevent SSR-related issues with file handling
+const StyleComplianceChecker = dynamic(() => import('../components/features/StyleCompliance'), {
+  ssr: false,
+  loading: () => <div className="p-8 text-center">Loading Style Compliance Checker...</div>
+});
 
 const StyleCheckerPage: React.FC = () => {
   return (
     <NotificationProvider>
       <WritingStyleProvider>
-        <div className="max-w-6xl mx-auto p-8">  // Changed to max-w-6xl and added p-8
-          <h1 className="text-2xl font-bold mb-8">Style Guardian</h1>
-          <p className="text-gray-600 mb-8">
-            Automatically verify your content against your brand style guidelines
-          </p>
-          <StyleComplianceChecker />
-        </div>
+        <StyleComplianceChecker />
       </WritingStyleProvider>
     </NotificationProvider>
   );
