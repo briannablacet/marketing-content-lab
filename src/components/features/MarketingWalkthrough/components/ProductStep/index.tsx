@@ -73,7 +73,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="w-full">
       <Card className="p-6">
         <div className="space-y-6">
           {/* Product/Service Details */}

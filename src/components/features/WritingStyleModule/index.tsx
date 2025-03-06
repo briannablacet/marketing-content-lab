@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { HelpCircle, Upload, FileText, X } from 'lucide-react';
+import { useRouter } from 'next/router';
 
 interface WritingStyleProps {
   isWalkthrough?: boolean;
@@ -29,6 +30,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
   const { writingStyle, updateWritingStyle, applyStyleGuideRules } = useWritingStyle();
   const { showNotification } = useNotification();
   const [uploadedStyleGuide, setUploadedStyleGuide] = useState<File | null>(null);
+  const router = useRouter();
 
   const handleStyleGuideUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -89,6 +91,15 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
         [field]: value
       }
     });
+  };
+
+  const handleSubmit = () => {
+    showNotification('success', 'Writing style preferences saved successfully');
+    if (isWalkthrough && onNext) {
+      onNext();
+    } else {
+      router.push('/creation-hub');
+    }
   };
 
   return (
@@ -277,6 +288,16 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Submit Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleSubmit}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Save Writing Style
+        </button>
       </div>
     </div>
   );

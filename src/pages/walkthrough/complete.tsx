@@ -36,9 +36,9 @@ const WalkthroughComplete = () => {
           </p>
         </button>
 
-        {/* Review Strategy Card */}
+        {/* Review Strategy Card - Update this link */}
         <button
-          onClick={() => router.push('/content-strategy')}
+          onClick={() => router.push('/review-program')}  // Change from '/content-strategy' to '/review-program'
           className="p-6 bg-white rounded-lg border hover:border-blue-500 hover:shadow-md transition-all group"
         >
           <div className="flex items-center gap-3 mb-3">

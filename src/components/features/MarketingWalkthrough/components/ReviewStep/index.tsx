@@ -1,9 +1,34 @@
 // src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useContent } from '../../../../../context/ContentContext';
+import { useWalkthrough } from '../../../../../context/WalkthroughContext';
+import Link from 'next/link';
 
-const ReviewStep = () => {
-  const { selectedContentTypes } = useContent();
+interface ReviewStepProps {
+  onNext?: () => void;
+  onBack?: () => void;
+  selectedContentTypes?: string[];
+}
+
+const ReviewStep: React.FC<ReviewStepProps> = ({ 
+  onNext, 
+  onBack, 
+  selectedContentTypes: propSelectedTypes 
+}) => {
+  const { selectedContentTypes: contextSelectedTypes } = useContent();
+  const { data } = useWalkthrough();
+  const [hasCompetitors, setHasCompetitors] = useState(false);
+  
+  // Use the selectedContentTypes from props if provided, otherwise from context
+  const selectedContentTypes = propSelectedTypes || contextSelectedTypes;
+
+  // Check if competitors exist in walkthrough data
+  useEffect(() => {
+    if (data?.competitors && data.competitors.length > 0 && 
+        data.competitors.some(comp => comp.name.trim() !== '')) {
+      setHasCompetitors(true);
+    }
+  }, [data]);
 
   const completedSteps = [
     {
@@ -22,7 +47,8 @@ const ReviewStep = () => {
       title: "Competitive Analysis",
       description: "You've analyzed your content positioning against competitors",
       items: ["Content Differentiators", "Market Gaps", "Unique Angles"],
-      icon: "📊"
+      icon: "📊",
+      hasData: hasCompetitors
     },
     {
       title: "Content Strategy",
@@ -39,7 +65,7 @@ const ReviewStep = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       <div className="mb-8">
         <div className="inline-block bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm mb-4">
           🎉 Strategy Complete
@@ -70,6 +96,17 @@ const ReviewStep = () => {
                     </span>
                   ))}
                 </div>
+                
+                {/* Show Competitive Dashboard link if competitors data exists */}
+                {step.title === "Competitive Analysis" && step.hasData && (
+                  <div className="mt-4">
+                    <Link href="/competitor-dashboard">
+                      <button className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50">
+                        View Competitive Landscape Dashboard →
+                      </button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>

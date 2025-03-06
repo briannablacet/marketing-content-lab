@@ -19,9 +19,16 @@ interface SeoKeywordsStepProps {
   onBack: () => void;
   onSave: (data: SeoKeywordsData) => void;
   initialData?: SeoKeywordsData;
+  showSubmitButton?: boolean;
 }
 
-const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSave, initialData }) => {
+const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ 
+  onNext, 
+  onBack, 
+  onSave, 
+  initialData,
+  showSubmitButton = false
+}) => {
   const [keywordData, setKeywordData] = useState<SeoKeywordsData>({
     primaryKeywords: [''],
     secondaryKeywords: [''],
@@ -89,6 +96,11 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSav
       };
 
       await onSave(cleanedData);
+      
+      // If in walkthrough mode, continue to next step
+      if (!showSubmitButton) {
+        onNext();
+      }
     } catch (err) {
       setError('Failed to save SEO keywords. Please try again.');
     } finally {
@@ -159,7 +171,7 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSav
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full">
       <Card>
         <CardContent className="p-6">
           <div className="mb-6">
@@ -187,7 +199,6 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSav
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Rest of the form content remains the same */}
             {/* Primary Keywords */}
             <div className="space-y-4">
               <label className="block text-lg font-medium text-gray-900">
@@ -350,6 +361,19 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({ onNext, onBack, onSav
               <div className="text-red-600 text-sm flex items-center">
                 <HelpCircle className="w-4 h-4 mr-1" />
                 {error}
+              </div>
+            )}
+
+            {/* Submit button for standalone page */}
+            {showSubmitButton && (
+              <div className="flex justify-end mt-6">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
+                >
+                  {loading ? 'Saving...' : 'Save Keywords'}
+                </button>
               </div>
             )}
           </form>

@@ -7,7 +7,7 @@ const ProductPage = () => {
   const router = useRouter();
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
+    <div className="max-w-6xl mx-auto p-8">  // Changed to max-w-6xl
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Define Your Product or Service

@@ -1,63 +1,23 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+// src/pages/writing-style.tsx
+import React from 'react';
+import WritingStyleModule from '../components/features/WritingStyleModule';
+import { WritingStyleProvider } from '../context/WritingStyleContext';
+import { NotificationProvider } from '../context/NotificationContext';
 
-interface StyleRule {
-  name: string;
-  pattern: string;
-  suggestion?: string;
-}
-
-interface StyleGuide {
-  id: string;
-  name: string;
-  rules: StyleRule[];
-}
-
-interface WritingStyleContextType {
-  styleGuide: StyleGuide | null;
-  styleRules: StyleRule[];
-  setStyleGuide: (guide: StyleGuide) => void;
-  updateRules: (rules: StyleRule[]) => void;
-}
-
-const defaultContext: WritingStyleContextType = {
-  styleGuide: null,
-  styleRules: [],
-  setStyleGuide: () => {},
-  updateRules: () => {}
-};
-
-export const WritingStyleContext = createContext<WritingStyleContextType>(defaultContext);
-
-interface WritingStyleProviderProps {
-  children: ReactNode;
-}
-
-export const WritingStyleProvider: React.FC<WritingStyleProviderProps> = ({ children }) => {
-  const [styleGuide, setStyleGuide] = useState<StyleGuide | null>(null);
-  const [styleRules, setStyleRules] = useState<StyleRule[]>([]);
-
-  const updateRules = (rules: StyleRule[]) => {
-    setStyleRules(rules);
-  };
-
+const WritingStylePage: React.FC = () => {
   return (
-    <WritingStyleContext.Provider 
-      value={{
-        styleGuide,
-        styleRules,
-        setStyleGuide,
-        updateRules
-      }}
-    >
-      {children}
-    </WritingStyleContext.Provider>
+    <NotificationProvider>
+      <WritingStyleProvider>
+        <div className="container mx-auto py-8">
+          <h1 className="text-3xl font-bold mb-8 text-center">Writing Style Configuration</h1>
+          <p className="text-gray-600 text-center mb-8">
+            Define your brand's writing style and content guidelines
+          </p>
+          <WritingStyleModule />
+        </div>
+      </WritingStyleProvider>
+    </NotificationProvider>
   );
 };
 
-export const useWritingStyle = () => {
-  const context = useContext(WritingStyleContext);
-  if (context === undefined) {
-    throw new Error('useWritingStyle must be used within a WritingStyleProvider');
-  }
-  return context;
-};
+export default WritingStylePage;

@@ -8,7 +8,7 @@ interface WelcomeStepProps {
 
 const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, onBack }) => {
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
+    <div className="space-y-8 w-full">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900">
           Welcome to Your Content Marketing Journey! ✨
