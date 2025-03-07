@@ -3,7 +3,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { Pencil, FileText, Sparkles, Settings, MessageSquare } from 'lucide-react';
+import { Pencil, FileText, Sparkles, Settings, RefreshCw } from 'lucide-react';
 
 const CreationHub = () => {
   const router = useRouter();
@@ -20,18 +20,18 @@ const CreationHub = () => {
     {
       id: 'content-enhancer',
       title: 'Content Enhancer',
-      description: 'Improve and optimize your existing content',
+      description: 'Improve, optimize, and repurpose your existing content',
       icon: <Sparkles className="w-10 h-10 text-purple-600" />,
       link: '/content-enhancer',
       isNew: true
     },
     {
-      id: 'content-humanizer',
-      title: 'Content Humanizer',
-      description: 'Make AI-generated content feel more natural and authentic',
-      icon: <MessageSquare className="w-10 h-10 text-green-600" />,
-      link: '/content-humanizer',
-      isNew: false
+      id: 'content-repurposer',
+      title: 'Content Repurposer',
+      description: 'Transform your content from one format to another while preserving your brand voice',
+      icon: <RefreshCw className="w-10 h-10 text-green-600" />,
+      link: '/content-repurposer',
+      isNew: true
     },
     {
       id: 'campaign-builder',
@@ -50,7 +50,7 @@ const CreationHub = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Content Creation Hub</h1>
             <p className="text-gray-600 mt-2">
-              Create, enhance, and perfect your marketing content with AI assistance
+              Create, enhance, repurpose, and perfect your marketing content with AI assistance
             </p>
           </div>
           <Link href="/writing-style">
@@ -97,7 +97,7 @@ const CreationHub = () => {
           </li>
           <li className="flex items-start gap-2 text-blue-700">
             <span>•</span>
-            <span>Use Content Humanizer to make AI-generated content sound more authentic</span>
+            <span>Use Content Repurposer to transform your best content into different formats</span>
           </li>
           <li className="flex items-start gap-2 text-blue-700">
             <span>•</span>

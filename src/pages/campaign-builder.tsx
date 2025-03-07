@@ -420,6 +420,7 @@ const CampaignBuilder: React.FC = () => {
         "Including social media as a supporting channel can increase engagement by 30%",
         "Campaigns with consistent messaging across all channels perform 40% better"
       ]}
+      hideNavigation={true} // Add this to hide the walkthrough navigation
     >
       {renderCurrentStep()}
     </ScreenTemplate>

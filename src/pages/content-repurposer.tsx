@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { NotificationProvider } from '../context/NotificationContext';
 import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { MessagingProvider } from '../context/MessagingContext';
+import { ScreenTemplate } from '../components/shared/UIComponents';
 
 // Use dynamic import with SSR disabled to prevent SSR-related issues
 const ContentRepurposer = dynamic(() => import('../components/features/ContentRepurposer'), {
@@ -17,7 +18,17 @@ export default function ContentRepurposerPage() {
     <NotificationProvider>
       <WritingStyleProvider>
         <MessagingProvider>
-          <ContentRepurposer />
+          <ScreenTemplate
+            title="Content Repurposer"
+            subtitle="Transform your content from one format to another while preserving key messages"
+            aiInsights={[
+              "Repurposing content can increase your content reach by up to 60%",
+              "The AI will preserve your brand voice across different formats",
+              "Each format is optimized for its specific platform and audience"
+            ]}
+          >
+            <ContentRepurposer />
+          </ScreenTemplate>
         </MessagingProvider>
       </WritingStyleProvider>
     </NotificationProvider>
