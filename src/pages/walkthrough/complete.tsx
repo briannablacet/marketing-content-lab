@@ -4,10 +4,12 @@ import { useRouter } from 'next/router';
 import { Card } from '@/components/ui/card';
 import { Sparkles, FileText, PenTool } from 'lucide-react';
 import { useContent } from '../../context/ContentContext';
+import { useBrandVoice } from '../../context/BrandVoiceContext';
 
 const WalkthroughComplete = () => {
   const router = useRouter();
   const { selectedContentTypes } = useContent();
+  const { brandVoice } = useBrandVoice();
 
   return (
     <div className="max-w-4xl mx-auto p-8">
@@ -36,9 +38,9 @@ const WalkthroughComplete = () => {
           </p>
         </button>
 
-        {/* Review Strategy Card - Update this link */}
+        {/* Review Strategy Card */}
         <button
-          onClick={() => router.push('/review-program')}  // Change from '/content-strategy' to '/review-program'
+          onClick={() => router.push('/content-strategy')}
           className="p-6 bg-white rounded-lg border hover:border-blue-500 hover:shadow-md transition-all group"
         >
           <div className="flex items-center gap-3 mb-3">
@@ -51,16 +53,34 @@ const WalkthroughComplete = () => {
         </button>
       </div>
 
-      {/* Selected Content Types */}
-      <div className="bg-white rounded-lg border p-6">
-        <h3 className="text-lg font-semibold mb-4">Your Content Plan Includes:</h3>
-        <div className="flex flex-wrap gap-2">
-          {selectedContentTypes.map(type => (
-            <span key={type} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-              {type}
-            </span>
-          ))}
+      {/* Strategy Summary */}
+      <div className="bg-white rounded-lg border p-6 mb-6">
+        <h3 className="text-lg font-semibold mb-4">Your Content Strategy Summary:</h3>
+
+        {/* Selected Content Types */}
+        <div className="mb-4">
+          <h4 className="font-medium text-gray-700 mb-2">Content Types:</h4>
+          <div className="flex flex-wrap gap-2">
+            {selectedContentTypes.map(type => (
+              <span key={type} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                {type}
+              </span>
+            ))}
+          </div>
         </div>
+
+        {/* Brand Voice (if defined) */}
+        {brandVoice?.brandVoice?.archetype && (
+          <div className="mb-4">
+            <h4 className="font-medium text-gray-700 mb-2">Brand Voice:</h4>
+            <div className="p-3 bg-green-50 rounded text-gray-700">
+              <span className="font-medium">Archetype:</span> {brandVoice.brandVoice.archetype}
+              {brandVoice.brandVoice.tone && (
+                <span className="ml-2">| <span className="font-medium">Tone:</span> {brandVoice.brandVoice.tone}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* AI Assistant Note */}

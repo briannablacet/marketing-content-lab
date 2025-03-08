@@ -12,13 +12,9 @@ const MessagingStep = dynamic(() => import('./components/MessagingStep'), { ssr:
 const CompetitiveStep = dynamic(() => import('./components/CompetitiveStep'), { ssr: false });
 const ContentStrategyStep = dynamic(() => import('./components/ContentStrategyStep'), { ssr: false });
 const StyleGuideStep = dynamic(() => import('./components/StyleGuideStep'), { ssr: false }); 
+const BrandVoiceModule = dynamic(() => import('../BrandVoiceModule'), { ssr: false }); // Add BrandVoiceModule
 const SeoKeywordsStep = dynamic(() => import('./components/SeoKeywordsStep'), { ssr: false });
 const ReviewStep = dynamic(() => import('./components/ReviewStep'), { ssr: false });
-
-interface StepProps {
-  onNext?: () => void;
-  onBack?: () => void;
-}
 
 // Define which steps can be skippable
 const SKIPPABLE_STEPS = ['5', '8']; // Competitive Analysis and SEO are skippable
@@ -31,19 +27,19 @@ const STEPS = [
   { id: '5', component: CompetitiveStep, title: 'Competitive Analysis', skippable: true },
   { 
     id: '6', 
-    component: (props: StepProps) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
+    component: (props) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
     title: 'Content Strategy' 
   },
   { 
     id: '7', 
-    component: (props: StepProps) => <StyleGuideStep isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
+    component: (props) => <StyleGuideStep isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
     title: 'Writing Style Guide' 
   },
   { id: '8', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
   { id: '9', component: ReviewStep, title: 'Putting it All Together' }
 ];
 
-const MarketingWalkthrough: React.FC = () => {
+const MarketingWalkthrough = () => {
   const router = useRouter();
   const { step } = router.query;
   
@@ -77,7 +73,6 @@ const MarketingWalkthrough: React.FC = () => {
   };
 
   const handleSkip = () => {
-    console.log('Skipping step...'); // Debug log
     const nextStep = STEPS[currentStepIndex + 1];
     if (nextStep) {
       router.push(`/walkthrough/${nextStep.id}`);
@@ -117,8 +112,6 @@ const MarketingWalkthrough: React.FC = () => {
       showSkip={isSkippable}
       isWalkthrough={true}
       nextButtonText={currentStep.id === '9' ? 'Finish Walkthrough →' : 'Next →'}
-      // Remove the Exit Walkthrough button, since we'll use the navbar button instead
-      showExitButton={false}
     >
       {typeof currentStep.component === 'function' 
         ? currentStep.component({ onNext: handleNext, onBack: handleBack })

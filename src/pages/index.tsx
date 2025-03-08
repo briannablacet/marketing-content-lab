@@ -1,3 +1,4 @@
+// src/pages/index.tsx
 /**
  * File: src/pages/index.tsx
  * 
@@ -15,7 +16,7 @@ export default function Home() {
   const { contentTypes } = useContent();
 
   // Function to render tool cards with optional icon
-  const renderToolCard = (title: string, description: string, href: string, isNew: boolean = false) => (
+  const renderToolCard = (title, description, href, isNew = false) => (
     <Link href={href}>
       <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer relative">
         {isNew && (
@@ -125,24 +126,23 @@ export default function Home() {
           )}
           
           {renderToolCard(
-            "Your Product/Service",
+            "Value Proposition Builder",
             "Craft compelling value propositions backed by market insights",
-            "/product",
+            "/value-proposition",
             true
           )}
 
           {renderToolCard(
-  "Campaign Builder",
-  "Create comprehensive multi-channel campaigns with coordinated assets",
-  "/campaign-builder",  // We'll implement this page later
-  true
-)}
+            "Messaging Framework",
+            "Generate comprehensive messaging frameworks that resonate",
+            "/key-messages",
+            true
+          )}
         </div>
       </div>
 
       {/* Content Tools Section */}
-        {/* Content Tools Section */}
-        <div className="mb-12">
+      <div className="mb-12">
         <h2 className="text-2xl font-semibold mb-2">Content Tools</h2>
         <p className="text-gray-600 mb-6">Empower your content creation while maintaining quality and authenticity</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -160,9 +160,9 @@ export default function Home() {
           )}
 
           {renderToolCard(
-            "SEO Keywords",
-            "Optimize your content with targeted keyword research and analysis",
-            "/seo-keywords",
+            "Content Repurposer",
+            "Scale your content by transforming existing pieces into multiple formats",
+            "/content-repurposer",
             true
           )}
 
@@ -187,6 +187,7 @@ export default function Home() {
           )}
         </div>
       </div>
+      
       {/* Progress Section - Show if walkthrough in progress */}
       {marketingState.currentStep > 1 && (
         <div className="bg-white rounded-lg shadow p-6 mb-12">
