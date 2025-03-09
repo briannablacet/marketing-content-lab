@@ -140,20 +140,6 @@ export default function Home() {
             "/product",
             false
           )}
-          
-          {renderToolCard(
-            "Budget Planning",
-            "Plan and allocate your marketing budget effectively",
-            "/budget",
-            false
-          )}
-          
-          {renderToolCard(
-            "Marketing ROI",
-            "Track and analyze your marketing return on investment",
-            "/marketing-roi",
-            true
-          )}
         </div>
       </div>
 
@@ -203,24 +189,10 @@ export default function Home() {
           )}
           
           {renderToolCard(
-            "Timeline Planner",
-            "Plan and visualize your content marketing timeline",
-            "/timeline",
-            false
-          )}
-          
-          {renderToolCard(
             "SEO Keywords",
             "Research and organize your SEO keyword strategy",
             "/seo-keywords",
             false
-          )}
-          
-          {renderToolCard(
-            "Sales Enablement",
-            "Empower your sales team with AI-assisted content",
-            "/sdr",
-            true
           )}
         </div>
       </div>
