@@ -4,6 +4,7 @@
  * Client-side only component that provides all application contexts
  */
 
+
 import React from 'react';
 import { AppProps } from 'next/app';
 import { MarketingProvider } from '../src/context/MarketingContext';
@@ -15,6 +16,7 @@ import { MessagingProvider } from '../src/context/MessagingContext';
 import { WritingStyleProvider } from '../src/context/WritingStyleContext';
 import { BrandVoiceProvider } from '../src/context/BrandVoiceContext';
 import Navbar from '../src/components/shared/Navbar';
+
 
 interface ClientAppProps extends AppProps {
   router: any;
