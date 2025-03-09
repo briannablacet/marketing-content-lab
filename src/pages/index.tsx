@@ -1,9 +1,4 @@
 // src/pages/index.tsx
-/**
- * File: src/pages/index.tsx
- * 
- * Enhanced home page highlighting both competitive analysis and content creation
- */
 
 import React from 'react';
 import Link from 'next/link';
@@ -16,7 +11,7 @@ export default function Home() {
   const { contentTypes } = useContent();
 
   // Function to render tool cards with optional icon
-  const renderToolCard = (title, description, href, isNew = false) => (
+  const renderToolCard = (title: string, description: string, href: string, isNew: boolean = false) => (
     <Link href={href}>
       <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer relative">
         {isNew && (
@@ -126,9 +121,9 @@ export default function Home() {
           )}
           
           {renderToolCard(
-            "Value Proposition Builder",
-            "Craft compelling value propositions backed by market insights",
-            "/value-proposition",
+            "Product Definition",
+            "Define your product features and benefits to build compelling value propositions",
+            "/product",
             true
           )}
 
@@ -187,7 +182,6 @@ export default function Home() {
           )}
         </div>
       </div>
-      
       {/* Progress Section - Show if walkthrough in progress */}
       {marketingState.currentStep > 1 && (
         <div className="bg-white rounded-lg shadow p-6 mb-12">
