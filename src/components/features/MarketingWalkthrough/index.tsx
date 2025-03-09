@@ -11,13 +11,19 @@ const PersonaStep = dynamic(() => import('./components/PersonaStep'), { ssr: fal
 const MessagingStep = dynamic(() => import('./components/MessagingStep'), { ssr: false });
 const CompetitiveStep = dynamic(() => import('./components/CompetitiveStep'), { ssr: false });
 const ContentStrategyStep = dynamic(() => import('./components/ContentStrategyStep'), { ssr: false });
-const StyleGuideStep = dynamic(() => import('./components/StyleGuideStep'), { ssr: false }); 
-const BrandVoiceModule = dynamic(() => import('../BrandVoiceModule'), { ssr: false }); // Add BrandVoiceModule
+const StyleGuideStep = dynamic(() => import('./components/StyleGuideStep'), { ssr: false });
+const BrandVoiceModule = dynamic(() => import('../BrandVoiceModule'), { ssr: false }); // New import
 const SeoKeywordsStep = dynamic(() => import('./components/SeoKeywordsStep'), { ssr: false });
 const ReviewStep = dynamic(() => import('./components/ReviewStep'), { ssr: false });
 
+interface StepProps {
+  onNext?: () => void;
+  onBack?: () => void;
+  onExit?: () => void;
+}
+
 // Define which steps can be skippable
-const SKIPPABLE_STEPS = ['5', '8']; // Competitive Analysis and SEO are skippable
+const SKIPPABLE_STEPS = ['5', '9']; // Competitive Analysis and SEO are skippable
 
 const STEPS = [
   { id: '1', component: WelcomeStep, title: 'Welcome' },
@@ -27,19 +33,24 @@ const STEPS = [
   { id: '5', component: CompetitiveStep, title: 'Competitive Analysis', skippable: true },
   { 
     id: '6', 
-    component: (props) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
+    component: (props: StepProps) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
     title: 'Content Strategy' 
   },
   { 
     id: '7', 
-    component: (props) => <StyleGuideStep isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
+    component: (props: StepProps) => <StyleGuideStep isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
     title: 'Writing Style Guide' 
   },
-  { id: '8', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
-  { id: '9', component: ReviewStep, title: 'Putting it All Together' }
+  {
+    id: '8',
+    component: (props: StepProps) => <BrandVoiceModule isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />,
+    title: 'Brand Voice'
+  },
+  { id: '9', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
+  { id: '10', component: ReviewStep, title: 'Putting it All Together' }
 ];
 
-const MarketingWalkthrough = () => {
+const MarketingWalkthrough: React.FC = () => {
   const router = useRouter();
   const { step } = router.query;
   
@@ -53,7 +64,7 @@ const MarketingWalkthrough = () => {
   }, [step, currentStep, router]);
 
   const handleNext = () => {
-    if (currentStep.id === '9') {
+    if (currentStep.id === '10') {
       router.push('/walkthrough/complete');
       return;
     }
@@ -73,6 +84,7 @@ const MarketingWalkthrough = () => {
   };
 
   const handleSkip = () => {
+    console.log('Skipping step...'); // Debug log
     const nextStep = STEPS[currentStepIndex + 1];
     if (nextStep) {
       router.push(`/walkthrough/${nextStep.id}`);
@@ -111,11 +123,11 @@ const MarketingWalkthrough = () => {
       onExit={handleExit}
       showSkip={isSkippable}
       isWalkthrough={true}
-      nextButtonText={currentStep.id === '9' ? 'Finish Walkthrough →' : 'Next →'}
+      nextButtonText={currentStep.id === '10' ? 'Finish Walkthrough →' : 'Next →'}
     >
       {typeof currentStep.component === 'function' 
-        ? currentStep.component({ onNext: handleNext, onBack: handleBack })
-        : React.createElement(currentStep.component, { onNext: handleNext, onBack: handleBack })}
+        ? currentStep.component({ onNext: handleNext, onBack: handleBack, onExit: handleExit })
+        : React.createElement(currentStep.component, { onNext: handleNext, onBack: handleBack, onExit: handleExit })}
     </ScreenTemplate>
   );
 };

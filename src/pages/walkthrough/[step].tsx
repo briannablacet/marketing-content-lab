@@ -1,8 +1,8 @@
 // src/pages/walkthrough/[step].tsx
 import React from 'react';
-import MarketingWalkthrough from '../../components/features/MarketingWalkthrough';
 import { WritingStyleProvider } from '../../context/WritingStyleContext';
 import { NotificationProvider } from '../../context/NotificationContext';
+import MarketingWalkthrough from '../../components/features/MarketingWalkthrough';
 
 const WalkthroughStepPage: React.FC = () => {
   return (

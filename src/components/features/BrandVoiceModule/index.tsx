@@ -9,6 +9,7 @@ interface Props {
   isWalkthrough?: boolean;
   onNext?: () => void;
   onBack?: () => void;
+  onExit?: () => void;
 }
 
 const BRAND_ARCHETYPES = [
@@ -96,7 +97,7 @@ const HelpText = ({ text, link }: { text: string; link?: string }) => (
   </div>
 );
 
-const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) => {
+const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough = false, onNext, onBack, onExit }) => {
   const { brandVoice, updateBrandVoice, addUploadedGuide, removeUploadedGuide } = useBrandVoice();
   const [fileError, setFileError] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -149,6 +150,8 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
       
       if (isWalkthrough && onNext) {
         onNext();
+      } else {
+        router.push('/dashboard');
       }
     } catch (error) {
       console.error('Error saving:', error);
@@ -158,7 +161,7 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
   };
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Brand Voice and Tone</CardTitle>
@@ -337,34 +340,37 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
         </CardContent>
       </Card>
 
-      <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-        {(isWalkthrough || onBack) && (
-          <button
-            onClick={onBack}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
-            ← Back
-          </button>
-        )}
-        
-        <div className="flex space-x-4 ml-auto">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
-          >
-            Cancel
-          </button>
+      {/* Remove bottom navigation in walkthrough mode to avoid double navigation */}
+      {!isWalkthrough && (
+        <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              ← Back
+            </button>
+          )}
           
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
-              ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {isSaving ? 'Saving...' : isWalkthrough ? 'Save & Continue →' : 'Save Changes'}
-          </button>
+          <div className="flex space-x-4 ml-auto">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+            >
+              Cancel
+            </button>
+            
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
+                ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
