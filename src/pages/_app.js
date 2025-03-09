@@ -1,26 +1,46 @@
-// src/pages/_app.tsx
-import React from 'react';
+/**
+ * File: src/pages/_app.js
+ * 
+ * Application wrapper component that provides all necessary contexts
+ */
+
 import { AppProps } from 'next/app';
 import '../styles/globals.css';
+import { MarketingProvider } from '../context/MarketingContext';
+import { WalkthroughProvider } from '../context/WalkthroughContext';
+import { NotificationProvider } from '../context/NotificationContext';
+import { ContentProvider } from '../context/ContentContext';
+import { DemoModeProvider } from '../context/DemoModeContext';
+import { MessagingProvider } from '../context/MessagingContext';
+import { WritingStyleProvider } from '../context/WritingStyleContext';
+import { BrandVoiceProvider } from '../context/BrandVoiceContext';
+import Navbar from '../components/shared/Navbar';
 
-// Create a simple navbar that doesn't depend on any contexts
-const SimpleNavbar: React.FC = () => (
-  <header className="bg-white shadow-sm">
-    <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <a href="/" className="text-xl font-bold text-blue-600">Market Multiplier</a>
-    </div>
-  </header>
-);
-
-function MyApp({ Component, pageProps }: AppProps): JSX.Element {
-  // Render without any contexts for the initial deployment
+function MyApp({ Component, pageProps }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SimpleNavbar />
-      <main className="container mx-auto px-4 py-8">
-        <Component {...pageProps} />
-      </main>
-    </div>
+    // Wrap providers in order of dependency
+    <NotificationProvider>
+      <DemoModeProvider>
+        <MarketingProvider>
+          <ContentProvider>
+            <MessagingProvider>
+              <WritingStyleProvider>
+                <BrandVoiceProvider>
+                  <WalkthroughProvider>
+                    <div className="min-h-screen bg-gray-50">
+                      <Navbar />
+                      <main className="container mx-auto px-4 py-8">
+                        <Component {...pageProps} />
+                      </main>
+                    </div>
+                  </WalkthroughProvider>
+                </BrandVoiceProvider>
+              </WritingStyleProvider>
+            </MessagingProvider>
+          </ContentProvider>
+        </MarketingProvider>
+      </DemoModeProvider>
+    </NotificationProvider>
   );
 }
 

@@ -2,9 +2,6 @@
 const nextConfig = {
     reactStrictMode: true,
     
-    // No experimental features
-    experimental: {},
-    
     // Turn off typechecking during build for faster builds
     typescript: {
       // !! WARN !!
@@ -20,6 +17,15 @@ const nextConfig = {
       // your project has ESLint errors.
       ignoreDuringBuilds: true,
     },
+    
+    // This ensures we use Server-Side Rendering for pages with context
+    // Rather than trying to pre-render them statically at build time
+    images: {
+      domains: [],
+    },
+    
+    // Increase timeout for static generation (if any is used)
+    staticPageGenerationTimeout: 180,
   }
   
   module.exports = nextConfig
