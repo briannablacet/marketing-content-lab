@@ -1,10 +1,11 @@
 // src/pages/index.tsx
 import React from 'react';
+import { GetStaticProps, NextPage } from 'next';
 
 // This landing page deliberately avoids all contexts and client-only features
 // to ensure it can be statically generated at build time
 
-export default function SimpleLandingPage() {
+const SimpleLandingPage: NextPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-3xl mx-auto text-center">
@@ -51,12 +52,12 @@ export default function SimpleLandingPage() {
       </div>
     </div>
   );
-}
+};
 
-// Export a static props function to ensure this page is pre-rendered
-// and doesn't use any client-side features during build
-export async function getStaticProps() {
+export const getStaticProps: GetStaticProps = async () => {
   return {
     props: {}
   };
-}
+};
+
+export default SimpleLandingPage;

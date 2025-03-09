@@ -2,21 +2,8 @@
 const nextConfig = {
     reactStrictMode: true,
     
-    // Disable experimental features for now
+    // No experimental features
     experimental: {},
-    
-    // Increase the timeout for generating static pages
-    staticPageGenerationTimeout: 180,
-    
-    // REMOVE REDIRECTS - They're causing a redirect loop
-    // Instead, let's just have 404s for now
-    
-    // Only include the index page
-    async exportPathMap(defaultPathMap, { dev, dir, outDir, distDir, buildId }) {
-      return {
-        '/': { page: '/' },
-      }
-    },
     
     // Turn off typechecking during build for faster builds
     typescript: {
