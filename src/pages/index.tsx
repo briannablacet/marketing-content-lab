@@ -2,6 +2,9 @@
 import React from 'react';
 import Link from 'next/link';
 
+// This landing page deliberately avoids all contexts and client-only features
+// to ensure it can be statically generated at build time
+
 export default function SimpleLandingPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -49,4 +52,12 @@ export default function SimpleLandingPage() {
       </div>
     </div>
   );
+}
+
+// Export a static props function to ensure this page is pre-rendered
+// and doesn't use any client-side features during build
+export async function getStaticProps() {
+  return {
+    props: {}
+  };
 }

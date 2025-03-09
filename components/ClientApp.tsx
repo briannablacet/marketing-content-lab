@@ -6,15 +6,15 @@
 
 import React from 'react';
 import { AppProps } from 'next/app';
-import { MarketingProvider } from '../context/MarketingContext';
-import { WalkthroughProvider } from '../context/WalkthroughContext';
-import { NotificationProvider } from '../context/NotificationContext';
-import { ContentProvider } from '../context/ContentContext';
-import { DemoModeProvider } from '../context/DemoModeContext';
-import { MessagingProvider } from '../context/MessagingContext';
-import { StyleGuideProvider } from '../context/StyleGuideContext';
-import { BrandVoiceProvider } from '../context/BrandVoiceContext';
-import Navbar from '../components/shared/Navbar';
+import { MarketingProvider } from '../src/context/MarketingContext';
+import { WalkthroughProvider } from '../src/context/WalkthroughContext';
+import { NotificationProvider } from '../src/context/NotificationContext';
+import { ContentProvider } from '../src/context/ContentContext';
+import { DemoModeProvider } from '../src/context/DemoModeContext';
+import { MessagingProvider } from '../src/context/MessagingContext';
+import { WritingStyleProvider } from '../src/context/WritingStyleContext';
+import { BrandVoiceProvider } from '../src/context/BrandVoiceContext';
+import Navbar from '../src/components/shared/Navbar';
 
 interface ClientAppProps extends AppProps {
   router: any;
@@ -28,7 +28,7 @@ const ClientApp: React.FC<ClientAppProps> = ({ Component, pageProps, router }) =
         <MarketingProvider>
           <ContentProvider>
             <MessagingProvider>
-              <StyleGuideProvider>
+              <WritingStyleProvider>
                 <BrandVoiceProvider>
                   <WalkthroughProvider>
                     <div className="min-h-screen bg-gray-50">
@@ -39,7 +39,7 @@ const ClientApp: React.FC<ClientAppProps> = ({ Component, pageProps, router }) =
                     </div>
                   </WalkthroughProvider>
                 </BrandVoiceProvider>
-              </StyleGuideProvider>
+              </WritingStyleProvider>
             </MessagingProvider>
           </ContentProvider>
         </MarketingProvider>
