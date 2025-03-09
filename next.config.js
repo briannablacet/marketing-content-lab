@@ -8,17 +8,9 @@ const nextConfig = {
     // Increase the timeout for generating static pages
     staticPageGenerationTimeout: 180,
     
-    // Redirect all other routes to home page for now
-    async redirects() {
-      return [
-        {
-          source: '/:path*',
-          destination: '/',
-          permanent: false,
-        },
-      ]
-    },
-  
+    // REMOVE REDIRECTS - They're causing a redirect loop
+    // Instead, let's just have 404s for now
+    
     // Only include the index page
     async exportPathMap(defaultPathMap, { dev, dir, outDir, distDir, buildId }) {
       return {

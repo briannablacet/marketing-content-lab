@@ -1,6 +1,5 @@
 // src/pages/index.tsx
 import React from 'react';
-import Link from 'next/link';
 
 // This landing page deliberately avoids all contexts and client-only features
 // to ensure it can be statically generated at build time
