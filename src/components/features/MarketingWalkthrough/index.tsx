@@ -19,7 +19,6 @@ const ReviewStep = dynamic(() => import('./components/ReviewStep'), { ssr: false
 interface StepProps {
   onNext?: () => void;
   onBack?: () => void;
-  onExit?: () => void;
 }
 
 // Define which steps can be skippable
@@ -28,7 +27,7 @@ const SKIPPABLE_STEPS = ['5', '9']; // Competitive Analysis and SEO are skippabl
 const STEPS = [
   { id: '1', component: WelcomeStep, title: 'Welcome' },
   { id: '2', component: ProductStep, title: 'Your Product/Service' },
-  { id: '3', component: PersonaStep, title: 'Target Persona' },
+  { id: '3', component: PersonaStep, title: 'Your Ideal Customer' },
   { id: '4', component: MessagingStep, title: 'Key Messages' },
   { id: '5', component: CompetitiveStep, title: 'Competitive Analysis', skippable: true },
   { 
@@ -126,8 +125,8 @@ const MarketingWalkthrough: React.FC = () => {
       nextButtonText={currentStep.id === '10' ? 'Finish Walkthrough →' : 'Next →'}
     >
       {typeof currentStep.component === 'function' 
-        ? currentStep.component({ onNext: handleNext, onBack: handleBack, onExit: handleExit })
-        : React.createElement(currentStep.component, { onNext: handleNext, onBack: handleBack, onExit: handleExit })}
+        ? currentStep.component({ onNext: handleNext, onBack: handleBack })
+        : React.createElement(currentStep.component, { onNext: handleNext, onBack: handleBack })}
     </ScreenTemplate>
   );
 };

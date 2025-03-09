@@ -1,5 +1,4 @@
-// src/pages/api/api_endpoints.ts - Updated with A/B Testing support
-
+// src/pages/api/api_endpoints.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 
@@ -51,13 +50,21 @@ interface ValuePropositionRequest extends BaseRequest {
   };
 }
 
-// New interface for A/B testing request
-interface ABTestingRequest extends BaseRequest {
+interface PersonaGenerationRequest extends BaseRequest {
   data: {
-    contentType: string;
-    contentContext: string;
-    targetAudience?: string;
-    numVariations: number;
+    productName: string;
+    productType: string;
+    currentPersona?: {
+      role: string;
+      industry: string;
+      challenges: string[];
+    };
+  };
+}
+
+interface ProductInfoRequest extends BaseRequest {
+  data: {
+    userId?: string;
   };
 }
 
@@ -79,9 +86,12 @@ const validateValuePropositionRequest = (data: any): boolean => {
   );
 };
 
-// New validation function for A/B testing
-const validateABTestingRequest = (data: any): boolean => {
-  return !!(data.contentType && data.contentContext && data.numVariations);
+const validatePersonaGenerationRequest = (data: any): boolean => {
+  return !!(data.productName || data.productType);
+};
+
+const validateProductInfoRequest = (data: any): boolean => {
+  return true; // No specific validation needed for this endpoint
 };
 
 // Enhanced prompt generators
@@ -178,48 +188,35 @@ Create a response in this JSON format:
 }`;
 };
 
-// New prompt generator for A/B testing
-const generateABTestingPrompt = (data: ABTestingRequest['data']): string => {
-  // Get the appropriate prompt prefix based on content type
-  let promptPrefix = "";
-  switch (data.contentType) {
-    case 'email_subject':
-      promptPrefix = "Create email subject line variations that will improve open rates.";
-      break;
-    case 'cta':
-      promptPrefix = "Create call-to-action button text variations that will improve click-through rates.";
-      break;
-    case 'headline':
-      promptPrefix = "Create headline variations for content that will improve engagement.";
-      break;
-    case 'value_prop':
-      promptPrefix = "Create value proposition variations that clearly communicate the unique value.";
-      break;
-    case 'ad_copy':
-      promptPrefix = "Create ad copy variations that will drive conversions.";
-      break;
-    default:
-      promptPrefix = "Create variations of the following content:";
-  }
+const generatePersonaPrompt = (data: PersonaGenerationRequest['data']): string => {
+  return `You are an expert marketing strategist specializing in persona development. 
+    
+Based on the following product information, create detailed buyer personas that would be ideal target audiences for this product:
 
-  const audienceContext = data.targetAudience ? `for ${data.targetAudience}` : "for a general audience";
-  
-  return `${promptPrefix}
+Product Name: ${data.productName || 'Unnamed product'}
+Product Type: ${data.productType || 'Unspecified'}
+${data.currentPersona?.role ? `Current Persona Role: ${data.currentPersona.role}` : ''}
+${data.currentPersona?.industry ? `Current Persona Industry: ${data.currentPersona.industry}` : ''}
+${data.currentPersona?.challenges?.length ? `Current Persona Challenges: ${data.currentPersona.challenges.join(', ')}` : ''}
 
-Content to communicate: "${data.contentContext}"
-Target audience: ${audienceContext}
-
-Generate ${data.numVariations} different high-quality variations that would be effective for A/B testing. 
-Make each variation distinct and optimized for the specific content type.
-
-Return the variations in this JSON format:
+Please provide 2-3 detailed buyer personas in this JSON format:
 {
-  "variations": [
-    "first variation text",
-    "second variation text",
-    etc.
+  "personas": [
+    {
+      "role": "Job title/role",
+      "industry": "Industry they work in",
+      "challenges": ["Challenge 1", "Challenge 2", "Challenge 3"]
+    }
   ]
-}`;
+}
+
+Ensure each persona:
+1. Has a specific job title or role
+2. Includes a specific industry most relevant to the product
+3. Lists 3-5 realistic, specific challenges that the product could help with
+4. Is tailored to the product's likely use case and value proposition
+
+Important: Return response as valid JSON only.`;
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -270,15 +267,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           targetedMessages: {},
         };
         break;
-
-      // New case for A/B testing
-      case 'generate-variations':
-        isValid = validateABTestingRequest(data);
-        prompt = generateABTestingPrompt(data);
+        
+      case 'persona-generator':
+        isValid = validatePersonaGenerationRequest(data);
+        prompt = generatePersonaPrompt(data);
         responseFormat = {
-          variations: [],
+          personas: []
         };
         break;
+
+      case 'product-info':
+        isValid = validateProductInfoRequest(data);
+        // For demo purposes, return hardcoded data
+        // In a real app, you'd fetch this from a database
+        const productInfo = {
+          name: "Market Multiplier",
+          type: "Content Marketing Platform",
+          valueProposition: "AI-powered marketing content creation and strategy",
+          keyBenefits: [
+            "Save time creating marketing content",
+            "Ensure consistent messaging",
+            "Get data-driven insights"
+          ]
+        };
+        return res.status(200).json({
+          success: true,
+          data: productInfo
+        });
 
       default:
         return res.status(400).json({ 
@@ -322,6 +337,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         parsedResponse = JSON.parse(responseText);
       } catch (error) {
         console.error('Failed to parse OpenAI response:', responseText);
+        
+        // For persona generation, provide fallback personas if parsing fails
+        if (endpoint === 'persona-generator') {
+          return res.status(200).json({
+            personas: [
+              {
+                role: 'Marketing Director',
+                industry: data.productType || 'Technology',
+                challenges: [
+                  'Scaling content creation with limited resources',
+                  'Demonstrating ROI from content marketing efforts',
+                  'Maintaining consistent brand voice across channels'
+                ]
+              },
+              {
+                role: 'Content Manager',
+                industry: data.productType || 'Technology',
+                challenges: [
+                  'Meeting aggressive content deadlines',
+                  'Producing high-quality content consistently',
+                  'Optimizing content for multiple channels'
+                ]
+              }
+            ]
+          });
+        }
+        
         throw new Error('Failed to parse AI response as JSON');
       }
 
