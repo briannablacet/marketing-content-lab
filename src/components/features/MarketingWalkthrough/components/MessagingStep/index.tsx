@@ -1,8 +1,8 @@
+// src/components/features/MarketingWalkthrough/components/MessagingStep/index.tsx
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { Upload, FileText, X, Sparkles, Plus, Lightbulb, ArrowRight, CheckCircle } from 'lucide-react';
+import { Upload, FileText, X, Sparkles, Plus, Lightbulb, ArrowRight, CheckCircle, Loader } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
-import { useWalkthrough } from '../../../../../context/WalkthroughContext';
 
 type Option = 'manual' | 'upload' | 'ai';
 type AIStep = 'review' | 'focus' | 'generate' | 'results';
@@ -14,6 +14,12 @@ interface AIGenerationData {
   competitors: string;
   focusAreas: string[];
   tone: string;
+}
+
+interface MessageData {
+  valueProposition: string;
+  differentiators: string[];
+  keyBenefits: string[];
 }
 
 const FOCUS_AREAS = [
@@ -30,43 +36,79 @@ const TONE_OPTIONS = [
   { id: 'trusted', label: 'Trusted & Established' }
 ];
 
-const MessagingStep = () => {
+interface MessagingStepProps {
+  onNext?: () => void;
+  onBack?: () => void;
+  isWalkthrough?: boolean;
+}
+
+const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthrough = true }) => {
   const { showNotification } = useNotification();
-  const { data: walkthroughData } = useWalkthrough();
-  const [selectedOption, setSelectedOption] = useState<Option>('manual');
+  const [selectedOption, setSelectedOption] = useState<Option | null>(null);
   const [aiStep, setAiStep] = useState<AIStep>('review');
   
-  const [messages, setMessages] = useState({
+  const [messages, setMessages] = useState<MessageData>({
     valueProposition: '',
     differentiators: ['', '', ''],
     keyBenefits: ['', '', '']
   });
+  
   const [uploadedFramework, setUploadedFramework] = useState<File | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiInsights, setAiInsights] = useState<string[]>([]);
 
-  // New state for AI generation
+  // New state for AI generation with default values
   const [aiData, setAiData] = useState<AIGenerationData>({
-    productDescription: '',
-    targetAudience: '',
-    uniqueValue: '',
-    competitors: '',
+    productDescription: 'Market Multiplier is a Content Marketing Platform that helps businesses create effective content marketing strategies. Key benefits include: AI-powered content creation, streamlined planning, and consistent brand messaging.',
+    targetAudience: 'Marketing Director in the Technology industry who faces challenges including: scaling content creation with limited resources, maintaining brand consistency across channels, measuring ROI of content efforts',
+    uniqueValue: 'AI-powered marketing content creation and strategy that saves time while maintaining brand consistency',
+    competitors: 'ContentCal, HubSpot, CoSchedule',
     focusAreas: [],
     tone: 'professional'
   });
 
-  // Pre-populate AI data from walkthrough when choosing AI option
+  // Pre-populate the form with data from local storage (for non-AI path)
   useEffect(() => {
-    if (selectedOption === 'ai' && walkthroughData) {
-      setAiData(prev => ({
-        ...prev,
-        productDescription: walkthroughData.productInfo?.description || '',
-        targetAudience: walkthroughData.persona?.description || '',
-        uniqueValue: walkthroughData.productInfo?.valueProposition || '',
-        competitors: walkthroughData.competitors?.map(c => c.name).join(', ') || ''
-      }));
+    const savedMessages = localStorage.getItem('marketingMessages');
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        setMessages(parsedMessages);
+      } catch (error) {
+        console.error('Error parsing saved messages:', error);
+      }
     }
-  }, [selectedOption, walkthroughData]);
+    
+    // Try to load product info from localStorage as well
+    const productInfo = localStorage.getItem('marketingProduct');
+    const targetAudience = localStorage.getItem('marketingTargetAudience');
+    
+    if (productInfo || targetAudience) {
+      try {
+        const product = productInfo ? JSON.parse(productInfo) : null;
+        const audience = targetAudience ? JSON.parse(targetAudience) : null;
+        
+        if (product) {
+          const productDescription = `${product.name || 'Our product'} is a ${product.type || 'solution'} that ${product.valueProposition || 'helps businesses'}. Key benefits include: ${(product.keyBenefits || []).join(', ') || 'various features'}`;
+          setAiData(prev => ({
+            ...prev,
+            productDescription,
+            uniqueValue: product.valueProposition || prev.uniqueValue
+          }));
+        }
+        
+        if (audience) {
+          const audienceDescription = `${audience.role || 'Professionals'} in the ${audience.industry || 'various industries'} who face challenges including: ${(audience.challenges || []).join(', ') || 'multiple business challenges'}`;
+          setAiData(prev => ({
+            ...prev,
+            targetAudience: audienceDescription
+          }));
+        }
+      } catch (error) {
+        console.error('Error parsing product or audience data:', error);
+      }
+    }
+  }, []);
 
   const updateAiInsights = () => {
     const insights = [];
@@ -113,8 +155,8 @@ const MessagingStep = () => {
 
   const handleOptionSelect = (option: Option) => {
     setSelectedOption(option);
-    if (option === 'manual') {
-      setUploadedFramework(null);
+    if (option === 'ai') {
+      setAiStep('review');
     }
   };
 
@@ -131,32 +173,67 @@ const MessagingStep = () => {
   const handleGenerateMessages = async () => {
     setIsGenerating(true);
     try {
-      // In practice, you'd send aiData to your API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare the API request
+      const requestBody = {
+        endpoint: 'value-proposition-generator',
+        data: {
+          productInfo: {
+            name: 'Market Multiplier',
+            description: aiData.productDescription,
+            benefits: ['AI-powered content creation', 'Streamlined planning', 'Consistent brand messaging'],
+            targetAudience: [aiData.targetAudience]
+          },
+          competitors: aiData.competitors.split(',').map(c => c.trim()),
+          industry: 'Technology',
+          focusAreas: aiData.focusAreas,
+          tone: aiData.tone
+        }
+      };
       
-      // Example of using the AI data to generate more targeted messaging
-      const focusedValue = aiData.focusAreas.includes('technical') 
-        ? "Our advanced AI-powered platform revolutionizes content creation with state-of-the-art algorithms"
-        : "Our intuitive solution helps businesses create better content faster";
-
+      // Call the API
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API responded with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform API response to our message format
       setMessages({
-        valueProposition: focusedValue,
-        differentiators: [
-          "Only platform combining AI assistance with human-quality output",
-          "Integrated competitive analysis and content optimization",
-          "Preserves your authentic brand voice while scaling content"
-        ],
-        keyBenefits: [
-          "Reduce content creation time by 60%",
-          "Maintain consistent brand messaging across all channels",
-          "Increase content engagement with AI-driven optimization"
-        ]
+        valueProposition: data.valueProposition || '',
+        differentiators: data.keyDifferentiators || ['', '', ''],
+        keyBenefits: Object.values(data.targetedMessages || {}).flat() || ['', '', '']
       });
       
       setAiStep('results');
       showNotification('success', 'Generated messaging framework based on your inputs');
     } catch (error) {
-      showNotification('error', 'Failed to generate messages. Please try again.');
+      console.error('Error generating messages:', error);
+      showNotification('error', 'Failed to generate messages. Using fallback suggestions.');
+      
+      // Fallback messaging if API fails
+      setMessages({
+        valueProposition: `Our content marketing platform helps ${aiData.targetAudience.split(' in the ')[0] || 'marketing teams'} create effective content strategies faster and with more consistency.`,
+        differentiators: [
+          `Only platform combining ${aiData.focusAreas.includes('technical') ? 'advanced AI technology' : 'intuitive design'} with ease of use`,
+          `Specialized for ${aiData.targetAudience.split(' in the ')[1]?.split(' who')[0] || 'marketing teams'} with tailored features`,
+          `Proven to deliver faster results than alternatives`
+        ],
+        keyBenefits: [
+          `Reduce content creation time by up to 50%`,
+          `Gain deeper insights into your ${aiData.focusAreas.includes('business') ? 'content performance' : 'audience engagement'}`,
+          `Improve team collaboration and content consistency across channels`
+        ]
+      });
+      
+      setAiStep('results');
     } finally {
       setIsGenerating(false);
     }
@@ -168,13 +245,60 @@ const MessagingStep = () => {
       [field]: [...prev[field], '']
     }));
   };
-  const renderManualEntry = () => (
+
+  const handleMessageChange = (field: keyof MessageData, value: string | string[]) => {
+    setMessages(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Save to localStorage for persistence
+    const updatedMessages = {
+      ...messages,
+      [field]: value
+    };
+    
+    localStorage.setItem('marketingMessages', JSON.stringify(updatedMessages));
+  };
+
+  const handleSingleMessageChange = (field: 'differentiators' | 'keyBenefits', index: number, value: string) => {
+    const newArray = [...messages[field]];
+    newArray[index] = value;
+    handleMessageChange(field, newArray);
+  };
+
+  const removeField = (field: 'differentiators' | 'keyBenefits', index: number) => {
+    const newArray = messages[field].filter((_, i) => i !== index);
+    handleMessageChange(field, newArray);
+  };
+
+  const saveAndContinue = () => {
+    // Basic validation
+    if (!messages.valueProposition.trim()) {
+      showNotification('error', 'Please provide a value proposition');
+      return;
+    }
+    
+    if (!messages.differentiators.some(d => d.trim()) || !messages.keyBenefits.some(b => b.trim())) {
+      showNotification('error', 'Please provide at least one differentiator and one key benefit');
+      return;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('marketingMessages', JSON.stringify(messages));
+    showNotification('success', 'Messaging framework saved');
+    
+    if (onNext) onNext();
+  };
+
+  // Main form content - shown when Create From Scratch is selected or after AI generation
+  const renderMessageForm = () => (
     <div className="space-y-6">
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Step 1: Value Proposition</h3>
         <textarea
           value={messages.valueProposition}
-          onChange={(e) => setMessages({...messages, valueProposition: e.target.value})}
+          onChange={(e) => handleMessageChange('valueProposition', e.target.value)}
           className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
           rows={4}
           placeholder="What makes your solution extraordinary? How do you uniquely solve your customers' problems?"
@@ -185,17 +309,21 @@ const MessagingStep = () => {
         <h3 className="text-lg font-semibold mb-4">Step 2: Key Differentiators</h3>
         <div className="space-y-4">
           {messages.differentiators.map((diff, index) => (
-            <div key={index}>
+            <div key={index} className="flex gap-2">
               <input
                 value={diff}
-                onChange={(e) => {
-                  const newDiffs = [...messages.differentiators];
-                  newDiffs[index] = e.target.value;
-                  setMessages({...messages, differentiators: newDiffs});
-                }}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => handleSingleMessageChange('differentiators', index, e.target.value)}
+                className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder={`What makes you uniquely different from competitors? (#${index + 1})`}
               />
+              {messages.differentiators.length > 1 && (
+                <button 
+                  onClick={() => removeField('differentiators', index)} 
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
           ))}
           <button
@@ -212,17 +340,21 @@ const MessagingStep = () => {
         <h3 className="text-lg font-semibold mb-4">Step 3: Key Benefits</h3>
         <div className="space-y-4">
           {messages.keyBenefits.map((benefit, index) => (
-            <div key={index}>
+            <div key={index} className="flex gap-2">
               <input
                 value={benefit}
-                onChange={(e) => {
-                  const newBenefits = [...messages.keyBenefits];
-                  newBenefits[index] = e.target.value;
-                  setMessages({...messages, keyBenefits: newBenefits});
-                }}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => handleSingleMessageChange('keyBenefits', index, e.target.value)}
+                className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder={`What specific value do customers gain? (#${index + 1})`}
               />
+              {messages.keyBenefits.length > 1 && (
+                <button 
+                  onClick={() => removeField('keyBenefits', index)} 
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
           ))}
           <button
@@ -254,6 +386,7 @@ const MessagingStep = () => {
     </div>
   );
 
+  // Shown when Upload Framework is selected
   const renderUploadView = () => (
     <div className="space-y-6">
       <Card className="p-6">
@@ -276,6 +409,14 @@ const MessagingStep = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
+            <div className="mt-6">
+              <button
+                onClick={() => setSelectedOption('manual')}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Continue to Framework Editor
+              </button>
+            </div>
           </>
         ) : (
           <div className="text-center py-8">
@@ -296,11 +437,12 @@ const MessagingStep = () => {
     </div>
   );
 
+  // Different views for AI generation flow
   const renderAIGeneration = () => {
     const renderReviewStep = () => (
       <div className="space-y-6">
         <div className="bg-blue-50 p-4 rounded-lg">
-          <h4 className="font-medium mb-2">Wherever possible, we've pulled in information from your previous steps</h4>
+          <h4 className="font-medium mb-2">We've gathered information from your previous steps</h4>
           <p className="text-sm text-gray-600">Review and enhance this information to generate more targeted messaging.</p>
         </div>
         
@@ -424,10 +566,17 @@ const MessagingStep = () => {
           </button>
           <button
             onClick={handleGenerateMessages}
-            disabled={aiData.focusAreas.length === 0}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            disabled={aiData.focusAreas.length === 0 || isGenerating}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Generate Framework
+            {isGenerating ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              'Generate Framework'
+            )}
           </button>
         </div>
       </div>
@@ -496,7 +645,7 @@ const MessagingStep = () => {
           <h3 className="text-lg font-semibold">AI-Generated Framework</h3>
         </div>
         
-        {isGenerating ? (
+        {isGenerating && aiStep !== 'focus' ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Generating your messaging framework...</p>
@@ -512,49 +661,90 @@ const MessagingStep = () => {
     );
   };
 
+  // Initial option selection screen
+  const renderOptionSelection = () => (
+    <Card className="p-6">
+      <h3 className="text-xl font-medium mb-6">How would you like to create your messaging framework?</h3>
+      <div className="grid md:grid-cols-3 gap-4">
+        <button
+          className={`p-4 rounded-lg border-2 text-left transition-all
+            ${selectedOption === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+          onClick={() => handleOptionSelect('manual')}
+        >
+          <h4 className="font-semibold mb-2">Create From Scratch</h4>
+          <p className="text-sm text-gray-600">
+            We'll guide you through building your framework step by step
+          </p>
+        </button>
+
+        <button
+          className={`p-4 rounded-lg border-2 text-left transition-all
+            ${selectedOption === 'upload' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+          onClick={() => handleOptionSelect('upload')}
+        >
+          <h4 className="font-semibold mb-2">Upload Framework</h4>
+          <p className="text-sm text-gray-600">
+            Already have a messaging framework? Upload it here
+          </p>
+        </button>
+
+        <button
+          className={`p-4 rounded-lg border-2 text-left transition-all
+            ${selectedOption === 'ai' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+          onClick={() => handleOptionSelect('ai')}
+        >
+          <h4 className="font-semibold mb-2">Get AI Suggestions</h4>
+          <p className="text-sm text-gray-600">
+            Let AI help you create a messaging framework
+          </p>
+        </button>
+      </div>
+    </Card>
+  );
+
+  // Content to display based on option selection
+  const renderContent = () => {
+    if (!selectedOption) {
+      return renderOptionSelection();
+    }
+
+    switch (selectedOption) {
+      case 'manual':
+        return renderMessageForm();
+      case 'upload':
+        return renderUploadView();
+      case 'ai':
+        return renderAIGeneration();
+      default:
+        return renderOptionSelection();
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-6">How would you like to create your messaging framework?</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          <button
-            className={`p-4 rounded-lg border-2 text-left transition-all
-              ${selectedOption === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-            onClick={() => handleOptionSelect('manual')}
-          >
-            <h4 className="font-semibold mb-2">Create From Scratch</h4>
-            <p className="text-sm text-gray-600">
-              We'll guide you through building your framework step by step
-            </p>
-          </button>
-
-          <button
-            className={`p-4 rounded-lg border-2 text-left transition-all
-              ${selectedOption === 'upload' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-            onClick={() => handleOptionSelect('upload')}
-          >
-            <h4 className="font-semibold mb-2">Upload Framework</h4>
-            <p className="text-sm text-gray-600">
-              Already have a messaging framework? Upload it here
-            </p>
-          </button>
-
-          <button
-            className={`p-4 rounded-lg border-2 text-left transition-all
-              ${selectedOption === 'ai' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-            onClick={() => handleOptionSelect('ai')}
-          >
-            <h4 className="font-semibold mb-2">Get AI Suggestions</h4>
-            <p className="text-sm text-gray-600">
-              Let AI help you create a messaging framework
-            </p>
-          </button>
+      {renderContent()}
+      
+      {/* Navigation Buttons - Only show if we're in a walkthrough or navigating manually */}
+      {(isWalkthrough || onNext || onBack) && (
+        <div className="flex justify-between pt-6 border-t border-gray-200">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              ← Back
+            </button>
+          )}
+           {onNext && (
+            <button
+              onClick={saveAndContinue}
+              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Continue →
+            </button>
+          )}
         </div>
-      </Card>
-
-      {selectedOption === 'manual' && renderManualEntry()}
-      {selectedOption === 'upload' && renderUploadView()}
-      {selectedOption === 'ai' && renderAIGeneration()}
+      )}
     </div>
   );
 };
