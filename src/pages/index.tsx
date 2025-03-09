@@ -130,7 +130,28 @@ export default function Home() {
           {renderToolCard(
             "Messaging Framework",
             "Generate comprehensive messaging frameworks that resonate",
-            "/messaging-framework",
+            "/key-messages",
+            true
+          )}
+          
+          {renderToolCard(
+            "Target Audience",
+            "Define and understand your ideal customer personas",
+            "/product",
+            false
+          )}
+          
+          {renderToolCard(
+            "Budget Planning",
+            "Plan and allocate your marketing budget effectively",
+            "/budget",
+            false
+          )}
+          
+          {renderToolCard(
+            "Marketing ROI",
+            "Track and analyze your marketing return on investment",
+            "/marketing-roi",
             true
           )}
         </div>
@@ -155,6 +176,13 @@ export default function Home() {
           )}
 
           {renderToolCard(
+            "Content Repurposer",
+            "Scale your content by transforming existing pieces into multiple formats",
+            "/content-engine",
+            true
+          )}
+
+          {renderToolCard(
             "Style Guardian",
             "Automatically verify content against your brand style guidelines",
             "/style-checker",
@@ -162,9 +190,37 @@ export default function Home() {
           )}
 
           {renderToolCard(
+            "A/B Content Creator",
+            "Generate multiple versions of content for testing and optimization",
+            "/content-strategy",
+            true
+          )}
+
+          {renderToolCard(
             "Brand Voice Guardian",
             "Maintain consistent brand voice across all content",
             "/brand-voice"
+          )}
+          
+          {renderToolCard(
+            "Timeline Planner",
+            "Plan and visualize your content marketing timeline",
+            "/timeline",
+            false
+          )}
+          
+          {renderToolCard(
+            "SEO Keywords",
+            "Research and organize your SEO keyword strategy",
+            "/seo-keywords",
+            false
+          )}
+          
+          {renderToolCard(
+            "Sales Enablement",
+            "Empower your sales team with AI-assisted content",
+            "/sdr",
+            true
           )}
         </div>
       </div>
@@ -203,7 +259,7 @@ export default function Home() {
 
 // This ensures the page is rendered on the server
 // where context providers will be available through _app.js
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getServerSideProps = async () => {
   return {
     props: {}
   };
