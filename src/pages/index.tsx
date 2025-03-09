@@ -1,4 +1,5 @@
 // src/pages/index.tsx
+
 import React from 'react';
 import Link from 'next/link';
 import { useMarketing } from '../context/MarketingContext';
@@ -121,9 +122,9 @@ export default function Home() {
           )}
           
           {renderToolCard(
-            "Value Proposition Builder",
-            "Craft compelling value propositions backed by market insights",
-            "/value-proposition",
+            "Product Definition",
+            "Define your product features and benefits to build compelling value propositions",
+            "/product",
             true
           )}
 
@@ -132,13 +133,6 @@ export default function Home() {
             "Generate comprehensive messaging frameworks that resonate",
             "/key-messages",
             true
-          )}
-          
-          {renderToolCard(
-            "Target Audience",
-            "Define and understand your ideal customer personas",
-            "/product",
-            false
           )}
         </div>
       </div>
@@ -164,7 +158,7 @@ export default function Home() {
           {renderToolCard(
             "Content Repurposer",
             "Scale your content by transforming existing pieces into multiple formats",
-            "/content-engine",
+            "/content-repurposer",
             true
           )}
 
@@ -178,7 +172,7 @@ export default function Home() {
           {renderToolCard(
             "A/B Content Creator",
             "Generate multiple versions of content for testing and optimization",
-            "/content-strategy",
+            "/ab-testing",
             true
           )}
 
@@ -186,13 +180,6 @@ export default function Home() {
             "Brand Voice Guardian",
             "Maintain consistent brand voice across all content",
             "/brand-voice"
-          )}
-          
-          {renderToolCard(
-            "SEO Keywords",
-            "Research and organize your SEO keyword strategy",
-            "/seo-keywords",
-            false
           )}
         </div>
       </div>
@@ -231,7 +218,7 @@ export default function Home() {
 
 // This ensures the page is rendered on the server
 // where context providers will be available through _app.js
-export const getServerSideProps = async () => {
+export const getServerSideProps: GetServerSideProps = async () => {
   return {
     props: {}
   };
