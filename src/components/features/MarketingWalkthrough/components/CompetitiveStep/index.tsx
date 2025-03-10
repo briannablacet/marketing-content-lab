@@ -1,9 +1,8 @@
 // src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw } from 'lucide-react';
+import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { useWalkthrough } from '../../../../../context/WalkthroughContext';
 
 interface Competitor {
   name: string;
@@ -14,50 +13,12 @@ interface Competitor {
   isLoading?: boolean;
 }
 
-interface CompetitiveStepProps {
-  onNext?: () => void;
-  onBack?: () => void;
-  isStandalone?: boolean;
-}
-
-const CompetitiveStep: React.FC<CompetitiveStepProps> = ({ 
-  onNext, 
-  onBack, 
-  isStandalone = false 
-}) => {
-  const { data, updateData } = useWalkthrough();
+const CompetitiveStep: React.FC = () => {
   const [competitors, setCompetitors] = useState<Competitor[]>([
     { name: '', description: '', knownMessages: [], strengths: [], weaknesses: [] }
   ]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
-  
-  // Create a reference to store timeout IDs for debouncing
-  const [debounceTimers, setDebounceTimers] = useState<{[key: number]: NodeJS.Timeout}>({});
-
-  // Load data from context if available
-  useEffect(() => {
-    if (data?.competitors && data.competitors.length > 0) {
-      setCompetitors(data.competitors);
-    }
-  }, [data]);
-
-  // Save data to context when competitors change
-  useEffect(() => {
-    if (competitors.some(c => c.name) && updateData) {
-      updateData({ competitors });
-    }
-  }, [competitors, updateData]);
-  
-  // Clean up all timers when component unmounts
-  useEffect(() => {
-    return () => {
-      // Clear all debounce timers
-      Object.values(debounceTimers).forEach(timerId => {
-        clearTimeout(timerId);
-      });
-    };
-  }, [debounceTimers]);
 
   const addCompetitor = () => {
     setCompetitors([
@@ -190,37 +151,28 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   };
 
   const handleNameChange = (index: number, name: string) => {
-    // Update the name immediately
     setCompetitors(prev => prev.map((comp, i) => 
       i === index ? { ...comp, name } : comp
     ));
     
-    // Clear any existing timeout for this index
-    if (debounceTimers[index]) {
-      clearTimeout(debounceTimers[index]);
-    }
-    
-    // Only set a timeout if the name is long enough
     if (name.length > 2) {
-      // Set a new timeout for this index
-      const timerId = setTimeout(() => {
-        handleAnalyzeCompetitor(index, name);
-        // Clear the timer ID from state after execution
-        setDebounceTimers(prev => {
-          const newTimers = {...prev};
-          delete newTimers[index];
-          return newTimers;
-        });
-      }, 800); // Wait 800ms after typing stops before analyzing
-      
-      // Store the timer ID
-      setDebounceTimers(prev => ({...prev, [index]: timerId}));
+      handleAnalyzeCompetitor(index, name);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* AI Analysis Card - At the top */}
+      {/* Link to Competitive Dashboard - with correct URL */}
+      <div className="grid grid-cols-1 gap-4 mb-4">
+        <Link href="/competitor-dashboard">
+          <button className="w-full p-4 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-100">
+            <ExternalLink size={18} />
+            View Competitor Dashboard
+          </button>
+        </Link>
+      </div>
+
+      {/* AI Analysis Card */}
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 mb-8">
         <div className="flex flex-col items-center text-center">
           <Sparkles className="w-10 h-10 text-blue-600 mb-4" />
@@ -232,7 +184,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             <p>Here's how it works:</p>
             <ul className="list-disc text-left pl-4 space-y-1">
               <li>Start typing a competitor's name below</li>
-              <li>After you pause typing, AI will automatically analyze the competitor</li>
+              <li>AI will automatically analyze them after you type 3 characters</li>
               <li>You'll see insights about their positioning, messages, and gaps</li>
               <li>Add more competitors to build a complete analysis</li>
             </ul>
@@ -332,21 +284,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         <PlusCircle size={20} />
         Add Another Competitor
       </button>
-
-      {/* Dashboard Link - Only show when we have some competitors and in standalone mode */}
-      {isStandalone && competitors.filter(comp => comp.name.trim()).length > 0 && (
-        <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-          <h3 className="text-xl font-bold text-blue-900 mb-2">Ready to visualize your competitive landscape?</h3>
-          <p className="text-blue-800 mb-4">
-            Explore the visual dashboard to see your market position and identify opportunities.
-          </p>
-          <Link href="/competitor-dashboard">
-            <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              View Competitive Landscape Dashboard →
-            </button>
-          </Link>
-        </div>
-      )}
 
       {/* Error Display */}
       {error && (

@@ -18,6 +18,9 @@ export const ScreenTemplate = ({
   isWalkthrough = false,
   nextButtonText = 'Next →'
 }) => {
+  // For debugging purposes, log the nextButtonText prop
+  console.log('ScreenTemplate nextButtonText:', nextButtonText);
+  
   return (
     <div className="max-w-6xl mx-auto px-4">
       <div className="mb-8">
