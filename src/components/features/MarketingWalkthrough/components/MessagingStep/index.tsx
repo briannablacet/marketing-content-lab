@@ -59,7 +59,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
 
   // New state for AI generation with default values
   const [aiData, setAiData] = useState<AIGenerationData>({
-    productDescription: 'Market Multiplier is a Content Marketing Platform that helps businesses create effective content marketing strategies. Key benefits include: AI-powered content creation, streamlined planning, and consistent brand messaging.',
+    productDescription: 'Marketing Content Lab is a Content Marketing Platform that helps businesses create effective content marketing strategies. Key benefits include: AI-powered content creation, streamlined planning, and consistent brand messaging.',
     targetAudience: 'Marketing Director in the Technology industry who faces challenges including: scaling content creation with limited resources, maintaining brand consistency across channels, measuring ROI of content efforts',
     uniqueValue: 'AI-powered marketing content creation and strategy that saves time while maintaining brand consistency',
     competitors: 'ContentCal, HubSpot, CoSchedule',
@@ -178,7 +178,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
         endpoint: 'value-proposition-generator',
         data: {
           productInfo: {
-            name: 'Market Multiplier',
+            name: 'Marketing Content Lab',
             description: aiData.productDescription,
             benefits: ['AI-powered content creation', 'Streamlined planning', 'Consistent brand messaging'],
             targetAudience: [aiData.targetAudience]

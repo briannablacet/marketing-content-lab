@@ -3,7 +3,7 @@
 Location: `src/components/features/ProductInformationForm/index.tsx`
 
 ## Overview
-The Product Information Form component provides a user interface for inputting and editing product information within the Market Multiplier application. It integrates with the MarketingContext for state management and NotificationContext for user feedback.
+The Product Information Form component provides a user interface for inputting and editing product information within the Marketing Content Lab application. It integrates with the MarketingContext for state management and NotificationContext for user feedback.
 
 ## Features
 - Input fields for product name, type, and value proposition

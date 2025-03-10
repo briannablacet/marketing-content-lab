@@ -31,7 +31,7 @@ export default function Home() {
       {/* Enhanced Hero Section */}
       <div className="text-center my-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Market Multiplier
+          Marketing Content Lab
         </h1>
         <div className="max-w-3xl mx-auto">
           <p className="text-xl text-gray-600 mb-4">

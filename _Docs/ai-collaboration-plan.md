@@ -1,4 +1,4 @@
-# Market Multiplier AI Collaboration Plan
+# Marketing Content Lab AI Collaboration Plan
 
 ## Work Division
 
