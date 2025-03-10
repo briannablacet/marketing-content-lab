@@ -73,7 +73,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
   };
 
   return (
-    <div className="space-y-6 w-full"> {/* Updated to ensure full width */}
+    <div className="space-y-6 w-full"> {/* Ensure full width */}
       <Card className="p-6">
         <div className="space-y-6">
           {/* Product/Service Details */}
@@ -164,21 +164,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
             />
           </div>
           
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            <button
-              onClick={onBack}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
-            >
-              ← Back
-            </button>
-            <button
-              onClick={saveProductInfo}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Save & Continue →
-            </button>
-          </div>
+          {/* Remove navigation buttons from here - the walkthrough component will provide them */}
         </div>
       </Card>
     </div>

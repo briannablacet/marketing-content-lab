@@ -287,33 +287,34 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
           </CardContent>
         </Card>
 
-        {/* Single navigation section */}
-        <div className="flex justify-between items-center pt-6">
-          <button
-            onClick={isWalkthrough && onBack ? onBack : () => router.push('/')}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
-          >
-            ← Back
-          </button>
-          
-          <div className="flex space-x-4">
-            <button
-              onClick={() => router.push('/')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
-            >
-              Cancel
-            </button>
-            
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
-                ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {isSaving ? 'Saving...' : isWalkthrough ? 'Save & Continue →' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
+        {!isWalkthrough && (
+  <div className="flex justify-between items-center pt-6">
+    <button
+      onClick={() => router.push('/')}
+      className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+    >
+      ← Back
+    </button>
+    
+    <div className="flex space-x-4">
+      <button
+        onClick={() => router.push('/')}
+        className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+      >
+        Cancel
+      </button>
+      
+      <button
+        onClick={handleSave}
+        disabled={isSaving}
+        className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
+          ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        {isSaving ? 'Saving...' : 'Save Changes'}
+      </button>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

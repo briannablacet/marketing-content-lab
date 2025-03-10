@@ -122,11 +122,15 @@ const MarketingWalkthrough: React.FC = () => {
       onExit={handleExit}
       showSkip={isSkippable}
       isWalkthrough={true}
-      nextButtonText={currentStep.id === '10' ? 'Finish Walkthrough →' : 'Next →'}
+      nextButtonText={currentStep.id === '9' ? 'Finish Walkthrough →' : 'Next →'}
     >
       {typeof currentStep.component === 'function' 
         ? currentStep.component({ onNext: handleNext, onBack: handleBack })
-        : React.createElement(currentStep.component, { onNext: handleNext, onBack: handleBack })}
+        : React.createElement(currentStep.component, { 
+            onNext: handleNext, 
+            onBack: handleBack,
+            isWalkthrough: true  // Add this prop to indicate we're in walkthrough mode
+          })}
     </ScreenTemplate>
   );
 };

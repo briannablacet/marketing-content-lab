@@ -725,26 +725,12 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
       {renderContent()}
       
       {/* Navigation Buttons - Only show if we're in a walkthrough or navigating manually */}
-      {(isWalkthrough || onNext || onBack) && (
-        <div className="flex justify-between pt-6 border-t border-gray-200">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
-              ← Back
-            </button>
-          )}
-           {onNext && (
-            <button
-              onClick={saveAndContinue}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Continue →
-            </button>
-          )}
-        </div>
-      )}
+      {!isWalkthrough && (
+  <div className="flex justify-between mt-8">
+    <button onClick={onBack}>Back</button>
+    <button onClick={onNext}>Next</button>
+  </div>
+)}
     </div>
   );
 };
