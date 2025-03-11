@@ -13,7 +13,19 @@ interface Competitor {
   isLoading?: boolean;
 }
 
-const CompetitiveStep: React.FC = () => {
+interface CompetitiveStepProps {
+  onNext?: () => void;
+  onBack?: () => void;
+  isWalkthrough?: boolean;
+  isStandalone?: boolean; // Add this prop to identify standalone mode
+}
+
+const CompetitiveStep: React.FC<CompetitiveStepProps> = ({ 
+  onNext, 
+  onBack, 
+  isWalkthrough = true,
+  isStandalone = false // Default to false to maintain backward compatibility
+}) => {
   const [competitors, setCompetitors] = useState<Competitor[]>([
     { name: '', description: '', knownMessages: [], strengths: [], weaknesses: [] }
   ]);
@@ -162,15 +174,17 @@ const CompetitiveStep: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Link to Competitive Dashboard - with correct URL */}
-      <div className="grid grid-cols-1 gap-4 mb-4">
-        <Link href="/competitor-dashboard">
-          <button className="w-full p-4 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-100">
-            <ExternalLink size={18} />
-            View Competitor Dashboard
-          </button>
-        </Link>
-      </div>
+      {/* Only show the dashboard link at the top if we're NOT in standalone mode */}
+      {!isStandalone && (
+        <div className="grid grid-cols-1 gap-4 mb-4">
+          <Link href="/competitor-dashboard">
+            <button className="w-full p-4 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-100">
+              <ExternalLink size={18} />
+              View Competitor Dashboard
+            </button>
+          </Link>
+        </div>
+      )}
 
       {/* AI Analysis Card */}
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 mb-8">

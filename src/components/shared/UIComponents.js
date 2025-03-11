@@ -16,7 +16,8 @@ export const ScreenTemplate = ({
   hideNavigation = false,
   showSkip = false,
   isWalkthrough = false,
-  nextButtonText = 'Next →'
+  nextButtonText = 'Next →',
+  hideExitButton = false // Add this new prop
 }) => {
   // For debugging purposes, log the nextButtonText prop
   console.log('ScreenTemplate nextButtonText:', nextButtonText);
@@ -30,8 +31,8 @@ export const ScreenTemplate = ({
             {subtitle && <p className="text-gray-600">{subtitle}</p>}
           </div>
           
-          {/* Only show Exit button in /walkthrough/ paths */}
-          {isWalkthrough && onExit && window.location.pathname.startsWith("/walkthrough/") && (
+          {/* Only show Exit button if not hidden and in walkthrough mode */}
+          {isWalkthrough && onExit && !hideExitButton && window.location.pathname.startsWith("/walkthrough/") && (
             <button
               onClick={onExit}
               className="px-4 py-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
