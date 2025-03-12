@@ -28,23 +28,23 @@ const SKIPPABLE_STEPS = ['5', '9']; // Competitive Analysis and SEO are skippabl
 const STEPS = [
   { id: '1', component: WelcomeStep, title: 'Welcome' },
   { id: '2', component: ProductStep, title: 'Your Product/Service' },
-  { id: '3', component: PersonaStep, title: 'Target Persona' },
-  { id: '4', component: MessagingStep, title: 'Key Messages' },
-  { id: '5', component: CompetitiveStep, title: 'Competitive Analysis', skippable: true },
+  { id: '3', component: PersonaStep, title: 'Your Ideal Customer' },
+  { id: '4', component: MessagingStep, title: 'Your Message Framework' },
+  { id: '5', component: CompetitiveStep, title: 'Who\'s Your Competition?', skippable: true },
   { 
     id: '6', 
     component: (props: StepProps) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
-    title: 'Content Strategy' 
+    title: 'Select Your First Content Assets' 
   },
   { 
     id: '7', 
     component: (props: StepProps) => <StyleGuideStep isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
-    title: 'Writing Style Guide' 
+    title: 'Select Your Writing Style' 
   },
   { 
     id: '8', 
     component: (props: StepProps) => <BrandVoiceModule isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
-    title: 'Brand Voice' 
+    title: 'Your Brand Voice' 
   },
   { id: '9', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
   { id: '10', component: ReviewStep, title: 'Putting it All Together' }

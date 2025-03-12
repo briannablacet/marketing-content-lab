@@ -35,11 +35,10 @@ export default function Home() {
         </h1>
         <div className="max-w-3xl mx-auto">
           <p className="text-xl text-gray-600 mb-4">
-            Revolutionize your product marketing with AI-powered competitive analysis 
-            and human-quality content creation
+            Get ready to upgrade your content marketing! 
           </p>
           <p className="text-lg text-gray-500 mb-8">
-            Empower your marketing team with intelligent insights while preserving your authentic voice
+            Create, enhance, repurpose, and scale your content with AI assistance. Automate tedious tasks and fill in skills gaps while preserving your authentic voice and your unique, human touch.
           </p>
         </div>
         <Link 
