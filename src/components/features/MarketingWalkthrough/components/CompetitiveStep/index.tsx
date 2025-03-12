@@ -1,6 +1,6 @@
 // src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card } from '../../../../../components/ui/card';
 import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
