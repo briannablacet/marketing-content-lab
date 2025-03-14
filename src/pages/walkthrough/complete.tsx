@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Sparkles, FileText, PenTool } from 'lucide-react';
 import { useContent } from '../../context/ContentContext';
 import { useBrandVoice } from '../../context/BrandVoiceContext';
+import Link from 'next/link';
 
 const WalkthroughComplete = () => {
   const router = useRouter();
@@ -40,7 +41,7 @@ const WalkthroughComplete = () => {
 
         {/* Review Strategy Card */}
         <button
-          onClick={() => router.push('/content-strategy')}
+          onClick={() => router.push('/review-program')}
           className="p-6 bg-white rounded-lg border hover:border-blue-500 hover:shadow-md transition-all group"
         >
           <div className="flex items-center gap-3 mb-3">

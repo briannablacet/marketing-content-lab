@@ -32,34 +32,52 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
   const completedSteps = [
     {
-      title: "Target Persona",
-      description: "You've defined your ideal reader profile and key audience segments",
-      items: ["B2B Technology Decision Makers", "Security-Focused IT Leaders"],
+      title: "Product Definition",
+      description: "You've defined your product features and benefits",
+      items: ["Product Name", "Product Type", "Value Proposition", "Key Benefits"],
+      icon: "🚀"
+    },
+    {
+      title: "Ideal Customer",
+      description: "You've defined your ideal customer's profile and key audience segments",
+      items: ["Primary Role", "Industry Focus", "Key Challenges"],
       icon: "👥"
     },
     {
       title: "Key Messages",
       description: "You've crafted your core value propositions and content themes",
-      items: ["Primary Value Props", "Key Benefits", "Content Themes"],
+      items: ["Value Proposition", "Key Differentiators", "Key Benefits"],
       icon: "💡"
     },
     {
       title: "Competitive Analysis",
       description: "You've analyzed your content positioning against competitors",
-      items: ["Content Differentiators", "Market Gaps", "Unique Angles"],
+      items: ["Competitor Positioning", "Market Gaps", "Unique Advantages"],
       icon: "📊",
       hasData: hasCompetitors
     },
     {
-      title: "Content Strategy",
+      title: "Selecting First Content Assets",
       description: "You've chosen your content types to engage your audience",
       items: selectedContentTypes,
-      icon: "✍️"
+      icon: "📝"
+    },
+    {
+      title: "Setting Writing Style",
+      description: "You've defined your writing style and formatting preferences",
+      items: ["Style Guide", "Formatting Rules", "Punctuation Preferences"],
+      icon: "✒️"
+    },
+    {
+      title: "Defining Brand Voice",
+      description: "You've established your brand's voice and tone",
+      items: ["Brand Archetype", "Communication Style", "Key Terminology"],
+      icon: "🔊"
     },
     {
       title: "SEO Keywords",
       description: "You've identified your target search terms and topics",
-      items: ["Primary Keywords", "Content Topics", "Keyword Groups"],
+      items: ["Primary Keywords", "Secondary Keywords", "Keyword Groups"],
       icon: "🎯"
     }
   ];

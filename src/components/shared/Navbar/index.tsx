@@ -1,4 +1,4 @@
-// src/components/shared/Navbar.tsx
+// src/components/shared/Navbar/index.tsx
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -57,6 +57,16 @@ const Navbar: React.FC = () => {
                 }`}
               >
                 Competitive Analysis
+              </Link>
+              <Link 
+                href="/review-program" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  router.pathname === '/review-program' ? 
+                  'border-blue-500 text-gray-900' : 
+                  'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Review Program
               </Link>
             </nav>
           </div>
