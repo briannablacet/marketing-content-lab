@@ -1,8 +1,9 @@
 // src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
-import React, { useState } from 'react';
-import { Card } from '../../../../../components/ui/card';
-import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { useNotification } from '../../../../../context/NotificationContext';
 
 interface Competitor {
   name: string;
@@ -17,20 +18,66 @@ interface CompetitiveStepProps {
   onNext?: () => void;
   onBack?: () => void;
   isWalkthrough?: boolean;
-  isStandalone?: boolean; // Add this prop to identify standalone mode
+  isStandalone?: boolean;
+  onDataChange?: (competitors: Competitor[]) => void;
 }
 
 const CompetitiveStep: React.FC<CompetitiveStepProps> = ({ 
   onNext, 
   onBack, 
   isWalkthrough = true,
-  isStandalone = false // Default to false to maintain backward compatibility
+  isStandalone = false,
+  onDataChange
 }) => {
+  const router = useRouter();
+  const { showNotification } = useNotification();
   const [competitors, setCompetitors] = useState<Competitor[]>([
     { name: '', description: '', knownMessages: [], strengths: [], weaknesses: [] }
   ]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
+  
+  // New state to track when to analyze
+  const [competitorToAnalyze, setCompetitorToAnalyze] = useState<{index: number, name: string} | null>(null);
+  
+  // Timer for debounce
+  const [analyzeTimer, setAnalyzeTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Effect to process analysis requests with a debounce
+  useEffect(() => {
+    if (competitorToAnalyze && competitorToAnalyze.name.trim().length > 2) {
+      // Clear any existing timer
+      if (analyzeTimer) {
+        clearTimeout(analyzeTimer);
+      }
+      
+      // Set a new timer for 800ms debounce
+      const timer = setTimeout(() => {
+        handleAnalyzeCompetitor(competitorToAnalyze.index, competitorToAnalyze.name);
+        setCompetitorToAnalyze(null);
+      }, 800);
+      
+      setAnalyzeTimer(timer);
+    }
+    
+    return () => {
+      if (analyzeTimer) {
+        clearTimeout(analyzeTimer);
+      }
+    };
+  }, [competitorToAnalyze]);
+
+  // Save competitors to local storage and notify parent component
+  useEffect(() => {
+    // Only save non-empty competitors
+    const validCompetitors = competitors.filter(comp => comp.name.trim() !== '');
+    if (validCompetitors.length > 0) {
+      localStorage.setItem('marketingCompetitors', JSON.stringify(validCompetitors));
+      if (onDataChange) {
+        onDataChange(validCompetitors);
+      }
+    }
+  }, [competitors, onDataChange]);
 
   const addCompetitor = () => {
     setCompetitors([
@@ -50,6 +97,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       i === index ? { ...comp, isLoading: true } : comp
     ));
     setError('');
+    setIsAnalyzing(true);
 
     try {
       const requestData = {
@@ -152,6 +200,8 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
           weaknesses: competitorInsight.gaps || []
         } : comp
       ));
+      
+      showNotification('success', `Analysis for ${name} completed`);
     } catch (err) {
       console.error('Error in handleAnalyzeCompetitor:', err);
       setError('Failed to analyze competitor. Please try again.');
@@ -159,6 +209,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       setCompetitors(prev => prev.map((comp, i) => 
         i === index ? { ...comp, isLoading: false } : comp
       ));
+      setIsAnalyzing(false);
     }
   };
 
@@ -167,25 +218,24 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       i === index ? { ...comp, name } : comp
     ));
     
-    if (name.length > 2) {
-      handleAnalyzeCompetitor(index, name);
+    // Set the competitor to analyze after a delay
+    if (name.trim().length > 2) {
+      setCompetitorToAnalyze({ index, name });
+    }
+  };
+  
+  const handleSubmitCompetitor = (index: number) => {
+    const competitor = competitors[index];
+    if (competitor.name.trim().length > 0) {
+      handleAnalyzeCompetitor(index, competitor.name);
     }
   };
 
+  // Check if we have any valid competitors (with names)
+  const hasValidCompetitors = competitors.some(comp => comp.name.trim() !== '');
+
   return (
     <div className="space-y-6">
-      {/* Only show the dashboard link at the top if we're NOT in standalone mode */}
-      {!isStandalone && (
-        <div className="grid grid-cols-1 gap-4 mb-4">
-          <Link href="/competitor-dashboard">
-            <button className="w-full p-4 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-100">
-              <ExternalLink size={18} />
-              View Competitor Dashboard
-            </button>
-          </Link>
-        </div>
-      )}
-
       {/* AI Analysis Card */}
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 mb-8">
         <div className="flex flex-col items-center text-center">
@@ -197,8 +247,8 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
           <div className="text-sm text-gray-600 space-y-2">
             <p>Here's how it works:</p>
             <ul className="list-disc text-left pl-4 space-y-1">
-              <li>Start typing a competitor's name below</li>
-              <li>AI will automatically analyze them after you type 3 characters</li>
+              <li>Enter a competitor's name</li>
+              <li>Click the "Analyze" button to start the analysis</li>
               <li>You'll see insights about their positioning, messages, and gaps</li>
               <li>Add more competitors to build a complete analysis</li>
             </ul>
@@ -217,7 +267,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
                   type="text"
                   value={competitor.name}
                   onChange={(e) => handleNameChange(index, e.target.value)}
-                  placeholder="Type competitor name for instant AI analysis..."
+                  placeholder="Enter competitor name..."
                   className="w-full p-3 border rounded-lg pr-12"
                 />
                 {competitor.isLoading && (
@@ -226,6 +276,13 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
                   </div>
                 )}
               </div>
+              <button
+                onClick={() => handleSubmitCompetitor(index)}
+                disabled={competitor.isLoading || competitor.name.trim().length < 2}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Analyze
+              </button>
               {competitors.length > 1 && (
                 <button
                   onClick={() => removeCompetitor(index)}
@@ -316,6 +373,30 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             </div>
           </div>
         </Card>
+      )}
+      
+      {/* Save button for standalone version - but not when used in the competitive-analysis page */}
+      {!isWalkthrough && !isStandalone && (
+        <div className="flex justify-end mt-6 space-x-4">
+          <button
+            onClick={() => router.push('/')}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              showNotification('success', 'Competitor analysis saved successfully!');
+              setTimeout(() => router.push('/'), 1500);
+            }}
+            className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${
+              !hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            disabled={!hasValidCompetitors}
+          >
+            Save Analysis
+          </button>
+        </div>
       )}
     </div>
   );
