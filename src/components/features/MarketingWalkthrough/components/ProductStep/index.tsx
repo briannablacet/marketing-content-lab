@@ -1,47 +1,29 @@
 // src/components/features/MarketingWalkthrough/components/ProductStep/index.tsx
-
 import React, { useState, useEffect } from "react";
-import { Card } from '../../../../ui/card';
-import { Sparkles, Plus, X, Loader } from 'lucide-react';
-import { useNotification } from '../../../../../context/NotificationContext';
+import { Card } from '@/components/ui/card';
+import { Sparkles, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/router';
+import { useNotification } from '../../../../../context/NotificationContext';
 
 interface ProductStepProps {
   onNext?: () => void;
   onBack?: () => void;
+  isWalkthrough?: boolean; // Add this prop to determine context
 }
 
-const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
-  const { showNotification } = useNotification();
+const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough = true }) => {
   const router = useRouter();
+  const { showNotification } = useNotification();
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState("");
   const [valueProposition, setValueProposition] = useState("");
   const [keyBenefits, setKeyBenefits] = useState([""]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Check if we're in the walkthrough based on the route
-  const isWalkthrough = router.pathname.includes('/walkthrough');
-  
   const userId = "user123"; // Replace with actual user ID when authentication is added
 
   useEffect(() => {
-    // Try to load from localStorage first
-    const savedInfo = localStorage.getItem('marketingProductInfo');
-    if (savedInfo) {
-      try {
-        const parsedInfo = JSON.parse(savedInfo);
-        setProductName(parsedInfo.name || "");
-        setProductType(parsedInfo.type || "");
-        setValueProposition(parsedInfo.valueProposition || "");
-        setKeyBenefits(parsedInfo.keyBenefits?.length ? parsedInfo.keyBenefits : [""]);
-        return; // Skip API call if we have local data
-      } catch (error) {
-        console.error("Error parsing local product info:", error);
-      }
-    }
-
-    // Fallback to API if no local data
     fetch(`/api/product-info?userId=${userId}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
@@ -57,84 +39,32 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
       });
   }, []);
 
-  // Save to localStorage whenever values change
-  useEffect(() => {
-    if (productName || productType || valueProposition || keyBenefits.some(b => b.trim())) {
-      const productInfo = {
-        name: productName,
-        type: productType,
-        valueProposition,
-        keyBenefits: keyBenefits.filter(b => b.trim()),
-      };
-      localStorage.setItem('marketingProductInfo', JSON.stringify(productInfo));
-    }
-  }, [productName, productType, valueProposition, keyBenefits]);
-
   const handleGenerateValueProp = async () => {
-    // Don't run if we don't have enough info
-    if (!productName.trim() && !productType.trim() && !keyBenefits.some(b => b.trim())) {
-      showNotification('warning', 'Please add at least a product name, type or key benefit first');
-      return;
-    }
-
     setIsGenerating(true);
     try {
-      const requestBody = {
-        endpoint: 'value-proposition-generator',
-        data: {
+      const response = await fetch('/api/generate-value-prop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           productName,
           productType,
           keyBenefits: keyBenefits.filter(b => b.trim())
-        }
-      };
-
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        })
       });
       
-      if (!response.ok) {
-        throw new Error(`API responded with status ${response.status}`);
-      }
-      
-      const data = await response.json();
-      if (data.valueProposition) {
+      if (response.ok) {
+        const data = await response.json();
         setValueProposition(data.valueProposition);
-        showNotification('success', 'Generated value proposition based on your inputs');
-      } else {
-        throw new Error('API returned an invalid response');
       }
     } catch (error) {
       console.error('Error generating value proposition:', error);
-      showNotification('error', 'Could not generate value proposition. Please try again.');
-      
-      // Fallback for testing purposes
-      if (productName && productType) {
-        setValueProposition(`${productName} is a ${productType} that helps you achieve better results with less effort. Our solution empowers you to overcome challenges and reach your goals faster.`);
-      }
     } finally {
       setIsGenerating(false);
     }
   };
 
   const saveProductInfo = async () => {
-    // Basic validation
-    if (!productName.trim()) {
-      showNotification('error', 'Please provide a product name');
-      return;
-    }
-    
-    if (!productType.trim()) {
-      showNotification('error', 'Please provide a product type');
-      return;
-    }
-    
-    if (!keyBenefits.some(b => b.trim())) {
-      showNotification('error', 'Please provide at least one key benefit');
-      return;
-    }
-    
+    setIsSaving(true);
     try {
       await fetch("/api/product-info", {
         method: "POST",
@@ -148,17 +78,23 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
         }),
       });
       
-      showNotification('success', 'Product information saved successfully');
-      if (onNext) onNext();
+      showNotification('success', 'Product information saved successfully!');
+      
+      // If in walkthrough mode, proceed to next step
+      if (isWalkthrough && onNext) {
+        onNext();
+      }
+      // Otherwise just keep user on the page after saving
+      setIsSaving(false);
     } catch (error) {
-      console.error('Error saving product info:', error);
-      showNotification('error', 'Failed to save product information. Continuing anyway.');
-      if (onNext) onNext(); // Still proceed to the next step
+      console.error("Error saving product info:", error);
+      showNotification('error', 'Failed to save product information');
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 w-full"> {/* Ensure full width */}
       <Card className="p-6">
         <div className="space-y-6">
           {/* Product/Service Details */}
@@ -233,17 +169,8 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
                 disabled={isGenerating}
                 className="text-blue-600 hover:text-blue-700 flex items-center gap-2 text-sm"
               >
-                {isGenerating ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Get AI Help
-                  </>
-                )}
+                <Sparkles className="w-4 h-4" />
+                {isGenerating ? 'Generating...' : 'Get AI Help'}
               </button>
             </div>
             <p className="text-sm text-gray-600 mb-4">
@@ -258,14 +185,28 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack }) => {
             />
           </div>
           
-          {/* Only show Continue button in walkthrough mode */}
-          {isWalkthrough && (
-            <div className="flex justify-end pt-4">
+          {/* Only show save button on standalone page */}
+          {!isWalkthrough && (
+            <div className="flex justify-end mt-6 space-x-4">
               <button
                 onClick={saveProductInfo}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                disabled={isSaving}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
               >
-                Continue
+                {isSaving ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Product Information'
+                )}
+              </button>
+              <button
+                onClick={() => router.push('/')}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Back to Dashboard
               </button>
             </div>
           )}
