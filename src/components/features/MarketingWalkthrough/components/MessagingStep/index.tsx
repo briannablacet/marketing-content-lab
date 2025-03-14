@@ -383,6 +383,18 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
           </ul>
         </Card>
       )}
+
+      {/* Save & Continue button for messaging form */}
+      {isWalkthrough && (
+        <div className="flex justify-end pt-4">
+          <button
+            onClick={saveAndContinue}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Continue
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -468,17 +480,17 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
               rows={3}
             />
           </div>
-
           <div>
-            <label className="block text-sm font-medium mb-2">Unique Value</label>
-            <textarea
-              value={aiData.uniqueValue}
-              onChange={(e) => setAiData(prev => ({ ...prev, uniqueValue: e.target.value }))}
-              className="w-full p-3 border rounded-lg"
-              placeholder="What makes your solution special?"
-              rows={3}
-            />
-          </div>
+  <label className="block text-sm font-medium mb-2">Unique Value</label>
+  <textarea
+    value={aiData.uniqueValue}
+    onChange={(e) => setAiData(prev => ({ ...prev, uniqueValue: e.target.value }))}
+    className="w-full p-3 border rounded-lg"
+    placeholder="What makes your solution special?"
+    rows={3}
+  />
+</div>
+This should fix the syntax error and your component should work correctly.RetryClaude can make mistakes. Please double-check responses.
 
           <div>
             <label className="block text-sm font-medium mb-2">Key Competitors</label>
@@ -496,7 +508,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
           onClick={() => setAiStep('focus')}
           className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center gap-2"
         >
-          Continue to Messaging Focus <ArrowRight className="w-4 h-4" />
+          Set the tone <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     );
@@ -635,6 +647,18 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
             Edit Manually
           </button>
         </div>
+
+        {/* Continue button after generating results */}
+        {isWalkthrough && (
+          <div className="flex justify-end pt-4 border-t">
+            <button
+              onClick={saveAndContinue}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Continue
+            </button>
+          </div>
+        )}
       </div>
     );
 
@@ -724,13 +748,23 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
     <div className="space-y-6">
       {renderContent()}
       
-      {/* Navigation Buttons - Only show if we're in a walkthrough or navigating manually */}
+      {/* Navigation Buttons - Only show if we're not in a walkthrough */}
       {!isWalkthrough && (
-  <div className="flex justify-between mt-8">
-    <button onClick={onBack}>Back</button>
-    <button onClick={onNext}>Next</button>
-  </div>
-)}
+        <div className="flex justify-between mt-8">
+          <button 
+            onClick={onBack}
+            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+          >
+            Back
+          </button>
+          <button 
+            onClick={saveAndContinue}
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Save and Continue
+          </button>
+        </div>
+      )}
     </div>
   );
 };
