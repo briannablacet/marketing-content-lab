@@ -490,7 +490,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
     rows={3}
   />
 </div>
-This should fix the syntax error and your component should work correctly.RetryClaude can make mistakes. Please double-check responses.
+
 
           <div>
             <label className="block text-sm font-medium mb-2">Key Competitors</label>
