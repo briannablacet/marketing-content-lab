@@ -40,41 +40,75 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
   }, []);
 
   const handleGenerateValueProp = async () => {
+    if (!productName || !productType || keyBenefits.filter(b => b.trim()).length === 0) {
+      showNotification('warning', 'Please provide product name, type, and at least one benefit');
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/generate-value-prop', {
+      const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productName,
-          productType,
-          keyBenefits: keyBenefits.filter(b => b.trim())
+          endpoint: 'generate-value-prop',
+          data: {
+            productName,
+            productType,
+            keyBenefits: keyBenefits.filter(b => b.trim())
+          }
         })
       });
       
       if (response.ok) {
         const data = await response.json();
-        setValueProposition(data.valueProposition);
+        setValueProposition(data.valueProposition || 'Our platform helps businesses create and execute effective marketing strategies with AI assistance.');
+        showNotification('success', 'Generated value proposition based on your inputs');
+      } else {
+        throw new Error('Failed to generate value proposition');
       }
     } catch (error) {
       console.error('Error generating value proposition:', error);
+      showNotification('error', 'Failed to generate. Using fallback suggestion.');
+      
+      // Provide a fallback value proposition
+      setValueProposition(`${productName || 'Our solution'} helps ${productType || 'businesses'} achieve better results through streamlined processes and enhanced capabilities.`);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const saveProductInfo = async () => {
+    // Basic validation
+    if (!productName.trim() || !productType.trim() || !valueProposition.trim()) {
+      showNotification('error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (!keyBenefits.some(benefit => benefit.trim())) {
+      showNotification('error', 'Please add at least one key benefit');
+      return;
+    }
+
     setIsSaving(true);
     try {
+      // Save to localStorage first
+      const productData = {
+        name: productName,
+        type: productType,
+        valueProposition,
+        keyBenefits: keyBenefits.filter(b => b.trim()),
+      };
+      
+      localStorage.setItem('marketingProduct', JSON.stringify(productData));
+      
+      // Then try API call
       await fetch("/api/product-info", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          name: productName,
-          type: productType,
-          valueProposition,
-          keyBenefits: keyBenefits.filter(b => b.trim()),
+          ...productData
         }),
       });
       
@@ -88,7 +122,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
       setIsSaving(false);
     } catch (error) {
       console.error("Error saving product info:", error);
-      showNotification('error', 'Failed to save product information');
+      showNotification('error', 'Error saving to API, but data is stored locally');
       setIsSaving(false);
     }
   };
@@ -167,7 +201,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
               <button
                 onClick={handleGenerateValueProp}
                 disabled={isGenerating}
-                className="text-blue-600 hover:text-blue-700 flex items-center gap-2 text-sm"
+                className="text-blue-600 hover:text-blue-700 flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Sparkles className="w-4 h-4" />
                 {isGenerating ? 'Generating...' : 'Get AI Help'}
@@ -185,13 +219,20 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
             />
           </div>
           
-          {/* Only show save button on standalone page */}
+          {/* Navigation controls */}
           {!isWalkthrough && (
-            <div className="flex justify-end mt-6 space-x-4">
+            <div className="flex justify-between items-center pt-4 mt-6">
+              <button
+                onClick={() => router.push('/')}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Back to Dashboard
+              </button>
+              
               <button
                 onClick={saveProductInfo}
                 disabled={isSaving}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
@@ -201,12 +242,6 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
                 ) : (
                   'Save Product Information'
                 )}
-              </button>
-              <button
-                onClick={() => router.push('/')}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Back to Dashboard
               </button>
             </div>
           )}
