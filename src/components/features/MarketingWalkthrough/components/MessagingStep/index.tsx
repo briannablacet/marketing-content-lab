@@ -383,18 +383,6 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
           </ul>
         </Card>
       )}
-
-      {/* Save & Continue button for messaging form */}
-      {isWalkthrough && (
-        <div className="flex justify-end pt-4">
-          <button
-            onClick={saveAndContinue}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Continue
-          </button>
-        </div>
-      )}
     </div>
   );
 
@@ -451,6 +439,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
 
   // Different views for AI generation flow
   const renderAIGeneration = () => {
+    // Sub-components for different AI steps
     const renderReviewStep = () => (
       <div className="space-y-6">
         <div className="bg-blue-50 p-4 rounded-lg">
@@ -481,16 +470,15 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
             />
           </div>
           <div>
-  <label className="block text-sm font-medium mb-2">Unique Value</label>
-  <textarea
-    value={aiData.uniqueValue}
-    onChange={(e) => setAiData(prev => ({ ...prev, uniqueValue: e.target.value }))}
-    className="w-full p-3 border rounded-lg"
-    placeholder="What makes your solution special?"
-    rows={3}
-  />
-</div>
-
+            <label className="block text-sm font-medium mb-2">Unique Value</label>
+            <textarea
+              value={aiData.uniqueValue}
+              onChange={(e) => setAiData(prev => ({ ...prev, uniqueValue: e.target.value }))}
+              className="w-full p-3 border rounded-lg"
+              placeholder="What makes your solution special?"
+              rows={3}
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">Key Competitors</label>
@@ -647,18 +635,6 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
             Edit Manually
           </button>
         </div>
-
-        {/* Continue button after generating results */}
-        {isWalkthrough && (
-          <div className="flex justify-end pt-4 border-t">
-            <button
-              onClick={saveAndContinue}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Continue
-            </button>
-          </div>
-        )}
       </div>
     );
 
@@ -744,12 +720,47 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
     }
   };
 
+  // Since we don't want to show our own navigation in walkthrough mode,
+  // we'll just return the content
+  if (isWalkthrough) {
+    return (
+      <div>
+        {renderContent()}
+      </div>
+    );
+  }
+
+  // For standalone mode, we'll add our own navigation
   return (
     <div className="space-y-6">
       {renderContent()}
       
-      {/* Navigation Buttons - Only show if we're not in a walkthrough */}
-      {!isWalkthrough && (
+      {/* Save & Continue button for manual form if not showing results */}
+      {selectedOption === 'manual' && (
+        <div className="flex justify-end mt-8">
+          <button
+            onClick={saveAndContinue}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Save and Continue
+          </button>
+        </div>
+      )}
+      
+      {/* Save & Continue button for AI results */}
+      {selectedOption === 'ai' && aiStep === 'results' && (
+        <div className="flex justify-end mt-8">
+          <button
+            onClick={saveAndContinue}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Save and Continue
+          </button>
+        </div>
+      )}
+      
+      {/* Navigation Buttons - Only show if we're not in a walkthrough and not showing specific content */}
+      {!isWalkthrough && !((selectedOption === 'manual') || (selectedOption === 'ai' && aiStep === 'results')) && (
         <div className="flex justify-between mt-8">
           <button 
             onClick={onBack}

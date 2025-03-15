@@ -1,5 +1,5 @@
 // src/components/features/BrandVoiceModule/index.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
 import { Upload, FileText, X, HelpCircle } from 'lucide-react';
@@ -47,26 +47,78 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
   const [fileError, setFileError] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const router = useRouter();
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5000000) {
-      setFileError('File size must be less than 5MB');
-      return;
-    }
-
+  
+  // Load saved messaging data from previous steps
+  useEffect(() => {
+    // Try to load audience data
     try {
-      const content = await file.text();
-      addUploadedGuide({
-        name: file.name,
-        content,
-        type: 'messaging-doc'
-      });
-      setFileError('');
+      const audienceData = localStorage.getItem('marketingTargetAudience');
+      const messagingData = localStorage.getItem('marketingMessages');
+      
+      if (audienceData) {
+        const audience = JSON.parse(audienceData);
+        // Pre-populate the primary audience field
+        if (audience.role) {
+          updateBrandVoice({
+            brandVoice: {
+              ...brandVoice.brandVoice,
+              audience: `${audience.role} in ${audience.industry}`
+            }
+          });
+        }
+      }
+      
+      if (messagingData) {
+        const messaging = JSON.parse(messagingData);
+        // Pre-populate key terms from differentiators or benefits if available
+        let keyTerms = '';
+        if (messaging.differentiators && messaging.differentiators.length > 0) {
+          // Extract key terms from differentiators
+          const terms = messaging.differentiators
+            .filter(diff => diff.trim())
+            .map(diff => {
+              // Extract important words or phrases
+              const words = diff.split(' ');
+              return words.filter(word => word.length > 3).slice(0, 2).join(' ');
+            })
+            .join(', ');
+          
+          keyTerms = terms;
+        }
+        
+        if (keyTerms) {
+          updateBrandVoice({
+            contentGuidelines: {
+              ...brandVoice.contentGuidelines,
+              preferred: keyTerms
+            }
+          });
+        }
+      }
     } catch (error) {
-      setFileError('Error reading file. Please try again.');
+      console.error('Error loading data from previous steps:', error);
+    }
+  }, []);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5000000) {
+        setFileError('File size must be less than 5MB');
+        return;
+      }
+
+      try {
+        const content = await file.text();
+        addUploadedGuide({
+          name: file.name,
+          content,
+          type: 'messaging-doc'
+        });
+        setFileError('');
+      } catch (error) {
+        setFileError('Error reading file. Please try again.');
+      }
     }
   };
 
@@ -79,16 +131,7 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
     });
   };
 
-  const handleGuidelineUpdate = (type: 'preferred' | 'avoided', value: string): void => {
-    updateBrandVoice({
-      contentGuidelines: {
-        ...brandVoice.contentGuidelines,
-        [type]: value
-      }
-    });
-  };
-
-  const handleSave = async () => {
+  const saveAndContinue = async () => {
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -172,61 +215,6 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Primary Audience
-                  <HelpText text="Your main target audience - helps ensure your voice and content resonate with the right people" />
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Technical Decision Makers, C-Suite Executives"
-                  value={brandVoice.brandVoice.audience}
-                  onChange={(e) => handleBrandVoiceUpdate('audience', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Key Terms and Messaging</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Key Terms to Emphasize
-                  <HelpText text="Terms that reinforce your brand positioning and should be used consistently in your content" />
-                </label>
-                <p className="text-sm text-gray-500 mb-2">
-                  Enter multiple terms separated by commas (e.g., "machine learning, cloud security, zero trust")
-                </p>
-                <textarea
-                  placeholder="e.g., machine learning, advanced threat protection, zero-trust architecture"
-                  value={brandVoice.contentGuidelines.preferred}
-                  onChange={(e) => handleGuidelineUpdate('preferred', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md h-24"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Terms to Avoid
-                  <HelpText text="Terms that don't align with your positioning or could weaken your message" />
-                </label>
-                <p className="text-sm text-gray-500 mb-2">
-                  Enter multiple terms separated by commas (e.g., "basic security, simple solution")
-                </p>
-                <textarea
-                  placeholder="e.g., basic security, simple solution, entry-level"
-                  value={brandVoice.contentGuidelines.avoided}
-                  onChange={(e) => handleGuidelineUpdate('avoided', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md h-24"
-                />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -288,33 +276,33 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
         </Card>
 
         {!isWalkthrough && (
-  <div className="flex justify-between items-center pt-6">
-    <button
-      onClick={() => router.push('/')}
-      className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
-    >
-      ← Back
-    </button>
-    
-    <div className="flex space-x-4">
-      <button
-        onClick={() => router.push('/')}
-        className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
-      >
-        Cancel
-      </button>
-      
-      <button
-        onClick={handleSave}
-        disabled={isSaving}
-        className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
-          ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-      >
-        {isSaving ? 'Saving...' : 'Save Changes'}
-      </button>
-    </div>
-  </div>
-)}
+          <div className="flex justify-between items-center pt-6">
+            <button
+              onClick={() => router.push('/')}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+            >
+              ← Back
+            </button>
+            
+            <div className="flex space-x-4">
+              <button
+                onClick={() => router.push('/')}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+              >
+                Cancel
+              </button>
+              
+              <button
+                onClick={saveAndContinue}
+                disabled={isSaving}
+                className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
+                  ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
