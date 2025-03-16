@@ -5,7 +5,7 @@ import { CONTENT_TYPES } from '../../../data/contentTypesData';
 import { useContent } from '../../../context/ContentContext';
 import { PlusCircle, ChevronRight, Sparkles, RefreshCw, Download, CheckCircle, Edit, Save } from 'lucide-react';
 
-const ContentStrategyModule = () => {
+const ContentStrategyModule = ({ onViewChange }) => {
   // Use the content context
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
   
@@ -18,6 +18,13 @@ const ContentStrategyModule = () => {
   const [targetAudience, setTargetAudience] = useState('');
   const [isGenerating, setIsGenerating] = useState({});
   const [generatedContent, setGeneratedContent] = useState({});
+
+  // Notify parent component when view changes
+  useEffect(() => {
+    if (typeof onViewChange === 'function') {
+      onViewChange(currentView);
+    }
+  }, [currentView, onViewChange]);
   
   // Toggle content type selection
   const toggleContentType = (contentType) => {
@@ -359,20 +366,7 @@ const ContentStrategyModule = () => {
       {selectedContentTypes.length > 0 && (
         <div className="flex justify-end mt-8">
           <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              // Stop any bubbling of events
-              if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation();
-              
-              // Force state update with callback to ensure it completes
-              setCurrentView('creation');
-              
-              // Block any default navigation behavior
-              window.history.pushState({}, '', window.location.pathname);
-              
-              return false;
-            }}
+            onClick={() => setCurrentView('creation')}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
           >
             Continue to Content Creation <ChevronRight className="ml-2 w-4 h-4" />
@@ -382,64 +376,229 @@ const ContentStrategyModule = () => {
     </div>
   );
   
- 
   // Content Creation View
-const renderContentCreation = () => (
-  <div className="space-y-8">
-    {/* All your existing content here */}
-
-    {/* Bottom action buttons - improved styling */}
-    <div className="mt-12 border-t pt-6 flex justify-between items-center">
+  const renderContentCreation = () => (
+    <div className="space-y-8">
+      <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-blue-900 h-2"></div>
+        <div className="p-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-bold text-blue-700">Content Creation</h2>
+              <p className="text-sm text-slate-600">Configure and generate each content piece</p>
+            </div>
+            <button
+              onClick={() => setCurrentView('selection')}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+            >
+              Back to Selection
+            </button>
+          </div>
+        </div>
+      </div>
       
+      {/* Shared information section */}
+      <Card className="p-6 mb-8">
+        <h3 className="text-lg font-medium mb-4">Shared Information</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Target Audience</label>
+            <textarea
+              value={targetAudience}
+              onChange={(e) => setTargetAudience(e.target.value)}
+              className="w-full p-2 border rounded-lg h-20"
+              placeholder="Describe who this content is targeting"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Key Messages</label>
+            <div className="space-y-2">
+              {keyMessages.map((message, index) => (
+                <div key={index}>
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => updateKeyMessage(index, e.target.value)}
+                    className="w-full p-2 border rounded-lg"
+                    placeholder={`Key message ${index + 1}`}
+                  />
+                </div>
+              ))}
+              <button
+                onClick={addKeyMessage}
+                className="text-blue-600 hover:text-blue-700 flex items-center"
+              >
+                <PlusCircle className="w-4 h-4 mr-1" />
+                Add another message
+              </button>
+            </div>
+          </div>
+        </div>
+      </Card>
       
-      <div className="flex space-x-4">
+      {/* Individual content cards */}
+      {selectedContentTypes.map(contentType => (
+        <Card key={contentType} className="mb-8">
+          <CardHeader className="bg-blue-50 border-b">
+            <CardTitle>{contentType}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              {/* Content name */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Content Nickname</label>
+                <input
+                  type="text"
+                  value={contentMetadata[contentType]?.name || ''}
+                  onChange={(e) => updateContentName(contentType, e.target.value)}
+                  className="w-full p-2 border rounded-lg"
+                  placeholder={`Give your ${contentType.toLowerCase()} a nickname`}
+                />
+              </div>
+              
+              {/* Generate button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => generateContentForType(contentType)}
+                  disabled={isGenerating[contentType]}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                >
+                  {isGenerating[contentType] ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Content
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {/* Generated content preview */}
+              {generatedContent[contentType] && (
+                <div className="mt-6 border rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold">Generated Content</h3>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => generateContentForType(contentType)}
+                        className="p-1 text-slate-600 hover:text-blue-600 border rounded"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => downloadContent(contentType)}
+                        className="p-1 text-slate-600 hover:text-blue-600 border rounded"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Content preview based on type */}
+                  {contentType === 'Blog Posts' && (
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-medium">{generatedContent[contentType].title}</h4>
+                      {generatedContent[contentType].sections.map((section, index) => (
+                        <div key={index} className="mb-4">
+                          <h5 className="font-medium mb-2">{section.heading}</h5>
+                          <p className="text-slate-700 whitespace-pre-line">{section.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {contentType === 'Social Posts' && (
+                    <div className="space-y-4">
+                      {generatedContent[contentType].platforms.map((platform, platformIndex) => (
+                        <div key={platformIndex} className="mb-4">
+                          <h5 className="font-medium mb-2">{platform.name} Posts</h5>
+                          <div className="space-y-2">
+                            {platform.posts.map((post, postIndex) => (
+                              <div key={postIndex} className="p-3 bg-gray-50 rounded-lg border">
+                                {post}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {contentType === 'Email Campaigns' && (
+                    <div className="space-y-4">
+                      {generatedContent[contentType].emails.map((email, index) => (
+                        <div key={index} className="mb-4 border p-4 rounded-lg">
+                          <h5 className="font-medium mb-2">Subject: {email.subject}</h5>
+                          <p className="text-slate-700 whitespace-pre-line">{email.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {contentType === 'eBooks & White Papers' && (
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-medium">{generatedContent[contentType].title}</h4>
+                      <div className="mb-4">
+                        <h5 className="font-medium mb-2">Summary</h5>
+                        <p className="text-slate-700">{generatedContent[contentType].summary}</p>
+                      </div>
+                      <div>
+                        <h5 className="font-medium mb-2">Chapters</h5>
+                        <ol className="list-decimal list-inside pl-2">
+                          {generatedContent[contentType].chapters.map((chapter, index) => (
+                            <li key={index} className="mb-1 text-slate-700">{chapter}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!['Blog Posts', 'Social Posts', 'Email Campaigns', 'eBooks & White Papers'].includes(contentType) && (
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-medium">{generatedContent[contentType].title || 'Generated Content'}</h4>
+                      <p className="text-slate-700">{generatedContent[contentType].content}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+      
+      {/* Generate all button */}
+      <div className="flex justify-between mt-8">
         <button
           onClick={generateAllContent}
-          className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-          disabled={selectedContentTypes.length === 0}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
         >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Generate All
+          <Sparkles className="w-5 h-5 mr-2" />
+          Generate All Content
         </button>
         
         {Object.keys(generatedContent).length > 0 && (
-          <div className="flex space-x-4">
-            <button
-              onClick={() => {
-                localStorage.setItem('savedContentStrategy', JSON.stringify({
-                  contentTypes: selectedContentTypes,
-                  metadata: contentMetadata,
-                  keyMessages: keyMessages,
-                  targetAudience: targetAudience,
-                  generatedContent: generatedContent
-                }));
-                alert('Content strategy saved successfully!');
-              }}
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save
-            </button>
-            
-            <button
-              onClick={exportAllContent}
-              className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </button>
-          </div>
+          <button
+            onClick={exportAllContent}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+          >
+            <Download className="w-5 h-5 mr-2" />
+            Export All Content
+          </button>
         )}
       </div>
     </div>
-  </div>
-);
-
-return (
-  <div className="container mx-auto">
-    {currentView === 'selection' ? renderContentTypeSelection() : renderContentCreation()}
-  </div>
-);
+  );
+  
+  return (
+    <div className="container mx-auto">
+      {currentView === 'selection' ? renderContentTypeSelection() : renderContentCreation()}
+    </div>
+  );
 };
 
 export default ContentStrategyModule;

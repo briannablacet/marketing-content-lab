@@ -1,5 +1,5 @@
 // src/pages/content-strategy.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { ContentProvider } from '../context/ContentContext';
 import ContentStrategyModule from '../components/features/ContentStrategyModule';
@@ -7,27 +7,13 @@ import { ScreenTemplate } from '../components/shared/UIComponents';
 
 const ContentStrategyPage = () => {
   const router = useRouter();
-  
-  // This is used to intercept the action button in ScreenTemplate
-  useEffect(() => {
-    // Override any global navigation handlers
-    const originalPushState = window.history.pushState;
-    
-    window.history.pushState = function() {
-      // Only allow navigation to specific paths, block creation-hub
-      const url = arguments[2];
-      if (url && url.includes('/creation-hub')) {
-        console.log('Blocked navigation to creation-hub');
-        return;
-      }
-      
-      return originalPushState.apply(this, arguments);
-    };
-    
-    return () => {
-      window.history.pushState = originalPushState;
-    };
-  }, []);
+  // Track the current view of ContentStrategyModule
+  const [currentModuleView, setCurrentModuleView] = useState('selection');
+
+  // Handle view changes from the module
+  const handleViewChange = (view) => {
+    setCurrentModuleView(view);
+  };
 
   return (
     <ContentProvider>
@@ -40,20 +26,29 @@ const ContentStrategyPage = () => {
           "Consider your target audience's preferences"
         ]}
         hideNavigation={true}
-        // Try different approaches to disable the action button
-        actionButton={null}
-        disableActionButton={true}
-        showActionButton={false}
       >
-        <ContentStrategyModule />
+        <div className="w-full max-w-7xl mx-auto">
+          {/* Pass the handler to notify parent about view changes */}
+          <ContentStrategyModule onViewChange={handleViewChange} />
+        </div>
         
         <div className="flex justify-between items-center mt-8">
-          <button
-            onClick={() => router.push('/')}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Back to Dashboard
-          </button>
+          {/* Show different buttons based on current view */}
+          {currentModuleView === 'selection' ? (
+            <button
+              onClick={() => router.push('/')}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Back to Dashboard
+            </button>
+          ) : (
+            <button
+              onClick={() => setCurrentModuleView('selection')}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Back to Selection
+            </button>
+          )}
         </div>
       </ScreenTemplate>
     </ContentProvider>
