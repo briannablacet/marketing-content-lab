@@ -1,12 +1,33 @@
 // src/pages/content-strategy.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { ContentProvider } from '../context/ContentContext';
 import ContentStrategyModule from '../components/features/ContentStrategyModule';
 import { ScreenTemplate } from '../components/shared/UIComponents';
 
-export default function ContentStrategyPage() {
+const ContentStrategyPage = () => {
   const router = useRouter();
+  
+  // This is used to intercept the action button in ScreenTemplate
+  useEffect(() => {
+    // Override any global navigation handlers
+    const originalPushState = window.history.pushState;
+    
+    window.history.pushState = function() {
+      // Only allow navigation to specific paths, block creation-hub
+      const url = arguments[2];
+      if (url && url.includes('/creation-hub')) {
+        console.log('Blocked navigation to creation-hub');
+        return;
+      }
+      
+      return originalPushState.apply(this, arguments);
+    };
+    
+    return () => {
+      window.history.pushState = originalPushState;
+    };
+  }, []);
 
   return (
     <ContentProvider>
@@ -18,11 +39,14 @@ export default function ContentStrategyPage() {
           "Balance different content types for comprehensive strategy",
           "Consider your target audience's preferences"
         ]}
-        hideNavigation={true}  // Hide the walkthrough navigation
+        hideNavigation={true}
+        // Try different approaches to disable the action button
+        actionButton={null}
+        disableActionButton={true}
+        showActionButton={false}
       >
         <ContentStrategyModule />
         
-        {/* Back to Dashboard navigation */}
         <div className="flex justify-between items-center mt-8">
           <button
             onClick={() => router.push('/')}
@@ -34,4 +58,6 @@ export default function ContentStrategyPage() {
       </ScreenTemplate>
     </ContentProvider>
   );
-}
+};
+
+export default ContentStrategyPage;
