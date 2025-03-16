@@ -1,136 +1,116 @@
 // src/data/contentTypesData.js
+
 export const CONTENT_TYPES = {
-  'Thought Leadership': {
-    description: 'Build authority through valuable content',
-    activities: ['Industry Insights', 'How-to Guides', 'Thought Leadership'],
-    aiSupport: ['Topic Research', 'Outline Generation', 'SEO Optimization'],
-    specifications: {
-      wordCount: '1000-2000 words',
-      structure: [
-        'Executive Summary',
-        'Industry Context',
-        'Key Insights',
-        'Supporting Data',
-        'Actionable Takeaways',
-        'Future Implications'
-      ],
-      bestPractices: [
-        'Include original insights',
-        'Support claims with data',
-        'Offer actionable recommendations',
-        'Incorporate industry trends'
-      ],
-      seoConsiderations: [
-        'Target 1-2 primary keywords',
-        'Include industry-specific terms',
-        'Optimize headers and meta description'
-      ]
-    }
+  'Blog Posts': {
+    description: 'Create engaging blog content to educate and attract your audience',
+    activities: [
+      'Industry insights and trends analysis',
+      'How-to guides and tutorials',
+      'Thought leadership articles',
+      'Product or service deep dives'
+    ],
+    aiSupport: [
+      'Topic suggestions',
+      'Outline creation',
+      'SEO optimization'
+    ]
+  },
+  'eBooks & White Papers': {
+    description: 'Create in-depth, downloadable content assets for lead generation',
+    activities: [
+      'Comprehensive guides',
+      'Industry research reports',
+      'Solution comparisons',
+      'Best practices documentation'
+    ],
+    aiSupport: [
+      'Structure suggestions',
+      'Data visualization',
+      'Executive summary generation'
+    ]
+  },
+  'Social Posts': {
+    description: 'Create engaging social media content for LinkedIn, Twitter/X, and other platforms',
+    activities: [
+      'Thought leadership nuggets',
+      'Company updates and announcements',
+      'Content promotion posts',
+      'Industry conversations'
+    ],
+    aiSupport: [
+      'Platform-specific formatting',
+      'Hashtag suggestions',
+      'Engagement prompts'
+    ]
   },
   'Case Studies': {
-    description: 'Showcase customer success stories',
-    activities: ['Customer Wins', 'Implementation Stories', 'ROI Analysis'],
-    aiSupport: ['Structure Templates', 'ROI Calculation', 'Story Arc'],
-    specifications: {
-      wordCount: '800-1500 words',
-      structure: [
-        'Challenge Overview',
-        'Solution Implementation',
-        'Results and ROI',
-        'Customer Testimonial',
-        'Next Steps'
-      ],
-      bestPractices: [
-        'Use specific metrics',
-        'Include customer quotes',
-        'Detail the implementation process',
-        'Highlight tangible outcomes'
-      ]
-    }
-  },
-  'Influencer Content': {
-    description: 'Leverage industry thought leaders',
-    activities: ['Collaborations', 'Guest Posts', 'Joint Webinars'],
-    aiSupport: ['Influencer Matching', 'Campaign Ideas', 'ROI Tracking'],
-    specifications: {
-      wordCount: 'Varies by format',
-      structure: [
-        'Expert Bio',
-        'Topic Introduction',
-        'Expert Insights',
-        'Practical Applications',
-        'Collaborative Conclusion'
-      ],
-      bestPractices: [
-        'Align with influencer expertise',
-        'Maintain authentic voice',
-        'Include collaborative elements',
-        'Cross-promote effectively'
-      ]
-    }
-  },
-  'Social Media': {
-    description: 'Engage audience across platforms',
-    activities: ['LinkedIn Posts', 'Twitter Content', 'Community Management'],
-    aiSupport: ['Post Ideas', 'Hashtag Research', 'Engagement Analysis'],
-    specifications: {
-      wordCount: 'Platform dependent',
-      structure: [
-        'Hook/Attention Grabber',
-        'Core Message',
-        'Call to Action'
-      ],
-      bestPractices: [
-        'Platform-specific formatting',
-        'Engaging visuals',
-        'Consistent brand voice',
-        'Strategic hashtag use'
-      ],
-      mediaGuidelines: [
-        'Image dimensions by platform',
-        'Video length recommendations',
-        'Accessibility considerations'
-      ]
-    }
-  },
-  'Lead Magnets': {
-    description: 'Generate qualified leads',
-    activities: ['Ebooks', 'Templates', 'Toolkits'],
-    aiSupport: ['Topic Selection', 'Content Structure', 'CTA Optimization'],
-    specifications: {
-      wordCount: '2000-5000 words (ebooks)',
-      structure: [
-        'Value Proposition',
-        'Core Content',
-        'Actionable Resources',
-        'Next Steps'
-      ],
-      bestPractices: [
-        'Focus on practical value',
-        'Include downloadable resources',
-        'Clear value proposition',
-        'Strong call-to-action'
-      ]
-    }
+    description: 'Showcase your customer success stories and results',
+    activities: [
+      'Customer challenge/solution narratives',
+      'Implementation stories',
+      'ROI and metrics showcases',
+      'Testimonial features'
+    ],
+    aiSupport: [
+      'Structure templates',
+      'Question frameworks',
+      'Metrics visualization'
+    ]
   },
   'Email Campaigns': {
-    description: 'Nurture and convert prospects',
-    activities: ['Newsletters', 'Drip Campaigns', 'Announcements'],
-    aiSupport: ['Subject Lines', 'Email Flow', 'Segmentation'],
-    specifications: {
-      wordCount: '200-500 words per email',
-      structure: [
-        'Compelling Subject Line',
-        'Personal Greeting',
-        'Value-Driven Content',
-        'Clear CTA'
-      ],
-      bestPractices: [
-        'Personalization elements',
-        'Mobile-friendly format',
-        'A/B test subjects',
-        'Segment audience effectively'
-      ]
-    }
+    description: 'Create email content for newsletters, nurture sequences, and announcements',
+    activities: [
+      'Welcome sequences',
+      'Nurture campaigns',
+      'Product announcements',
+      'Newsletter content'
+    ],
+    aiSupport: [
+      'Subject line suggestions',
+      'Sequence planning',
+      'Call-to-action optimization'
+    ]
+  },
+  'Digital Ads': {
+    description: 'Create compelling ad copy for search, social, and display campaigns',
+    activities: [
+      'Search ad copy',
+      'LinkedIn sponsored content',
+      'Display ad messaging',
+      'Retargeting campaigns'
+    ],
+    aiSupport: [
+      'Multi-variant copy suggestions',
+      'Character count optimization',
+      'CTA effectiveness tips'
+    ]
+  },
+  'Landing Pages': {
+    description: 'Create high-converting landing pages for campaigns and offers',
+    activities: [
+      'Campaign-specific pages',
+      'Product or feature launches',
+      'Event registration pages',
+      'Lead generation forms'
+    ],
+    aiSupport: [
+      'Conversion optimization tips',
+      'Section structure suggestions',
+      'Value proposition refinement'
+    ]
+  },
+  'Video Scripts': {
+    description: 'Create scripts for product demos, explainer videos, and testimonials',
+    activities: [
+      'Product demonstration scripts',
+      'Explainer video content',
+      'Thought leadership interviews',
+      'Customer testimonial guides'
+    ],
+    aiSupport: [
+      'Script structure templates',
+      'Timing optimization',
+      'Visual suggestion notes'
+    ]
   }
 };
