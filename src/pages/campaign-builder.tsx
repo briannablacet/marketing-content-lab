@@ -5,6 +5,7 @@ import { ScreenTemplate } from '../components/shared/UIComponents';
 import { PlusCircle, CheckCircle, ChevronRight, Calendar, Target, MessageCircle, Sparkles } from 'lucide-react';
 import { CONTENT_TYPES } from '../data/contentTypesData';
 import { useContent } from '../context/ContentContext';
+import ContentPreview from '../components/features/ContentEngine/screens/ContentPreview';
 
 // Goal recommendations mapping
 const GOAL_RECOMMENDATIONS = {
@@ -247,51 +248,27 @@ const CampaignBuilder: React.FC = () => {
     setKeyMessages(prev => [...prev, '']);
   };
 
-  // Generate campaign content
-  const generateCampaignContent = () => {
-    setIsGenerating(true);
+  // Save campaign data to localStorage before navigating to preview
+  const saveCampaignData = () => {
+    const campaignData = {
+      name: campaignName,
+      type: campaignType,
+      goal: campaignGoal,
+      targetAudience: targetAudience,
+      keyMessages: keyMessages.filter(msg => msg.trim() !== ''),
+      channels: campaignChannels,
+      contentTypes: selectedContentTypes
+    };
     
-    // Simulate content generation with timeout
-    setTimeout(() => {
-      // Example generated content
-      const generatedContent = [
-        {
-          type: 'Email',
-          name: 'Welcome Email',
-          status: 'draft',
-          description: 'Introduction to campaign and value proposition'
-        },
-        {
-          type: 'Email',
-          name: 'Feature Highlight',
-          status: 'draft',
-          description: 'Showcase key features and benefits'
-        },
-        {
-          type: 'Social Media',
-          name: 'Campaign Announcement',
-          status: 'draft',
-          description: 'Social media posts announcing the campaign'
-        },
-        {
-          type: 'Blog',
-          name: 'In-depth Article',
-          status: 'draft',
-          description: 'Detailed blog post about the campaign topic'
-        }
-      ];
-      
-      setContentPieces(generatedContent);
-      setIsGenerating(false);
-    }, 2000);
+    localStorage.setItem('currentCampaign', JSON.stringify(campaignData));
   };
 
-  // Step 1: Campaign Type Selection
-  const renderTypeSelection = () => (
+  // Step 1: Campaign Type and Content Type Selection
+  const renderTypeAndContentSelection = () => (
     <div className="space-y-6">
       {/* Campaign Type Section */}
       <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
-      <div className="bg-blue-900 h-2"></div>
+        <div className="bg-blue-900 h-2"></div>
         <div className="p-4">
           <h2 className="text-lg font-bold text-blue-700">Campaign Type</h2>
         </div>
@@ -300,15 +277,15 @@ const CampaignBuilder: React.FC = () => {
       {/* Campaign type selection grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {CAMPAIGN_TYPES.map(type => (
-         <div
-         key={type.id}
-         className={`p-6 cursor-pointer transition-all rounded-lg ${
-           campaignType === type.id
-             ? 'border-2 border-blue-500 shadow-md bg-white' // Changed to outline style
-             : 'border border-gray-200 hover:border-blue-300 bg-white'
-         }`}
-         onClick={() => handleSelectCampaignType(type.id)}
-       >
+          <div
+            key={type.id}
+            className={`p-6 cursor-pointer transition-all rounded-lg ${
+              campaignType === type.id
+                ? 'border-2 border-blue-500 shadow-md bg-white' 
+                : 'border border-gray-200 hover:border-blue-300 bg-white'
+            }`}
+            onClick={() => handleSelectCampaignType(type.id)}
+          >
             <div className="flex items-start gap-4">
               <div className={campaignType === type.id ? 'text-white' : ''}>
                 {type.icon}
@@ -324,7 +301,7 @@ const CampaignBuilder: React.FC = () => {
         ))}
       </div>
       
-      {/* Campaign type-specific recommendations moved here, right after selection */}
+      {/* Campaign type-specific recommendations */}
       {campaignType && (
         <div className="mb-8 bg-blue-50 border border-blue-100 rounded-lg p-4">
           <div className="flex items-center mb-3">
@@ -427,12 +404,12 @@ const CampaignBuilder: React.FC = () => {
     </div>
   );
   
-  // Step 2: Campaign Details
-  const renderCampaignDetails = () => (
+  // Step 2: Campaign Details and Messages (Combined)
+  const renderCampaignDetailsAndMessages = () => (
     <div className="space-y-6">
-      {/* Cleaner section header for Campaign Details */}
+      {/* Campaign Details Section */}
       <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
-      <div className="bg-blue-900 h-2"></div>
+        <div className="bg-blue-900 h-2"></div>
         <div className="p-4">
           <h2 className="text-lg font-bold text-blue-700">Campaign Details</h2>
         </div>
@@ -463,7 +440,8 @@ const CampaignBuilder: React.FC = () => {
         </div>
       </Card>
 
-      <Card className="p-6">
+      {/* Campaign Details Card */}
+      <Card className="p-6 mb-6">
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium mb-1">Campaign Name</label>
@@ -488,7 +466,46 @@ const CampaignBuilder: React.FC = () => {
         </div>
       </Card>
       
-      <div className="flex justify-between mt-6">
+      {/* Key Messages Section */}
+      <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-blue-900 h-2"></div>
+        <div className="p-4">
+          <h2 className="text-lg font-bold text-blue-700">Key Messages</h2>
+        </div>
+      </div>
+
+      {/* Key Messages Card */}
+      <Card className="p-6 mb-6">
+        <div className="space-y-6">
+          <div>
+            <p className="text-sm text-gray-600 mb-4">Define the core messages that will be used across all content:</p>
+            <div className="space-y-3">
+              {keyMessages.map((message, index) => (
+                <div key={index}>
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => updateKeyMessage(index, e.target.value)}
+                    className="w-full p-2 border rounded-lg"
+                    placeholder={`Key message ${index + 1}`}
+                  />
+                </div>
+              ))}
+              <button
+                onClick={addKeyMessage}
+                className="text-blue-600 hover:text-blue-700 flex items-center"
+              >
+                <PlusCircle className="w-4 h-4 mr-1" />
+                Add another message
+              </button>
+            </div>
+          </div>
+        </div>
+      </Card>
+      
+
+      
+      <div className="flex justify-between mt-8">
         <button
           onClick={() => setStep(1)}
           className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -496,200 +513,35 @@ const CampaignBuilder: React.FC = () => {
           Back
         </button>
         <button
-          onClick={() => setStep(3)}
-          disabled={!campaignName}
+          onClick={() => {
+            saveCampaignData();
+            setStep(3);
+          }}
+          disabled={!campaignName || keyMessages[0].trim() === ''}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
         >
-          Continue <ChevronRight className="ml-2 w-4 h-4" />
+          Generate Content <ChevronRight className="ml-2 w-4 h-4" />
         </button>
       </div>
     </div>
   );
   
-  // Step 3: Content Generation
-  const renderContentGeneration = () => {
-    return (
-      <div className="space-y-6">
-        {/* Section header for Messages & Content */}
-        <div className="mb-6 border-2 border-blue-900 rounded-lg overflow-hidden shadow-sm">
-        <div className="bg-blue-900 h-2"></div>
-          <div className="p-4">
-            <h2 className="text-lg font-bold text-blue-700">Campaign Messages & Content</h2>
-          </div>
-        </div>
-
-        {/* Campaign Summary */}
-        <Card className="mb-6 bg-blue-50 border-blue-100">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-blue-800 mb-3">Campaign Summary</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-              <div>
-                <span className="font-medium text-blue-700">Name:</span>
-                <span className="ml-2 text-blue-900">{campaignName}</span>
-              </div>
-              <div>
-                <span className="font-medium text-blue-700">Type:</span>
-                <span className="ml-2 text-blue-900">{CAMPAIGN_TYPES.find(t => t.id === campaignType)?.name}</span>
-              </div>
-              <div>
-                <span className="font-medium text-blue-700">Audience:</span>
-                <span className="ml-2 text-blue-900">{targetAudience}</span>
-              </div>
-            </div>
-            
-            <div className="mt-3">
-              <span className="font-medium text-blue-700">Content Types:</span>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {selectedContentTypes.map(type => (
-                  <span key={type} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                    {type}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 mb-6">
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium mb-3">Key Messages</h3>
-              <p className="text-sm text-gray-600 mb-4">Define the core messages that will be used across all content:</p>
-              <div className="space-y-3">
-                {keyMessages.map((message, index) => (
-                  <div key={index}>
-                    <input
-                      type="text"
-                      value={message}
-                      onChange={(e) => updateKeyMessage(index, e.target.value)}
-                      className="w-full p-2 border rounded-lg"
-                      placeholder={`Key message ${index + 1}`}
-                    />
-                  </div>
-                ))}
-                <button
-                  onClick={addKeyMessage}
-                  className="text-blue-600 hover:text-blue-700 flex items-center"
-                >
-                  <PlusCircle className="w-4 h-4 mr-1" />
-                  Add another message
-                </button>
-              </div>
-            </div>
-          </div>
-        </Card>
-        
-        {/* Content Generation Card */}
-        <Card className="p-6">
-          <div className="space-y-6">
-            <h3 className="text-lg font-medium">Generate Content</h3>
-            
-            {isGenerating ? (
-              <div className="py-8 flex flex-col items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                <p className="text-gray-600">Generating your campaign content...</p>
-              </div>
-            ) : contentPieces.length > 0 ? (
-              <div className="space-y-4">
-                <h4 className="font-medium">Generated Content</h4>
-                <div className="space-y-4">
-                  {contentPieces.map((content, index) => (
-                    <div key={index} className="p-4 border rounded-lg bg-gray-50">
-                      <div className="flex justify-between">
-                        <div>
-                          <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-600 rounded-full">{content.type}</span>
-                          <h4 className="font-medium mt-2">{content.name}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{content.description}</p>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full mr-2">
-                            {content.status}
-                          </span>
-                          <button 
-                            className="text-blue-600 hover:text-blue-800"
-                            onClick={() => alert(`Editing ${content.name}`)}
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={generateCampaignContent}
-                  className="px-6 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50"
-                >
-                  Regenerate Content
-                </button>
-              </div>
-            ) : (
-              <div>
-                {/* Generate All Content Button */}
-                <button
-                  onClick={generateCampaignContent}
-                  disabled={keyMessages.some(msg => !msg.trim())}
-                  className="w-full py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center mb-6"
-                >
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  Generate All Campaign Content
-                </button>
-                
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3">Or generate content by type:</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedContentTypes.map(type => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          // Function to generate just a single content type
-                          alert(`Generating ${type} content`);
-                        }}
-                        className="p-3 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 flex items-center justify-center"
-                      >
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Generate {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
-        
-        <div className="flex justify-between mt-6">
-          <button
-            onClick={() => setStep(2)}
-            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Back
-          </button>
-          {contentPieces.length > 0 && (
-            <button
-              onClick={() => alert('Campaign created! Redirecting to Content Hub...')}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              Save & Exit
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
+  // Step 3: Content Preview using the ContentPreview component
+  const renderContentPreview = () => (
+    <ContentPreview />
+  );
   
   // Render the current step
   const renderCurrentStep = () => {
     switch (step) {
       case 1:
-        return renderTypeSelection();
+        return renderTypeAndContentSelection();
       case 2:
-        return renderCampaignDetails();
+        return renderCampaignDetailsAndMessages();
       case 3:
-        return renderContentGeneration();
+        return renderContentPreview();
       default:
-        return renderTypeSelection();
+        return renderTypeAndContentSelection();
     }
   };
 

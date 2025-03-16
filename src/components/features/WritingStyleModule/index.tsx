@@ -95,10 +95,22 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
 
   const handleSubmit = () => {
     showNotification('success', 'Writing style preferences saved successfully');
+    // FIXED: Check if in walkthrough mode and use onNext instead of redirecting
     if (isWalkthrough && onNext) {
-      onNext();
+      onNext(); // Continue with the walkthrough instead of redirecting
     } else {
       router.push('/creation-hub');
+    }
+  };
+
+  // ADDED: Separate function to handle the Next button in walkthrough
+  const handleNext = () => {
+    // Save the writing style data
+    showNotification('success', 'Writing style saved');
+    
+    // Move to the next step in the walkthrough
+    if (onNext) {
+      onNext();
     }
   };
 
@@ -292,11 +304,12 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
 
       {/* Submit Button */}
       <div className="flex justify-end">
+        {/* CHANGED: Modify button text and function based on whether it's in the walkthrough */}
         <button
-          onClick={handleSubmit}
+          onClick={isWalkthrough ? handleNext : handleSubmit}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
-          Save Writing Style
+          {isWalkthrough ? "Next" : "Save Writing Style"}
         </button>
       </div>
     </div>
