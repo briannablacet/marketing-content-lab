@@ -8,7 +8,7 @@ import { NotificationProvider } from '../../context/NotificationContext';
 import { WalkthroughProvider } from '../../context/WalkthroughContext';
 import { MarketingProvider } from '../../context/MarketingContext';
 import { ScreenTemplate } from '../../components/shared/UIComponents';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, Download, Save } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CONTENT_TYPES } from '../../data/contentTypeData'; 
 import { useNotification } from '../../context/NotificationContext';
@@ -27,6 +27,24 @@ const DynamicContentCreator = () => {
   });
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedItems, setSavedItems] = useState([]);
+
+  // Load saved items on component mount
+  useEffect(() => {
+    const loadSavedItems = () => {
+      try {
+        const savedContentItems = localStorage.getItem('savedContentItems');
+        if (savedContentItems) {
+          setSavedItems(JSON.parse(savedContentItems));
+        }
+      } catch (error) {
+        console.error("Error loading saved items:", error);
+      }
+    };
+    
+    loadSavedItems();
+  }, []);
 
   useEffect(() => {
     if (type) {
@@ -115,6 +133,74 @@ const DynamicContentCreator = () => {
       setGeneratedContent(mockContent);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // NEW FUNCTION: Handle exporting content as a file
+  const handleExportContent = () => {
+    if (!generatedContent) {
+      showNotification('error', 'Please generate content first before exporting');
+      return;
+    }
+
+    // Create a file name based on the title or content type
+    const fileName = `${formData.title || contentType?.title || 'content'}`
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-]/g, '') // Remove special characters
+      + '.md';
+
+    // Create a blob from the content
+    const blob = new Blob([generatedContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a link element to trigger the download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('success', 'Content exported successfully!');
+  };
+
+  // NEW FUNCTION: Handle saving content to localStorage
+  const handleSaveContent = () => {
+    if (!generatedContent || !formData.title) {
+      showNotification('error', 'Please generate content and provide a title before saving');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Create a new saved item
+      const newItem = {
+        id: Date.now(), // Generate a unique ID
+        type: contentType?.id,
+        title: formData.title,
+        content: generatedContent,
+        metadata: { ...formData },
+        createdAt: new Date().toISOString()
+      };
+
+      // Add to local array
+      const updatedItems = [...savedItems, newItem];
+      setSavedItems(updatedItems);
+      
+      // Save to localStorage
+      localStorage.setItem('savedContentItems', JSON.stringify(updatedItems));
+      
+      showNotification('success', 'Content saved successfully!');
+    } catch (error) {
+      console.error('Error saving content:', error);
+      showNotification('error', 'Failed to save content. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -322,16 +408,37 @@ const DynamicContentCreator = () => {
                           </div>
                         </div>
                         
+                        {/* Action Buttons - NEW SECTION */}
                         <div className="flex justify-end mt-4 space-x-4">
                           <button
-                            onClick={() => navigator.clipboard.writeText(generatedContent)}
-                            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                            onClick={handleExportContent}
+                            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
                           >
-                            Copy to Clipboard
+                            <Download className="w-4 h-4 mr-2" />
+                            Export Content
                           </button>
+                          
+                          <button
+                            onClick={handleSaveContent}
+                            disabled={isSaving}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                          >
+                            {isSaving ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-opacity-50 border-t-transparent mr-2"></div>
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="w-4 h-4 mr-2" />
+                                Save Content
+                              </>
+                            )}
+                          </button>
+                          
                           <button
                             onClick={handleGenerateContent}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
                           >
                             Regenerate
                           </button>
