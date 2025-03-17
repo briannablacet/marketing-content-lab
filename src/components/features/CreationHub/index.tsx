@@ -12,34 +12,34 @@ const CreationHub = () => {
     {
       id: 'content-creator',
       title: 'Content Creator',
-      description: 'Generate new content based on your marketing strategy',
+      description: 'Create a single piece of high-quality content like blogs, emails, or social posts',
       icon: <Pencil className="w-10 h-10 text-blue-600" />,
       link: '/content-creator',
       isNew: false
     },
     {
-      id: 'content-enhancer',
-      title: 'Content Enhancer',
-      description: 'Improve, optimize, and repurpose your existing content',
-      icon: <Sparkles className="w-10 h-10 text-purple-600" />,
-      link: '/content-enhancer',
+      id: 'content-humanizer',
+      title: 'Content Humanizer',
+      description: 'Make AI-generated content sound more natural and authentic',
+      icon: <FileText className="w-10 h-10 text-purple-600" />,
+      link: '/content-humanizer',
       isNew: true
     },
     {
-      id: 'content-repurposer',
-      title: 'Content Repurposer',
-      description: 'Transform your content from one format to another while preserving your brand voice',
-      icon: <RefreshCw className="w-10 h-10 text-green-600" />,
-      link: '/content-repurposer',
+      id: 'content-enhancer',
+      title: 'Content Enhancer',
+      description: 'Improve, optimize, and repurpose your existing content',
+      icon: <Sparkles className="w-10 h-10 text-green-600" />,
+      link: '/content-enhancer',
       isNew: true
     },
     {
       id: 'campaign-builder',
       title: 'Campaign Builder',
       description: 'Create coordinated content campaigns across multiple channels',
-      icon: <FileText className="w-10 h-10 text-orange-600" />,
+      icon: <RefreshCw className="w-10 h-10 text-orange-600" />,
       link: '/campaign-builder',
-      isNew: true
+      isNew: false
     }
   ];
 
@@ -97,7 +97,7 @@ const CreationHub = () => {
           </li>
           <li className="flex items-start gap-2 text-blue-700">
             <span>•</span>
-            <span>Use Content Repurposer to transform your best content into different formats</span>
+            <span>Use Content Enhancer to improve and optimize your existing content</span>
           </li>
           <li className="flex items-start gap-2 text-blue-700">
             <span>•</span>
