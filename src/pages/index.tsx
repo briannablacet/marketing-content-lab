@@ -35,7 +35,7 @@ export default function Home() {
         </h1>
         <div className="max-w-3xl mx-auto">
           <p className="text-xl text-gray-600 mb-4">
-            Get ready to upgrade your content marketing! 
+            The only solution by content marketers for content marketers. 
           </p>
           <p className="text-lg text-gray-500 mb-8">
             Create, enhance, repurpose, and scale your content with AI assistance. Automate tedious tasks and fill in skills gaps while preserving your authentic voice and your unique, human touch.
