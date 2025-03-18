@@ -202,14 +202,15 @@ const Navbar: React.FC = () => {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
-                        Writing Style
+            
+                        Brand Voice
                       </Link>
                       <Link 
                         href="/brand-voice" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
-                        Brand Voice
+                        Content Humanizer
                       </Link>
                     </div>
                   </div>

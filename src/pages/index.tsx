@@ -139,7 +139,7 @@ export default function Home() {
       {/* Content Tools Section */}
       <div className="mb-12">
         <h2 className="text-2xl font-semibold mb-2">Content Tools</h2>
-        <p className="text-gray-600 mb-6">Empower your content creation while maintaining quality and authenticity</p>
+        <p className="text-gray-600 mb-6">AI-powered, human-led content creation: quality, authenticity and scale</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {renderToolCard(
             "Content Creation Hub",
@@ -162,8 +162,8 @@ export default function Home() {
           )}
 
           {renderToolCard(
-            "Style Guardian",
-            "Automatically verify content against your brand style guidelines",
+            "Set Your Style",
+            "Automatically set and verify content against your brand style guidelines",
             "/style-checker",
             true
           )}
@@ -176,8 +176,8 @@ export default function Home() {
           )}
 
           {renderToolCard(
-            "Brand Voice Guardian",
-            "Maintain consistent brand voice across all content",
+            "Campaign Builder",
+            "Set a theme and create multiple pieces of content for any funnel stage",
             "/brand-voice"
           )}
         </div>
