@@ -1,11 +1,40 @@
 // src/components/shared/Navbar/index.tsx
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Settings, ChevronDown, BarChart2, Edit, FileText, Sparkles } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const router = useRouter();
+  const [strategicMenuOpen, setStrategicMenuOpen] = useState(false);
+  const [creationMenuOpen, setCreationMenuOpen] = useState(false);
+  const [enhancementMenuOpen, setEnhancementMenuOpen] = useState(false);
+  
+  const strategicMenuRef = useRef<HTMLDivElement>(null);
+  const creationMenuRef = useRef<HTMLDivElement>(null);
+  const enhancementMenuRef = useRef<HTMLDivElement>(null);
+  
   const isInWalkthrough = router.pathname.includes('/walkthrough/');
+  
+  // Close menus when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (strategicMenuRef.current && !strategicMenuRef.current.contains(event.target as Node)) {
+        setStrategicMenuOpen(false);
+      }
+      if (creationMenuRef.current && !creationMenuRef.current.contains(event.target as Node)) {
+        setCreationMenuOpen(false);
+      }
+      if (enhancementMenuRef.current && !enhancementMenuRef.current.contains(event.target as Node)) {
+        setEnhancementMenuOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   
   const handleExitWalkthrough = () => {
     const confirmExit = window.confirm(
@@ -27,46 +56,176 @@ const Navbar: React.FC = () => {
             </Link>
             
             {/* Main navigation links */}
-            <nav className="hidden md:ml-6 md:flex md:space-x-8">
+            <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+              {/* Strategic Tools Dropdown */}
+              <div className="relative" ref={strategicMenuRef}>
+                <button
+                  onClick={() => {
+                    setStrategicMenuOpen(!strategicMenuOpen);
+                    setCreationMenuOpen(false);
+                    setEnhancementMenuOpen(false);
+                  }}
+                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
+                    strategicMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  }`}
+                >
+                  <BarChart2 className="w-4 h-4 mr-1" />
+                  Strategic Tools
+                  <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${strategicMenuOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                
+                {strategicMenuOpen && (
+                  <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <Link 
+                        href="/product" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
+                      >
+                        Product Definition
+                      </Link>
+                      <Link 
+                        href="/key-messages" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
+                      >
+                        Key Messaging
+                      </Link>
+                      <Link 
+                        href="/competitive-analysis" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
+                      >
+                        Competitive Analysis
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Content Creation Dropdown */}
+              <div className="relative" ref={creationMenuRef}>
+                <button
+                  onClick={() => {
+                    setCreationMenuOpen(!creationMenuOpen);
+                    setStrategicMenuOpen(false);
+                    setEnhancementMenuOpen(false);
+                  }}
+                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
+                    creationMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  }`}
+                >
+                  <Edit className="w-4 h-4 mr-1" />
+                  Content Creation
+                  <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${creationMenuOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                
+                {creationMenuOpen && (
+                  <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <Link 
+                        href="/creation-hub" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setCreationMenuOpen(false)}
+                      >
+                        Creation Hub
+                      </Link>
+                      <Link 
+                        href="/content-creator" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setCreationMenuOpen(false)}
+                      >
+                        Content Creator
+                      </Link>
+                      <Link 
+                        href="/content-repurposer" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setCreationMenuOpen(false)}
+                      >
+                        Content Repurposer
+                      </Link>
+                      <Link 
+                        href="/campaign-builder" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setCreationMenuOpen(false)}
+                      >
+                        Campaign Builder
+                      </Link>
+                      <Link 
+                        href="/ab-testing" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setCreationMenuOpen(false)}
+                      >
+                        A/B Testing
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Content Enhancement Dropdown */}
+              <div className="relative" ref={enhancementMenuRef}>
+                <button
+                  onClick={() => {
+                    setEnhancementMenuOpen(!enhancementMenuOpen);
+                    setStrategicMenuOpen(false);
+                    setCreationMenuOpen(false);
+                  }}
+                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
+                    enhancementMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  Content Enhancement
+                  <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${enhancementMenuOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                
+                {enhancementMenuOpen && (
+                  <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <Link 
+                        href="/prose-perfector" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setEnhancementMenuOpen(false)}
+                      >
+                        Prose Perfector
+                      </Link>
+                      <Link 
+                        href="/style-checker" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setEnhancementMenuOpen(false)}
+                      >
+                        Style Compliance Check
+                      </Link>
+                      <Link 
+                        href="/writing-style" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setEnhancementMenuOpen(false)}
+                      >
+                        Writing Style
+                      </Link>
+                      <Link 
+                        href="/brand-voice" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setEnhancementMenuOpen(false)}
+                      >
+                        Brand Voice
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
               <Link 
-                href="/content-strategy" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  router.pathname === '/content-strategy' ? 
-                  'border-blue-500 text-gray-900' : 
-                  'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                href="/settings" 
+                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
+                  router.pathname === '/settings' ? 
+                  'bg-blue-100 text-blue-700' : 
+                  'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}
               >
-                Content Strategy
-              </Link>
-              <Link 
-                href="/creation-hub" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  router.pathname === '/creation-hub' ? 
-                  'border-blue-500 text-gray-900' : 
-                  'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                Creation Hub
-              </Link>
-              <Link 
-                href="/competitive-analysis" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  router.pathname === '/competitive-analysis' ? 
-                  'border-blue-500 text-gray-900' : 
-                  'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                Competitive Analysis
-              </Link>
-              <Link 
-                href="/review-program" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  router.pathname === '/review-program' ? 
-                  'border-blue-500 text-gray-900' : 
-                  'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                Review Program
+                <Settings className="w-4 h-4 mr-1" />
+                Settings
               </Link>
             </nav>
           </div>
