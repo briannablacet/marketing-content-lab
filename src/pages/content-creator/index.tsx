@@ -17,6 +17,7 @@ import {
   PenTool, 
   BookOpen 
 } from 'lucide-react';
+import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
 
 // Define content types with their details
 const CONTENT_TYPES = [
@@ -110,7 +111,7 @@ const CONTENT_TYPES = [
   }
 ];
 
-const ContentCreatorIndexPage = () => {
+const ContentCreatorPage = () => {
   const router = useRouter();
   
   // Navigate to the specific content creator page
@@ -124,6 +125,9 @@ const ContentCreatorIndexPage = () => {
         <ContentProvider>
           <WritingStyleProvider>
             <WalkthroughProvider>
+              {/* Banner placed outside ScreenTemplate to ensure visibility */}
+              <StyleGuideNotificationBanner />
+              
               <ScreenTemplate
                 title="Content Creator"
                 subtitle="Create a single piece of high-quality content"
@@ -178,4 +182,4 @@ const ContentCreatorIndexPage = () => {
   );
 };
 
-export default ContentCreatorIndexPage;
+export default ContentCreatorPage;

@@ -2,14 +2,23 @@
 import React, { useState, useRef } from 'react';
 import { useNotification } from '../../../context/NotificationContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Upload, FileText, X, Loader, Sparkles, ArrowRight, Copy } from 'lucide-react';
+import { Upload, FileText, X, Loader, Sparkles, ArrowRight, Copy, Info } from 'lucide-react';
 
 interface ImprovementSuggestion {
   original: string;
   suggestion: string;
   reason: string;
-  type: 'clarity' | 'conciseness' | 'engagement' | 'formality';
+  type: 'clarity' | 'conciseness' | 'engagement' | 'formality' | 'active voice';
 }
+
+// Available style guides
+const STYLE_GUIDES = [
+  { id: 'chicago', name: 'Chicago Manual of Style' },
+  { id: 'ap', name: 'AP Style' },
+  { id: 'apa', name: 'APA Style' },
+  { id: 'mla', name: 'MLA Style' },
+  { id: 'custom', name: 'Custom Style Guide' }
+];
 
 // File uploader component
 const FileUploader = ({ onFileContent, onError }) => {
@@ -85,6 +94,26 @@ const FileUploader = ({ onFileContent, onError }) => {
   );
 };
 
+// Style guide tooltip component
+const StyleGuideTooltip = ({ styleGuideId }) => {
+  const tooltips = {
+    'chicago': 'Comprehensive style guide for American English, widely used in publishing',
+    'ap': 'Associated Press style, commonly used in journalism and news writing',
+    'apa': 'American Psychological Association style, often used in academic and scientific writing',
+    'mla': 'Modern Language Association style, preferred in humanities and liberal arts',
+    'custom': 'Your own defined style rules and preferences'
+  };
+  
+  return (
+    <div className="relative inline-block group">
+      <Info className="w-4 h-4 text-gray-400 cursor-help ml-1" />
+      <div className="absolute left-0 bottom-full mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity z-10">
+        {tooltips[styleGuideId] || 'A formal writing style guide'}
+      </div>
+    </div>
+  );
+};
+
 // Main component
 const ProsePerfector: React.FC = () => {
   const { showNotification } = useNotification();
@@ -99,7 +128,9 @@ const ProsePerfector: React.FC = () => {
     readabilityScore: 0,
     clarityImprovements: 0,
     concisionImprovements: 0,
-    engagementImprovements: 0
+    engagementImprovements: 0,
+    passiveVoiceCount: 0,
+    averageSentenceLength: 0
   });
   
   // Processing options
@@ -107,7 +138,8 @@ const ProsePerfector: React.FC = () => {
     improveClarity: true,
     enhanceEngagement: true,
     adjustFormality: false,
-    formalityLevel: 'neutral' // 'formal', 'neutral', 'casual'
+    formalityLevel: 'neutral', // 'formal', 'neutral', 'casual'
+    styleGuide: 'chicago' // Default to Chicago style
   });
 
   // Handle document upload via the component
@@ -133,54 +165,62 @@ const ProsePerfector: React.FC = () => {
     setIsProcessing(true);
     
     try {
-      // Here you would typically call your API to process the text
-      // For now, we'll simulate the processing with a timeout
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Map the styleGuide ID to the full name
+      const styleGuideName = STYLE_GUIDES.find(sg => sg.id === options.styleGuide)?.name || 'Chicago Manual of Style';
       
-      // Mock improvement logic - in a real app, this would come from your API
-      const improved = originalText
-        .replace(/very/g, 'exceptionally')
-        .replace(/good/g, 'excellent')
-        .replace(/bad/g, 'suboptimal')
-        .replace(/lots of/g, 'numerous');
-      
-      // Generate some mock suggestions
-      const mockSuggestions: ImprovementSuggestion[] = [
-        {
-          original: 'very good',
-          suggestion: 'exceptional',
-          reason: 'More specific and impactful adjective',
-          type: 'clarity'
+      // Call the API endpoint to process the text
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          original: 'in order to',
-          suggestion: 'to',
-          reason: 'More concise without changing meaning',
-          type: 'conciseness'
-        },
-        {
-          original: 'lots of examples',
-          suggestion: 'numerous examples',
-          reason: 'More formal and precise quantifier',
-          type: 'formality'
-        }
-      ];
+        body: JSON.stringify({
+          endpoint: 'prose-perfector',
+          data: {
+            text: originalText,
+            options: {
+              ...options,
+              styleGuide: styleGuideName
+            }
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to enhance text');
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data); // Helpful for debugging
       
-      setEnhancedText(improved);
-      setSuggestions(mockSuggestions);
+      // Set the enhanced text from the API response
+      setEnhancedText(data.enhancedText);
       
-      // Mock improvement statistics
+      // Map the suggestions from the API to match our expected format
+      const mappedSuggestions = (data.suggestions || []).map(suggestion => ({
+        original: suggestion.original,
+        suggestion: suggestion.suggestion,
+        reason: suggestion.reason,
+        type: suggestion.type || 'clarity' // Default to clarity if type is not provided
+      }));
+      
+      setSuggestions(mappedSuggestions);
+      
+      // Set improvement stats with enhanced metrics
       setImprovementStats({
-        readabilityScore: Math.floor(Math.random() * 30) + 70, // 70-99
-        clarityImprovements: Math.floor(Math.random() * 5) + 2,
-        concisionImprovements: Math.floor(Math.random() * 3) + 1,
-        engagementImprovements: Math.floor(Math.random() * 4) + 1
+        readabilityScore: data.stats?.readabilityScore || 0,
+        clarityImprovements: data.stats?.clarityImprovements || 0,
+        concisionImprovements: data.stats?.concisionImprovements || 0,
+        engagementImprovements: data.stats?.engagementImprovements || 0,
+        passiveVoiceCount: data.stats?.passiveVoiceCount || 0,
+        averageSentenceLength: data.stats?.averageSentenceLength || 0
       });
       
       showNotification('success', 'Text enhanced successfully');
     } catch (error) {
       console.error('Error processing text:', error);
-      showNotification('error', 'Failed to enhance text. Please try again.');
+      showNotification('error', error.message || 'Failed to enhance text. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -208,6 +248,20 @@ const ProsePerfector: React.FC = () => {
     setSuggestions(updatedSuggestions);
   };
 
+  // Apply all suggestions at once
+  const applyAllSuggestions = () => {
+    if (suggestions.length === 0) return;
+    
+    let text = enhancedText;
+    for (const suggestion of suggestions) {
+      text = text.replace(suggestion.original, suggestion.suggestion);
+    }
+    
+    setEnhancedText(text);
+    setSuggestions([]);
+    showNotification('success', 'All suggestions applied');
+  };
+
   // Copy enhanced text to clipboard
   const copyToClipboard = () => {
     navigator.clipboard.writeText(enhancedText);
@@ -218,19 +272,20 @@ const ProsePerfector: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Prose Perfector</h1>
-        <p className="text-gray-600">Enhance your writing with AI-powered suggestions for clarity, engagement, and style</p>
+        <p className="text-gray-600">Enhance your writing with AI-powered suggestions based on professional editing standards</p>
         
         {/* AI Insights */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
           <h3 className="font-medium mb-2 flex items-center">
             <span className="text-2xl mr-2">✨</span>
-            AI Insights
+            Editing Insights
           </h3>
           <ul className="space-y-2">
             {[
-              "Improving clarity can enhance reader comprehension by up to 50%",
-              "Engaging content increases time spent on page by an average of 30%",
-              "Properly formatted content is 80% more likely to be read in full"
+              "Active voice creates stronger, clearer statements than passive voice",
+              "Varied sentence length improves reading rhythm and maintains reader interest",
+              "Eliminating unnecessary words improves clarity by 30-40%",
+              "Following established style guides ensures professional consistency"
             ].map((insight, index) => (
               <li key={index} className="text-sm text-slate-700 flex items-start">
                 <span className="text-blue-600 mr-2">•</span>
@@ -275,29 +330,49 @@ const ProsePerfector: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="adjustFormality"
-                checked={options.adjustFormality}
-                onChange={(e) => setOptions({...options, adjustFormality: e.target.checked})}
-                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-              />
-              <label htmlFor="adjustFormality" className="ml-2 block text-sm text-gray-900">
-                Adjust Formality
-              </label>
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  id="adjustFormality"
+                  checked={options.adjustFormality}
+                  onChange={(e) => setOptions({...options, adjustFormality: e.target.checked})}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <label htmlFor="adjustFormality" className="ml-2 block text-sm text-gray-900">
+                  Adjust Formality
+                </label>
+                
+                {options.adjustFormality && (
+                  <select
+                    value={options.formalityLevel}
+                    onChange={(e) => setOptions({...options, formalityLevel: e.target.value})}
+                    className="ml-4 p-1 text-sm border rounded max-w-xs"
+                  >
+                    <option value="formal">Formal</option>
+                    <option value="neutral">Neutral</option>
+                    <option value="casual">Casual</option>
+                  </select>
+                )}
+              </div>
               
-              {options.adjustFormality && (
+              {/* Style Guide Selection */}
+              <div className="flex items-center">
+                <label htmlFor="styleGuide" className="block text-sm text-gray-900 mr-4">
+                  Style Guide:
+                </label>
                 <select
-                  value={options.formalityLevel}
-                  onChange={(e) => setOptions({...options, formalityLevel: e.target.value})}
-                  className="ml-4 p-1 text-sm border rounded max-w-xs"
+                  id="styleGuide"
+                  value={options.styleGuide}
+                  onChange={(e) => setOptions({...options, styleGuide: e.target.value})}
+                  className="p-1 text-sm border rounded"
                 >
-                  <option value="formal">Formal</option>
-                  <option value="neutral">Neutral</option>
-                  <option value="casual">Casual</option>
+                  {STYLE_GUIDES.map(guide => (
+                    <option key={guide.id} value={guide.id}>{guide.name}</option>
+                  ))}
                 </select>
-              )}
+                <StyleGuideTooltip styleGuideId={options.styleGuide} />
+              </div>
             </div>
           </div>
         </CardContent>
@@ -323,48 +398,67 @@ const ProsePerfector: React.FC = () => {
             disabled={isProcessing}
           />
           
-          <button
-            onClick={processText}
-            disabled={!originalText.trim() || isProcessing}
-            className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
-          >
-            {isProcessing ? (
-              <>
-                <Loader className="w-5 h-5 mr-2 animate-spin" />
-                Enhancing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 mr-2" />
-                Enhance Text
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </>
-            )}
-          </button>
+          <div className="flex justify-between mt-4">
+            <button
+              onClick={handleClear}
+              disabled={!originalText && !enhancedText}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Clear All
+            </button>
+            
+            <button
+              onClick={processText}
+              disabled={!originalText.trim() || isProcessing}
+              className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader className="w-5 h-5 mr-2 animate-spin" />
+                  Enhancing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Enhance Text
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Results Section */}
       {enhancedText && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Enhanced Text</CardTitle>
+            <div className="flex space-x-2">
+              <button
+                onClick={copyToClipboard}
+                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 flex items-center"
+              >
+                <Copy className="mr-1 w-4 h-4" />
+                Copy
+              </button>
+              {suggestions.length > 0 && (
+                <button
+                  onClick={applyAllSuggestions}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                >
+                  Apply All Changes
+                </button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="p-4 bg-gray-50 rounded-md whitespace-pre-wrap mb-4">
+            <div className="p-4 bg-gray-50 rounded-md whitespace-pre-wrap mb-4 border border-gray-200">
               {enhancedText}
             </div>
             
-            <button
-              onClick={copyToClipboard}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 flex items-center"
-            >
-              <Copy className="mr-2 w-4 h-4" />
-              Copy to Clipboard
-            </button>
-
-            {/* Improvement Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            {/* Enhanced Improvement Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6">
               <div className="p-3 bg-blue-50 rounded-lg text-center">
                 <p className="text-xs text-slate-600">Readability</p>
                 <p className="text-xl font-bold text-blue-700">{improvementStats.readabilityScore}%</p>
@@ -381,6 +475,14 @@ const ProsePerfector: React.FC = () => {
                 <p className="text-xs text-slate-600">Engagement</p>
                 <p className="text-xl font-bold text-amber-700">+{improvementStats.engagementImprovements}</p>
               </div>
+              <div className="p-3 bg-red-50 rounded-lg text-center">
+                <p className="text-xs text-slate-600">Passive Voice</p>
+                <p className="text-xl font-bold text-red-700">{improvementStats.passiveVoiceCount}</p>
+              </div>
+              <div className="p-3 bg-teal-50 rounded-lg text-center">
+                <p className="text-xs text-slate-600">Avg. Sentence</p>
+                <p className="text-xl font-bold text-teal-700">{improvementStats.averageSentenceLength} words</p>
+              </div>
             </div>
 
             {/* Improvement Suggestions */}
@@ -391,11 +493,17 @@ const ProsePerfector: React.FC = () => {
                   {suggestions.map((suggestion, index) => (
                     <div 
                       key={index} 
-                      className="p-3 border rounded-lg flex justify-between items-center"
+                      className="p-3 border rounded-lg flex justify-between items-start gap-4"
                     >
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            suggestion.type === 'clarity' ? 'bg-blue-100 text-blue-800' :
+                            suggestion.type === 'conciseness' ? 'bg-purple-100 text-purple-800' :
+                            suggestion.type === 'engagement' ? 'bg-amber-100 text-amber-800' :
+                            suggestion.type === 'active voice' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
                             {suggestion.type}
                           </span>
                           <p className="text-sm">
@@ -408,7 +516,7 @@ const ProsePerfector: React.FC = () => {
                       </div>
                       <button
                         onClick={() => applySuggestion(index)}
-                        className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                        className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
                       >
                         Apply
                       </button>

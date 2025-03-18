@@ -11,13 +11,68 @@ interface Props {
   onBack?: () => void;
 }
 
+// Complete Brand Archetypes for BrandVoiceModule/index.tsx
 const BRAND_ARCHETYPES = [
   {
     name: 'The Creator',
     description: 'Innovative, artistic, striving for authentic self-expression',
     example: 'Adobe, Lego, Apple'
   },
-  // ... other archetypes (keeping them for reference but they can be the same)
+  {
+    name: 'The Caregiver',
+    description: 'Nurturing, compassionate, focused on helping others',
+    example: 'Johnson & Johnson, UNICEF, Cleveland Clinic'
+  },
+  {
+    name: 'The Ruler',
+    description: 'Authoritative, responsible, providing structure and control',
+    example: 'Microsoft, Mercedes-Benz, American Express'
+  },
+  {
+    name: 'The Jester',
+    description: 'Playful, humorous, living in the moment',
+    example: 'Old Spice, Dollar Shave Club, M&Ms'
+  },
+  {
+    name: 'The Regular Guy/Gal',
+    description: 'Relatable, authentic, down-to-earth values',
+    example: 'IKEA, Target, Budweiser'
+  },
+  {
+    name: 'The Lover',
+    description: 'Passionate, sensual, focused on relationships and experiences',
+    example: 'Victoria\'s Secret, Godiva, Häagen-Dazs'
+  },
+  {
+    name: 'The Hero',
+    description: 'Brave, determined, overcoming challenges and adversity',
+    example: 'Nike, FedEx, U.S. Army'
+  },
+  {
+    name: 'The Outlaw',
+    description: 'Rebellious, disruptive, challenging the status quo',
+    example: 'Harley-Davidson, Virgin, Red Bull'
+  },
+  {
+    name: 'The Magician',
+    description: 'Visionary, transformative, making dreams reality',
+    example: 'Disney, Tesla, Dyson'
+  },
+  {
+    name: 'The Innocent',
+    description: 'Optimistic, pure, honest and straightforward',
+    example: 'Coca-Cola, Dove, Whole Foods'
+  },
+  {
+    name: 'The Explorer',
+    description: 'Adventurous, independent, seeking discovery and freedom',
+    example: 'Jeep, Patagonia, National Geographic'
+  },
+  {
+    name: 'The Sage',
+    description: 'Knowledgeable, wise, sharing expertise and insight',
+    example: 'Google, BBC, The Economist'
+  }
 ];
 
 const HelpText = ({ text, link }: { text: string; link?: string }) => (

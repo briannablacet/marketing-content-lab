@@ -6,6 +6,8 @@ import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { MessagingProvider } from '../context/MessagingContext';
 import { ScreenTemplate } from '../components/shared/UIComponents';
 
+
+
 // Use dynamic import with SSR disabled to prevent SSR-related issues with file handling
 const ContentHumanizer = dynamic(() => import('../components/features/ContentHumanizer'), {
   ssr: false,

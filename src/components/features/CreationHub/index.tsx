@@ -1,111 +1,158 @@
 // src/components/features/CreationHub/index.tsx
 import React from 'react';
-import { Card } from '@/components/ui/card';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { Pencil, FileText, Sparkles, Settings, RefreshCw } from 'lucide-react';
+import { ScreenTemplate } from '../../shared/UIComponents';
+import { 
+  FileText, 
+  Copy, 
+  BarChart2, 
+  PenTool,
+  FileSpreadsheet,
+  RefreshCcw,
+  SplitSquareVertical,
+  ArrowRight,
+  MessageSquare,
+  Mail,
+  FileCheck
+} from 'lucide-react';
 
-const CreationHub = () => {
+const CreationHub: React.FC = () => {
   const router = useRouter();
 
-  const contentTools = [
+  // Card data structure
+  const contentCards = [
     {
-      id: 'content-creator',
       title: 'Content Creator',
-      description: 'Create a single piece of high-quality content like blogs, emails, or social posts',
-      icon: <Pencil className="w-10 h-10 text-blue-600" />,
-      link: '/content-creator',
-      isNew: false
+      description: 'Create a single piece of high-quality content optimized for your goals',
+      icon: <PenTool className="w-12 h-12 text-blue-600" />,
+      path: '/content-creator',
+      insights: [
+        "Content with a clear goal converts 83% better",
+        "AI assistance can reduce content creation time by 67%"
+      ]
     },
     {
-      id: 'content-humanizer',
-      title: 'Content Humanizer',
-      description: 'Make AI-generated content sound more natural and authentic',
-      icon: <FileText className="w-10 h-10 text-purple-600" />,
-      link: '/content-humanizer',
-      isNew: true
+      title: 'Content Repurposer',
+      description: 'Transform existing content into different formats while preserving key messages',
+      icon: <RefreshCcw className="w-12 h-12 text-purple-600" />,
+      path: '/content-repurposer',
+      insights: [
+        "Repurposing content can increase reach by up to 60%",
+        "Same content can be optimized for different platforms"
+      ]
     },
     {
-      id: 'content-enhancer',
-      title: 'Content Enhancer',
-      description: 'Improve, optimize, and repurpose your existing content',
-      icon: <Sparkles className="w-10 h-10 text-green-600" />,
-      link: '/content-enhancer',
-      isNew: true
-    },
-    {
-      id: 'campaign-builder',
       title: 'Campaign Builder',
       description: 'Create coordinated content campaigns across multiple channels',
-      icon: <RefreshCw className="w-10 h-10 text-orange-600" />,
-      link: '/campaign-builder',
-      isNew: false
+      icon: <FileSpreadsheet className="w-12 h-12 text-green-600" />,
+      path: '/campaign-builder',
+      insights: [
+        "Multi-channel campaigns generate 3x more leads",
+        "Consistent messaging improves brand recall by 49%"
+      ]
+    },
+    {
+      title: 'A/B Test Generator',
+      description: 'Create variations of your content to test which performs better',
+      icon: <SplitSquareVertical className="w-12 h-12 text-amber-600" />,
+      path: '/ab-testing',
+      isNew: true,
+      insights: [
+        "A/B testing can improve conversion rates by up to 49%",
+        "Testing headlines can increase click-through rates by 30%"
+      ]
+    },
+    {
+      title: 'Style Guardian',
+      description: 'Check content against your brand style guidelines',
+      icon: <FileCheck className="w-12 h-12 text-indigo-600" />,
+      path: '/style-checker',
+      insights: [
+        "Consistent style increases brand recognition by 33%",
+        "Content that adheres to style guidelines performs better"
+      ]
+    },
+    {
+      title: 'Prose Perfector',
+      description: 'Enhance your writing with AI-powered suggestions',
+      icon: <FileText className="w-12 h-12 text-teal-600" />,
+      path: '/prose-perfector',
+      insights: [
+        "Clear, concise content improves engagement by 58%",
+        "Enhanced content gets 27% more social shares"
+      ]
     }
   ];
 
-  return (
-    <div className="max-w-6xl mx-auto p-8">
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Content Creation Hub</h1>
-            <p className="text-gray-600 mt-2">
-              Create, enhance, repurpose, and perfect your marketing content with AI assistance
-            </p>
-          </div>
-          <Link href="/writing-style">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-              <Settings className="w-5 h-5" />
-              <span>Configure Writing Style</span>
-            </button>
-          </Link>
-        </div>
-      </div>
+  const handleNavigate = (path: string) => {
+    router.push(path);
+  };
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {contentTools.map((tool) => (
-          <Link key={tool.id} href={tool.link}>
-            <Card className="h-full p-6 hover:shadow-md transition-all cursor-pointer relative">
-              {tool.isNew && (
-                <span className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                  New
-                </span>
-              )}
-              <div className="flex flex-col h-full">
-                <div className="mb-4">
-                  {tool.icon}
+  return (
+    <ScreenTemplate
+      title="Content Creation Hub"
+      subtitle="Choose a tool to create or enhance your marketing content"
+      hideNavigation={true}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-8">
+        {contentCards.map((card, index) => (
+          <div 
+            key={index}
+            className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  {card.icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{tool.title}</h3>
-                <p className="text-gray-600 mb-6">{tool.description}</p>
-                <div className="mt-auto">
-                  <span className="text-blue-600 flex items-center">
-                    Use {tool.title} →
+                {card.isNew && (
+                  <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
+                    NEW
                   </span>
-                </div>
+                )}
               </div>
-            </Card>
-          </Link>
+              
+              <h3 className="text-xl font-semibold mb-2">{card.title}</h3>
+              
+              <p className="text-gray-600 mb-4">
+                {card.description}
+              </p>
+              
+              {card.insights && (
+                <div className="mb-6">
+                  <h4 className="text-xs font-medium text-gray-500 mb-2">AI INSIGHTS</h4>
+                  <ul className="space-y-1">
+                    {card.insights.map((insight, i) => (
+                      <li key={i} className="text-sm text-gray-700 flex items-start">
+                        <span className="text-blue-500 mr-2">•</span>
+                        {insight}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              <button
+                onClick={() => handleNavigate(card.path)}
+                className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+              >
+                Open {card.title}
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </button>
+            </div>
+          </div>
         ))}
       </div>
-
-      <div className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-100">
-        <h3 className="text-lg font-semibold mb-4 text-blue-800">AI Content Creation Tips</h3>
-        <ul className="space-y-2">
-          <li className="flex items-start gap-2 text-blue-700">
-            <span>•</span>
-            <span>Define your brand voice first using the Writing Style configuration</span>
-          </li>
-          <li className="flex items-start gap-2 text-blue-700">
-            <span>•</span>
-            <span>Use Content Enhancer to improve and optimize your existing content</span>
-          </li>
-          <li className="flex items-start gap-2 text-blue-700">
-            <span>•</span>
-            <span>Create a complete campaign to maintain consistent messaging across channels</span>
-          </li>
-        </ul>
+      
+      <div className="mt-4">
+        <button
+          onClick={() => router.push('/')}
+          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Back to Dashboard
+        </button>
       </div>
-    </div>
+    </ScreenTemplate>
   );
 };
 

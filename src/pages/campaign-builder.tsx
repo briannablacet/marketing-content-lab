@@ -6,6 +6,7 @@ import { PlusCircle, CheckCircle, ChevronRight, Calendar, Target, MessageCircle,
 import { CONTENT_TYPES } from '../data/contentTypesData';
 import { useContent } from '../context/ContentContext';
 import ContentPreview from '../components/features/ContentEngine/screens/ContentPreview';
+import StyleGuideNotificationBanner from '../components/features/StyleGuideNotificationBanner';
 
 // Goal recommendations mapping
 const GOAL_RECOMMENDATIONS = {
@@ -502,9 +503,7 @@ const CampaignBuilder: React.FC = () => {
           </div>
         </div>
       </Card>
-      
 
-      
       <div className="flex justify-between mt-8">
         <button
           onClick={() => setStep(1)}
@@ -546,13 +545,18 @@ const CampaignBuilder: React.FC = () => {
   };
 
   return (
-    <ScreenTemplate
-      title="Campaign Builder"
-      subtitle="Create coordinated marketing campaigns across multiple channels"
-      hideNavigation={true}
-    >
-      {renderCurrentStep()}
-    </ScreenTemplate>
+    <>
+      {/* Place the StyleGuideNotificationBanner before ScreenTemplate */}
+      <StyleGuideNotificationBanner />
+      
+      <ScreenTemplate
+        title="Campaign Builder"
+        subtitle="Create coordinated marketing campaigns across multiple channels"
+        hideNavigation={true}
+      >
+        {renderCurrentStep()}
+      </ScreenTemplate>
+    </>
   );
 };
 

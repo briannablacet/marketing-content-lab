@@ -5,6 +5,7 @@ import { NotificationProvider } from '../context/NotificationContext';
 import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { ScreenTemplate } from '../components/shared/UIComponents';
+import { Check, Settings } from 'lucide-react';
 
 // Dynamic imports with SSR disabled to prevent issues with file handling
 const StyleComplianceChecker = dynamic(() => import('../components/features/StyleCompliance'), {
@@ -25,48 +26,76 @@ const StyleCheckerPage: React.FC = () => {
       <WritingStyleProvider>
         <ScreenTemplate
           title="Style Guardian"
-          subtitle="Set your brand style guidelines and check content for compliance"
+          subtitle="Check your content against style guidelines and improve consistency"
           aiInsights={[
-            "Consistent style guidelines improve brand perception by up to 30%",
-            "Companies with strict style compliance show higher content engagement metrics"
+            "Consistent brand style increases content recognition by up to 23%",
+            "Organizations with style compliance show 35% stronger brand perception",
+            "Fixing style inconsistencies can improve readability by up to 42%"
           ]}
         >
-          {/* Simple toggle buttons */}
+          {/* Toggle Buttons */}
           <div className="flex justify-center mb-8">
             <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
               <button
                 onClick={() => setActiveView('check')}
-                className={`px-6 py-2 text-sm font-medium ${
+                className={`px-6 py-2 text-sm font-medium flex items-center ${
                   activeView === 'check'
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                Check Content
+                <Check className="w-4 h-4 mr-2" />
+                Style Checker
               </button>
               <button
                 onClick={() => setActiveView('settings')}
-                className={`px-6 py-2 text-sm font-medium ${
+                className={`px-6 py-2 text-sm font-medium flex items-center ${
                   activeView === 'settings'
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
+                <Settings className="w-4 h-4 mr-2" />
                 Style Settings
               </button>
             </div>
           </div>
 
-          {/* Content container */}
+          {/* Feature Info Cards */}
+          {activeView === 'check' && (
+            <div className="mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-blue-50 border-blue-100">
+                  <CardContent className="pt-6">
+                    <h3 className="font-medium text-blue-800 mb-2">Check Content</h3>
+                    <p className="text-sm text-blue-700">
+                      Paste text or upload documents to analyze for style compliance issues
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-green-50 border-green-100">
+                  <CardContent className="pt-6">
+                    <h3 className="font-medium text-green-800 mb-2">Fix Issues</h3>
+                    <p className="text-sm text-green-700">
+                      Get recommendations to fix style inconsistencies in your content
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-50 border-purple-100">
+                  <CardContent className="pt-6">
+                    <h3 className="font-medium text-purple-800 mb-2">Maintain Consistency</h3>
+                    <p className="text-sm text-purple-700">
+                      Keep your brand voice consistent across all marketing materials
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content */}
           {activeView === 'check' ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Check Content Against Style Guidelines</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <StyleComplianceChecker />
-              </CardContent>
-            </Card>
+            <StyleComplianceChecker />
           ) : (
             <Card>
               <CardHeader>

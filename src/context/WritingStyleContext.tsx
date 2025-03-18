@@ -1,79 +1,174 @@
 // src/context/WritingStyleContext.tsx
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { WritingStyleData } from '../types/WritingStyle';
-import { getStyleGuideRules } from '../utils/StyleGuides';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getStyleGuideRules, STYLE_GUIDE_RULES } from '../utils/StyleGuides';
 
+// Define types for the writing style data
+export interface WritingStyleData {
+  styleGuide: {
+    primary: string;
+    overrides?: boolean;
+    uploadedGuide?: string;
+    customRules?: string[];
+  };
+  formatting: {
+    headings?: string;
+    headingCustom?: string;
+    numbers?: string;
+    dates?: string;
+    lists?: string[];
+  };
+  punctuation: {
+    oxfordComma?: boolean;
+    bulletPoints?: string;
+    quotes?: string;
+    ellipsis?: string;
+  };
+  terminology?: {
+    preferredTerms?: Record<string, string>;
+    avoidedTerms?: string[];
+  };
+}
+
+// Default writing style using Chicago Manual of Style
+const DEFAULT_WRITING_STYLE: WritingStyleData = {
+  styleGuide: {
+    primary: 'Chicago Manual of Style',
+    overrides: false
+  },
+  formatting: {
+    headings: 'Title Case',
+    numbers: 'Spell out numbers under 100',
+    dates: 'Month DD, YYYY'
+  },
+  punctuation: {
+    oxfordComma: true,
+    bulletPoints: 'Period if complete sentence',
+    quotes: 'Double quotes'
+  },
+  terminology: {
+    preferredTerms: {},
+    avoidedTerms: []
+  }
+};
+
+// Create the context
 interface WritingStyleContextType {
   writingStyle: WritingStyleData;
   updateWritingStyle: (updates: Partial<WritingStyleData>) => void;
   applyStyleGuideRules: (styleName: string) => void;
+  resetToDefaultStyle: () => void;
+  isStyleConfigured: boolean;
 }
-
-const defaultWritingStyle: WritingStyleData = {
-  styleGuide: {
-    primary: '',
-    overrides: false,
-  },
-  formatting: {
-    headings: 'Sentence case',
-    numbers: 'Spell out numbers under 10',
-    dates: 'MM/DD/YYYY',
-    lists: 'Bullet points',
-  },
-  punctuation: {
-    oxfordComma: true,
-    bulletPoints: 'No punctuation',
-    quotes: 'Double quotes',
-  },
-};
 
 const WritingStyleContext = createContext<WritingStyleContextType | undefined>(undefined);
 
+// Local storage key for persisting style preferences
+const STORAGE_KEY = 'marketing-content-lab-writing-style';
+
 export const WritingStyleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [writingStyle, setWritingStyle] = useState<WritingStyleData>(defaultWritingStyle);
+  // Initialize state from local storage or default
+  const [writingStyle, setWritingStyle] = useState<WritingStyleData>(() => {
+    if (typeof window !== 'undefined') {
+      const savedStyle = localStorage.getItem(STORAGE_KEY);
+      if (savedStyle) {
+        try {
+          return JSON.parse(savedStyle);
+        } catch (error) {
+          console.error('Error parsing saved writing style:', error);
+        }
+      }
+    }
+    return DEFAULT_WRITING_STYLE;
+  });
 
-  const updateWritingStyle = useCallback((updates: Partial<WritingStyleData>) => {
-    setWritingStyle(prev => ({
-      ...prev,
-      ...updates,
-    }));
-  }, []);
+  // Determine if style has been actively configured by the user
+  const isStyleConfigured = Boolean(
+    writingStyle.styleGuide.primary && 
+    writingStyle.styleGuide.primary !== ''
+  );
 
-  const applyStyleGuideRules = useCallback((styleName: string) => {
-    const rules = getStyleGuideRules(styleName);
-    if (rules) {
-      setWritingStyle(prev => ({
-        ...prev,
+  // Update writing style with partial data
+  const updateWritingStyle = (updates: Partial<WritingStyleData>) => {
+    setWritingStyle(prevStyle => {
+      // Deep merge the updates with the previous state
+      const newStyle = {
+        ...prevStyle,
+        ...updates,
         styleGuide: {
-          primary: styleName,
-          overrides: false,
+          ...prevStyle.styleGuide,
+          ...(updates.styleGuide || {})
         },
         formatting: {
-          ...prev.formatting,
-          ...rules.formatting,
+          ...prevStyle.formatting,
+          ...(updates.formatting || {})
         },
         punctuation: {
-          ...prev.punctuation,
-          ...rules.punctuation,
+          ...prevStyle.punctuation,
+          ...(updates.punctuation || {})
         },
-      }));
+        terminology: {
+          ...prevStyle.terminology,
+          ...(updates.terminology || {})
+        }
+      };
+      
+      return newStyle;
+    });
+  };
+
+  // Apply rules from a predefined style guide
+  const applyStyleGuideRules = (styleName: string) => {
+    const guideRules = getStyleGuideRules(styleName);
+    if (!guideRules) return;
+
+    setWritingStyle(prevStyle => ({
+      ...prevStyle,
+      styleGuide: {
+        ...prevStyle.styleGuide,
+        primary: styleName,
+        overrides: false
+      },
+      formatting: {
+        ...prevStyle.formatting,
+        ...guideRules.formatting
+      },
+      punctuation: {
+        ...prevStyle.punctuation,
+        ...guideRules.punctuation
+      }
+    }));
+  };
+
+  // Reset to default Chicago style
+  const resetToDefaultStyle = () => {
+    setWritingStyle(DEFAULT_WRITING_STYLE);
+  };
+
+  // Save to local storage whenever the state changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(writingStyle));
     }
-  }, []);
+  }, [writingStyle]);
+
+  // Provide context value
+  const value: WritingStyleContextType = {
+    writingStyle,
+    updateWritingStyle,
+    applyStyleGuideRules,
+    resetToDefaultStyle,
+    isStyleConfigured
+  };
 
   return (
-    <WritingStyleContext.Provider 
-      value={{ 
-        writingStyle, 
-        updateWritingStyle,
-        applyStyleGuideRules,
-      }}
-    >
+    <WritingStyleContext.Provider value={value}>
       {children}
     </WritingStyleContext.Provider>
   );
 };
 
-export const useWritingStyle = () => {
+// Custom hook for using the writing style context
+export const useWritingStyle = (): WritingStyleContextType => {
   const context = useContext(WritingStyleContext);
   if (context === undefined) {
     throw new Error('useWritingStyle must be used within a WritingStyleProvider');
