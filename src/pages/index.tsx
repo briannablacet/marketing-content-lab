@@ -2,12 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useMarketing } from '../context/MarketingContext';
-import { useContent } from '../context/ContentContext';
 import { Card } from '@/components/ui/card';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 
-// Define the SVG check icon as a React component to avoid file system access
+// Define the SVG check icon as a React component
 const CheckIcon = (props) => (
   <svg 
     className={props.className || "h-6 w-6 text-blue-500 mr-2"} 
@@ -24,12 +22,39 @@ const CheckIcon = (props) => (
   </svg>
 );
 
-export default function Home() {
-  const { state: marketingState } = useMarketing();
-  const { contentTypes } = useContent();
+export default function Home({ initialMarketingState }) {
+  // Instead of using the context directly, start with the initial state
+  // and only enhance with context on the client side
+  const [marketingState, setMarketingState] = React.useState(initialMarketingState || { 
+    currentStep: 0,
+    completedSteps: []
+  });
+  
+  // Only use context on the client side to avoid SSR issues
+  React.useEffect(() => {
+    // Import dynamically to avoid SSR issues
+    const importModule = async () => {
+      try {
+        const { useMarketing } = await import('../context/MarketingContext');
+        const { useContent } = await import('../context/ContentContext');
+        
+        // Now we can safely use the context
+        if (typeof useMarketing === 'function') {
+          const { state } = useMarketing();
+          if (state) {
+            setMarketingState(state);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading context:', error);
+      }
+    };
+    
+    importModule();
+  }, []);
 
   // Function to render tool cards with optional icon
-  const renderToolCard = (title: string, description: string, href: string, isNew: boolean = false) => (
+  const renderToolCard = (title, description, href, isNew = false) => (
     <Link href={href} key={title}>
       <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer relative">
         {isNew && (
@@ -220,10 +245,14 @@ export default function Home() {
   );
 }
 
-// This ensures the page is rendered on the server
-// where context providers will be available through _app.js
-export const getServerSideProps: GetServerSideProps = async () => {
+// Switch to getStaticProps to avoid SSR issues with context
+export const getStaticProps = async () => {
   return {
-    props: {}
+    props: {
+      initialMarketingState: {
+        currentStep: 0,
+        completedSteps: []
+      }
+    }
   };
 };
