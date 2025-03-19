@@ -1,6 +1,7 @@
-// src/pages/style-checker.tsx
-import React, { useState } from 'react';
+//src/pages/style-checker.tsx
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
 import { NotificationProvider } from '../context/NotificationContext';
 import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -19,7 +20,29 @@ const WritingStyleModule = dynamic(() => import('../components/features/WritingS
 });
 
 const StyleCheckerPage: React.FC = () => {
-  const [activeView, setActiveView] = useState<'check' | 'settings'>('check');
+  const router = useRouter();
+  const { view } = router.query;
+  const [activeView, setActiveView] = useState<'check' | 'settings'>(
+    view === 'settings' ? 'settings' : 'check'
+  );
+
+  // Update active view when query parameter changes
+  useEffect(() => {
+    if (view === 'settings') {
+      setActiveView('settings');
+    } else {
+      setActiveView('check');
+    }
+  }, [view]);
+
+  // Handle tab changes with URL updates
+  const handleTabChange = (tab: 'check' | 'settings') => {
+    setActiveView(tab);
+    router.push({
+      pathname: '/style-checker',
+      query: tab === 'settings' ? { view: 'settings' } : {}
+    }, undefined, { shallow: true });
+  };
 
   return (
     <NotificationProvider>
@@ -32,12 +55,14 @@ const StyleCheckerPage: React.FC = () => {
             "Organizations with style compliance show 35% stronger brand perception",
             "Fixing style inconsistencies can improve readability by up to 42%"
           ]}
+          // IMPORTANT: Do not include any walkthrough navigation props
+          isWalkthrough={false}
         >
           {/* Toggle Buttons */}
           <div className="flex justify-center mb-8">
             <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
               <button
-                onClick={() => setActiveView('check')}
+                onClick={() => handleTabChange('check')}
                 className={`px-6 py-2 text-sm font-medium flex items-center ${
                   activeView === 'check'
                     ? 'bg-blue-600 text-white'
@@ -48,7 +73,7 @@ const StyleCheckerPage: React.FC = () => {
                 Style Checker
               </button>
               <button
-                onClick={() => setActiveView('settings')}
+                onClick={() => handleTabChange('settings')}
                 className={`px-6 py-2 text-sm font-medium flex items-center ${
                   activeView === 'settings'
                     ? 'bg-blue-600 text-white'
@@ -61,7 +86,7 @@ const StyleCheckerPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Feature Info Cards */}
+          {/* Feature Info Cards - Only show in check view */}
           {activeView === 'check' && (
             <div className="mb-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -95,14 +120,19 @@ const StyleCheckerPage: React.FC = () => {
 
           {/* Main Content */}
           {activeView === 'check' ? (
-            <StyleComplianceChecker />
+            // Explicitly set isWalkthrough to false for the checker
+            <StyleComplianceChecker isWalkthrough={false} />
           ) : (
             <Card>
               <CardHeader>
                 <CardTitle>Configure Your Style Guidelines</CardTitle>
               </CardHeader>
               <CardContent>
-                <WritingStyleModule isWalkthrough={false} />
+                {/* Explicitly set isWalkthrough to false and provide returnTo prop */}
+                <WritingStyleModule 
+                  isWalkthrough={false} 
+                  returnTo="/style-checker" 
+                />
               </CardContent>
             </Card>
           )}

@@ -9,6 +9,7 @@ interface WritingStyleProps {
   isWalkthrough?: boolean;
   onNext?: () => void;
   onBack?: () => void;
+  returnTo?: string; // Optional URL to return to after saving
 }
 
 const STYLE_GUIDES = [
@@ -26,11 +27,17 @@ const HEADING_STYLES = [
   'Custom'
 ];
 
-const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext, onBack }) => {
-  const { writingStyle, updateWritingStyle, applyStyleGuideRules } = useWritingStyle();
+const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext, onBack, returnTo }) => {
+  const { writingStyle, updateWritingStyle, applyStyleGuideRules, saveStyleToStorage } = useWritingStyle();
   const { showNotification } = useNotification();
   const [uploadedStyleGuide, setUploadedStyleGuide] = useState<File | null>(null);
   const router = useRouter();
+
+  // Explicitly save to storage on any change
+  useEffect(() => {
+    // Save the current writing style to localStorage
+    saveStyleToStorage();
+  }, [writingStyle, saveStyleToStorage]);
 
   const handleStyleGuideUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -93,24 +100,33 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
     });
   };
 
-  const handleSubmit = () => {
-    showNotification('success', 'Writing style preferences saved successfully');
-    // FIXED: Check if in walkthrough mode and use onNext instead of redirecting
-    if (isWalkthrough && onNext) {
-      onNext(); // Continue with the walkthrough instead of redirecting
+  // Handle button text based on context
+  const getButtonText = () => {
+    if (isWalkthrough) {
+      return "Next";
+    } else if (returnTo) {
+      return "Save Changes";
     } else {
-      router.push('/creation-hub');
+      return "Save Writing Style";
     }
   };
 
-  // ADDED: Separate function to handle the Next button in walkthrough
-  const handleNext = () => {
-    // Save the writing style data
-    showNotification('success', 'Writing style saved');
+  const handleSubmit = () => {
+    // Force an explicit save to storage
+    saveStyleToStorage();
     
-    // Move to the next step in the walkthrough
-    if (onNext) {
+    showNotification('success', 'Writing style preferences saved successfully');
+    
+    // Handle navigation based on context
+    if (isWalkthrough && onNext) {
+      // If in walkthrough, call the onNext function
       onNext();
+    } else if (returnTo) {
+      // If returnTo URL is provided, go back to that page
+      router.push(returnTo);
+    } else {
+      // By default, stay on the current page (no navigation)
+      // This ensures users aren't redirected unexpectedly
     }
   };
 
@@ -302,16 +318,17 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className="flex justify-end">
-        {/* CHANGED: Modify button text and function based on whether it's in the walkthrough */}
-        <button
-          onClick={isWalkthrough ? handleNext : handleSubmit}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          {isWalkthrough ? "Next" : "Save Writing Style"}
-        </button>
-      </div>
+ {/* Save Button - only show if NOT in walkthrough mode */}
+{!isWalkthrough && (
+  <div className="flex justify-end">
+    <button
+      onClick={handleSubmit}
+      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+    >
+      {getButtonText()}
+    </button>
+  </div>
+)}
     </div>
   );
 };
