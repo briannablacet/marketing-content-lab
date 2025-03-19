@@ -1,9 +1,11 @@
-//src/components/features/WritingStyleModule/index.tsx
+// src/components/features/WritingStyleModule/index.tsx
 import React, { useState, useEffect } from 'react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { HelpCircle, Upload, FileText, X } from 'lucide-react';
+import { HelpCircle, FileText, X } from 'lucide-react';
 import { useRouter } from 'next/router';
+// Import our new FileHandler component
+import FileHandler from '../../shared/FileHandler';
 
 interface WritingStyleProps {
   isWalkthrough?: boolean;
@@ -39,21 +41,30 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
     saveStyleToStorage();
   }, [writingStyle, saveStyleToStorage]);
 
-  const handleStyleGuideUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setUploadedStyleGuide(file);
-      
-      updateWritingStyle({
-        styleGuide: {
-          primary: 'Custom Style Guide',
-          overrides: false,
-          uploadedGuide: file.name
-        }
-      });
-      
-      showNotification('success', 'Style guide uploaded successfully');
-    }
+  // This function will handle the content loaded from the file
+  const handleStyleGuideContent = (content: string | object) => {
+    // Convert to string if it's not already
+    const textContent = typeof content === 'string' 
+      ? content 
+      : JSON.stringify(content, null, 2);
+    
+    // Create a File object to maintain consistency with existing code
+    const file = new File([textContent], "uploaded-style-guide.txt", { type: "text/plain" });
+    setUploadedStyleGuide(file);
+    
+    // Update the writing style context
+    updateWritingStyle({
+      styleGuide: {
+        primary: 'Custom Style Guide',
+        overrides: false,
+        uploadedGuide: file.name
+      }
+    });
+    
+    showNotification('success', 'Style guide uploaded and processed successfully');
+    
+    // Here you could add more sophisticated handling of the style guide content
+    // For example, extracting specific rules and applying them automatically
   };
 
   const handleRemoveUpload = () => {
@@ -154,33 +165,30 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
             </select>
           </div>
 
-          {/* Upload Option */}
+          {/* Upload Option - REPLACED WITH FILEHANDLER */}
           <div className="border-t pt-4">
             <p className="text-sm text-gray-700 mb-3">Already have a company style guide?</p>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100">
-                <Upload className="w-5 h-5 mr-2" />
-                <span>Upload Your Style Guide</span>
-                <input
-                  type="file"
-                  onChange={handleStyleGuideUpload}
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.txt"
-                />
-              </label>
-              {uploadedStyleGuide && (
-                <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md">
-                  <FileText className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">{uploadedStyleGuide.name}</span>
-                  <button 
-                    onClick={handleRemoveUpload}
-                    className="ml-2 text-gray-400 hover:text-red-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
+            
+            {/* Display the uploaded file information if a file has been uploaded */}
+            {uploadedStyleGuide ? (
+              <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md">
+                <FileText className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-600">{uploadedStyleGuide.name}</span>
+                <button 
+                  onClick={handleRemoveUpload}
+                  className="ml-2 text-gray-400 hover:text-red-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <FileHandler 
+                onContentLoaded={handleStyleGuideContent}
+                acceptedFormats=".txt,.doc,.docx,.md,.pdf"
+                showExport={false}
+                onError={(message) => showNotification('error', message)}
+              />
+            )}
           </div>
 
           <div className="text-sm text-gray-600 space-y-2 mt-4">
@@ -318,17 +326,17 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
         </div>
       </div>
 
-{/* Submit Button - ONLY show if NOT in walkthrough mode */}
-{!isWalkthrough && (
-  <div className="flex justify-end">
-    <button
-      onClick={handleSubmit}
-      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-    >
-      {getButtonText()}
-    </button>
-  </div>
-)}
+      {/* Submit Button - ONLY show if NOT in walkthrough mode */}
+      {!isWalkthrough && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            {getButtonText()}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
