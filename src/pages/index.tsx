@@ -38,7 +38,7 @@ export default function Home() {
             The only solution by content marketers for content marketers. 
           </p>
           <p className="text-lg text-gray-500 mb-8">
-            Create, enhance, repurpose, and scale your content with AI assistance. Automate tedious tasks and fill in skills gaps while preserving your authentic voice and your unique, human touch.
+            Create, enhance, repurpose, and scale your content with AI assistance. Automate tedious tasks and close skills gaps while preserving your authentic voice and your unique, human touch.
           </p>
         </div>
         <Link 
