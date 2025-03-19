@@ -7,6 +7,23 @@ import { useContent } from '../context/ContentContext';
 import { Card } from '@/components/ui/card';
 import { GetServerSideProps } from 'next';
 
+// Define the SVG check icon as a React component to avoid file system access
+const CheckIcon = (props) => (
+  <svg 
+    className={props.className || "h-6 w-6 text-blue-500 mr-2"} 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    stroke="currentColor"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={2} 
+      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" 
+    />
+  </svg>
+);
+
 export default function Home() {
   const { state: marketingState } = useMarketing();
   const { contentTypes } = useContent();
@@ -59,21 +76,15 @@ export default function Home() {
           </p>
           <ul className="space-y-3">
             <li className="flex items-start">
-              <svg className="h-6 w-6 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckIcon className="h-6 w-6 text-blue-500 mr-2" />
               <span>Automated competitive messaging analysis</span>
             </li>
             <li className="flex items-start">
-              <svg className="h-6 w-6 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckIcon className="h-6 w-6 text-blue-500 mr-2" />
               <span>AI-assisted value proposition development</span>
             </li>
             <li className="flex items-start">
-              <svg className="h-6 w-6 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckIcon className="h-6 w-6 text-blue-500 mr-2" />
               <span>Intelligent market positioning insights</span>
             </li>
           </ul>
@@ -87,21 +98,15 @@ export default function Home() {
           </p>
           <ul className="space-y-3">
             <li className="flex items-start">
-              <svg className="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckIcon className="h-6 w-6 text-green-500 mr-2" />
               <span>AI-assisted content creation with human oversight</span>
             </li>
             <li className="flex items-start">
-              <svg className="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckIcon className="h-6 w-6 text-green-500 mr-2" />
               <span>Brand voice preservation and enhancement</span>
             </li>
             <li className="flex items-start">
-              <svg className="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckIcon className="h-6 w-6 text-green-500 mr-2" />
               <span>Quality-focused content optimization</span>
             </li>
           </ul>
