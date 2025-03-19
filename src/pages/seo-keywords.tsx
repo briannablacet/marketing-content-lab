@@ -1,190 +1,245 @@
-// src/pages/api/api_endpoints.ts
-import { NextApiRequest, NextApiResponse } from 'next';
-import OpenAI from 'openai';
+//src/pages/seo-keywords.tsx
+import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { ScreenTemplate } from '../components/shared/UIComponents';
+import { useNotification } from '../context/NotificationContext';
 
-// Initialize OpenAI with error handling
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Type definitions for better type safety
-interface BaseRequest {
-  endpoint: string;
-  data: any;
+interface SEOKeywordsPageProps {
+  isWalkthrough?: boolean;
+  onNext?: () => void;
+  onBack?: () => void;
 }
 
-// Handler for keyword generation
-async function handleKeywordGeneration(data: any) {
-  if (!data.context || !Array.isArray(data.context.messages)) {
-    throw new Error('Invalid request data for keyword generation');
-  }
+// No OpenAI initialization during build time - this will fix the Vercel build error
+const SEOKeywordsPage: React.FC<SEOKeywordsPageProps> = ({ isWalkthrough, onNext, onBack }) => {
+  const router = useRouter();
+  const { showNotification } = useNotification();
+  
+  // Check if this is being accessed as part of walkthrough
+  const isInWalkthrough = isWalkthrough || router.pathname.includes('/walkthrough');
+  
+  const [keywords, setKeywords] = useState({
+    primaryKeywords: [],
+    secondaryKeywords: [],
+    keywordGroups: [],
+    metrics: {
+      estimatedSearchVolume: '',
+      competitionLevel: '',
+      recommendedContent: []
+    },
+    loading: false,
+    error: null
+  });
 
-  const prompt = `You are an expert SEO strategist specializing in keyword research and content optimization.
-
-Task: Based on the provided information, generate strategic SEO keywords that will help this content rank well and reach the right audience.
-
-Messages/Value Propositions:
-${JSON.stringify(data.context.messages, null, 2)}
-
-Target Personas:
-${JSON.stringify(data.context.personas || [], null, 2)}
-
-Competitors:
-${JSON.stringify(data.context.competitors || [], null, 2)}
-
-${data.context.productInfo ? `Product Information:
-${JSON.stringify(data.context.productInfo, null, 2)}` : ''}
-
-Generate SEO keywords and group them based on the following categories.
-
-Format your response as a JSON object with these exact properties:
-- primaryKeywords: Array of 3-5 most important target keywords (STRINGS ONLY)
-- secondaryKeywords: Array of 5-10 supporting keywords that capture related search intent (STRINGS ONLY)
-- keywordGroups: Array of objects with { category: string, keywords: string[] }
-- metrics: Object with estimated search volume, competition level, and recommended content types
-
-IMPORTANT: All keywords MUST be simple strings, not objects. Do not return objects with 'keyword' properties or any nested objects.
-
-Example of CORRECT format:
-{
-  "primaryKeywords": ["marketing automation", "content strategy", "SEO tools"],
-  "secondaryKeywords": ["marketing software", "content creation tools"],
-  "keywordGroups": [
-    {
-      "category": "Features",
-      "keywords": ["automation tools", "content scheduling"]
-    }
-  ],
-  "metrics": {
-    "estimatedSearchVolume": "medium",
-    "competitionLevel": "high",
-    "recommendedContent": ["Blog Posts", "Case Studies"]
-  }
-}`;
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert in keyword research. Respond with valid JSON only."
+  // Function to generate keywords using the API endpoint
+  const generateKeywords = async () => {
+    setKeywords(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" }
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('Empty response from OpenAI');
-    }
-
-    const parsedContent = JSON.parse(content);
-    
-    // Ensure all keyword arrays contain only strings
-    const ensureStringArray = (arr: any[]): string[] => {
-      if (!arr || !Array.isArray(arr)) return [];
-      
-      return arr.map(item => {
-        if (typeof item === 'string') return item;
-        if (typeof item === 'object' && item !== null) {
-          // If it's an object, convert to string representation
-          if (item.keyword) return String(item.keyword);
-          if (item.name) return String(item.name);
-          return JSON.stringify(item);
-        }
-        return String(item);
-      }).filter(Boolean);
-    };
-    
-    // Process each keyword array to ensure they contain only strings
-    const result = {
-      primaryKeywords: ensureStringArray(parsedContent.primaryKeywords || []),
-      secondaryKeywords: ensureStringArray(parsedContent.secondaryKeywords || []),
-      keywordGroups: Array.isArray(parsedContent.keywordGroups) 
-        ? parsedContent.keywordGroups.map((group: any) => ({
-            category: typeof group.category === 'string' ? group.category : String(group.category || 'Group'),
-            keywords: ensureStringArray(group.keywords || [])
-          }))
-        : [],
-      metrics: parsedContent.metrics || {
-        estimatedSearchVolume: "medium",
-        competitionLevel: "medium",
-        recommendedContent: ["Blog Posts", "Case Studies", "White Papers"]
-      }
-    };
-    
-    // Verify that we have actual string values
-    console.log('Processed keywords:', {
-      primarySample: result.primaryKeywords.slice(0, 2),
-      secondarySample: result.secondaryKeywords.slice(0, 2),
-      groupSample: result.keywordGroups.length > 0 ? result.keywordGroups[0].keywords.slice(0, 2) : []
-    });
-    
-    return result;
-  } catch (error) {
-    console.error('Error in keyword generation:', error);
-    throw error;
-  }
-}
-
-// Main API handler
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed. Use POST.' });
-  }
-
-  try {
-    const { endpoint, data } = req.body as BaseRequest;
-
-    // Simplified endpoint handling
-    switch (endpoint) {
-      case 'generate-keywords':
-        try {
-          const result = await handleKeywordGeneration(data);
-          return res.status(200).json(result);
-        } catch (error) {
-          console.error('Keyword generation error:', error);
-          return res.status(500).json({ 
-            error: 'Keyword generation failed', 
-            details: (error as Error).message 
-          });
-        }
-        
-      case 'product-info':
-        // Simple demo handler for product info
-        return res.status(200).json({
-          success: true,
+        body: JSON.stringify({
+          endpoint: 'generate-keywords',
           data: {
-            name: "Marketing Content Lab",
-            type: "SaaS Platform",
-            description: "AI-powered content marketing platform"
+            context: {
+              messages: [
+                "AI-powered marketing content creation and strategy",
+                "Streamline your content marketing workflow",
+                "Create consistent, on-brand content at scale"
+              ],
+              personas: [
+                "Marketing Director at mid-sized B2B company",
+                "Content Manager at enterprise SaaS organization"
+              ],
+              competitors: [
+                "ContentAI",
+                "MarketMuse",
+                "Jasper",
+                "WriterAccess"
+              ],
+              productInfo: {
+                name: "Marketing Content Lab",
+                type: "Content Marketing Platform",
+                valueProposition: "AI-powered marketing content creation and strategy"
+              }
+            }
           }
-        });
-        
-      // Add handlers for other endpoints here
-      case 'content-repurposer':
-      case 'analyze-competitors':
-      case 'generate-value-prop':
-      case 'persona-generator':
-        return res.status(501).json({ 
-          error: 'Endpoint not implemented in simplified version', 
-          endpoint: endpoint
-        });
-        
-      default:
-        return res.status(400).json({ error: `Unknown endpoint: ${endpoint}` });
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate keywords');
+      }
+
+      const data = await response.json();
+      
+      setKeywords({
+        primaryKeywords: data.primaryKeywords || [],
+        secondaryKeywords: data.secondaryKeywords || [],
+        keywordGroups: data.keywordGroups || [],
+        metrics: data.metrics || {
+          estimatedSearchVolume: '',
+          competitionLevel: '',
+          recommendedContent: []
+        },
+        loading: false,
+        error: null
+      });
+      
+      showNotification('success', 'Keywords generated successfully');
+    } catch (error) {
+      console.error('Error generating keywords:', error);
+      setKeywords(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Failed to generate keywords. Please try again.'
+      }));
+      showNotification('error', 'Failed to generate keywords');
     }
-  } catch (error) {
-    console.error('General error in API endpoint:', error);
-    return res.status(500).json({ 
-      error: 'Server error', 
-      details: (error as Error).message 
-    });
-  }
-}
+  };
+
+  return (
+    <ScreenTemplate
+      title="SEO Keyword Research"
+      subtitle="Discover high-value keywords to target in your content marketing"
+      aiInsights={[
+        "Using primary and secondary keywords improves your content's search visibility",
+        "Long-tail keywords typically have lower competition but higher conversion rates",
+        "Search intent matching is more important than keyword volume alone"
+      ]}
+      // Only pass walkthrough props if this is being used in the walkthrough
+      isWalkthrough={isInWalkthrough}
+      onNext={onNext}
+      onBack={onBack}
+      nextButtonText={isInWalkthrough ? "Next" : undefined}
+    >
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>AI-Powered Keyword Suggestions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-gray-600">
+              Our AI can analyze your product information, target audience, and existing content to generate targeted keyword recommendations for your marketing efforts.
+            </p>
+            
+            <button
+              onClick={generateKeywords}
+              disabled={keywords.loading}
+              className={`px-4 py-2 rounded bg-blue-600 text-white ${
+                keywords.loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+              }`}
+            >
+              {keywords.loading ? 'Generating...' : 'Generate Keyword Recommendations'}
+            </button>
+            
+            {keywords.error && (
+              <div className="mt-4 p-3 bg-red-50 text-red-700 rounded">
+                {keywords.error}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        {(keywords.primaryKeywords.length > 0 || keywords.secondaryKeywords.length > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recommended Keywords</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Primary Keywords */}
+                <div>
+                  <h3 className="font-medium text-lg mb-2">Primary Keywords</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {keywords.primaryKeywords.map((keyword, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                      >
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Secondary Keywords */}
+                <div>
+                  <h3 className="font-medium text-lg mb-2">Secondary Keywords</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {keywords.secondaryKeywords.map((keyword, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                      >
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Keyword Groups */}
+                {keywords.keywordGroups?.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-lg mb-2">Keyword Categories</h3>
+                    <div className="space-y-4">
+                      {keywords.keywordGroups.map((group, groupIndex) => (
+                        <div key={groupIndex} className="border-l-4 border-purple-200 pl-4">
+                          <h4 className="font-medium text-md mb-1">{group.category}</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {group.keywords.map((keyword, keywordIndex) => (
+                              <span
+                                key={keywordIndex}
+                                className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                              >
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* SEO Metrics Information */}
+                {keywords.metrics && (
+                  <div className="mt-6 border-t border-gray-200 pt-4">
+                    <h3 className="font-medium text-lg mb-2">SEO Metrics</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-gray-50 p-3 rounded">
+                        <p className="text-sm text-gray-500">Estimated Search Volume</p>
+                        <p className="font-medium">{keywords.metrics.estimatedSearchVolume || 'N/A'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded">
+                        <p className="text-sm text-gray-500">Competition Level</p>
+                        <p className="font-medium">{keywords.metrics.competitionLevel || 'N/A'}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded">
+                        <p className="text-sm text-gray-500">Recommended Content</p>
+                        <div className="flex flex-wrap gap-1">
+                          {keywords.metrics.recommendedContent?.map((content, index) => (
+                            <span key={index} className="text-sm font-medium">
+                              {content}{index < keywords.metrics.recommendedContent.length - 1 ? ", " : ""}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </ScreenTemplate>
+  );
+};
+
+// For use with static page routes
+export default SEOKeywordsPage;
