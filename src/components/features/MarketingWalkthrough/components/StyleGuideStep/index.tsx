@@ -6,19 +6,12 @@ import { useWritingStyle } from '../../../../../context/WritingStyleContext';
 const StyleGuideStep = ({ onNext, onBack }) => {
   const { writingStyle } = useWritingStyle();
 
-  // This function gets called when the WritingStyleModule would normally navigate
-  // But we'll just do nothing since navigation is handled by the walkthrough
-  const handleStyleComplete = () => {
-    // Do nothing - navigation is handled by walkthrough buttons
-    console.log("Style configuration completed");
-  };
-
   return (
     <div className="space-y-6">
-      {/* Pass isWalkthrough=true to hide its own navigation buttons */}
+      {/* The WritingStyleModule with isWalkthrough=true will use the walkthrough navigation */}
       <WritingStyleModule 
         isWalkthrough={true}
-        onNext={handleStyleComplete}
+        onNext={onNext}
         onBack={onBack}
       />
     </div>

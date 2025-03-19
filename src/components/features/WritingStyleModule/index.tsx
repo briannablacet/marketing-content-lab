@@ -318,7 +318,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
         </div>
       </div>
 
- {/* Save Button - only show if NOT in walkthrough mode */}
+{/* Submit Button - ONLY show if NOT in walkthrough mode */}
 {!isWalkthrough && (
   <div className="flex justify-end">
     <button
