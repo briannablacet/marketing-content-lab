@@ -7,6 +7,7 @@ import { WritingStyleProvider } from '../../context/WritingStyleContext';
 import { MessagingProvider } from '../../context/MessagingContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
+import Link from 'next/link';
 import { 
   FileText, 
   MessageSquare, 
@@ -21,7 +22,8 @@ import {
   RefreshCw,
   ArrowLeft,
   Edit,
-  X
+  X,
+  ExternalLink
 } from 'lucide-react';
 
 const ContentCreatorPage: React.FC = () => {
@@ -191,7 +193,7 @@ const ContentCreatorPage: React.FC = () => {
             title="Standalone Content Creator"
             subtitle="Create a single piece of high-quality content optimized for your goals"
           >
-            <div className="max-w-4xl mx-auto mb-16">
+            <div className="max-w-7xl mx-auto mb-16">
               {/* Initial AI Insights Box */}
               {!selectedType && (
                 <Card className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-100">
@@ -201,10 +203,16 @@ const ContentCreatorPage: React.FC = () => {
                         <Edit className="w-10 h-10 text-blue-500" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-blue-800 mb-3">Content Creation Guide</h3>
+                        <h3 className="text-lg font-semibold text-blue-800 mb-3">Pro Tip!</h3>
                         <p className="text-blue-700 mb-4">
-                          To create effective content, start by selecting the right format for your goals, then define your audience 
-                          and key message. Our AI will help you craft polished, engaging content in minutes.
+                          Select a template from our template gallery to help you get started!  
+                          <Link 
+                  href="/templates" 
+                  className="inline-flex items-center ml-2 text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Browse templates
+                  <ExternalLink className="w-3 h-3 ml-1" />
+                </Link>
                         </p>
                         
                         <h4 className="font-medium text-blue-800 mb-2 flex items-center">

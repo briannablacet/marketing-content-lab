@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Settings, ChevronDown, BarChart2, Edit, FileText, Sparkles } from 'lucide-react';
 
+
 const Navbar: React.FC = () => {
   const router = useRouter();
   const [strategicMenuOpen, setStrategicMenuOpen] = useState(false);
@@ -70,7 +71,7 @@ const Navbar: React.FC = () => {
                   }`}
                 >
                   <BarChart2 className="w-4 h-4 mr-1" />
-                  Strategic Tools
+                 Strategize
                   <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${strategicMenuOpen ? 'transform rotate-180' : ''}`} />
                 </button>
                 
@@ -116,7 +117,7 @@ const Navbar: React.FC = () => {
                   }`}
                 >
                   <Edit className="w-4 h-4 mr-1" />
-                  Content Creation
+                 Create
                   <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${creationMenuOpen ? 'transform rotate-180' : ''}`} />
                 </button>
                 
@@ -176,7 +177,7 @@ const Navbar: React.FC = () => {
                   }`}
                 >
                   <Sparkles className="w-4 h-4 mr-1" />
-                  Content Enhancement
+               Enhance
                   <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${enhancementMenuOpen ? 'transform rotate-180' : ''}`} />
                 </button>
                 
@@ -222,8 +223,15 @@ const Navbar: React.FC = () => {
                   </div>
                 )}
               </div>
-              
-              <Link 
+            
+                  <Link 
+                    href="/templates" 
+                    className="flex itemscenter px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                 <FileText className="w-5 h-5 mr-2" />
+                    <span>Templates</span>
+                  </Link>
+                  <Link 
                 href="/settings" 
                 className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
                   router.pathname === '/settings' ? 
