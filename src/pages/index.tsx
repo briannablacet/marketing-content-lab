@@ -199,9 +199,9 @@ export default function Home({ initialMarketingState }) {
           )}
 
           {renderToolCard(
-            "A/B Content Creator",
-            "Generate multiple versions of content for testing and optimization",
-            "/ab-testing",
+            "SEO Keywords",
+            "Discover high-value keywords to target in your content marketing",
+            "/seo-keywords",
             true
           )}
 

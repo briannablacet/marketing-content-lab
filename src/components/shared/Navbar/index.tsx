@@ -202,7 +202,6 @@ const Navbar: React.FC = () => {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
-            
                         Brand Voice
                       </Link>
                       <Link 
@@ -211,6 +210,13 @@ const Navbar: React.FC = () => {
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
                         Content Humanizer
+                      </Link>
+                      <Link 
+                        href="/seo-keywords" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setEnhancementMenuOpen(false)}
+                      >
+                        SEO Keywords
                       </Link>
                     </div>
                   </div>
