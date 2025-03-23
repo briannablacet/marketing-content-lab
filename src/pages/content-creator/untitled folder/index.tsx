@@ -281,6 +281,7 @@ const ContentCreatorPage: React.FC = () => {
                             onClick={() => {
                               setSelectedType(type.id);
                               setShowTypeModal(false);
+                              router.push(`/content-creator/${type.id}`);
                             }}
                           >
                             <div className="mr-4 pt-1 flex-shrink-0">
