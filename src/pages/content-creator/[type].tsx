@@ -1,5 +1,5 @@
 // src/pages/content-creator/[type].tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { NotificationProvider } from '../../context/NotificationContext';
@@ -7,12 +7,8 @@ import { WritingStyleProvider } from '../../context/WritingStyleContext';
 import { MessagingProvider } from '../../context/MessagingContext';
 import { useNotification } from '../../context/NotificationContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ScreenTemplate } from '../../components/shared/UIComponents';
 import FileHandler from '../../components/shared/FileHandler';
 import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
-// THIS IS THE FIX: The exact format of CONTENT_TYPES might be different than expected
-// Let's define our own content types directly in this file for now
-// import { CONTENT_TYPES } from '../../data/contentTypesData';
 import {
   ArrowLeft,
   Sparkles,
@@ -20,9 +16,7 @@ import {
   ChevronRight,
   RefreshCw,
   Download,
-  Edit,
   Save,
-  FileText,
   MessageSquare,
   Upload,
   Info,
@@ -68,20 +62,19 @@ const CONTENT_TYPES = [
   }
 ];
 
-const ContentCreatorPage: React.FC = () => {
+const ContentCreatorPage = () => {
   const router = useRouter();
   const { type } = router.query;
   const { showNotification } = useNotification();
   
   // State for content information
-  const [contentType, setContentType] = useState<any>(null);
+  const [contentType, setContentType] = useState(null);
   
-  // New simplified state for user inputs - just a prompt and uploaded content
+  // State for user inputs
   const [promptText, setPromptText] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedContent, setUploadedContent] = useState('');
   
-  // State for advanced options - hidden by default
+  // State for advanced options
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [advancedOptions, setAdvancedOptions] = useState({
     audience: '',
@@ -94,14 +87,14 @@ const ContentCreatorPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
   const [generatedTitle, setGeneratedTitle] = useState('');
-  const [generatedMetadata, setGeneratedMetadata] = useState<any>(null);
+  const [generatedMetadata, setGeneratedMetadata] = useState(null);
   
   // State for UI guidance
   const [showGuidanceCard, setShowGuidanceCard] = useState(true);
   
   // Load content type from URL parameter
   useEffect(() => {
-    if (type) {
+    if (type && router.isReady) {
       // Find content type info based on URL parameter
       const typeFromUrl = Array.isArray(type) ? type[0] : type;
       const foundType = CONTENT_TYPES.find(t => t.id === typeFromUrl);
@@ -115,8 +108,8 @@ const ContentCreatorPage: React.FC = () => {
     }
   }, [type, router]);
 
-  // Handle file upload via the FileHandler component
-  const handleFileContent = (content: string | object) => {
+  // Handle file upload
+  const handleFileContent = (content) => {
     if (typeof content === 'string') {
       setUploadedContent(content);
       showNotification('success', 'File content loaded successfully');
@@ -128,118 +121,124 @@ const ContentCreatorPage: React.FC = () => {
   };
 
   // Handle changes in advanced options
-  const handleAdvancedOptionChange = (option: string, value: string) => {
+  const handleAdvancedOptionChange = (option, value) => {
     setAdvancedOptions(prev => ({
       ...prev,
       [option]: value
     }));
   };
   
-  // Handle content generation
-  const handleGenerateContent = async () => {
-    // Validate that we have either prompt text or uploaded content
-    if (!promptText && !uploadedContent) {
-      showNotification('error', 'Please enter a prompt or upload content');
-      return;
+  // Handle content generation with fixed API call
+  // Updated handleGenerateContent function for [type].tsx
+const handleGenerateContent = async () => {
+  // Validate inputs
+  if (!promptText && !uploadedContent) {
+    showNotification('error', 'Please enter a prompt or upload content');
+    return;
+  }
+  
+  setIsGenerating(true);
+  
+  try {
+    // Prepare request payload
+    const payload = {
+      endpoint: 'generate-content', 
+      data: {
+        contentType: contentType?.id || 'blog-post',
+        prompt: promptText,
+        sourceContent: uploadedContent,
+        parameters: {
+          audience: advancedOptions.audience,
+          tone: advancedOptions.tone,
+          keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k),
+          additionalNotes: advancedOptions.additionalNotes
+        }
+      }
+    };
+    
+    console.log('Sending API request:', payload);
+    
+    // Call API
+    const response = await fetch('/api/api_endpoints', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `API responded with status ${response.status}`);
     }
     
-    setIsGenerating(true);
+    const data = await response.json();
+    console.log('API Response:', data);
     
-    try {
-      // Prepare request payload
-      const payload = {
-        endpoint: 'generate-content',
-        data: {
-          contentType: contentType?.id || 'blog-post',
-          prompt: promptText,
-          sourceContent: uploadedContent,
-          parameters: {
-            tone: advancedOptions.tone,
-            audience: advancedOptions.audience,
-            keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k),
-            additionalNotes: advancedOptions.additionalNotes
-          }
-        }
-      };
+    // Process the generated content
+    if (data.content) {
+      setGeneratedContent(data.content);
       
-      // Call API
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API responded with status ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Process the generated content
-      if (data.content) {
-        setGeneratedContent(data.content);
-        
-        if (data.title) {
-          setGeneratedTitle(data.title);
-        } else {
-          // Extract first line as title if not provided
-          const firstLine = data.content.split('\n')[0].replace(/^#\s*/, '');
-          setGeneratedTitle(firstLine || 'Generated Content');
-        }
-        
-        // Set metadata if available
-        if (data.metadata) {
-          setGeneratedMetadata(data.metadata);
-        } else {
-          // Generate basic metadata
-          setGeneratedMetadata({
-            title: data.title || 'Generated Content',
-            description: data.content.substring(0, 160),
-            keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k)
-          });
-        }
-        
-        showNotification('success', 'Content generated successfully!');
+      // Set the title
+      if (data.title) {
+        setGeneratedTitle(data.title);
       } else {
-        throw new Error('No content returned from API');
+        // Extract title from content or use placeholder
+        const firstLine = data.content.split('\n')[0].replace(/^#\s*/, '');
+        setGeneratedTitle(firstLine || 'Generated Content');
       }
-    } catch (error) {
-      console.error(`Error generating content:`, error);
-      showNotification('error', 'Failed to generate content. Please try again.');
       
-      // Generate fallback content for demo/development purposes
-      const mockTitle = `Sample ${contentType?.title || 'Content'}`;
-      const mockContent = [
-        `# ${mockTitle}`,
-        '',
-        `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}.`,
-        '',
-        '## Introduction',
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-        '',
-        '## Main Point 1',
-        'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-        '',
-        '## Main Point 2',
-        'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
-        '',
-        '## Conclusion',
-        'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
-      ].join('\n');
+      // Set metadata
+      if (data.metadata) {
+        setGeneratedMetadata(data.metadata);
+      } else {
+        // Generate basic metadata
+        setGeneratedMetadata({
+          title: data.title || generatedTitle || 'Generated Content',
+          description: data.content.substring(0, 160),
+          keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k) || ['content', 'marketing']
+        });
+      }
       
-      setGeneratedTitle(mockTitle);
-      setGeneratedContent(mockContent);
-      setGeneratedMetadata({
-        title: mockTitle,
-        description: 'This is a sample meta description for the generated content.',
-        keywords: ['sample', 'content', 'demo']
-      });
-    } finally {
-      setIsGenerating(false);
+      showNotification('success', 'Content generated successfully!');
+    } else {
+      throw new Error('No content returned from API');
     }
-  };
+  } catch (error) {
+    console.error('Error generating content:', error);
+    showNotification('error', `Failed to generate content: ${error.message}`);
+    
+    // Generate fallback content for demo purposes
+    const mockTitle = `Sample ${contentType?.title || 'Content'}`;
+    const mockContent = [
+      `# ${mockTitle}`,
+      '',
+      `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}.`,
+      '',
+      '## Introduction',
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+      '',
+      '## Main Point 1',
+      'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+      '',
+      '## Main Point 2',
+      'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
+      '',
+      '## Conclusion',
+      'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+    ].join('\n');
+    
+    setGeneratedTitle(mockTitle);
+    setGeneratedContent(mockContent);
+    setGeneratedMetadata({
+      title: mockTitle,
+      description: 'This is a sample meta description for the generated content.',
+      keywords: ['sample', 'content', 'marketing']
+    });
+  } finally {
+    setIsGenerating(false);
+  }
+};
   
   // Handle exporting content as a file
   const handleExportContent = (format = 'markdown') => {
@@ -269,7 +268,7 @@ const ContentCreatorPage: React.FC = () => {
       case 'html':
         mimeType = 'text/html';
         extension = 'html';
-        // Simple markdown to HTML conversion for demonstration
+        // Simple markdown to HTML conversion
         fileContent = `<!DOCTYPE html>
 <html>
 <head>
@@ -290,7 +289,6 @@ const ContentCreatorPage: React.FC = () => {
 </body>
 </html>`;
         break;
-      case 'text':
       default:
         // Use defaults
         break;
@@ -439,7 +437,7 @@ const ContentCreatorPage: React.FC = () => {
             {/* Input Form - Only show if no content is generated yet */}
             {!generatedContent && (
               <>
-                {/* NEW: Guidance Card */}
+                {/* Guidance Card */}
                 {showGuidanceCard && (
                   <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
                     <CardHeader className="bg-blue-50 border-b">
@@ -534,7 +532,7 @@ const ContentCreatorPage: React.FC = () => {
                         />
                       </div>
                       
-                      {/* Advanced Options Toggle with more attention-grabbing design */}
+                      {/* Advanced Options Toggle */}
                       <div className="pt-4">
                         <button
                           type="button"
@@ -644,119 +642,118 @@ const ContentCreatorPage: React.FC = () => {
               </>
             )}
             
-           {/* Generated Content Display */}
-{generatedContent && (
-  <div className="space-y-6">
-    <Card className="overflow-hidden">
-      <CardHeader className="border-b">
-        <CardTitle>Your Generated {contentType?.title || selectedContentType}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="p-6">
-          {/* Title */}
-          <h1 className="text-2xl font-bold mb-4">{parsedContent.title || generatedTitle}</h1>
-          
-          {/* Introduction */}
-          {parsedContent.introduction && (
-            <div className="text-gray-700 mb-6">
-              {parsedContent.introduction.split('\n').map((para, idx) => (
-                <p key={idx} className={idx > 0 ? 'mt-4' : ''}>{para}</p>
-              ))}
-            </div>
-          )}
-          
-          {/* Content Sections */}
-          {parsedContent.sections.map((section, idx) => (
-            <div key={idx} className="mb-6">
-              <h2 className="text-xl font-semibold text-blue-700 mb-3">{section.title}</h2>
-              <div className="text-gray-700">
-                {section.content.split('\n').filter(p => p.trim()).map((para, pIdx) => (
-                  <p key={pIdx} className={pIdx > 0 ? 'mt-4' : ''}>{para}</p>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-    
-  {/* SEO Metadata (Always Visible) */}
-{generatedMetadata && (
-  <div className="mt-4">
-    <div className="flex items-center text-blue-600 mb-2">
-      <ChevronRight className="w-4 h-4 mr-1" />
-      <h3 className="font-medium">SEO Metadata (Auto-generated)</h3>
-    </div>
-    
-    <div className="mt-3 p-4 bg-gray-50 rounded-lg">
-      <div className="space-y-3">
-        <div>
-          <p className="text-sm font-medium text-gray-700">Title tag:</p>
-          <p className="text-sm text-gray-600">{generatedMetadata.title}</p>
-        </div>
-        
-        <div>
-          <p className="text-sm font-medium text-gray-700">Meta description:</p>
-          <p className="text-sm text-gray-600">{generatedMetadata.description}</p>
-        </div>
-        
-        <div>
-          <p className="text-sm font-medium text-gray-700">Keywords:</p>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {generatedMetadata.keywords && generatedMetadata.keywords.map((keyword, idx) => (
-              <span key={idx} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                {keyword}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-    
-    {/* Action Buttons */}
-    <div className="flex flex-wrap gap-4 justify-between">
-      <button
-        onClick={() => {
-          setGeneratedContent('');
-          setGeneratedTitle('');
-          setGeneratedMetadata(null);
-        }}
-        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Editor
-      </button>
-      
-      <div className="flex flex-wrap gap-3">
-        <div className="relative">
-          <button
-            onClick={() => handleExportContent('markdown')}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Download
-          </button>
-          {/* Dropdown could be added here for different formats */}
-        </div>
-        
-        <button
-          onClick={handleSaveToLibrary}
-          className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 flex items-center"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          Save to Library
-        </button>
-        
-        <button
-          onClick={handleGenerateContent}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Regenerate
-        </button>
-        </div>
+            {/* Generated Content Display */}
+            {generatedContent && (
+              <div className="space-y-6">
+                <Card className="overflow-hidden">
+                  <CardHeader className="border-b">
+                    <CardTitle>Your Generated {contentType?.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="p-6">
+                      {/* Title */}
+                      <h1 className="text-2xl font-bold mb-4">{parsedContent.title || generatedTitle}</h1>
+                      
+                      {/* Introduction */}
+                      {parsedContent.introduction && (
+                        <div className="text-gray-700 mb-6">
+                          {parsedContent.introduction.split('\n').map((para, idx) => (
+                            <p key={idx} className={idx > 0 ? 'mt-4' : ''}>{para}</p>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Content Sections */}
+                      {parsedContent.sections.map((section, idx) => (
+                        <div key={idx} className="mb-6">
+                          <h2 className="text-xl font-semibold text-blue-700 mb-3">{section.title}</h2>
+                          <div className="text-gray-700">
+                            {section.content.split('\n').filter(p => p.trim()).map((para, pIdx) => (
+                              <p key={pIdx} className={pIdx > 0 ? 'mt-4' : ''}>{para}</p>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* SEO Metadata (Always Visible) */}
+                {generatedMetadata && (
+                  <div className="mt-4">
+                    <div className="flex items-center text-blue-600 mb-2">
+                      <ChevronRight className="w-4 h-4 mr-1" />
+                      <h3 className="font-medium">SEO Metadata (Auto-generated)</h3>
+                    </div>
+                    
+                    <div className="mt-3 p-4 bg-gray-50 rounded-lg">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Title tag:</p>
+                          <p className="text-sm text-gray-600">{generatedMetadata.title}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Meta description:</p>
+                          <p className="text-sm text-gray-600">{generatedMetadata.description}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Keywords:</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {generatedMetadata.keywords && generatedMetadata.keywords.map((keyword, idx) => (
+                              <span key={idx} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-4 justify-between">
+                  <button
+                    onClick={() => {
+                      setGeneratedContent('');
+                      setGeneratedTitle('');
+                      setGeneratedMetadata(null);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Editor
+                  </button>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    <div className="relative">
+                      <button
+                        onClick={() => handleExportContent('markdown')}
+                        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </button>
+                    </div>
+                    
+                    <button
+                      onClick={handleSaveToLibrary}
+                      className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 flex items-center"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Save to Library
+                    </button>
+                    
+                    <button
+                      onClick={handleGenerateContent}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Regenerate
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
