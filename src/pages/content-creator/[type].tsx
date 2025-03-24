@@ -129,7 +129,7 @@ const ContentCreatorPage = () => {
   };
   
   // Handle content generation with fixed API call
-  // Updated handleGenerateContent function for [type].tsx
+ // Updated handleGenerateContent function for [type].tsx
 const handleGenerateContent = async () => {
   // Validate inputs
   if (!promptText && !uploadedContent) {
@@ -142,7 +142,7 @@ const handleGenerateContent = async () => {
   try {
     // Prepare request payload
     const payload = {
-      endpoint: 'generate-content', 
+      endpoint: 'generate-content', // Make sure this matches exactly what your API expects
       data: {
         contentType: contentType?.id || 'blog-post',
         prompt: promptText,
@@ -156,10 +156,10 @@ const handleGenerateContent = async () => {
       }
     };
     
-    console.log('Sending API request:', payload);
+    console.log('Sending API request:', payload); // Add this for debugging
     
     // Call API
-    const response = await fetch('/api/api_endpoints', {
+    const response = await fetch('/api/api_endpoints', { // Make sure this path is correct
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ const handleGenerateContent = async () => {
     }
     
     const data = await response.json();
-    console.log('API Response:', data);
+    console.log('API Response:', data); // Add this for debugging
     
     // Process the generated content
     if (data.content) {
@@ -208,33 +208,7 @@ const handleGenerateContent = async () => {
     console.error('Error generating content:', error);
     showNotification('error', `Failed to generate content: ${error.message}`);
     
-    // Generate fallback content for demo purposes
-    const mockTitle = `Sample ${contentType?.title || 'Content'}`;
-    const mockContent = [
-      `# ${mockTitle}`,
-      '',
-      `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}.`,
-      '',
-      '## Introduction',
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-      '',
-      '## Main Point 1',
-      'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-      '',
-      '## Main Point 2',
-      'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
-      '',
-      '## Conclusion',
-      'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
-    ].join('\n');
-    
-    setGeneratedTitle(mockTitle);
-    setGeneratedContent(mockContent);
-    setGeneratedMetadata({
-      title: mockTitle,
-      description: 'This is a sample meta description for the generated content.',
-      keywords: ['sample', 'content', 'marketing']
-    });
+    // Your fallback code can stay as is
   } finally {
     setIsGenerating(false);
   }
