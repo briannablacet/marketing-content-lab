@@ -3,7 +3,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 
-// Initializes OpenAI client
+// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -478,13 +478,13 @@ Return response as JSON with these fields:
       const responseText = completion.choices[0].message?.content || '';
       
       try {
-        // Parse JSON response
+        // Parse the JSON response
         const parsedResponse = JSON.parse(responseText);
         return res.status(200).json(parsedResponse);
       } catch (error) {
         console.error('Failed to parse OpenAI response:', responseText);
         
-        // Returns a fallback response
+        // Return a fallback response
         return res.status(200).json({
           enhancedText: data.text,
           suggestions: [],
@@ -501,7 +501,7 @@ Return response as JSON with these fields:
     } catch (error: any) {
       console.error('OpenAI API Error:', error);
       
-      // Return fallback response
+      // Return a fallback response
       return res.status(200).json({
         enhancedText: data.text,
         suggestions: [],
