@@ -128,91 +128,116 @@ const ContentCreatorPage = () => {
     }));
   };
   
-  // Handle content generation with fixed API call
- // Updated handleGenerateContent function for [type].tsx
-const handleGenerateContent = async () => {
-  // Validate inputs
-  if (!promptText && !uploadedContent) {
-    showNotification('error', 'Please enter a prompt or upload content');
-    return;
-  }
-  
-  setIsGenerating(true);
-  
-  try {
-    // Prepare request payload
-    const payload = {
-      endpoint: 'generate-content', // Make sure this matches exactly what your API expects
-      data: {
-        contentType: contentType?.id || 'blog-post',
-        prompt: promptText,
-        sourceContent: uploadedContent,
-        parameters: {
-          audience: advancedOptions.audience,
-          tone: advancedOptions.tone,
-          keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k),
-          additionalNotes: advancedOptions.additionalNotes
+  // Updated handleGenerateContent function for [type].tsx
+  const handleGenerateContent = async () => {
+    // Validate inputs
+    if (!promptText && !uploadedContent) {
+      showNotification('error', 'Please enter a prompt or upload content');
+      return;
+    }
+    
+    setIsGenerating(true);
+    
+    try {
+      // Prepare request payload
+      const payload = {
+        endpoint: 'generate-content', 
+        data: {
+          contentType: contentType?.id || 'blog-post',
+          prompt: promptText,
+          sourceContent: uploadedContent,
+          parameters: {
+            audience: advancedOptions.audience,
+            tone: advancedOptions.tone,
+            keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k),
+            additionalNotes: advancedOptions.additionalNotes
+          }
         }
-      }
-    };
-    
-    console.log('Sending API request:', payload); // Add this for debugging
-    
-    // Call API
-    const response = await fetch('/api/api_endpoints', { // Make sure this path is correct
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `API responded with status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log('API Response:', data); // Add this for debugging
-    
-    // Process the generated content
-    if (data.content) {
-      setGeneratedContent(data.content);
+      };
       
-      // Set the title
-      if (data.title) {
-        setGeneratedTitle(data.title);
+      console.log('Sending API request:', payload);
+      
+      // Call API
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `API responded with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API Response:', data);
+      
+      // Process the generated content
+      if (data.content) {
+        setGeneratedContent(data.content);
+        
+        // Set the title
+        if (data.title) {
+          setGeneratedTitle(data.title);
+        } else {
+          // Extract title from content or use placeholder
+          const firstLine = data.content.split('\n')[0].replace(/^#\s*/, '');
+          setGeneratedTitle(firstLine || 'Generated Content');
+        }
+        
+        // Set metadata
+        if (data.metadata) {
+          setGeneratedMetadata(data.metadata);
+        } else {
+          // Generate basic metadata
+          setGeneratedMetadata({
+            title: data.title || generatedTitle || 'Generated Content',
+            description: data.content.substring(0, 160),
+            keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k) || ['content', 'marketing']
+          });
+        }
+        
+        showNotification('success', 'Content generated successfully!');
       } else {
-        // Extract title from content or use placeholder
-        const firstLine = data.content.split('\n')[0].replace(/^#\s*/, '');
-        setGeneratedTitle(firstLine || 'Generated Content');
+        throw new Error('No content returned from API');
       }
+    } catch (error) {
+      console.error('Error generating content:', error);
+      showNotification('error', `Failed to generate content: ${error.message}`);
       
-      // Set metadata
-      if (data.metadata) {
-        setGeneratedMetadata(data.metadata);
-      } else {
-        // Generate basic metadata
-        setGeneratedMetadata({
-          title: data.title || generatedTitle || 'Generated Content',
-          description: data.content.substring(0, 160),
-          keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k) || ['content', 'marketing']
-        });
-      }
+      // Generate fallback content for demo purposes
+      const mockTitle = `Sample ${contentType?.title || 'Content'}`;
+      const mockContent = [
+        `# ${mockTitle}`,
+        '',
+        `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}.`,
+        '',
+        '## Introduction',
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+        '',
+        '## Main Point 1',
+        'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        '',
+        '## Main Point 2',
+        'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
+        '',
+        '## Conclusion',
+        'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+      ].join('\n');
       
-      showNotification('success', 'Content generated successfully!');
-    } else {
-      throw new Error('No content returned from API');
+      setGeneratedTitle(mockTitle);
+      setGeneratedContent(mockContent);
+      setGeneratedMetadata({
+        title: mockTitle,
+        description: 'This is a sample meta description for the generated content.',
+        keywords: ['sample', 'content', 'marketing']
+      });
+    } finally {
+      setIsGenerating(false);
     }
-  } catch (error) {
-    console.error('Error generating content:', error);
-    showNotification('error', `Failed to generate content: ${error.message}`);
-    
-    // Your fallback code can stay as is
-  } finally {
-    setIsGenerating(false);
-  }
-};
+  };
   
   // Handle exporting content as a file
   const handleExportContent = (format = 'markdown') => {
