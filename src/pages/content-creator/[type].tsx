@@ -1,4 +1,4 @@
-// src/pages/content-creator/[type].tsx
+//src/pages/content-creator/[type].tsx
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
