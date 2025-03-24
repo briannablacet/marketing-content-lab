@@ -47,7 +47,7 @@ const ContentCreatorPage: React.FC = () => {
     "The right tone of voice can improve audience engagement by 40%"
   ];
   
-  // Define content types with their details
+  // Define content types with their detailss
   const CONTENT_TYPES = [
     {
       id: 'blog-post',
