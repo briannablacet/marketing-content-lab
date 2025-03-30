@@ -1,40 +1,9 @@
 // src/components/features/MarketingWalkthrough/components/MessagingStep/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
-import { Upload, FileText, X, Sparkles, Plus, Lightbulb, ArrowRight, CheckCircle, Loader } from 'lucide-react';
+import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, Lightbulb } from 'lucide-react';
+import { useRouter } from 'next/router';
 import { useNotification } from '../../../../../context/NotificationContext';
-
-type Option = 'manual' | 'upload' | 'ai';
-type AIStep = 'review' | 'focus' | 'generate' | 'results';
-
-interface AIGenerationData {
-  productDescription: string;
-  targetAudience: string;
-  uniqueValue: string;
-  competitors: string;
-  focusAreas: string[];
-  tone: string;
-}
-
-interface MessageData {
-  valueProposition: string;
-  differentiators: string[];
-  keyBenefits: string[];
-}
-
-const FOCUS_AREAS = [
-  { id: 'technical', label: 'Technical Excellence', description: 'Emphasize technical capabilities and innovation' },
-  { id: 'business', label: 'Business Value', description: 'Focus on ROI and business outcomes' },
-  { id: 'user', label: 'User Benefits', description: 'Highlight end-user advantages and experience' },
-  { id: 'market', label: 'Market Position', description: 'Emphasize market leadership and differentiation' }
-];
-
-const TONE_OPTIONS = [
-  { id: 'professional', label: 'Professional & Authoritative' },
-  { id: 'friendly', label: 'Friendly & Approachable' },
-  { id: 'innovative', label: 'Innovative & Forward-thinking' },
-  { id: 'trusted', label: 'Trusted & Established' }
-];
 
 interface MessagingStepProps {
   onNext?: () => void;
@@ -42,12 +11,21 @@ interface MessagingStepProps {
   isWalkthrough?: boolean;
 }
 
-const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthrough = true }) => {
+const MessagingStep: React.FC<MessagingStepProps> = ({ 
+  onNext, 
+  onBack, 
+  isWalkthrough = true
+}) => {
+  const router = useRouter();
   const { showNotification } = useNotification();
-  const [selectedOption, setSelectedOption] = useState<Option | null>(null);
-  const [aiStep, setAiStep] = useState<AIStep>('review');
+  const [selectedOption, setSelectedOption] = useState<'manual' | 'upload' | 'ai' | null>(null);
+  const [aiStep, setAiStep] = useState<'review' | 'focus' | 'generate' | 'results'>('review');
   
-  const [messages, setMessages] = useState<MessageData>({
+  const [messages, setMessages] = useState<{
+    valueProposition: string;
+    differentiators: string[];
+    keyBenefits: string[];
+  }>({
     valueProposition: '',
     differentiators: ['', '', ''],
     keyBenefits: ['', '', '']
@@ -58,7 +36,14 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
   const [aiInsights, setAiInsights] = useState<string[]>([]);
 
   // New state for AI generation with default values
-  const [aiData, setAiData] = useState<AIGenerationData>({
+  const [aiData, setAiData] = useState<{
+    productDescription: string;
+    targetAudience: string;
+    uniqueValue: string;
+    competitors: string;
+    focusAreas: string[];
+    tone: string;
+  }>({
     productDescription: 'Marketing Content Lab is a Content Marketing Platform that helps businesses create effective content marketing strategies. Key benefits include: AI-powered content creation, streamlined planning, and consistent brand messaging.',
     targetAudience: 'Marketing Director in the Technology industry who faces challenges including: scaling content creation with limited resources, maintaining brand consistency across channels, measuring ROI of content efforts',
     uniqueValue: 'AI-powered marketing content creation and strategy that saves time while maintaining brand consistency',
@@ -66,6 +51,16 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
     focusAreas: [],
     tone: 'professional'
   });
+
+  // NEW: Create refs to handle focus on added fields
+  const newDifferentiatorRef = useRef<HTMLInputElement>(null);
+  const newBenefitRef = useRef<HTMLInputElement>(null);
+  
+  // NEW: State to track which field should receive focus
+  const [focusField, setFocusField] = useState<{
+    type: 'differentiator' | 'benefit' | null;
+    index: number | null;
+  }>({ type: null, index: null });
 
   // Pre-populate the form with data from local storage (for non-AI path)
   useEffect(() => {
@@ -110,6 +105,19 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
     }
   }, []);
 
+  // NEW: Effect to focus on newly added inputs
+  useEffect(() => {
+    if (focusField.type === 'differentiator' && focusField.index !== null && newDifferentiatorRef.current) {
+      newDifferentiatorRef.current.focus();
+      // Reset focus after applying
+      setFocusField({ type: null, index: null });
+    } else if (focusField.type === 'benefit' && focusField.index !== null && newBenefitRef.current) {
+      newBenefitRef.current.focus();
+      // Reset focus after applying
+      setFocusField({ type: null, index: null });
+    }
+  }, [focusField]);
+
   const updateAiInsights = () => {
     const insights = [];
     
@@ -153,7 +161,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
     updateAiInsights();
   }, [messages]);
 
-  const handleOptionSelect = (option: Option) => {
+  const handleOptionSelect = (option: 'manual' | 'upload' | 'ai') => {
     setSelectedOption(option);
     if (option === 'ai') {
       setAiStep('review');
@@ -172,6 +180,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
 
   const handleGenerateMessages = async () => {
     setIsGenerating(true);
+    
     try {
       // Prepare the API request
       const requestBody = {
@@ -239,14 +248,22 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
     }
   };
 
+  // UPDATED: Add differentiator with focus handling
   const addField = (field: 'differentiators' | 'keyBenefits') => {
     setMessages(prev => ({
       ...prev,
       [field]: [...prev[field], '']
     }));
+    
+    // Set focus on the newly added field
+    const newIndex = messages[field].length;
+    setFocusField({ 
+      type: field === 'differentiators' ? 'differentiator' : 'benefit', 
+      index: newIndex 
+    });
   };
 
-  const handleMessageChange = (field: keyof MessageData, value: string | string[]) => {
+  const handleMessageChange = (field: keyof typeof messages, value: string | string[]) => {
     setMessages(prev => ({
       ...prev,
       [field]: value
@@ -311,6 +328,8 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
           {messages.differentiators.map((diff, index) => (
             <div key={index} className="flex gap-2">
               <input
+                // NEW: Add ref to the most recently added differentiator
+                ref={index === messages.differentiators.length - 1 ? newDifferentiatorRef : null}
                 value={diff}
                 onChange={(e) => handleSingleMessageChange('differentiators', index, e.target.value)}
                 className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -330,7 +349,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
             onClick={() => addField('differentiators')}
             className="flex items-center text-blue-600 hover:text-blue-700"
           >
-            <Plus className="w-4 h-4 mr-1" />
+            <PlusCircle className="w-4 h-4 mr-1" />
             Add Differentiator
           </button>
         </div>
@@ -342,6 +361,8 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
           {messages.keyBenefits.map((benefit, index) => (
             <div key={index} className="flex gap-2">
               <input
+                // NEW: Add ref to the most recently added benefit
+                ref={index === messages.keyBenefits.length - 1 ? newBenefitRef : null}
                 value={benefit}
                 onChange={(e) => handleSingleMessageChange('keyBenefits', index, e.target.value)}
                 className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -361,7 +382,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
             onClick={() => addField('keyBenefits')}
             className="flex items-center text-blue-600 hover:text-blue-700"
           >
-            <Plus className="w-4 h-4 mr-1" />
+            <PlusCircle className="w-4 h-4 mr-1" />
             Add Benefit
           </button>
         </div>
@@ -508,7 +529,12 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
           <p className="text-sm text-gray-600 mb-4">Select the areas you want to emphasize in your messaging (choose up to 2)</p>
           
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            {FOCUS_AREAS.map(focus => (
+            {[
+              { id: 'technical', label: 'Technical Excellence', description: 'Emphasize technical capabilities and innovation' },
+              { id: 'business', label: 'Business Value', description: 'Focus on ROI and business outcomes' },
+              { id: 'user', label: 'User Benefits', description: 'Highlight end-user advantages and experience' },
+              { id: 'market', label: 'Market Position', description: 'Emphasize market leadership and differentiation' }
+            ].map(focus => (
               <button
                 key={focus.id}
                 onClick={() => {
@@ -542,7 +568,12 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
         <div>
           <h4 className="font-medium mb-4">Select Messaging Tone</h4>
           <div className="grid grid-cols-2 gap-4">
-            {TONE_OPTIONS.map(tone => (
+            {[
+              { id: 'professional', label: 'Professional & Authoritative' },
+              { id: 'friendly', label: 'Friendly & Approachable' },
+              { id: 'innovative', label: 'Innovative & Forward-thinking' },
+              { id: 'trusted', label: 'Trusted & Established' }
+            ].map(tone => (
               <button
                 key={tone.id}
                 onClick={() => setAiData(prev => ({ ...prev, tone: tone.id }))}
@@ -571,7 +602,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
           >
             {isGenerating ? (
               <>
-                <Loader className="w-4 h-4 animate-spin" />
+                <RefreshCw className="w-4 h-4 animate-spin" />
                 Generating...
               </>
             ) : (
@@ -591,9 +622,11 @@ const MessagingStep: React.FC<MessagingStepProps> = ({ onNext, onBack, isWalkthr
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• Your product description and target audience</li>
               <li>• Focus on: {aiData.focusAreas.map(f => 
-                FOCUS_AREAS.find(area => area.id === f)?.label
+                ['technical', 'business', 'user', 'market'].indexOf(f) >= 0 ? 
+                ['Technical Excellence', 'Business Value', 'User Benefits', 'Market Position'][['technical', 'business', 'user', 'market'].indexOf(f)] : f
               ).join(', ')}</li>
-              <li>• {TONE_OPTIONS.find(t => t.id === aiData.tone)?.label} tone</li>
+              <li>• {['professional', 'friendly', 'innovative', 'trusted'].indexOf(aiData.tone) >= 0 ? 
+                ['Professional & Authoritative', 'Friendly & Approachable', 'Innovative & Forward-thinking', 'Trusted & Established'][['professional', 'friendly', 'innovative', 'trusted'].indexOf(aiData.tone)] : aiData.tone} tone</li>
             </ul>
           </div>
         </div>

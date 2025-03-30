@@ -1,5 +1,5 @@
 // src/components/features/MarketingWalkthrough/components/ProductStep/index.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card } from '@/components/ui/card';
 import { Sparkles, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/router';
@@ -20,6 +20,11 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
   const [keyBenefits, setKeyBenefits] = useState([""]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Create a ref to track the newly added input field
+  const newBenefitRef = useRef<HTMLInputElement>(null);
+  // Track the index of the newly added field
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
 
   const userId = "user123"; // Replace with actual user ID when authentication is added
 
@@ -38,6 +43,15 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
         console.error("Error fetching product info:", error);
       });
   }, []);
+  
+  // Effect to focus on newly added input when focusIndex changes
+  useEffect(() => {
+    if (focusIndex !== null && newBenefitRef.current) {
+      newBenefitRef.current.focus();
+      // Reset focus index after focusing
+      setFocusIndex(null);
+    }
+  }, [focusIndex]);
 
   const handleGenerateValueProp = async () => {
     if (!productName || !productType || keyBenefits.filter(b => b.trim()).length === 0) {
@@ -126,6 +140,13 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
       setIsSaving(false);
     }
   };
+  
+  // Updated to set focus index when adding a new benefit
+  const addBenefit = () => {
+    setKeyBenefits([...keyBenefits, ""]);
+    // Set the focus index to the new last element
+    setFocusIndex(keyBenefits.length);
+  };
 
   return (
     <div className="space-y-6 w-full"> {/* Ensure full width */}
@@ -150,12 +171,12 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
               type="text"
               value={productType}
               onChange={(e) => setProductType(e.target.value)}
-              placeholder="e.g., Massage Therapy, Software, eCommerce, Coaching, Retail Store"
+              placeholder="e.g., Massage Therapy, Hair Salon, Coaching, Retail Store"
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
-          {/* Key Benefits - Updated wording slightly */}
+          {/* Key Benefits - Updated with auto-focus */}
           <div>
             <label className="block font-medium mb-2">What are the main benefits for your clients?</label>
             <p className="text-sm text-gray-600 mb-4">
@@ -165,6 +186,8 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
               {keyBenefits.map((benefit, index) => (
                 <div key={index} className="flex gap-2">
                   <input
+                    // Add ref to the last element if it matches the focus index
+                    ref={index === keyBenefits.length - 1 ? newBenefitRef : null}
                     type="text"
                     value={benefit}
                     onChange={(e) => {
@@ -172,7 +195,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
                       updatedBenefits[index] = e.target.value;
                       setKeyBenefits(updatedBenefits);
                     }}
-                    placeholder={`e.g., Pain Relief, Better Sleep, Enhanced Cybersecurity`}
+                    placeholder={`e.g., Pain relief, Better sleep, Increased confidence`}
                     className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                   {keyBenefits.length > 1 && (
@@ -186,7 +209,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
                 </div>
               ))}
               <button
-                onClick={() => setKeyBenefits([...keyBenefits, ""])}
+                onClick={addBenefit}
                 className="text-blue-600 hover:text-blue-700 flex items-center"
               >
                 <Plus className="w-4 h-4 mr-1" />
