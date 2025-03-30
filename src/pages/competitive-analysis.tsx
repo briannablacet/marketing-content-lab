@@ -24,6 +24,7 @@ const CompetitiveAnalysisPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const { showNotification } = useNotification();
   const [competitorData, setCompetitorData] = useState<Competitor[]>([]);
+  const [showAnalysisNote, setShowAnalysisNote] = useState(false);
   
   // Create refs for the navigation buttons
   const dashboardButtonRef = useRef<HTMLButtonElement>(null);
@@ -81,6 +82,21 @@ const CompetitiveAnalysisPage = () => {
   // Handler for competitor data changes
   const handleCompetitorDataChange = (data: Competitor[]) => {
     setCompetitorData(data);
+    // We'll check if the data seems to be using fallback values
+    const usedFallback = data.some(comp => 
+      comp.description?.includes("using sample data") || 
+      (comp.strengths.length === 3 && 
+       comp.strengths.includes("Strong brand recognition") && 
+       comp.strengths.includes("Established market presence"))
+    );
+    
+    // Only show the analysis note if we're using fallback data
+    setShowAnalysisNote(usedFallback);
+  };
+
+  // Function to dismiss the analysis note
+  const dismissAnalysisNote = () => {
+    setShowAnalysisNote(false);
   };
 
   // Force navigation with window.location
@@ -119,6 +135,34 @@ const CompetitiveAnalysisPage = () => {
                   isStandalone={true}
                   onDataChange={handleCompetitorDataChange}
                 />
+                
+                {/* Analysis Note - Only shown when using fallback data */}
+                {showAnalysisNote && (
+                  <div className="bg-white rounded-lg border border-red-200 p-4 mt-6 mb-6">
+                    <div className="flex items-start">
+                      <svg 
+                        className="w-5 h-5 text-red-500 mr-3 mt-0.5" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <circle cx="12" cy="12" r="10" strokeWidth="2"></circle>
+                        <path strokeLinecap="round" strokeWidth="2" d="M12 8v4m0 4h.01"></path>
+                      </svg>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-lg">Analysis Note</h3>
+                        <p className="text-red-700">Analysis is currently having issues. Using fallback data instead.</p>
+                      </div>
+                      <button 
+                        onClick={dismissAnalysisNote}
+                        className="text-gray-500 hover:text-red-500"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Custom Bottom Navigation */}
                 <div className="flex justify-between items-center mt-8">

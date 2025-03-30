@@ -34,9 +34,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'generate-content':
         return handleGenerateContent(data, res);
         
+      // Handle analyze-competitors endpoint
+      case 'analyze-competitors':
+        return handleAnalyzeCompetitors(data, res);
+        
       // Other endpoints (from your existing code) would stay unchanged
       case 'content-repurposer':
-      case 'analyze-competitors':
       case 'value-proposition-generator':
       case 'persona-generator':
       case 'generate-keywords':
@@ -63,78 +66,112 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-// Add the missing endpoint handlers
-
-// Handler for generate content endpoint
-async function handleGenerateContent(data: any, res: NextApiResponse) {
+// Add the competitor analysis handler
+async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   try {
     // Validate input
-    if (!data.contentType) {
-      return res.status(400).json({ 
+    if (!data.competitors || !Array.isArray(data.competitors) || data.competitors.length === 0) {
+      return res.status(400).json({
         error: 'Invalid request',
-        message: 'Missing required contentType field for content generation'
+        message: 'Missing or invalid competitors field'
       });
     }
-    
-    // Generate a prompt for content creation
-    const contentPrompt = `You are an expert content creator specializing in creating high-quality ${data.contentType} content.
 
-    Create ${data.contentType} content based on the following parameters:
+    const competitors = data.competitors;
+    const industry = data.industry || 'technology';
+    const userMessages = data.userMessages || [];
+
+    // Process each competitor
+    const processedCompetitors = [];
     
-    ${data.prompt ? `Topic/Prompt: ${data.prompt}` : ''}
-    ${data.sourceContent ? `Source Content to use as reference: ${data.sourceContent}` : ''}
-    ${data.parameters?.audience ? `Target Audience: ${data.parameters.audience}` : 'Target Audience: General audience'}
-    ${data.parameters?.keywords ? `Keywords: ${Array.isArray(data.parameters.keywords) ? data.parameters.keywords.join(', ') : data.parameters.keywords}` : ''}
-    ${data.parameters?.tone ? `Tone: ${data.parameters.tone}` : 'Tone: professional'}
-    ${data.parameters?.additionalNotes ? `Additional Notes: ${data.parameters.additionalNotes}` : ''}
-    
-    Please create comprehensive, engaging content that follows best practices for ${data.contentType}.
-    Format the content in Markdown with appropriate headings, paragraphs, and formatting.
-    Ensure the content is original, valuable, and tailored to the target audience.`;
-    
-    // Call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { 
-          role: 'system', 
-          content: `You are an expert content creator specializing in ${data.contentType}.` 
-        },
-        { 
-          role: 'user', 
-          content: contentPrompt 
+    for (const competitor of competitors) {
+      try {
+        // Skip empty competitors
+        if (!competitor.name.trim()) continue;
+
+        // Create a prompt for analyzing this competitor
+        const prompt = `Analyze the following competitor in the ${industry} industry:
+        
+Company: ${competitor.name}
+
+Please provide a comprehensive analysis of this competitor, including:
+
+1. Their unique positioning and differentiation in the market
+2. Key messaging themes and marketing focus
+3. Apparent strengths based on their public presence
+4. Potential gaps or weaknesses in their positioning
+
+Format your response as a JSON object with these fields:
+{
+  "uniquePositioning": ["point 1", "point 2", ...],
+  "keyThemes": ["theme 1", "theme 2", ...],
+  "gaps": ["gap 1", "gap 2", ...]
+}
+
+Only include information that would be publicly available or reasonably inferred from their market presence.`;
+
+        // Call OpenAI API
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are an expert competitive analyst with deep knowledge of market positioning and messaging strategies.' 
+            },
+            { 
+              role: 'user', 
+              content: prompt 
+            }
+          ],
+          temperature: 0.7,
+        });
+
+        const responseText = completion.choices[0].message?.content || '';
+        
+        try {
+          // Parse the JSON response
+          const parsedResponse = JSON.parse(responseText);
+          
+          // Add to processed competitors
+          processedCompetitors.push({
+            name: competitor.name,
+            uniquePositioning: parsedResponse.uniquePositioning || [],
+            keyThemes: parsedResponse.keyThemes || [],
+            gaps: parsedResponse.gaps || []
+          });
+        } catch (error) {
+          console.error('Failed to parse OpenAI response:', responseText);
+          
+          // Add a basic response structure if parsing fails
+          processedCompetitors.push({
+            name: competitor.name,
+            uniquePositioning: [`Key positioning for ${competitor.name}`],
+            keyThemes: [`Key theme for ${competitor.name}`],
+            gaps: [`Potential gap for ${competitor.name}`]
+          });
         }
-      ],
-      temperature: 0.7,
-    });
-
-    const content = completion.choices[0].message?.content || '';
-    
-    // Create a title from first line or first sentence
-    let title = '';
-    if (content.startsWith('# ')) {
-      // Extract title from markdown heading
-      title = content.split('\n')[0].replace(/^#\s+/, '');
-    } else {
-      // Extract first sentence as title
-      title = content.split('.')[0].trim();
-    }
-    
-    return res.status(200).json({
-      content: content,
-      title: title,
-      metadata: {
-        contentType: data.contentType,
-        description: content.substring(0, 160).replace(/[#*_]/g, ''),
-        keywords: data.parameters?.keywords || ['content', 'marketing'],
-        createdAt: new Date().toISOString()
+      } catch (error) {
+        console.error(`Error processing competitor ${competitor.name}:`, error);
+        
+        // Add a basic response structure if processing fails
+        processedCompetitors.push({
+          name: competitor.name,
+          uniquePositioning: [`Information currently unavailable for ${competitor.name}`],
+          keyThemes: [`Could not analyze messaging for ${competitor.name}`],
+          gaps: [`Analysis unavailable for ${competitor.name}`]
+        });
       }
+    }
+
+    // Return the processed data
+    return res.status(200).json({
+      competitorInsights: processedCompetitors
     });
   } catch (error) {
-    console.error('Error generating content:', error);
+    console.error('Error in competitor analysis:', error);
     return res.status(500).json({ 
       error: 'Server error', 
-      message: 'Failed to generate content' 
+      message: 'Failed to analyze competitors' 
     });
   }
 }
@@ -520,6 +557,80 @@ Return response as JSON with these fields:
     return res.status(500).json({ 
       error: 'Server error', 
       message: 'Failed to enhance text' 
+    });
+  }
+}
+
+// Handler for generate content endpoint
+async function handleGenerateContent(data: any, res: NextApiResponse) {
+  try {
+    // Validate input
+    if (!data.contentType) {
+      return res.status(400).json({ 
+        error: 'Invalid request',
+        message: 'Missing required contentType field for content generation'
+      });
+    }
+    
+    // Generate a prompt for content creation
+    const contentPrompt = `You are an expert content creator specializing in creating high-quality ${data.contentType} content.
+
+    Create ${data.contentType} content based on the following parameters:
+    
+    ${data.prompt ? `Topic/Prompt: ${data.prompt}` : ''}
+    ${data.sourceContent ? `Source Content to use as reference: ${data.sourceContent}` : ''}
+    ${data.parameters?.audience ? `Target Audience: ${data.parameters.audience}` : 'Target Audience: General audience'}
+    ${data.parameters?.keywords ? `Keywords: ${Array.isArray(data.parameters.keywords) ? data.parameters.keywords.join(', ') : data.parameters.keywords}` : ''}
+    ${data.parameters?.tone ? `Tone: ${data.parameters.tone}` : 'Tone: professional'}
+    ${data.parameters?.additionalNotes ? `Additional Notes: ${data.parameters.additionalNotes}` : ''}
+    
+    Please create comprehensive, engaging content that follows best practices for ${data.contentType}.
+    Format the content in Markdown with appropriate headings, paragraphs, and formatting.
+    Ensure the content is original, valuable, and tailored to the target audience.`;
+    
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        { 
+          role: 'system', 
+          content: `You are an expert content creator specializing in ${data.contentType}.` 
+        },
+        { 
+          role: 'user', 
+          content: contentPrompt 
+        }
+      ],
+      temperature: 0.7,
+    });
+
+    const content = completion.choices[0].message?.content || '';
+    
+    // Create a title from first line or first sentence
+    let title = '';
+    if (content.startsWith('# ')) {
+      // Extract title from markdown heading
+      title = content.split('\n')[0].replace(/^#\s+/, '');
+    } else {
+      // Extract first sentence as title
+      title = content.split('.')[0].trim();
+    }
+    
+    return res.status(200).json({
+      content: content,
+      title: title,
+      metadata: {
+        contentType: data.contentType,
+        description: content.substring(0, 160).replace(/[#*_]/g, ''),
+        keywords: data.parameters?.keywords || ['content', 'marketing'],
+        createdAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error generating content:', error);
+    return res.status(500).json({ 
+      error: 'Server error', 
+      message: 'Failed to generate content' 
     });
   }
 }

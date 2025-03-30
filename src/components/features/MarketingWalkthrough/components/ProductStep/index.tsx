@@ -41,7 +41,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
 
   const handleGenerateValueProp = async () => {
     if (!productName || !productType || keyBenefits.filter(b => b.trim()).length === 0) {
-      showNotification('warning', 'Please provide product name, type, and at least one benefit');
+      showNotification('warning', 'Please provide your business name, what you offer, and at least one benefit');
       return;
     }
 
@@ -62,7 +62,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
       
       if (response.ok) {
         const data = await response.json();
-        setValueProposition(data.valueProposition || 'Our platform helps businesses create and execute effective marketing strategies with AI assistance.');
+        setValueProposition(data.valueProposition || 'Our business helps clients achieve their goals through our high-quality services and personalized approach.');
         showNotification('success', 'Generated value proposition based on your inputs');
       } else {
         throw new Error('Failed to generate value proposition');
@@ -72,7 +72,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
       showNotification('error', 'Failed to generate. Using fallback suggestion.');
       
       // Provide a fallback value proposition
-      setValueProposition(`${productName || 'Our solution'} helps ${productType || 'businesses'} achieve better results through streamlined processes and enhanced capabilities.`);
+      setValueProposition(`${productName || 'Our business'} helps clients through ${productType || 'our services'} that deliver real results and exceptional customer experiences.`);
     } finally {
       setIsGenerating(false);
     }
@@ -112,7 +112,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
         }),
       });
       
-      showNotification('success', 'Product information saved successfully!');
+      showNotification('success', 'Business information saved successfully!');
       
       // If in walkthrough mode, proceed to next step
       if (isWalkthrough && onNext) {
@@ -131,34 +131,35 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
     <div className="space-y-6 w-full"> {/* Ensure full width */}
       <Card className="p-6">
         <div className="space-y-6">
-          {/* Product/Service Details */}
+          {/* Changed: Business Name Instead of Product/Service Name */}
           <div>
-            <label className="block font-medium mb-2">What's your product or service called?</label>
+            <label className="block font-medium mb-2">What's the name of your business?</label>
             <input
               type="text"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
-              placeholder="Enter the name of your product or service"
+              placeholder="Enter your business or brand name"
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
+          {/* Changed: What You Offer Instead of Product Type */}
           <div>
-            <label className="block font-medium mb-2">What type of product/service is it?</label>
+            <label className="block font-medium mb-2">What services or products do you offer?</label>
             <input
               type="text"
               value={productType}
               onChange={(e) => setProductType(e.target.value)}
-              placeholder="e.g., SaaS, Consulting Service, Physical Product"
+              placeholder="e.g., Massage Therapy, Software, eCommerce, Coaching, Retail Store"
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
-          {/* Key Benefits */}
+          {/* Key Benefits - Updated wording slightly */}
           <div>
-            <label className="block font-medium mb-2">What are the key benefits?</label>
+            <label className="block font-medium mb-2">What are the main benefits for your clients?</label>
             <p className="text-sm text-gray-600 mb-4">
-              List the main benefits your product/service provides to users
+              List the top benefits your clients or customers receive
             </p>
             <div className="space-y-3">
               {keyBenefits.map((benefit, index) => (
@@ -171,7 +172,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
                       updatedBenefits[index] = e.target.value;
                       setKeyBenefits(updatedBenefits);
                     }}
-                    placeholder={`Benefit ${index + 1}`}
+                    placeholder={`e.g., Pain Relief, Better Sleep, Enhanced Cybersecurity`}
                     className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                   {keyBenefits.length > 1 && (
@@ -194,10 +195,10 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
             </div>
           </div>
 
-          {/* Value Proposition */}
+          {/* Value Proposition - simplified wording */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block font-medium">Value Proposition</label>
+              <label className="block font-medium">Your Unique Value</label>
               <button
                 onClick={handleGenerateValueProp}
                 disabled={isGenerating}
@@ -208,12 +209,12 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
               </button>
             </div>
             <p className="text-sm text-gray-600 mb-4">
-              What makes your solution extraordinary? What unique value do you provide?
+              What makes your business special? Why should customers choose you?
             </p>
             <textarea
               value={valueProposition}
               onChange={(e) => setValueProposition(e.target.value)}
-              placeholder="Enter your value proposition"
+              placeholder="Describe what sets your business apart from others"
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               rows={4}
             />
@@ -240,7 +241,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
                     Saving...
                   </>
                 ) : (
-                  'Save Product Information'
+                  'Save Your Information'
                 )}
               </button>
             </div>
