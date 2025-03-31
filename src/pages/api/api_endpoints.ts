@@ -42,6 +42,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'lookup-keyword-volume':
         return handleKeywordVolumeLookup(data, res);
 
+      case 'generate-content':
+        return handleGenerateContent(data, res);
+      case 'modify-content':
+
+        return handleModifyContent(data, res);
+
       // Other endpoints (from your existing code) would stay unchanged
       case 'content-repurposer':
       case 'value-proposition-generator':
@@ -58,6 +64,163 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             status: 'success'
           }
         });
+        // Handler for content modification through chat
+        async function handleModifyContent(data: any, res: NextApiResponse) {
+          try {
+            // Validate input
+            if (!data.originalContent || !data.userRequest) {
+              return res.status(400).json({
+                error: 'Invalid request',
+                message: 'Missing required fields'
+              });
+            }
+
+            // Extract data
+            const { contentType, originalContent, originalTitle, userRequest, previousMessages } = data;
+
+            // Create a prompt for the AI
+            const prompt = `You are an AI content editor specializing in editing and improving ${contentType || 'content'}.
+    
+Current content title: ${originalTitle || 'Untitled content'}
+
+Current content:
+${originalContent}
+
+User request:
+${userRequest}
+
+Previous conversation for context:
+${previousMessages ? previousMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n') : 'None'}
+
+Please edit the content according to the user's request. Provide the following:
+1. A brief message explaining what changes you've made
+2. The updated content in full with all changes applied
+
+Format your response as JSON:
+{
+  "message": "Brief explanation of changes made",
+  "updatedContent": "Full updated content with all changes applied",
+  "updatedTitle": "Updated title if applicable, otherwise keep original"
+}`;
+
+            // Call OpenAI API
+            const completion = await openai.chat.completions.create({
+              model: 'gpt-4',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are an expert content editor that helps improve content based on user requests.'
+                },
+                {
+                  role: 'user',
+                  content: prompt
+                }
+              ],
+              temperature: 0.7,
+            });
+
+            const responseText = completion.choices[0].message?.content || '';
+
+            try {
+              // Parse the JSON response
+              const parsedResponse = JSON.parse(responseText);
+
+              return res.status(200).json({
+                message: parsedResponse.message || 'Content updated successfully',
+                updatedContent: parsedResponse.updatedContent || originalContent,
+                updatedTitle: parsedResponse.updatedTitle || originalTitle
+              });
+            } catch (error) {
+              console.error('Failed to parse OpenAI response:', responseText);
+
+              // Return a fallback response
+              return res.status(200).json({
+                message: 'I processed your request, but had trouble formatting the response. The content may not be fully updated.',
+                updatedContent: originalContent,
+                updatedTitle: originalTitle
+              });
+            }
+          } catch (error) {
+            console.error('Error modifying content:', error);
+            return res.status(500).json({
+              error: 'Server error',
+              message: 'Failed to modify content'
+            });
+          }
+        }
+        // Add this function to handle content generation
+        async function handleGenerateContent(data: any, res: NextApiResponse) {
+          try {
+            // Validate input
+            if (!data.contentType) {
+              return res.status(400).json({
+                error: 'Invalid request',
+                message: 'Missing required contentType field for content generation'
+              });
+            }
+
+            // Generate a prompt for content creation
+            const contentPrompt = `You are an expert content creator specializing in creating high-quality ${data.contentType} content.
+
+    Create ${data.contentType} content based on the following parameters:
+    
+    ${data.prompt ? `Topic/Prompt: ${data.prompt}` : ''}
+    ${data.sourceContent ? `Source Content to use as reference: ${data.sourceContent}` : ''}
+    ${data.parameters?.audience ? `Target Audience: ${data.parameters.audience}` : 'Target Audience: General audience'}
+    ${data.parameters?.keywords ? `Keywords: ${Array.isArray(data.parameters.keywords) ? data.parameters.keywords.join(', ') : data.parameters.keywords}` : ''}
+    ${data.parameters?.tone ? `Tone: ${data.parameters.tone}` : 'Tone: professional'}
+    ${data.parameters?.additionalNotes ? `Additional Notes: ${data.parameters.additionalNotes}` : ''}
+    
+    Please create comprehensive, engaging content that follows best practices for ${data.contentType}.
+    Format the content in Markdown with appropriate headings, paragraphs, and formatting.
+    Ensure the content is original, valuable, and tailored to the target audience.`;
+
+            // Call OpenAI API
+            const completion = await openai.chat.completions.create({
+              model: 'gpt-4',
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are an expert content creator specializing in ${data.contentType}.`
+                },
+                {
+                  role: 'user',
+                  content: contentPrompt
+                }
+              ],
+              temperature: 0.7,
+            });
+
+            const content = completion.choices[0].message?.content || '';
+
+            // Create a title from first line or first sentence
+            let title = '';
+            if (content.startsWith('# ')) {
+              // Extract title from markdown heading
+              title = content.split('\n')[0].replace(/^#\s+/, '');
+            } else {
+              // Extract first sentence as title
+              title = content.split('.')[0].trim();
+            }
+
+            return res.status(200).json({
+              content: content,
+              title: title,
+              metadata: {
+                contentType: data.contentType,
+                description: content.substring(0, 160).replace(/[#*_]/g, ''),
+                keywords: data.parameters?.keywords || ['content', 'marketing'],
+                createdAt: new Date().toISOString()
+              }
+            });
+          } catch (error) {
+            console.error('Error generating content:', error);
+            return res.status(500).json({
+              error: 'Server error',
+              message: 'Failed to generate content'
+            });
+          }
+        }
 
       default:
         return res.status(400).json({

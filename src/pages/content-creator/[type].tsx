@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import FileHandler from '../../components/shared/FileHandler';
 import KeywordSuggestions from '../../components/shared/KeywordSuggestions';
 import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
+import ContentEditChat from '../../components/features/ContentEditChat';
 import {
   ArrowLeft,
   Sparkles,
@@ -89,6 +90,9 @@ const ContentCreatorPage = () => {
 
   // State for UI guidance
   const [showGuidanceCard, setShowGuidanceCard] = useState(true);
+
+  // State for chat visibility
+  const [showChat, setShowChat] = useState(false);
 
   // Load content type from URL parameter
   useEffect(() => {
@@ -242,6 +246,24 @@ const ContentCreatorPage = () => {
     }
   };
 
+  // Handle content updates from the chat component
+  const handleContentUpdate = (newContent, newTitle) => {
+    setGeneratedContent(newContent);
+    if (newTitle && newTitle !== generatedTitle) {
+      setGeneratedTitle(newTitle);
+    }
+
+    // Update metadata description if the content has changed substantially
+    if (newContent !== generatedContent) {
+      setGeneratedMetadata(prev => ({
+        ...prev,
+        description: newContent.substring(0, 160).replace(/[#*_]/g, '')
+      }));
+    }
+
+    showNotification('success', 'Content updated successfully');
+  };
+
   // Handle exporting content as a file
   const handleExportContent = (format = 'markdown') => {
     if (!generatedContent) {
@@ -348,6 +370,11 @@ const ContentCreatorPage = () => {
       console.error('Error saving to library:', error);
       showNotification('error', 'Failed to save to library');
     }
+  };
+
+  // Toggle chat visibility
+  const handleToggleChat = () => {
+    setShowChat(prevState => !prevState);
   };
 
   // Parse the markdown content for display
@@ -678,6 +705,26 @@ const ContentCreatorPage = () => {
             </CardContent>
           </Card>
 
+          {/* Chat Interface - Toggle Button */}
+          <button
+            onClick={handleToggleChat}
+            className="w-full p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-blue-700 flex items-center justify-center mb-4"
+          >
+            <MessageSquare className="w-5 h-5 mr-2" />
+            {showChat ? 'Hide Content Assistant' : 'Show Content Assistant'}
+            {showChat ? <ChevronDown className="w-4 h-4 ml-2" /> : <ChevronRight className="w-4 h-4 ml-2" />}
+          </button>
+
+          {/* Chat Interface */}
+          {showChat && (
+            <ContentEditChat
+              contentType={contentType?.id || 'blog-post'}
+              generatedContent={generatedContent}
+              generatedTitle={generatedTitle}
+              onContentUpdate={handleContentUpdate}
+            />
+          )}
+
           {/* SEO Metadata (Always Visible) */}
           {generatedMetadata && (
             <div className="mt-4">
@@ -728,7 +775,7 @@ const ContentCreatorPage = () => {
             </button>
 
             <div className="flex flex-wrap gap-3">
-              <div className="relative">
+              <div className="relative group">
                 <button
                   onClick={() => handleExportContent('markdown')}
                   className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
@@ -736,6 +783,26 @@ const ContentCreatorPage = () => {
                   <Download className="w-4 h-4 mr-2" />
                   Download
                 </button>
+                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10 hidden group-hover:block">
+                  <button
+                    onClick={() => handleExportContent('markdown')}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Markdown (.md)
+                  </button>
+                  <button
+                    onClick={() => handleExportContent('html')}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    HTML (.html)
+                  </button>
+                  <button
+                    onClick={() => handleExportContent('text')}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Plain Text (.txt)
+                  </button>
+                </div>
               </div>
 
               <button
