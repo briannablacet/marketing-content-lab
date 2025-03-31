@@ -199,14 +199,14 @@ const Navbar: React.FC = () => {
                         Style Compliance Check
                       </Link>
                       <Link 
-                        href="/writing-style" 
+                        href="/brand-voice" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
                         Brand Voice
                       </Link>
                       <Link 
-                        href="/brand-voice" 
+                        href="/content-humanizer" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >

@@ -1,5 +1,5 @@
 // src/pages/campaign-builder.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ScreenTemplate } from '../components/shared/UIComponents';
 import { PlusCircle, CheckCircle, ChevronRight, Calendar, Target, MessageCircle, Sparkles } from 'lucide-react';
@@ -138,6 +138,9 @@ const CampaignBuilder: React.FC = () => {
   const [campaignTypeInsights, setCampaignTypeInsights] = useState<string[]>([]);
   const [recommendedContentTypes, setRecommendedContentTypes] = useState<string[]>([]);
 
+  // Add this ref to track the newly added input field
+  const newMessageInputRef = useRef<HTMLInputElement>(null);
+
   // Content type selection state
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
 
@@ -147,6 +150,15 @@ const CampaignBuilder: React.FC = () => {
       setSelectedContentTypes([]);
     };
   }, [setSelectedContentTypes]);
+
+  // Add a useEffect to focus on newly added input field
+  useEffect(() => {
+    // Check if the ref is assigned and if it's the last element in the keyMessages array
+    if (newMessageInputRef.current && keyMessages.length > 1) {
+      // Focus on the newly added input field
+      newMessageInputRef.current.focus();
+    }
+  }, [keyMessages.length]); // This effect runs when the length of keyMessages changes
 
   // Handle campaign type selection
   const handleSelectCampaignType = (typeId: string) => {
@@ -164,15 +176,15 @@ const CampaignBuilder: React.FC = () => {
   // Handle goal selection with recommendations
   const handleGoalChange = (goalValue: string) => {
     setCampaignGoal(goalValue);
-    
+
     if (goalValue && GOAL_RECOMMENDATIONS[goalValue]) {
       // Auto-suggest recommended content types (without forcing selection)
       const recommendedTypes = GOAL_RECOMMENDATIONS[goalValue].contentTypes;
       console.log("Recommending content types for goal:", recommendedTypes);
-      
+
       // Update AI insights based on goal
       setGoalInsights(GOAL_RECOMMENDATIONS[goalValue].insights);
-      
+
       // Pre-select recommended channels
       setCampaignChannels(GOAL_RECOMMENDATIONS[goalValue].channels);
     } else {
@@ -183,10 +195,10 @@ const CampaignBuilder: React.FC = () => {
   // Calculate campaign effectiveness score
   const calculateCampaignEffectivenessScore = () => {
     if (!campaignGoal) return 0;
-    
+
     let score = 70; // Base score
     const recommendations = GOAL_RECOMMENDATIONS[campaignGoal];
-    
+
     // Check if recommended content types are selected
     if (recommendations) {
       // +5 points for each recommended content type that's selected
@@ -195,7 +207,7 @@ const CampaignBuilder: React.FC = () => {
           score += 5;
         }
       });
-      
+
       // +3 points for each recommended channel that's selected
       recommendations.channels.forEach(channel => {
         if (campaignChannels.includes(channel)) {
@@ -203,13 +215,13 @@ const CampaignBuilder: React.FC = () => {
         }
       });
     }
-    
+
     // Points for completeness
     if (campaignName.length > 5) score += 2;
     if (targetAudience.length > 10) score += 3;
     if (keyMessages.length >= 3) score += 5;
     if (startDate && endDate) score += 2;
-    
+
     // Cap at 100
     return Math.min(score, 100);
   };
@@ -260,7 +272,7 @@ const CampaignBuilder: React.FC = () => {
       channels: campaignChannels,
       contentTypes: selectedContentTypes
     };
-    
+
     localStorage.setItem('currentCampaign', JSON.stringify(campaignData));
   };
 
@@ -274,17 +286,16 @@ const CampaignBuilder: React.FC = () => {
           <h2 className="text-lg font-bold text-blue-700">Campaign Type</h2>
         </div>
       </div>
-      
+
       {/* Campaign type selection grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {CAMPAIGN_TYPES.map(type => (
           <div
             key={type.id}
-            className={`p-6 cursor-pointer transition-all rounded-lg ${
-              campaignType === type.id
-                ? 'border-2 border-blue-500 shadow-md bg-white' 
+            className={`p-6 cursor-pointer transition-all rounded-lg ${campaignType === type.id
+                ? 'border-2 border-blue-500 shadow-md bg-white'
                 : 'border border-gray-200 hover:border-blue-300 bg-white'
-            }`}
+              }`}
             onClick={() => handleSelectCampaignType(type.id)}
           >
             <div className="flex items-start gap-4">
@@ -301,7 +312,7 @@ const CampaignBuilder: React.FC = () => {
           </div>
         ))}
       </div>
-      
+
       {/* Campaign type-specific recommendations */}
       {campaignType && (
         <div className="mb-8 bg-blue-50 border border-blue-100 rounded-lg p-4">
@@ -309,22 +320,21 @@ const CampaignBuilder: React.FC = () => {
             <Sparkles className="text-blue-600 w-5 h-5 mr-2" />
             <h3 className="text-lg font-medium text-blue-800">AI Campaign Recommendations</h3>
           </div>
-          
+
           <p className="text-blue-800 mb-3">
             {CAMPAIGN_TYPE_RECOMMENDATIONS[campaignType]?.description}
           </p>
-          
+
           <div className="mb-4">
             <h4 className="text-base font-medium text-blue-700 mb-2">Recommended Content Types:</h4>
             <div className="flex flex-wrap gap-2">
               {CAMPAIGN_TYPE_RECOMMENDATIONS[campaignType]?.contentTypes.map(type => (
                 <button
                   key={type}
-                  className={`px-3 py-1.5 rounded-full text-sm ${
-                    selectedContentTypes.includes(type)
+                  className={`px-3 py-1.5 rounded-full text-sm ${selectedContentTypes.includes(type)
                       ? 'bg-blue-600 text-white'
                       : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                  }`}
+                    }`}
                   onClick={() => {
                     if (!selectedContentTypes.includes(type)) {
                       setSelectedContentTypes(prev => [...prev, type]);
@@ -336,7 +346,7 @@ const CampaignBuilder: React.FC = () => {
               ))}
             </div>
           </div>
-          
+
           <div>
             <h4 className="text-base font-medium text-blue-700 mb-2">Campaign Insights:</h4>
             <ul className="space-y-1">
@@ -350,7 +360,7 @@ const CampaignBuilder: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Content Types Section */}
       <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
         <div className="bg-blue-900 h-2"></div>
@@ -358,26 +368,24 @@ const CampaignBuilder: React.FC = () => {
           <h2 className="text-lg font-bold text-blue-700">Content Types</h2>
         </div>
       </div>
-      
+
       {/* Content type selection grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Object.entries(CONTENT_TYPES).map(([type, details]) => (
           <Card
             key={type}
-            className={`p-6 cursor-pointer transition-all ${
-              selectedContentTypes.includes(type)
+            className={`p-6 cursor-pointer transition-all ${selectedContentTypes.includes(type)
                 ? 'border-2 border-blue-500 bg-blue-50 shadow-md'
                 : 'border border-gray-200 hover:border-blue-300'
-            }`}
+              }`}
             onClick={() => toggleContentType(type)}
           >
             <div className="flex justify-between items-start">
               <h3 className="font-semibold mb-2">{type}</h3>
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                selectedContentTypes.includes(type)
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedContentTypes.includes(type)
                   ? 'border-blue-600 bg-blue-600'
                   : 'border-gray-300'
-              }`}>
+                }`}>
                 {selectedContentTypes.includes(type) && (
                   <span className="text-white">✓</span>
                 )}
@@ -392,7 +400,7 @@ const CampaignBuilder: React.FC = () => {
           </Card>
         ))}
       </div>
-      
+
       <div className="flex justify-end mt-8">
         <button
           onClick={() => setStep(2)}
@@ -404,7 +412,7 @@ const CampaignBuilder: React.FC = () => {
       </div>
     </div>
   );
-  
+
   // Step 2: Campaign Details and Messages (Combined)
   const renderCampaignDetailsAndMessages = () => (
     <div className="space-y-6">
@@ -420,13 +428,13 @@ const CampaignBuilder: React.FC = () => {
       <Card className="mb-6 bg-blue-50 border-blue-100">
         <div className="p-6">
           <h3 className="text-lg font-semibold text-blue-800 mb-3">Your Campaign Setup</h3>
-          
+
           <div className="space-y-3">
             <div className="flex">
               <span className="font-medium text-blue-700 w-32">Campaign Type:</span>
               <span className="text-blue-700">{CAMPAIGN_TYPES.find(t => t.id === campaignType)?.name}</span>
             </div>
-            
+
             <div className="flex items-start">
               <span className="font-medium text-blue-700 w-32">Content Types:</span>
               <div className="flex flex-wrap gap-1">
@@ -454,7 +462,7 @@ const CampaignBuilder: React.FC = () => {
               placeholder="Enter a descriptive name for your campaign"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium mb-1">Target Audience</label>
             <textarea
@@ -466,7 +474,7 @@ const CampaignBuilder: React.FC = () => {
           </div>
         </div>
       </Card>
-      
+
       {/* Key Messages Section */}
       <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
         <div className="bg-blue-900 h-2"></div>
@@ -489,6 +497,8 @@ const CampaignBuilder: React.FC = () => {
                     onChange={(e) => updateKeyMessage(index, e.target.value)}
                     className="w-full p-2 border rounded-lg"
                     placeholder={`Key message ${index + 1}`}
+                    // Add ref to the last input element
+                    ref={index === keyMessages.length - 1 ? newMessageInputRef : null}
                   />
                 </div>
               ))}
@@ -524,12 +534,12 @@ const CampaignBuilder: React.FC = () => {
       </div>
     </div>
   );
-  
+
   // Step 3: Content Preview using the ContentPreview component
   const renderContentPreview = () => (
     <ContentPreview />
   );
-  
+
   // Render the current step
   const renderCurrentStep = () => {
     switch (step) {
@@ -548,7 +558,7 @@ const CampaignBuilder: React.FC = () => {
     <>
       {/* Place the StyleGuideNotificationBanner before ScreenTemplate */}
       <StyleGuideNotificationBanner />
-      
+
       <ScreenTemplate
         title="Campaign Builder"
         subtitle="Create coordinated marketing campaigns across multiple channels"

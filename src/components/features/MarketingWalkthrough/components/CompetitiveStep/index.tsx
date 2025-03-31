@@ -1,5 +1,5 @@
 // src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/router';
@@ -43,6 +43,12 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   // Timer for debounce
   const [analyzeTimer, setAnalyzeTimer] = useState<NodeJS.Timeout | null>(null);
 
+  // NEW: Add ref for the newly added competitor input
+  const newCompetitorRef = useRef<HTMLInputElement>(null);
+  
+  // NEW: Track which competitor should be focused
+  const [focusCompetitorIndex, setFocusCompetitorIndex] = useState<number | null>(null);
+
   // Effect to process analysis requests with a debounce
   useEffect(() => {
     if (competitorToAnalyze && competitorToAnalyze.name.trim().length > 2) {
@@ -67,6 +73,15 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     };
   }, [competitorToAnalyze]);
 
+  // NEW: Effect to focus on newly added competitor input
+  useEffect(() => {
+    if (focusCompetitorIndex !== null && newCompetitorRef.current) {
+      newCompetitorRef.current.focus();
+      // Reset focus index after focusing
+      setFocusCompetitorIndex(null);
+    }
+  }, [focusCompetitorIndex]);
+
   // Save competitors to local storage and notify parent component
   useEffect(() => {
     // Only save non-empty competitors
@@ -79,11 +94,15 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     }
   }, [competitors, onDataChange]);
 
+  // UPDATED: Add competitor with focus handling
   const addCompetitor = () => {
     setCompetitors([
       ...competitors,
       { name: '', description: '', knownMessages: [], strengths: [], weaknesses: [] }
     ]);
+    
+    // Set focus on the newly added competitor
+    setFocusCompetitorIndex(competitors.length);
   };
 
   const removeCompetitor = (index: number) => {
@@ -99,61 +118,74 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     setError('');
     setIsAnalyzing(true);
 
-    // Create a timeout promise that rejects after 15 seconds
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timed out')), 15000);
-    });
-
     try {
-      // Create the fetch promise
-      const fetchPromise = (async () => {
-        const requestData = {
-          endpoint: 'analyze-competitors',
-          data: {
-            competitors: [{
-              name,
-              description: '',
-              knownMessages: [],
-              strengths: [],
-              weaknesses: []
-            }],
-            industry: 'technology',
-            userMessages: ['']
-          }
-        };
-
-        const response = await fetch('/api/api_endpoints', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(requestData)
-        });
-
-        // Get the response text first
-        const responseText = await response.text();
-        
-        // Try to parse as JSON
-        try {
-          return JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('JSON parse error:', parseError);
-          console.error('Raw response:', responseText);
-          throw new Error('Invalid response format');
+      const requestData = {
+        endpoint: 'analyze-competitors',
+        data: {
+          competitors: [{
+            name,
+            description: '',
+            knownMessages: [],
+            strengths: [],
+            weaknesses: []
+          }],
+          industry: 'technology',
+          userMessages: ['']
         }
-      })();
+      };
 
-      // Race the fetch against the timeout
-      const data = await Promise.race([fetchPromise, timeoutPromise]);
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
 
-      // If we got this far, the API call completed successfully
-      if (!data || !data.competitorInsights || !Array.isArray(data.competitorInsights)) {
-        throw new Error('Invalid data format received from API');
+      const responseText = await response.text();
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        setError('Sorry, we encountered an error. Please try again in a moment.');
+        return;
       }
 
-      if (!data.competitorInsights[0]) {
-        throw new Error('No competitor insights available');
+      if (response.status === 500) {
+        console.error('Server error:', data);
+        setCompetitors(prev => prev.map((comp, i) => 
+          i === index ? {
+            ...comp,
+            isLoading: false,
+            description: "We're having trouble analyzing this competitor right now.",
+            knownMessages: ["Please try again in a moment"],
+            strengths: [],
+            weaknesses: []
+          } : comp
+        ));
+        return;
+      }
+
+      if (!response.ok) {
+        setError(data.message || 'Unable to analyze competitor. Please try again.');
+        return;
+      }
+
+      if (!data.competitorInsights?.[0]) {
+        setCompetitors(prev => prev.map((comp, i) => 
+          i === index ? {
+            ...comp,
+            isLoading: false,
+            description: "Limited information available for this competitor.",
+            knownMessages: ["No key messages found"],
+            strengths: ["Information not available"],
+            weaknesses: ["Information not available"]
+          } : comp
+        ));
+        return;
       }
 
       const competitorInsight = data.competitorInsights[0];
@@ -164,10 +196,19 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
                         competitorInsight.gaps?.length > 0;
 
       if (!hasContent) {
-        throw new Error('No meaningful competitor data found');
+        setCompetitors(prev => prev.map((comp, i) => 
+          i === index ? {
+            ...comp,
+            isLoading: false,
+            description: "We couldn't find detailed information about this competitor.",
+            knownMessages: ["Try entering a more specific company name"],
+            strengths: ["Information not available"],
+            weaknesses: ["Information not available"]
+          } : comp
+        ));
+        return;
       }
 
-      // Update the competitor with the real data
       setCompetitors(prev => prev.map((comp, i) => 
         i === index ? {
           ...comp,
@@ -182,23 +223,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       showNotification('success', `Analysis for ${name} completed`);
     } catch (err) {
       console.error('Error in handleAnalyzeCompetitor:', err);
-      
-      // Show the error in the error display area without filling in any fake data
-      setError('Analysis is currently having issues. Please try again later.');
-      
-      // Reset the competitor to have empty fields
-      setCompetitors(prev => prev.map((comp, i) => 
-        i === index ? {
-          ...comp,
-          isLoading: false,
-          description: '',
-          knownMessages: [],
-          strengths: [],
-          weaknesses: []
-        } : comp
-      ));
-      
-      showNotification('error', 'Unable to analyze competitor at this time');
+      setError('Failed to analyze competitor. Please try again.');
     } finally {
       setCompetitors(prev => prev.map((comp, i) => 
         i === index ? { ...comp, isLoading: false } : comp
@@ -250,25 +275,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         </div>
       </Card>
 
-      {/* Error Message */}
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <div className="flex items-center gap-3 p-4">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <div className="flex-1">
-              <h4 className="font-medium text-red-900">Analysis Error</h4>
-              <p className="text-red-700 text-sm mt-1">{error}</p>
-              <button
-                onClick={() => setError('')}
-                className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </Card>
-      )}
-      
       {/* Competitor Cards */}
       {competitors.map((competitor, index) => (
         <Card key={index} className="p-6">
@@ -277,6 +283,8 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <input
+                  // NEW: Add ref to the most recently added competitor
+                  ref={index === competitors.length - 1 ? newCompetitorRef : null}
                   type="text"
                   value={competitor.name}
                   onChange={(e) => handleNameChange(index, e.target.value)}
@@ -369,6 +377,25 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         Add Another Competitor
       </button>
 
+      {/* Error Display */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <div className="flex items-center gap-3 p-4">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-medium text-red-900">Analysis Error</h4>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+              <button
+                onClick={() => setError('')}
+                className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
+      
       {/* Save button for standalone version - but not when used in the competitive-analysis page */}
       {!isWalkthrough && !isStandalone && (
         <div className="flex justify-end mt-6 space-x-4">
