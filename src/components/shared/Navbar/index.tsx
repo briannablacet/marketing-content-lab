@@ -10,13 +10,13 @@ const Navbar: React.FC = () => {
   const [strategicMenuOpen, setStrategicMenuOpen] = useState(false);
   const [creationMenuOpen, setCreationMenuOpen] = useState(false);
   const [enhancementMenuOpen, setEnhancementMenuOpen] = useState(false);
-  
+
   const strategicMenuRef = useRef<HTMLDivElement>(null);
   const creationMenuRef = useRef<HTMLDivElement>(null);
   const enhancementMenuRef = useRef<HTMLDivElement>(null);
-  
+
   const isInWalkthrough = router.pathname.includes('/walkthrough/');
-  
+
   // Close menus when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -30,18 +30,18 @@ const Navbar: React.FC = () => {
         setEnhancementMenuOpen(false);
       }
     }
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  
+
   const handleExitWalkthrough = () => {
     const confirmExit = window.confirm(
       'Are you sure you want to exit the walkthrough? Your progress will be saved.'
     );
-    
+
     if (confirmExit) {
       router.push('/');
     }
@@ -55,7 +55,7 @@ const Navbar: React.FC = () => {
             <Link href="/" className="flex-shrink-0 flex items-center">
               <span className="text-xl font-bold text-blue-600">Marketing Content Lab</span>
             </Link>
-            
+
             {/* Main navigation links */}
             <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
               {/* Strategic Tools Dropdown */}
@@ -66,34 +66,33 @@ const Navbar: React.FC = () => {
                     setCreationMenuOpen(false);
                     setEnhancementMenuOpen(false);
                   }}
-                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                    strategicMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                  }`}
+                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${strategicMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                    }`}
                 >
                   <BarChart2 className="w-4 h-4 mr-1" />
-                 Strategize
+                  Strategize
                   <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${strategicMenuOpen ? 'transform rotate-180' : ''}`} />
                 </button>
-                
+
                 {strategicMenuOpen && (
                   <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                     <div className="py-1" role="menu" aria-orientation="vertical">
-                      <Link 
-                        href="/product" 
+                      <Link
+                        href="/product"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
                         Product Definition
                       </Link>
-                      <Link 
-                        href="/key-messages" 
+                      <Link
+                        href="/key-messages"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
                         Key Messaging
                       </Link>
-                      <Link 
-                        href="/competitive-analysis" 
+                      <Link
+                        href="/competitive-analysis"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
@@ -103,7 +102,7 @@ const Navbar: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               {/* Content Creation Dropdown */}
               <div className="relative" ref={creationMenuRef}>
                 <button
@@ -112,48 +111,47 @@ const Navbar: React.FC = () => {
                     setStrategicMenuOpen(false);
                     setEnhancementMenuOpen(false);
                   }}
-                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                    creationMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                  }`}
+                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${creationMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                    }`}
                 >
                   <Edit className="w-4 h-4 mr-1" />
-                 Create
+                  Create
                   <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${creationMenuOpen ? 'transform rotate-180' : ''}`} />
                 </button>
-                
+
                 {creationMenuOpen && (
                   <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                     <div className="py-1" role="menu" aria-orientation="vertical">
-                      <Link 
-                        href="/creation-hub" 
+                      <Link
+                        href="/creation-hub"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setCreationMenuOpen(false)}
                       >
                         Creation Hub
                       </Link>
-                      <Link 
-                        href="/content-creator-tools" 
+                      <Link
+                        href="/content-creator-tools"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setCreationMenuOpen(false)}
                       >
                         Content Creator
                       </Link>
-                      <Link 
-                        href="/content-repurposer" 
+                      <Link
+                        href="/content-repurposer"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setCreationMenuOpen(false)}
                       >
                         Content Repurposer
                       </Link>
-                      <Link 
-                        href="/campaign-builder" 
+                      <Link
+                        href="/campaign-builder"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setCreationMenuOpen(false)}
                       >
                         Campaign Builder
                       </Link>
-                      <Link 
-                        href="/ab-testing" 
+                      <Link
+                        href="/ab-testing"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setCreationMenuOpen(false)}
                       >
@@ -163,7 +161,7 @@ const Navbar: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               {/* Content Enhancement Dropdown */}
               <div className="relative" ref={enhancementMenuRef}>
                 <button
@@ -172,79 +170,71 @@ const Navbar: React.FC = () => {
                     setStrategicMenuOpen(false);
                     setCreationMenuOpen(false);
                   }}
-                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                    enhancementMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                  }`}
+                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${enhancementMenuOpen ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                    }`}
                 >
                   <Sparkles className="w-4 h-4 mr-1" />
-               Enhance
+                  Enhance
                   <ChevronDown className={`ml-1 w-4 h-4 transition-transform ${enhancementMenuOpen ? 'transform rotate-180' : ''}`} />
                 </button>
-                
+
                 {enhancementMenuOpen && (
                   <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                     <div className="py-1" role="menu" aria-orientation="vertical">
-                      <Link 
-                        href="/prose-perfector" 
+                      <Link
+                        href="/prose-perfector"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
                         Prose Perfector
                       </Link>
-                      <Link 
-                        href="/style-checker" 
+                      <Link
+                        href="/style-checker"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
                         Style Compliance Check
                       </Link>
-                      <Link 
-                        href="/brand-voice" 
+                      <Link
+                        href="/brand-voice"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
                         Brand Voice
                       </Link>
-                      <Link 
-                        href="/content-humanizer" 
+                      <Link
+                        href="/content-humanizer"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setEnhancementMenuOpen(false)}
                       >
                         Content Humanizer
                       </Link>
-                      <Link 
-                        href="/seo-keywords" 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setEnhancementMenuOpen(false)}
-                      >
-                        SEO Keywords
-                      </Link>
+
                     </div>
                   </div>
                 )}
               </div>
-            
-                  <Link 
-                    href="/templates" 
-                    className="flex itemscenter px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
-                      >
-                 <FileText className="w-5 h-5 mr-2" />
-                    <span>Templates</span>
-                  </Link>
-                  <Link 
-                href="/settings" 
-                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                  router.pathname === '/settings' ? 
-                  'bg-blue-100 text-blue-700' : 
-                  'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                }`}
+
+              <Link
+                href="/templates"
+                className="flex itemscenter px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                <FileText className="w-5 h-5 mr-2" />
+                <span>Templates</span>
+              </Link>
+              <Link
+                href="/settings"
+                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${router.pathname === '/settings' ?
+                    'bg-blue-100 text-blue-700' :
+                    'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  }`}
               >
                 <Settings className="w-4 h-4 mr-1" />
                 Settings
               </Link>
             </nav>
           </div>
-          
+
           {/* Right side buttons */}
           <div className="flex items-center">
             {isInWalkthrough ? (

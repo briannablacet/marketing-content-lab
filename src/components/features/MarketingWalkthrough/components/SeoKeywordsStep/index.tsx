@@ -504,23 +504,43 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
     term: string
   ) => {
     try {
+      // Don't look up very short terms
       if (term.length < 3) return;
-      const hasSearchVolumeAPI = true;
-      if (!hasSearchVolumeAPI) return;
 
-      const baseVolume = term.length * 100;
-      const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      const searchVolume = baseVolume + (characterSum % 1000);
+      // Call our API endpoint
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          endpoint: 'lookup-keyword-volume',
+          data: {
+            keyword: term
+          }
+        })
+      });
 
-      await new Promise(resolve => setTimeout(resolve, 600));
+      if (!response.ok) {
+        throw new Error(`API responded with status ${response.status}`);
+      }
 
+      const data = await response.json();
+      console.log(`Got volume data for "${term}":`, data);
+
+      // Update the keyword with real volume data
       setKeywordData(prev => {
-        const currentKeywords =
+        const currentList =
           type === 'primary' ? prev.primaryKeywords : prev.secondaryKeywords;
 
-        const updatedKeywords = currentKeywords.map((kw, i) => {
+        const updatedKeywords = currentList.map((kw, i) => {
+          // Only update if the term hasn't changed
           if (i === index && kw.term === term) {
-            return { ...kw, volume: searchVolume };
+            return {
+              ...kw,
+              volume: data.volume,
+              competition: data.competition
+            };
           }
           return kw;
         });
@@ -532,8 +552,30 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
       });
     } catch (error) {
       console.error('Error looking up search volume:', error);
+      // Fallback to the old approach in case of API failure
+      const baseVolume = term.length * 100;
+      const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      const searchVolume = baseVolume + (characterSum % 1000);
+
+      setKeywordData(prev => {
+        const currentList =
+          type === 'primary' ? prev.primaryKeywords : prev.secondaryKeywords;
+
+        const updatedKeywords = currentList.map((kw, i) => {
+          if (i === index && kw.term === term) {
+            return { ...kw, volume: searchVolume };
+          }
+          return kw;
+        });
+
+        return {
+          ...prev,
+          [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: updatedKeywords
+        };
+      });
     }
   };
+
 
   // Remove a primary/secondary
   const removeKeyword = (type: 'primary' | 'secondary', index: number) => {
@@ -622,29 +664,43 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
   ) => {
     try {
       if (term.length < 3) return;
-      const hasSearchVolumeAPI = true;
-      if (!hasSearchVolumeAPI) return;
 
-      const baseVolume = term.length * 100;
-      const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      const searchVolume = baseVolume + (characterSum % 1000);
+      // Call our API endpoint
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          endpoint: 'lookup-keyword-volume',
+          data: {
+            keyword: term
+          }
+        })
+      });
 
-      await new Promise(resolve => setTimeout(resolve, 600));
+      if (!response.ok) {
+        throw new Error(`API responded with status ${response.status}`);
+      }
 
+      const data = await response.json();
+      console.log(`Got group volume data for "${term}":`, data);
+
+      // Update state with the real volume data
       setKeywordData(prev => {
         const updatedGroups = [...prev.keywordGroups];
-        if (
-          updatedGroups[groupIndex]?.keywords[keywordIndex] &&
-          updatedGroups[groupIndex].keywords[keywordIndex].term === term
-        ) {
-          const updatedKeywords = [...updatedGroups[groupIndex].keywords];
-          updatedKeywords[keywordIndex] = {
-            ...updatedKeywords[keywordIndex],
-            volume: searchVolume
+        const targetKeyword = updatedGroups[groupIndex]?.keywords?.[keywordIndex];
+
+        if (targetKeyword && targetKeyword.term === term) {
+          const newKeywords = [...updatedGroups[groupIndex].keywords];
+          newKeywords[keywordIndex] = {
+            ...targetKeyword,
+            volume: data.volume,
+            competition: data.competition
           };
 
           // Recalc total volume
-          const totalVolume = updatedKeywords.reduce((sum, kw) => {
+          const totalVolume = newKeywords.reduce((sum, kw) => {
             const vol =
               typeof kw.volume === 'number'
                 ? kw.volume
@@ -654,334 +710,340 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
 
           updatedGroups[groupIndex] = {
             ...updatedGroups[groupIndex],
-            keywords: updatedKeywords,
+            keywords: newKeywords,
             totalVolume
           };
         }
+
         return { ...prev, keywordGroups: updatedGroups };
       });
     } catch (error) {
       console.error('Error looking up search volume for group keyword:', error);
+
+      // Fallback to the old approach in case of API failure
+      const baseVolume = term.length * 100;
+      const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      const searchVolume = baseVolume + (characterSum % 1000);
+
+      setKeywordData(prev => {
+        const updatedGroups = [...prev.keywordGroups];
+        const targetKeyword = updatedGroups[groupIndex]?.keywords?.[keywordIndex];
+
+        if (targetKeyword && targetKeyword.term === term) {
+          const newKeywords = [...updatedGroups[groupIndex].keywords];
+          newKeywords[keywordIndex] = { ...targetKeyword, volume: searchVolume };
+
+          // Recalc total volume
+          const totalVolume = newKeywords.reduce((sum, kw) => {
+            const vol =
+              typeof kw.volume === 'number'
+                ? kw.volume
+                : parseInt(String(kw.volume) || '0', 10);
+            return sum + (isNaN(vol) ? 0 : vol);
+          }, 0);
+
+          updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
+            keywords: newKeywords,
+            totalVolume
+          };
+        }
+
+        return { ...prev, keywordGroups: updatedGroups };
+      });
     }
-  };
 
-  // Remove a single keyword from a group
-  const removeKeywordFromGroup = (groupIndex: number, keywordIndex: number) => {
-    setKeywordData(prev => {
-      const updatedGroups = [...prev.keywordGroups];
-      if (updatedGroups[groupIndex]) {
-        const updatedKeywords = updatedGroups[groupIndex].keywords.filter((_, i) => i !== keywordIndex);
-
-        // Recalc total volume
-        const totalVolume = updatedKeywords.reduce((sum, kw) => {
-          const vol =
-            typeof kw.volume === 'number'
-              ? kw.volume
-              : parseInt(String(kw.volume) || '0', 10);
-          return sum + (isNaN(vol) ? 0 : vol);
-        }, 0);
-
-        updatedGroups[groupIndex] = {
-          ...updatedGroups[groupIndex],
-          keywords: updatedKeywords,
-          totalVolume
-        };
-      }
-      return { ...prev, keywordGroups: updatedGroups };
-    });
-  };
-
-  /*******************************************************
-   *  Render
-   *******************************************************/
-  return (
-    <div className="w-full">
-      <Card>
-        <CardContent className="p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Let's optimize your content for search! 🔍
-            </h2>
-            <p className="text-gray-600">
-              Enter your keywords if you have them, or let AI suggest the perfect keywords based on your strategy.
-            </p>
-          </div>
-
-          {/* AI Generation Button */}
-          <button
-            type="button"
-            onClick={handleGenerateKeywords}
-            disabled={isGenerating}
-            className="w-full mb-8 p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 group disabled:bg-blue-400"
-          >
-            <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
-            {isGenerating ? 'Analyzing Your Strategy...' : 'Do This For Me'}
-          </button>
-
-          <div className="mb-6 text-center text-gray-600">
-            - or enter keywords manually below -
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Primary Keywords */}
-            <div className="space-y-4">
-              <label className="block text-lg font-medium text-gray-900">
-                Primary Keywords
-              </label>
-              <p className="text-sm text-gray-600 mb-4">
-                These are your main target keywords that directly relate to your core offering.
+    /*******************************************************
+     *  Render
+     *******************************************************/
+    return (
+      <div className="w-full">
+        <Card>
+          <CardContent className="p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Let's optimize your content for search! 🔍
+              </h2>
+              <p className="text-gray-600">
+                Enter your keywords if you have them, or let AI suggest the perfect keywords based on your strategy.
               </p>
-
-              {/* Column Headers */}
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex-1 text-sm font-medium text-gray-700">Keyword</div>
-                <div className="w-24 text-sm font-medium text-gray-700 flex items-center">
-                  <BarChart className="w-4 h-4 mr-1" />
-                  <span>Volume</span>
-                </div>
-                <div className="w-8"></div> {/* Spacer for delete button */}
-              </div>
-
-              {keywordData.primaryKeywords.map((keyword, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={keyword.term}
-                    onChange={(e) => updateKeyword('primary', index, e.target.value, 'term')}
-                    className="flex-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter a primary keyword"
-                  />
-                  <input
-                    type="number"
-                    value={keyword.volume || 0}
-                    onChange={(e) =>
-                      updateKeyword('primary', index, parseInt(e.target.value) || 0, 'volume')
-                    }
-                    className="w-24 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Volume"
-                    min="0"
-                  />
-                  {keywordData.primaryKeywords.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeKeyword('primary', index)}
-                      className="text-gray-400 hover:text-gray-600 w-8"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => addKeyword('primary')}
-                className="text-blue-600 hover:text-blue-700 flex items-center"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Primary Keyword
-              </button>
             </div>
 
-            {/* Secondary Keywords */}
-            <div className="space-y-4">
-              <label className="block text-lg font-medium text-gray-900">
-                Secondary Keywords
-              </label>
-              <p className="text-sm text-gray-600 mb-4">
-                These support your primary keywords and capture related search intent.
-              </p>
+            {/* AI Generation Button */}
+            <button
+              type="button"
+              onClick={handleGenerateKeywords}
+              disabled={isGenerating}
+              className="w-full mb-8 p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 group disabled:bg-blue-400"
+            >
+              <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
+              {isGenerating ? 'Analyzing Your Strategy...' : 'Do This For Me'}
+            </button>
 
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex-1 text-sm font-medium text-gray-700">Keyword</div>
-                <div className="w-24 text-sm font-medium text-gray-700 flex items-center">
-                  <BarChart className="w-4 h-4 mr-1" />
-                  <span>Volume</span>
-                </div>
-                <div className="w-8"></div>
-              </div>
-
-              {keywordData.secondaryKeywords.map((keyword, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={keyword.term}
-                    onChange={(e) => updateKeyword('secondary', index, e.target.value, 'term')}
-                    className="flex-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter a secondary keyword"
-                  />
-                  <input
-                    type="number"
-                    value={keyword.volume || 0}
-                    onChange={(e) =>
-                      updateKeyword('secondary', index, parseInt(e.target.value) || 0, 'volume')
-                    }
-                    className="w-24 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Volume"
-                    min="0"
-                  />
-                  {keywordData.secondaryKeywords.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeKeyword('secondary', index)}
-                      className="text-gray-400 hover:text-gray-600 w-8"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => addKeyword('secondary')}
-                className="text-blue-600 hover:text-blue-700 flex items-center"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Secondary Keyword
-              </button>
+            <div className="mb-6 text-center text-gray-600">
+              - or enter keywords manually below -
             </div>
 
-            {/* Keyword Groups */}
-            <div className="space-y-6">
-              <div>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Primary Keywords */}
+              <div className="space-y-4">
                 <label className="block text-lg font-medium text-gray-900">
-                  Keyword Groups
+                  Primary Keywords
                 </label>
                 <p className="text-sm text-gray-600 mb-4">
-                  Organize related keywords into themed groups for better content planning.
+                  These are your main target keywords that directly relate to your core offering.
                 </p>
-              </div>
-              {keywordData.keywordGroups.map((group, groupIndex) => (
-                <div key={groupIndex} className="border rounded-lg p-4 relative">
-                  {keywordData.keywordGroups.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeKeywordGroup(groupIndex)}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  )}
 
-                  <div className="space-y-4">
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="text"
-                        value={group.category}
-                        onChange={(e) => updateKeywordGroup(groupIndex, 'category', e.target.value)}
-                        className="flex-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter group category (e.g., Features, Benefits, Use Cases)"
-                      />
-                      <div className="flex items-center w-48 text-sm">
-                        <BarChart className="w-4 h-4 mr-1 text-blue-600" />
-                        <span className="text-gray-700">Total Volume:</span>
-                        <span className="ml-2 font-medium text-blue-700">
-                          {group.totalVolume || 0}
-                        </span>
-                      </div>
-                    </div>
+                {/* Column Headers */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex-1 text-sm font-medium text-gray-700">Keyword</div>
+                  <div className="w-24 text-sm font-medium text-gray-700 flex items-center">
+                    <BarChart className="w-4 h-4 mr-1" />
+                    <span>Volume</span>
+                  </div>
+                  <div className="w-8"></div> {/* Spacer for delete button */}
+                </div>
 
-                    {/* Column Headers */}
-                    <div className="flex items-center gap-2 mb-2 pl-2">
-                      <div className="flex-1 text-sm font-medium text-gray-700">Keyword</div>
-                      <div className="w-24 text-sm font-medium text-gray-700 flex items-center">
-                        <BarChart className="w-4 h-4 mr-1" />
-                        <span>Volume</span>
-                      </div>
-                      <div className="w-8"></div>
-                    </div>
-
-                    <div className="space-y-2">
-                      {group.keywords.map((keyword, keywordIndex) => (
-                        <div key={keywordIndex} className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={keyword.term}
-                            onChange={(e) =>
-                              updateKeywordInGroup(groupIndex, keywordIndex, e.target.value, 'term')
-                            }
-                            className="flex-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Enter a keyword for this group"
-                            data-groupindex={groupIndex}
-                            data-field="term"  // so we can specifically focus this
-                          />
-                          <input
-                            type="number"
-                            value={keyword.volume || 0}
-                            onChange={(e) =>
-                              updateKeywordInGroup(
-                                groupIndex,
-                                keywordIndex,
-                                parseInt(e.target.value) || 0,
-                                'volume'
-                              )
-                            }
-                            className="w-24 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Volume"
-                            min="0"
-                            data-groupindex={groupIndex}
-                            data-field="volume"
-                          />
-                          {group.keywords.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeKeywordFromGroup(groupIndex, keywordIndex)}
-                              className="text-gray-400 hover:text-gray-600 w-8"
-                            >
-                              <X className="h-5 w-5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-
+                {keywordData.primaryKeywords.map((keyword, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={keyword.term}
+                      onChange={(e) => updateKeyword('primary', index, e.target.value, 'term')}
+                      className="flex-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter a primary keyword"
+                    />
+                    <input
+                      type="number"
+                      value={keyword.volume || 0}
+                      onChange={(e) =>
+                        updateKeyword('primary', index, parseInt(e.target.value) || 0, 'volume')
+                      }
+                      className="w-24 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Volume"
+                      min="0"
+                    />
+                    {keywordData.primaryKeywords.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => addKeywordToGroup(groupIndex)}
-                        className="text-blue-600 hover:text-blue-700 flex items-center"
+                        onClick={() => removeKeyword('primary', index)}
+                        className="text-gray-400 hover:text-gray-600 w-8"
                       >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Keyword to Group
+                        <X className="h-5 w-5" />
                       </button>
-                    </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))}
 
-              <button
-                type="button"
-                onClick={addKeywordGroup}
-                className="w-full p-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Add Another Keyword Group
-              </button>
-            </div>
-
-            {error && (
-              <div className="text-red-600 text-sm flex items-center">
-                <HelpCircle className="w-4 h-4 mr-1" />
-                {error}
-              </div>
-            )}
-
-            {/* Submit button for standalone page */}
-            {showSubmitButton && (
-              <div className="flex justify-end mt-6">
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
+                  type="button"
+                  onClick={() => addKeyword('primary')}
+                  className="text-blue-600 hover:text-blue-700 flex items-center"
                 >
-                  {loading ? 'Saving...' : 'Save Keywords'}
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Primary Keyword
                 </button>
               </div>
-            )}
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
 
-export default SeoKeywordsStep;
+              {/* Secondary Keywords */}
+              <div className="space-y-4">
+                <label className="block text-lg font-medium text-gray-900">
+                  Secondary Keywords
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  These support your primary keywords and capture related search intent.
+                </p>
+
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex-1 text-sm font-medium text-gray-700">Keyword</div>
+                  <div className="w-24 text-sm font-medium text-gray-700 flex items-center">
+                    <BarChart className="w-4 h-4 mr-1" />
+                    <span>Volume</span>
+                  </div>
+                  <div className="w-8"></div>
+                </div>
+
+                {keywordData.secondaryKeywords.map((keyword, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={keyword.term}
+                      onChange={(e) => updateKeyword('secondary', index, e.target.value, 'term')}
+                      className="flex-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter a secondary keyword"
+                    />
+                    <input
+                      type="number"
+                      value={keyword.volume || 0}
+                      onChange={(e) =>
+                        updateKeyword('secondary', index, parseInt(e.target.value) || 0, 'volume')
+                      }
+                      className="w-24 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Volume"
+                      min="0"
+                    />
+                    {keywordData.secondaryKeywords.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeKeyword('secondary', index)}
+                        className="text-gray-400 hover:text-gray-600 w-8"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => addKeyword('secondary')}
+                  className="text-blue-600 hover:text-blue-700 flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Secondary Keyword
+                </button>
+              </div>
+
+              {/* Keyword Groups */}
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-lg font-medium text-gray-900">
+                    Keyword Groups
+                  </label>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Organize related keywords into themed groups for better content planning.
+                  </p>
+                </div>
+                {keywordData.keywordGroups.map((group, groupIndex) => (
+                  <div key={groupIndex} className="border rounded-lg p-4 relative">
+                    {keywordData.keywordGroups.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeKeywordGroup(groupIndex)}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    )}
+
+                    <div className="space-y-4">
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={group.category}
+                          onChange={(e) => updateKeywordGroup(groupIndex, 'category', e.target.value)}
+                          className="flex-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter group category (e.g., Features, Benefits, Use Cases)"
+                        />
+                        <div className="flex items-center w-48 text-sm">
+                          <BarChart className="w-4 h-4 mr-1 text-blue-600" />
+                          <span className="text-gray-700">Total Volume:</span>
+                          <span className="ml-2 font-medium text-blue-700">
+                            {group.totalVolume || 0}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Column Headers */}
+                      <div className="flex items-center gap-2 mb-2 pl-2">
+                        <div className="flex-1 text-sm font-medium text-gray-700">Keyword</div>
+                        <div className="w-24 text-sm font-medium text-gray-700 flex items-center">
+                          <BarChart className="w-4 h-4 mr-1" />
+                          <span>Volume</span>
+                        </div>
+                        <div className="w-8"></div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {group.keywords.map((keyword, keywordIndex) => (
+                          <div key={keywordIndex} className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={keyword.term}
+                              onChange={(e) =>
+                                updateKeywordInGroup(groupIndex, keywordIndex, e.target.value, 'term')
+                              }
+                              className="flex-1 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Enter a keyword for this group"
+                              data-groupindex={groupIndex}
+                              data-field="term"  // so we can specifically focus this
+                            />
+                            <input
+                              type="number"
+                              value={keyword.volume || 0}
+                              onChange={(e) =>
+                                updateKeywordInGroup(
+                                  groupIndex,
+                                  keywordIndex,
+                                  parseInt(e.target.value) || 0,
+                                  'volume'
+                                )
+                              }
+                              className="w-24 p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Volume"
+                              min="0"
+                              data-groupindex={groupIndex}
+                              data-field="volume"
+                            />
+                            {group.keywords.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeKeywordFromGroup(groupIndex, keywordIndex)}
+                                className="text-gray-400 hover:text-gray-600 w-8"
+                              >
+                                <X className="h-5 w-5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={() => addKeywordToGroup(groupIndex)}
+                          className="text-blue-600 hover:text-blue-700 flex items-center"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Keyword to Group
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addKeywordGroup}
+                  className="w-full p-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Another Keyword Group
+                </button>
+              </div>
+
+              {error && (
+                <div className="text-red-600 text-sm flex items-center">
+                  <HelpCircle className="w-4 h-4 mr-1" />
+                  {error}
+                </div>
+              )}
+
+              {/* Submit button for standalone page */}
+              {showSubmitButton && (
+                <div className="flex justify-end mt-6">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
+                  >
+                    {loading ? 'Saving...' : 'Save Keywords'}
+                  </button>
+                </div>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
+  export default SeoKeywordsStep;

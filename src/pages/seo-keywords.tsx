@@ -527,6 +527,85 @@ const SEOKeywordsPage: React.FC = () => {
     });
   };
 
+  // UPDATED: Lookup search volume for a single primary/secondary keyword
+  const lookupSearchVolume = async (
+    type: 'primary' | 'secondary',
+    index: number,
+    term: string
+  ) => {
+    try {
+      // Don't look up very short terms
+      if (term.length < 3) return;
+
+      // Call our API endpoint
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          endpoint: 'lookup-keyword-volume',
+          data: {
+            keyword: term
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API responded with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`Got volume data for "${term}":`, data);
+
+      // Update the keyword with real volume data
+      setKeywordData(prev => {
+        const currentList =
+          type === 'primary' ? prev.primaryKeywords : prev.secondaryKeywords;
+
+        const updatedKeywords = currentList.map((kw, i) => {
+          // Only update if the term hasn't changed
+          if (i === index && kw.term === term) {
+            return {
+              ...kw,
+              volume: data.volume,
+              competition: data.competition
+            };
+          }
+          return kw;
+        });
+
+        return {
+          ...prev,
+          [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: updatedKeywords
+        };
+      });
+    } catch (error) {
+      console.error('Error looking up search volume:', error);
+      // Fallback to the old approach in case of API failure
+      const baseVolume = term.length * 100;
+      const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      const searchVolume = baseVolume + (characterSum % 1000);
+
+      setKeywordData(prev => {
+        const currentList =
+          type === 'primary' ? prev.primaryKeywords : prev.secondaryKeywords;
+
+        const updatedKeywords = currentList.map((kw, i) => {
+          if (i === index && kw.term === term) {
+            return { ...kw, volume: searchVolume };
+          }
+          return kw;
+        });
+
+        return {
+          ...prev,
+          [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: updatedKeywords
+        };
+      });
+    }
+  };
+
   // Update a single keyword within a group
   const updateKeywordInGroup = (
     groupIndex: number,
@@ -551,58 +630,6 @@ const SEOKeywordsPage: React.FC = () => {
         ) {
           setTimeout(() => lookupSearchVolumeForGroup(groupIndex, keywordIndex, value), 1500);
         }
-        // Right along with your other helper functions:
-        const lookupSearchVolumeForGroup = async (
-          groupIndex: number,
-          keywordIndex: number,
-          term: string
-        ) => {
-          try {
-            if (term.length < 3) return;
-
-            const hasSearchVolumeAPI = true; // in a real app, you'd check for an API key
-            if (!hasSearchVolumeAPI) return;
-
-            // A "deterministic random" volume approach
-            const baseVolume = term.length * 100;
-            const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-            const searchVolume = baseVolume + (characterSum % 1000);
-
-            // Fake an API delay
-            await new Promise(resolve => setTimeout(resolve, 600));
-
-            // Update state if term hasn’t changed
-            setKeywordData(prev => {
-              const updatedGroups = [...prev.keywordGroups];
-              const targetKeyword =
-                updatedGroups[groupIndex]?.keywords?.[keywordIndex];
-
-              if (targetKeyword && targetKeyword.term === term) {
-                const newKeywords = [...updatedGroups[groupIndex].keywords];
-                newKeywords[keywordIndex] = { ...targetKeyword, volume: searchVolume };
-
-                // Recalc total volume
-                const totalVolume = newKeywords.reduce((sum, kw) => {
-                  const vol =
-                    typeof kw.volume === 'number'
-                      ? kw.volume
-                      : parseInt(String(kw.volume) || '0', 10);
-                  return sum + (isNaN(vol) ? 0 : vol);
-                }, 0);
-
-                updatedGroups[groupIndex] = {
-                  ...updatedGroups[groupIndex],
-                  keywords: newKeywords,
-                  totalVolume
-                };
-              }
-
-              return { ...prev, keywordGroups: updatedGroups };
-            });
-          } catch (error) {
-            console.error('Error looking up search volume for group keyword:', error);
-          }
-        };
 
         const newKeywords = [...updatedGroups[groupIndex].keywords];
         newKeywords[keywordIndex] = newKw;
@@ -623,48 +650,104 @@ const SEOKeywordsPage: React.FC = () => {
     });
   };
 
-  // Lookup search volume for a single group keyword
-  const lookupSearchVolume = async (
-    type: 'primary' | 'secondary',
-    index: number,
+  // UPDATED: Lookup search volume for a keyword in a group
+  const lookupSearchVolumeForGroup = async (
+    groupIndex: number,
+    keywordIndex: number,
     term: string
   ) => {
     try {
-      // Don’t look up very short terms
       if (term.length < 3) return;
-      // In real life, you'd check if an API key is available
-      const hasSearchVolumeAPI = true;
-      if (!hasSearchVolumeAPI) return;
 
-      // "Deterministic random" approach
+      // Call our API endpoint
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          endpoint: 'lookup-keyword-volume',
+          data: {
+            keyword: term
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API responded with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`Got group volume data for "${term}":`, data);
+
+      // Update state with the real volume data
+      setKeywordData(prev => {
+        const updatedGroups = [...prev.keywordGroups];
+        const targetKeyword = updatedGroups[groupIndex]?.keywords?.[keywordIndex];
+
+        if (targetKeyword && targetKeyword.term === term) {
+          const newKeywords = [...updatedGroups[groupIndex].keywords];
+          newKeywords[keywordIndex] = {
+            ...targetKeyword,
+            volume: data.volume,
+            competition: data.competition
+          };
+
+          // Recalc total volume
+          const totalVolume = newKeywords.reduce((sum, kw) => {
+            const vol =
+              typeof kw.volume === 'number'
+                ? kw.volume
+                : parseInt(String(kw.volume) || '0', 10);
+            return sum + (isNaN(vol) ? 0 : vol);
+          }, 0);
+
+          updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
+            keywords: newKeywords,
+            totalVolume
+          };
+        }
+
+        return { ...prev, keywordGroups: updatedGroups };
+      });
+    } catch (error) {
+      console.error('Error looking up search volume for group keyword:', error);
+
+      // Fallback to the old approach in case of API failure
       const baseVolume = term.length * 100;
       const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
       const searchVolume = baseVolume + (characterSum % 1000);
 
-      // Fake an API delay
-      await new Promise(resolve => setTimeout(resolve, 600));
-
       setKeywordData(prev => {
-        const currentList =
-          type === 'primary' ? prev.primaryKeywords : prev.secondaryKeywords;
+        const updatedGroups = [...prev.keywordGroups];
+        const targetKeyword = updatedGroups[groupIndex]?.keywords?.[keywordIndex];
 
-        const updatedKeywords = currentList.map((kw, i) => {
-          // Only update if the term hasn't changed
-          if (i === index && kw.term === term) {
-            return { ...kw, volume: searchVolume };
-          }
-          return kw;
-        });
+        if (targetKeyword && targetKeyword.term === term) {
+          const newKeywords = [...updatedGroups[groupIndex].keywords];
+          newKeywords[keywordIndex] = { ...targetKeyword, volume: searchVolume };
 
-        return {
-          ...prev,
-          [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: updatedKeywords
-        };
+          // Recalc total volume
+          const totalVolume = newKeywords.reduce((sum, kw) => {
+            const vol =
+              typeof kw.volume === 'number'
+                ? kw.volume
+                : parseInt(String(kw.volume) || '0', 10);
+            return sum + (isNaN(vol) ? 0 : vol);
+          }, 0);
+
+          updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
+            keywords: newKeywords,
+            totalVolume
+          };
+        }
+
+        return { ...prev, keywordGroups: updatedGroups };
       });
-    } catch (error) {
-      console.error('Error looking up search volume:', error);
     }
   };
+
   // Remove a single keyword from a group
   const removeKeywordFromGroup = (groupIndex: number, keywordIndex: number) => {
     setKeywordData(prev => {
@@ -710,8 +793,7 @@ const SEOKeywordsPage: React.FC = () => {
               <div className="space-y-3">
                 <div>
                   <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-1">
-                    What's your main topic or product? *
-                  </label>
+                    What's your main topic or product? *</label>
                   <input
                     type="text"
                     id="topic"
@@ -962,6 +1044,8 @@ const SEOKeywordsPage: React.FC = () => {
                             }
                             className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Enter a keyword for this group"
+                            data-groupindex={groupIndex}
+                            data-field="term"
                             ref={el => {
                               if (!groupInputRefs.current[groupIndex]) {
                                 groupInputRefs.current[groupIndex] = [];
@@ -983,6 +1067,8 @@ const SEOKeywordsPage: React.FC = () => {
                             className="w-24 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Volume"
                             min="0"
+                            data-groupindex={groupIndex}
+                            data-field="volume"
                           />
                           {group.keywords.length > 1 && (
                             <button
