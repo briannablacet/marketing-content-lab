@@ -22,9 +22,9 @@ interface CompetitiveStepProps {
   onDataChange?: (competitors: Competitor[]) => void;
 }
 
-const CompetitiveStep: React.FC<CompetitiveStepProps> = ({ 
-  onNext, 
-  onBack, 
+const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
+  onNext,
+  onBack,
   isWalkthrough = true,
   isStandalone = false,
   onDataChange
@@ -36,16 +36,16 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   ]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
-  
+
   // New state to track when to analyze
-  const [competitorToAnalyze, setCompetitorToAnalyze] = useState<{index: number, name: string} | null>(null);
-  
+  const [competitorToAnalyze, setCompetitorToAnalyze] = useState<{ index: number, name: string } | null>(null);
+
   // Timer for debounce
   const [analyzeTimer, setAnalyzeTimer] = useState<NodeJS.Timeout | null>(null);
 
   // NEW: Add ref for the newly added competitor input
   const newCompetitorRef = useRef<HTMLInputElement>(null);
-  
+
   // NEW: Track which competitor should be focused
   const [focusCompetitorIndex, setFocusCompetitorIndex] = useState<number | null>(null);
 
@@ -56,16 +56,16 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       if (analyzeTimer) {
         clearTimeout(analyzeTimer);
       }
-      
+
       // Set a new timer for 800ms debounce
       const timer = setTimeout(() => {
         handleAnalyzeCompetitor(competitorToAnalyze.index, competitorToAnalyze.name);
         setCompetitorToAnalyze(null);
       }, 800);
-      
+
       setAnalyzeTimer(timer);
     }
-    
+
     return () => {
       if (analyzeTimer) {
         clearTimeout(analyzeTimer);
@@ -100,7 +100,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       ...competitors,
       { name: '', description: '', knownMessages: [], strengths: [], weaknesses: [] }
     ]);
-    
+
     // Set focus on the newly added competitor
     setFocusCompetitorIndex(competitors.length);
   };
@@ -112,7 +112,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   const handleAnalyzeCompetitor = async (index: number, name: string) => {
     if (!name.trim()) return;
 
-    setCompetitors(prev => prev.map((comp, i) => 
+    setCompetitors(prev => prev.map((comp, i) =>
       i === index ? { ...comp, isLoading: true } : comp
     ));
     setError('');
@@ -156,7 +156,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
       if (response.status === 500) {
         console.error('Server error:', data);
-        setCompetitors(prev => prev.map((comp, i) => 
+        setCompetitors(prev => prev.map((comp, i) =>
           i === index ? {
             ...comp,
             isLoading: false,
@@ -175,7 +175,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       }
 
       if (!data.competitorInsights?.[0]) {
-        setCompetitors(prev => prev.map((comp, i) => 
+        setCompetitors(prev => prev.map((comp, i) =>
           i === index ? {
             ...comp,
             isLoading: false,
@@ -189,14 +189,14 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       }
 
       const competitorInsight = data.competitorInsights[0];
-      
+
       // Check if we have meaningful data
-      const hasContent = competitorInsight.uniquePositioning?.length > 0 || 
-                        competitorInsight.keyThemes?.length > 0 ||
-                        competitorInsight.gaps?.length > 0;
+      const hasContent = competitorInsight.uniquePositioning?.length > 0 ||
+        competitorInsight.keyThemes?.length > 0 ||
+        competitorInsight.gaps?.length > 0;
 
       if (!hasContent) {
-        setCompetitors(prev => prev.map((comp, i) => 
+        setCompetitors(prev => prev.map((comp, i) =>
           i === index ? {
             ...comp,
             isLoading: false,
@@ -209,7 +209,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         return;
       }
 
-      setCompetitors(prev => prev.map((comp, i) => 
+      setCompetitors(prev => prev.map((comp, i) =>
         i === index ? {
           ...comp,
           isLoading: false,
@@ -219,13 +219,13 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
           weaknesses: competitorInsight.gaps || []
         } : comp
       ));
-      
+
       showNotification('success', `Analysis for ${name} completed`);
     } catch (err) {
       console.error('Error in handleAnalyzeCompetitor:', err);
       setError('Failed to analyze competitor. Please try again.');
     } finally {
-      setCompetitors(prev => prev.map((comp, i) => 
+      setCompetitors(prev => prev.map((comp, i) =>
         i === index ? { ...comp, isLoading: false } : comp
       ));
       setIsAnalyzing(false);
@@ -233,16 +233,16 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   };
 
   const handleNameChange = (index: number, name: string) => {
-    setCompetitors(prev => prev.map((comp, i) => 
+    setCompetitors(prev => prev.map((comp, i) =>
       i === index ? { ...comp, name } : comp
     ));
-    
+
     // Set the competitor to analyze after a delay
     if (name.trim().length > 2) {
       setCompetitorToAnalyze({ index, name });
     }
   };
-  
+
   const handleSubmitCompetitor = (index: number) => {
     const competitor = competitors[index];
     if (competitor.name.trim().length > 0) {
@@ -266,7 +266,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
           <div className="text-sm text-gray-600 space-y-2">
             <p>Here's how it works:</p>
             <ul className="list-disc text-left pl-4 space-y-1">
-              <li>Enter a competitor's name</li>
+              <li>Enter a competitor's name or website URL</li>
               <li>Click the "Analyze" button to start the analysis</li>
               <li>You'll see insights about their positioning, messages, and gaps</li>
               <li>Add more competitors to build a complete analysis</li>
@@ -395,7 +395,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
           </div>
         </Card>
       )}
-      
+
       {/* Save button for standalone version - but not when used in the competitive-analysis page */}
       {!isWalkthrough && !isStandalone && (
         <div className="flex justify-end mt-6 space-x-4">
@@ -410,9 +410,8 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
               showNotification('success', 'Competitor analysis saved successfully!');
               setTimeout(() => router.push('/'), 1500);
             }}
-            className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${
-              !hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${!hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             disabled={!hasValidCompetitors}
           >
             Save Analysis

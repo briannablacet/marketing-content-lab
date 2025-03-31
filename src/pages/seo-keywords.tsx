@@ -1,9 +1,11 @@
-//src/pages/seo-keywords.tsx
+// src/pages/seo-keywords.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Plus, X, Sparkles, BarChart, HelpCircle } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 
+// ------------------- Interfaces -------------------
 interface KeywordWithVolume {
   term: string;
   volume?: number | string;
@@ -22,18 +24,23 @@ interface SeoKeywordsData {
   keywordGroups: KeywordGroup[];
 }
 
+// ------------------- Component -------------------
 const SEOKeywordsPage: React.FC = () => {
   const { showNotification } = useNotification();
+
+  // Main SEO keyword data
   const [keywordData, setKeywordData] = useState<SeoKeywordsData>({
     primaryKeywords: [{ term: '' }],
     secondaryKeywords: [{ term: '' }],
     keywordGroups: [{ category: '', keywords: [{ term: '' }] }]
   });
+
+  // Loading states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // New states for context data
+  // If not enough context data in localStorage, user sees fallback inputs
   const [hasContextData, setHasContextData] = useState(true);
   const [contextInputs, setContextInputs] = useState({
     topic: '',
@@ -41,45 +48,42 @@ const SEOKeywordsPage: React.FC = () => {
     description: ''
   });
 
-  // ADD THESE FOCUS MANAGEMENT REFS AND STATES
-  // References for auto-focusing
+  // --------- References for auto-focusing each newly added item -----------
   const primaryInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const secondaryInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const groupInputRefs = useRef<{ [groupIndex: number]: (HTMLInputElement | null)[] }>({});
-  const [focusCounter, setFocusCounter] = useState(0);
 
-  // State to track what to focus and where
+  // We track the "last added" item in each category
   const [lastAddedPrimary, setLastAddedPrimary] = useState<number | null>(null);
   const [lastAddedSecondary, setLastAddedSecondary] = useState<number | null>(null);
-  const [lastAddedGroup, setLastAddedGroup] = useState<{ groupIndex: number, keywordIndex: number } | null>(null);
+  const [lastAddedGroup, setLastAddedGroup] = useState<{ groupIndex: number; keywordIndex: number } | null>(null);
 
+  // ------------------- Load data from localStorage on mount -------------------
   useEffect(() => {
-    // Try to load data from localStorage
     try {
       const savedData = localStorage.getItem('marketingSeoKeywords');
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-
-        // Convert old format to new format if needed
+        // Convert old format if needed
         if (parsedData.primaryKeywords && Array.isArray(parsedData.primaryKeywords)) {
           if (typeof parsedData.primaryKeywords[0] === 'string') {
-            // Old format, convert to new format
+            // Old format
             const updatedData = {
               primaryKeywords: parsedData.primaryKeywords.map((kw: string) => ({
                 term: kw,
-                volume: Math.floor(Math.random() * 5000) + 500 // Random volume for demo
+                volume: Math.floor(Math.random() * 5000) + 500
               })),
               secondaryKeywords: parsedData.secondaryKeywords.map((kw: string) => ({
                 term: kw,
-                volume: Math.floor(Math.random() * 1000) + 100 // Random volume for demo
+                volume: Math.floor(Math.random() * 1000) + 100
               })),
               keywordGroups: parsedData.keywordGroups.map((group: any) => ({
                 category: group.category,
                 keywords: group.keywords.map((kw: string) => ({
                   term: kw,
-                  volume: Math.floor(Math.random() * 2000) + 200 // Random volume for demo
+                  volume: Math.floor(Math.random() * 2000) + 200
                 })),
-                totalVolume: Math.floor(Math.random() * 10000) + 1000 // Random total for demo
+                totalVolume: Math.floor(Math.random() * 10000) + 1000
               }))
             };
             setKeywordData(updatedData);
@@ -90,12 +94,11 @@ const SEOKeywordsPage: React.FC = () => {
         }
       }
 
-      // Check if we have any context data in localStorage
+      // Check how many marketing context items exist
       const hasMessagingData = localStorage.getItem('marketingMessages') !== null;
       const hasPersonaData = localStorage.getItem('marketingTargetAudience') !== null;
       const hasProductData = localStorage.getItem('marketingProduct') !== null;
-
-      // If we don't have at least 2 of these data sources, show the context inputs
+      // If fewer than 2 data sources, we show the fallback context fields
       setHasContextData(
         (hasMessagingData ? 1 : 0) +
         (hasPersonaData ? 1 : 0) +
@@ -107,108 +110,76 @@ const SEOKeywordsPage: React.FC = () => {
     }
   }, []);
 
-  // ADD THESE FOCUS MANAGEMENT EFFECTS
-  // Effect for handling focus on last added primary keyword
+  // ------------------- Focus Effects -------------------
+  // Focus the "term" input for newly added primary keyword
   useEffect(() => {
-    if (lastAddedPrimary !== null && primaryInputRefs.current[lastAddedPrimary]) {
-      primaryInputRefs.current[lastAddedPrimary]?.focus();
+    if (lastAddedPrimary !== null) {
+      const index = lastAddedPrimary;
+      primaryInputRefs.current[index]?.focus();
       setLastAddedPrimary(null);
     }
   }, [lastAddedPrimary]);
 
-  // Effect for handling focus on last added secondary keyword
+  // Focus the "term" input for newly added secondary keyword
   useEffect(() => {
-    if (lastAddedSecondary !== null && secondaryInputRefs.current[lastAddedSecondary]) {
-      secondaryInputRefs.current[lastAddedSecondary]?.focus();
+    if (lastAddedSecondary !== null) {
+      const index = lastAddedSecondary;
+      secondaryInputRefs.current[index]?.focus();
       setLastAddedSecondary(null);
     }
   }, [lastAddedSecondary]);
 
-  // Effect for handling focus on last added group keyword
+  // Focus the "term" input for newly added group keyword
   useEffect(() => {
-    if (lastAddedGroup !== null &&
-      groupInputRefs.current[lastAddedGroup.groupIndex] &&
-      groupInputRefs.current[lastAddedGroup.groupIndex][lastAddedGroup.keywordIndex]) {
-      groupInputRefs.current[lastAddedGroup.groupIndex][lastAddedGroup.keywordIndex]?.focus();
+    if (lastAddedGroup !== null) {
+      const { groupIndex, keywordIndex } = lastAddedGroup;
+      if (
+        groupInputRefs.current[groupIndex] &&
+        groupInputRefs.current[groupIndex][keywordIndex]
+      ) {
+        groupInputRefs.current[groupIndex][keywordIndex]?.focus();
+      }
       setLastAddedGroup(null);
     }
   }, [lastAddedGroup]);
 
-  // General focus counter effect
-  useEffect(() => {
-    if (focusCounter > 0) {
-      setTimeout(() => {
-        // For primary keywords
-        const primaryInputs = document.querySelectorAll('input[placeholder="Enter a primary keyword"]');
-        if (primaryInputs.length > 0) {
-          const lastPrimary = primaryInputs[primaryInputs.length - 1] as HTMLInputElement;
-          lastPrimary.focus();
-          return;
-        }
-
-        // For secondary keywords
-        const secondaryInputs = document.querySelectorAll('input[placeholder="Enter a secondary keyword"]');
-        if (secondaryInputs.length > 0) {
-          const lastSecondary = secondaryInputs[secondaryInputs.length - 1] as HTMLInputElement;
-          lastSecondary.focus();
-          return;
-        }
-
-        // For group keywords
-        const groupInputs = document.querySelectorAll('input[placeholder="Enter a keyword for this group"]');
-        if (groupInputs.length > 0) {
-          const lastGroup = groupInputs[groupInputs.length - 1] as HTMLInputElement;
-          lastGroup.focus();
-          return;
-        }
-      }, 100);
-    }
-  }, [focusCounter]);
-
-  // This function converts any type of value to a KeywordWithVolume object
+  // ------------------- Convert any type -> KeywordWithVolume -------------------
   const ensureKeywordWithVolume = (value: any): KeywordWithVolume => {
     if (typeof value === 'string') {
       return {
         term: value,
-        volume: Math.floor(Math.random() * 3000) + 100 // Random volume for demo
+        volume: Math.floor(Math.random() * 3000) + 100
       };
     }
     if (typeof value === 'object' && value !== null) {
-      // If it's already in the right format
       if (value.term) return value;
-
-      // If it's using the keyword property
       if (value.keyword) {
         return {
           term: String(value.keyword),
           volume: value.volume || Math.floor(Math.random() * 3000) + 100
         };
       }
-
-      // Handle other potential formats
       if (value.name) {
         return {
           term: String(value.name),
           volume: value.volume || Math.floor(Math.random() * 3000) + 100
         };
       }
-
-      // Last resort
+      // Fallback
       return {
         term: JSON.stringify(value),
         volume: Math.floor(Math.random() * 3000) + 100
       };
     }
-
-    // Default for anything else
+    // Default
     return {
       term: String(value || ''),
       volume: Math.floor(Math.random() * 3000) + 100
     };
   };
 
-  // Handle changes to the context inputs
-  const handleContextChange = (e) => {
+  // ------------------- Input handlers for fallback context form -------------------
+  const handleContextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setContextInputs(prev => ({
       ...prev,
@@ -216,19 +187,20 @@ const SEOKeywordsPage: React.FC = () => {
     }));
   };
 
+  // ------------------- AI Generation Handler -------------------
   const handleGenerateKeywords = async () => {
     setIsGenerating(true);
     setError('');
 
     try {
-      // Get data from local storage to provide context for keyword generation
+      // Gather context from localStorage or fallback inputs
       let messages = [''];
       let personas = [''];
       let competitors = [''];
       let productInfo = {};
 
-      // If we don't have context data, use the inputs
       if (!hasContextData) {
+        // Use fallback inputs
         if (!contextInputs.topic) {
           setError('Please enter a topic to generate keywords');
           setIsGenerating(false);
@@ -236,19 +208,20 @@ const SEOKeywordsPage: React.FC = () => {
           return;
         }
 
-        // Create context from the input fields
         messages = [contextInputs.topic];
         if (contextInputs.description) {
           messages.push(contextInputs.description);
         }
-        personas = contextInputs.industry ? [`Marketing professional in ${contextInputs.industry}`] : ['Marketing professional'];
+        personas = contextInputs.industry
+          ? [`Marketing professional in ${contextInputs.industry}`]
+          : ['Marketing professional'];
         productInfo = {
-          name: "Marketing Content Lab",
-          type: "Content Marketing Platform",
+          name: 'Marketing Content Lab',
+          type: 'Content Marketing Platform',
           valueProposition: contextInputs.topic
         };
       } else {
-        // Try to load messaging data
+        // Load from localStorage
         try {
           const messagingData = localStorage.getItem('marketingMessages');
           if (messagingData) {
@@ -263,7 +236,6 @@ const SEOKeywordsPage: React.FC = () => {
           console.error('Error loading messaging data:', err);
         }
 
-        // Try to load persona data
         try {
           const personaData = localStorage.getItem('marketingTargetAudience');
           if (personaData) {
@@ -277,7 +249,6 @@ const SEOKeywordsPage: React.FC = () => {
           console.error('Error loading persona data:', err);
         }
 
-        // Try to load competitor data
         try {
           const competitorData = localStorage.getItem('marketingCompetitors');
           if (competitorData) {
@@ -288,7 +259,6 @@ const SEOKeywordsPage: React.FC = () => {
           console.error('Error loading competitor data:', err);
         }
 
-        // Try to load product info
         try {
           const productData = localStorage.getItem('marketingProduct');
           if (productData) {
@@ -299,44 +269,39 @@ const SEOKeywordsPage: React.FC = () => {
         }
       }
 
-      // If we don't have any data, use some defaults
-      if (messages.length === 0 || messages[0] === '') {
+      // Some defaults if empty
+      if (!messages[0]) {
         messages = [
-          contextInputs.topic || "AI-powered marketing content creation and strategy",
-          contextInputs.description || "Create, enhance, repurpose, and scale your content with AI assistance"
+          contextInputs.topic || 'AI-powered marketing content creation',
+          contextInputs.description || 'Create, enhance, repurpose, and scale your content.'
         ].filter(m => m.trim());
       }
 
-      if (personas.length === 0 || personas[0] === '') {
+      if (!personas[0]) {
         personas = [
-          contextInputs.industry ? `Marketing Director at ${contextInputs.industry} company` : "Marketing Director at mid-sized B2B company",
-          "Content Manager responsible for multi-channel content production"
+          contextInputs.industry
+            ? `Marketing Director at ${contextInputs.industry} company`
+            : 'Marketing Director at mid-sized B2B company'
         ];
       }
 
-      if (competitors.length === 0 || competitors[0] === '') {
-        competitors = [
-          "ContentAI",
-          "MarketMuse",
-          "Jasper",
-          "WriterAccess"
-        ];
+      if (!competitors[0]) {
+        competitors = ['ContentAI', 'MarketMuse', 'Jasper', 'WriterAccess'];
       }
 
       if (Object.keys(productInfo).length === 0) {
         productInfo = {
-          name: "Marketing Content Lab",
-          type: "Content Marketing Platform",
-          valueProposition: contextInputs.topic || "AI-powered marketing content creation and strategy"
+          name: 'Marketing Content Lab',
+          type: 'Content Marketing Platform',
+          valueProposition:
+            contextInputs.topic || 'AI-powered marketing content creation and strategy'
         };
       }
 
-      // Call the API with the collected context
+      // Call your backend
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           endpoint: 'generate-keywords',
           data: {
@@ -349,7 +314,6 @@ const SEOKeywordsPage: React.FC = () => {
           }
         })
       });
-
       if (!response.ok) {
         throw new Error(`API responded with status ${response.status}`);
       }
@@ -357,44 +321,37 @@ const SEOKeywordsPage: React.FC = () => {
       const data = await response.json();
       console.log('API Response for keywords:', data);
 
-      // Process keywords to new format with search volume
       let processedData: SeoKeywordsData = {
         primaryKeywords: [],
         secondaryKeywords: [],
         keywordGroups: []
       };
 
-      // Process primary keywords
       if (data.primaryKeywords && Array.isArray(data.primaryKeywords)) {
         processedData.primaryKeywords = data.primaryKeywords.map((keyword: any) =>
           ensureKeywordWithVolume(keyword)
         );
       }
-
-      // Process secondary keywords
       if (data.secondaryKeywords && Array.isArray(data.secondaryKeywords)) {
         processedData.secondaryKeywords = data.secondaryKeywords.map((keyword: any) =>
           ensureKeywordWithVolume(keyword)
         );
       }
-
-      // Process keyword groups
       if (data.keywordGroups && Array.isArray(data.keywordGroups)) {
         processedData.keywordGroups = data.keywordGroups.map((group: any) => {
-          // Ensure group category is a string
-          const category = typeof group.category === 'string' ? group.category : String(group.category || 'Group');
+          const category =
+            typeof group.category === 'string' ? group.category : String(group.category || 'Group');
 
-          // Process keywords in the group
           let groupKeywords: KeywordWithVolume[] = [];
           if (group.keywords && Array.isArray(group.keywords)) {
-            groupKeywords = group.keywords.map((keyword: any) =>
-              ensureKeywordWithVolume(keyword)
-            );
+            groupKeywords = group.keywords.map((kw: any) => ensureKeywordWithVolume(kw));
           }
 
-          // Calculate total volume for the group
           const totalVolume = groupKeywords.reduce((sum, kw) => {
-            const vol = typeof kw.volume === 'number' ? kw.volume : parseInt(String(kw.volume) || '0', 10);
+            const vol =
+              typeof kw.volume === 'number'
+                ? kw.volume
+                : parseInt(String(kw.volume) || '0', 10);
             return sum + (isNaN(vol) ? 0 : vol);
           }, 0);
 
@@ -406,29 +363,20 @@ const SEOKeywordsPage: React.FC = () => {
         });
       }
 
-      console.log('Processed keyword data:', processedData);
-
-      // Prepare fallback data if needed
+      // Fallback if empty
       if (!processedData.primaryKeywords.length) {
         processedData.primaryKeywords = [{ term: '' }];
       }
-
       if (!processedData.secondaryKeywords.length) {
         processedData.secondaryKeywords = [{ term: '' }];
       }
-
       if (!processedData.keywordGroups.length) {
         processedData.keywordGroups = [{ category: '', keywords: [{ term: '' }] }];
       }
 
-      // Update the state with the new keywords
       setKeywordData(processedData);
-
-      // Also save to localStorage for persistence
       localStorage.setItem('marketingSeoKeywords', JSON.stringify(processedData));
-
       showNotification('success', 'Keywords generated successfully!');
-
     } catch (err) {
       console.error('Error generating keywords:', err);
       setError('Failed to generate keywords. Please try manual entry.');
@@ -438,13 +386,13 @@ const SEOKeywordsPage: React.FC = () => {
     }
   };
 
+  // ------------------- Save / Submit Handler -------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // Clean up empty values
       const cleanedData = {
         primaryKeywords: keywordData.primaryKeywords.filter(k => k.term.trim() !== ''),
         secondaryKeywords: keywordData.secondaryKeywords.filter(k => k.term.trim() !== ''),
@@ -455,16 +403,10 @@ const SEOKeywordsPage: React.FC = () => {
             keywords: group.keywords.filter(k => k.term.trim() !== '')
           }))
       };
-
-      // Save to localStorage
-      try {
-        localStorage.setItem('marketingSeoKeywords', JSON.stringify(cleanedData));
-      } catch (storageErr) {
-        console.error('Error saving to localStorage:', storageErr);
-      }
-
+      localStorage.setItem('marketingSeoKeywords', JSON.stringify(cleanedData));
       showNotification('success', 'SEO keywords saved successfully!');
     } catch (err) {
+      console.error(err);
       setError('Failed to save SEO keywords. Please try again.');
       showNotification('error', 'Failed to save SEO keywords. Please try again.');
     } finally {
@@ -472,100 +414,61 @@ const SEOKeywordsPage: React.FC = () => {
     }
   };
 
-  // UPDATED addKeyword function with focus handling
+  // ------------------- Add / Update / Remove -------------------
+  // Add a primary or secondary keyword
   const addKeyword = (type: 'primary' | 'secondary') => {
     setKeywordData(prev => {
-      const newKeywords = [
+      const newList = [
         ...prev[type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords'],
         { term: '', volume: 0 }
       ];
-
-      // Set the index for focus
       if (type === 'primary') {
-        setLastAddedPrimary(newKeywords.length - 1);
+        setLastAddedPrimary(newList.length - 1);
       } else {
-        setLastAddedSecondary(newKeywords.length - 1);
+        setLastAddedSecondary(newList.length - 1);
       }
-
       return {
         ...prev,
-        [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: newKeywords
+        [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: newList
       };
     });
-
-    // Increment focus counter to trigger the focus effect
-    setFocusCounter(prev => prev + 1);
   };
 
-  const updateKeyword = (type: 'primary' | 'secondary', index: number, value: string | number | KeywordWithVolume, field: 'term' | 'volume' = 'term') => {
+  // Update a single primary or secondary
+  const updateKeyword = (
+    type: 'primary' | 'secondary',
+    index: number,
+    value: string | number | KeywordWithVolume,
+    field: 'term' | 'volume' = 'term'
+  ) => {
     setKeywordData(prev => ({
       ...prev,
       [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: prev[
         type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords'
-      ].map((k, i) => {
+      ].map((kw, i) => {
         if (i === index) {
           if (typeof value === 'object') {
-            return value; // Replace entire object
+            return value; // replace entire object
           } else {
-            const updatedKeyword = { ...k, [field]: value }; // Update specific field
-
-            // If we're updating the term and it's a non-empty string, look up search volume
-            if (field === 'term' && typeof value === 'string' && value.trim() !== '' && value !== k.term) {
-              // Delay the volume lookup to avoid too many API calls while typing
-              setTimeout(() => lookupSearchVolume(type, index, value), 1500);
+            const updatedKw = { ...kw, [field]: value };
+            // If we changed the term
+            if (
+              field === 'term' &&
+              typeof value === 'string' &&
+              value.trim() !== '' &&
+              value !== kw.term
+            ) {
+              setTimeout(() => lookupSearchVolume(type, i, value), 1500);
             }
-
-            return updatedKeyword;
+            return updatedKw;
           }
         }
-        return k;
+        return kw;
       })
     }));
   };
 
-  // Function to lookup search volume for a keyword
-  const lookupSearchVolume = async (type: 'primary' | 'secondary', index: number, term: string) => {
-    try {
-      // Don't look up very short terms
-      if (term.length < 3) return;
-
-      // Check if we have an API key first (mock for now)
-      const hasSearchVolumeAPI = true; // This would check if API access is configured
-
-      if (!hasSearchVolumeAPI) return;
-
-      console.log(`Looking up search volume for: ${term}`);
-
-      // In a real implementation, we would call an API like Google Keywords API, SEMrush, Ahrefs, etc.
-      // For now, we'll simulate a lookup with a random value based on the term length and characters
-      // which creates the appearance of an API lookup
-
-      // Create a deterministic but seemingly random volume based on the term length and characters
-      const baseVolume = term.length * 100;
-      const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      const searchVolume = baseVolume + (characterSum % 1000); // A pseudo-random volume between term.length*100 and term.length*100+999
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      // Update the keyword with the new search volume
-      setKeywordData(prev => ({
-        ...prev,
-        [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: prev[
-          type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords'
-        ].map((k, i) => {
-          if (i === index && k.term === term) { // Only update if the term hasn't changed during the API call
-            return { ...k, volume: searchVolume };
-          }
-          return k;
-        })
-      }));
-
-    } catch (error) {
-      console.error('Error looking up search volume:', error);
-    }
-  };
-
+  // Remove a single primary or secondary
   const removeKeyword = (type: 'primary' | 'secondary', index: number) => {
     setKeywordData(prev => ({
       ...prev,
@@ -575,29 +478,22 @@ const SEOKeywordsPage: React.FC = () => {
     }));
   };
 
-  // UPDATED addKeywordGroup function
+  // Add a new group
   const addKeywordGroup = () => {
     setKeywordData(prev => {
       const newGroups = [...prev.keywordGroups, { category: '', keywords: [{ term: '' }] }];
-      const newGroupIndex = newGroups.length - 1;
-
-      // Set up to focus on the first keyword in the new group
-      setLastAddedGroup({
-        groupIndex: newGroupIndex,
-        keywordIndex: 0
-      });
-
-      return {
-        ...prev,
-        keywordGroups: newGroups
-      };
+      const newIndex = newGroups.length - 1;
+      setLastAddedGroup({ groupIndex: newIndex, keywordIndex: 0 });
+      return { ...prev, keywordGroups: newGroups };
     });
-
-    // Increment focus counter to trigger the focus effect
-    setFocusCounter(prev => prev + 1);
   };
 
-  const updateKeywordGroup = (groupIndex: number, field: 'category' | 'keywords' | 'totalVolume', value: any) => {
+  // Update the group object
+  const updateKeywordGroup = (
+    groupIndex: number,
+    field: 'category' | 'keywords' | 'totalVolume',
+    value: any
+  ) => {
     setKeywordData(prev => ({
       ...prev,
       keywordGroups: prev.keywordGroups.map((group, i) =>
@@ -606,6 +502,7 @@ const SEOKeywordsPage: React.FC = () => {
     }));
   };
 
+  // Remove a group
   const removeKeywordGroup = (index: number) => {
     setKeywordData(prev => ({
       ...prev,
@@ -613,146 +510,112 @@ const SEOKeywordsPage: React.FC = () => {
     }));
   };
 
-  // UPDATED addKeywordToGroup function with focus handling
+  // Add a keyword to an existing group
   const addKeywordToGroup = (groupIndex: number) => {
     setKeywordData(prev => {
       const updatedGroups = [...prev.keywordGroups];
       if (updatedGroups[groupIndex]) {
         const newKeywords = [...updatedGroups[groupIndex].keywords, { term: '', volume: 0 }];
-        const keywordIndex = newKeywords.length - 1;
-
         updatedGroups[groupIndex] = {
           ...updatedGroups[groupIndex],
           keywords: newKeywords
         };
-
-        // Set up to focus on the new keyword
-        setLastAddedGroup({
-          groupIndex,
-          keywordIndex
-        });
+        const newKwIndex = newKeywords.length - 1;
+        setLastAddedGroup({ groupIndex, keywordIndex: newKwIndex });
       }
       return { ...prev, keywordGroups: updatedGroups };
     });
-
-    // Increment focus counter to trigger the focus effect
-    setFocusCounter(prev => prev + 1);
   };
 
-  const updateKeywordInGroup = (groupIndex: number, keywordIndex: number, value: string | number, field: 'term' | 'volume' = 'term') => {
+  // Update a single keyword within a group
+  const updateKeywordInGroup = (
+    groupIndex: number,
+    keywordIndex: number,
+    value: string | number,
+    field: 'term' | 'volume' = 'term'
+  ) => {
     setKeywordData(prev => {
       const updatedGroups = [...prev.keywordGroups];
       if (updatedGroups[groupIndex]?.keywords[keywordIndex]) {
-        // Create a new keyword object with the updated field
-        const updatedKeyword = {
+        const newKw = {
           ...updatedGroups[groupIndex].keywords[keywordIndex],
           [field]: value
         };
 
-        // If we're updating the term and it's a non-empty string, look up search volume
-        if (field === 'term' && typeof value === 'string' && value.trim() !== '' &&
-          value !== updatedGroups[groupIndex].keywords[keywordIndex].term) {
-          // Delay the volume lookup to avoid too many API calls while typing
+        // If we changed the term
+        if (
+          field === 'term' &&
+          typeof value === 'string' &&
+          value.trim() !== '' &&
+          value !== updatedGroups[groupIndex].keywords[keywordIndex].term
+        ) {
           setTimeout(() => lookupSearchVolumeForGroup(groupIndex, keywordIndex, value), 1500);
         }
+        // Right along with your other helper functions:
+        const lookupSearchVolumeForGroup = async (
+          groupIndex: number,
+          keywordIndex: number,
+          term: string
+        ) => {
+          try {
+            if (term.length < 3) return;
 
-        // Update the keywords array
-        const updatedKeywords = [...updatedGroups[groupIndex].keywords];
-        updatedKeywords[keywordIndex] = updatedKeyword;
+            const hasSearchVolumeAPI = true; // in a real app, you'd check for an API key
+            if (!hasSearchVolumeAPI) return;
 
-        // Update the group with new keywords
-        updatedGroups[groupIndex] = {
-          ...updatedGroups[groupIndex],
-          keywords: updatedKeywords
+            // A "deterministic random" volume approach
+            const baseVolume = term.length * 100;
+            const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+            const searchVolume = baseVolume + (characterSum % 1000);
+
+            // Fake an API delay
+            await new Promise(resolve => setTimeout(resolve, 600));
+
+            // Update state if term hasn’t changed
+            setKeywordData(prev => {
+              const updatedGroups = [...prev.keywordGroups];
+              const targetKeyword =
+                updatedGroups[groupIndex]?.keywords?.[keywordIndex];
+
+              if (targetKeyword && targetKeyword.term === term) {
+                const newKeywords = [...updatedGroups[groupIndex].keywords];
+                newKeywords[keywordIndex] = { ...targetKeyword, volume: searchVolume };
+
+                // Recalc total volume
+                const totalVolume = newKeywords.reduce((sum, kw) => {
+                  const vol =
+                    typeof kw.volume === 'number'
+                      ? kw.volume
+                      : parseInt(String(kw.volume) || '0', 10);
+                  return sum + (isNaN(vol) ? 0 : vol);
+                }, 0);
+
+                updatedGroups[groupIndex] = {
+                  ...updatedGroups[groupIndex],
+                  keywords: newKeywords,
+                  totalVolume
+                };
+              }
+
+              return { ...prev, keywordGroups: updatedGroups };
+            });
+          } catch (error) {
+            console.error('Error looking up search volume for group keyword:', error);
+          }
         };
 
-        // Calculate new total volume
-        const totalVolume = updatedKeywords.reduce((sum, kw) => {
-          const vol = typeof kw.volume === 'number' ? kw.volume : parseInt(String(kw.volume) || '0', 10);
+        const newKeywords = [...updatedGroups[groupIndex].keywords];
+        newKeywords[keywordIndex] = newKw;
+
+        // Recalc total
+        const totalVolume = newKeywords.reduce((sum, kw) => {
+          const vol = typeof kw.volume === 'number' ? kw.volume : parseInt(`${kw.volume || '0'}`, 10);
           return sum + (isNaN(vol) ? 0 : vol);
         }, 0);
 
-        updatedGroups[groupIndex].totalVolume = totalVolume;
-      }
-      return { ...prev, keywordGroups: updatedGroups };
-    });
-  };
-
-  // Function to lookup search volume for a keyword in a group
-  const lookupSearchVolumeForGroup = async (groupIndex: number, keywordIndex: number, term: string) => {
-    try {
-      // Don't look up very short terms
-      if (term.length < 3) return;
-
-      // Check if we have an API key first (mock for now)
-      const hasSearchVolumeAPI = true; // This would check if API access is configured
-
-      if (!hasSearchVolumeAPI) return;
-
-      console.log(`Looking up search volume for group keyword: ${term}`);
-
-      // In a real implementation, we would call an API like Google Keywords API, SEMrush, Ahrefs, etc.
-      // For now, we'll simulate a lookup with a random value based on the term
-
-      // Create a deterministic but seemingly random volume based on the term length and characters
-      const baseVolume = term.length * 100;
-      const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      const searchVolume = baseVolume + (characterSum % 1000);
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      // Update the keyword with the new search volume
-      setKeywordData(prev => {
-        const updatedGroups = [...prev.keywordGroups];
-        if (updatedGroups[groupIndex]?.keywords[keywordIndex] &&
-          updatedGroups[groupIndex].keywords[keywordIndex].term === term) {
-          // Only update if the term hasn't changed during the API call
-          const updatedKeywords = [...updatedGroups[groupIndex].keywords];
-          updatedKeywords[keywordIndex] = {
-            ...updatedKeywords[keywordIndex],
-            volume: searchVolume
-          };
-
-          // Update the group
-          updatedGroups[groupIndex] = {
-            ...updatedGroups[groupIndex],
-            keywords: updatedKeywords
-          };
-
-          // Recalculate total volume
-          const totalVolume = updatedKeywords.reduce((sum, kw) => {
-            const vol = typeof kw.volume === 'number' ? kw.volume : parseInt(String(kw.volume) || '0', 10);
-            return sum + (isNaN(vol) ? 0 : vol);
-          }, 0);
-
-          updatedGroups[groupIndex].totalVolume = totalVolume;
-        }
-        return { ...prev, keywordGroups: updatedGroups };
-      });
-
-    } catch (error) {
-      console.error('Error looking up search volume for group keyword:', error);
-    }
-  };
-
-  const removeKeywordFromGroup = (groupIndex: number, keywordIndex: number) => {
-    setKeywordData(prev => {
-      const updatedGroups = [...prev.keywordGroups];
-      if (updatedGroups[groupIndex]) {
-        // Create a new keywords array without the removed keyword
-        const updatedKeywords = updatedGroups[groupIndex].keywords.filter((_, i) => i !== keywordIndex);
-
-        // Calculate new total volume
-        const totalVolume = updatedKeywords.reduce((sum, kw) => {
-          const vol = typeof kw.volume === 'number' ? kw.volume : parseInt(String(kw.volume) || '0', 10);
-          return sum + (isNaN(vol) ? 0 : vol);
-        }, 0);
-
-        // Update the group
         updatedGroups[groupIndex] = {
           ...updatedGroups[groupIndex],
-          keywords: updatedKeywords,
+          keywords: newKeywords,
           totalVolume
         };
       }
@@ -760,6 +623,74 @@ const SEOKeywordsPage: React.FC = () => {
     });
   };
 
+  // Lookup search volume for a single group keyword
+  const lookupSearchVolume = async (
+    type: 'primary' | 'secondary',
+    index: number,
+    term: string
+  ) => {
+    try {
+      // Don’t look up very short terms
+      if (term.length < 3) return;
+      // In real life, you'd check if an API key is available
+      const hasSearchVolumeAPI = true;
+      if (!hasSearchVolumeAPI) return;
+
+      // "Deterministic random" approach
+      const baseVolume = term.length * 100;
+      const characterSum = term.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      const searchVolume = baseVolume + (characterSum % 1000);
+
+      // Fake an API delay
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      setKeywordData(prev => {
+        const currentList =
+          type === 'primary' ? prev.primaryKeywords : prev.secondaryKeywords;
+
+        const updatedKeywords = currentList.map((kw, i) => {
+          // Only update if the term hasn't changed
+          if (i === index && kw.term === term) {
+            return { ...kw, volume: searchVolume };
+          }
+          return kw;
+        });
+
+        return {
+          ...prev,
+          [type === 'primary' ? 'primaryKeywords' : 'secondaryKeywords']: updatedKeywords
+        };
+      });
+    } catch (error) {
+      console.error('Error looking up search volume:', error);
+    }
+  };
+  // Remove a single keyword from a group
+  const removeKeywordFromGroup = (groupIndex: number, keywordIndex: number) => {
+    setKeywordData(prev => {
+      const updatedGroups = [...prev.keywordGroups];
+      if (updatedGroups[groupIndex]) {
+        const newKeywords = updatedGroups[groupIndex].keywords.filter((_, i) => i !== keywordIndex);
+
+        const totalVolume = newKeywords.reduce((sum, kw) => {
+          const vol =
+            typeof kw.volume === 'number'
+              ? kw.volume
+              : parseInt(`${kw.volume || '0'}`, 10);
+          return sum + (isNaN(vol) ? 0 : vol);
+        }, 0);
+
+        updatedGroups[groupIndex] = {
+          ...updatedGroups[groupIndex],
+          keywords: newKeywords,
+          totalVolume
+        };
+      }
+      return { ...prev, keywordGroups: updatedGroups };
+    });
+  };
+
+  // ------------------- Render -------------------
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
@@ -769,7 +700,7 @@ const SEOKeywordsPage: React.FC = () => {
 
       <Card>
         <CardContent className="p-6">
-          {/* Context inputs section when there's not enough data from localStorage */}
+          {/* Show fallback context fields if not enough data in localStorage */}
           {!hasContextData && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="text-md font-semibold text-blue-800 mb-2">Tell us about your content</h3>
@@ -825,6 +756,7 @@ const SEOKeywordsPage: React.FC = () => {
             </div>
           )}
 
+          {/* Intro */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Let's optimize your content for search! 🔍
@@ -849,6 +781,7 @@ const SEOKeywordsPage: React.FC = () => {
             - or enter keywords manually below -
           </div>
 
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Primary Keywords */}
             <div className="space-y-4">
@@ -866,7 +799,7 @@ const SEOKeywordsPage: React.FC = () => {
                   <BarChart className="w-4 h-4 mr-1" />
                   <span>Volume</span>
                 </div>
-                <div className="w-8"></div> {/* Spacer for delete button */}
+                <div className="w-8"></div>
               </div>
 
               {keywordData.primaryKeywords.map((keyword, index) => (
@@ -877,13 +810,14 @@ const SEOKeywordsPage: React.FC = () => {
                     onChange={(e) => updateKeyword('primary', index, e.target.value, 'term')}
                     className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter a primary keyword"
-                    ref={el => primaryInputRefs.current[index] = el}
-                    data-primary-keyword={index}
+                    ref={el => (primaryInputRefs.current[index] = el)}
                   />
                   <input
                     type="number"
                     value={keyword.volume || 0}
-                    onChange={(e) => updateKeyword('primary', index, parseInt(e.target.value) || 0, 'volume')}
+                    onChange={(e) =>
+                      updateKeyword('primary', index, parseInt(e.target.value) || 0, 'volume')
+                    }
                     className="w-24 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Volume"
                     min="0"
@@ -899,6 +833,7 @@ const SEOKeywordsPage: React.FC = () => {
                   )}
                 </div>
               ))}
+
               <button
                 type="button"
                 onClick={() => addKeyword('primary')}
@@ -918,14 +853,13 @@ const SEOKeywordsPage: React.FC = () => {
                 These support your primary keywords and capture related search intent.
               </p>
 
-              {/* Column Headers */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex-1 text-sm font-medium text-gray-700">Keyword</div>
                 <div className="w-24 text-sm font-medium text-gray-700 flex items-center">
                   <BarChart className="w-4 h-4 mr-1" />
                   <span>Volume</span>
                 </div>
-                <div className="w-8"></div> {/* Spacer for delete button */}
+                <div className="w-8"></div>
               </div>
 
               {keywordData.secondaryKeywords.map((keyword, index) => (
@@ -936,13 +870,14 @@ const SEOKeywordsPage: React.FC = () => {
                     onChange={(e) => updateKeyword('secondary', index, e.target.value, 'term')}
                     className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter a secondary keyword"
-                    ref={el => secondaryInputRefs.current[index] = el}
-                    data-secondary-keyword={index}
+                    ref={el => (secondaryInputRefs.current[index] = el)}
                   />
                   <input
                     type="number"
                     value={keyword.volume || 0}
-                    onChange={(e) => updateKeyword('secondary', index, parseInt(e.target.value) || 0, 'volume')}
+                    onChange={(e) =>
+                      updateKeyword('secondary', index, parseInt(e.target.value) || 0, 'volume')
+                    }
                     className="w-24 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Volume"
                     min="0"
@@ -958,6 +893,7 @@ const SEOKeywordsPage: React.FC = () => {
                   )}
                 </div>
               ))}
+
               <button
                 type="button"
                 onClick={() => addKeyword('secondary')}
@@ -984,7 +920,8 @@ const SEOKeywordsPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeKeywordGroup(groupIndex)}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
                       <X className="h-5 w-5" />
                     </button>
                   )}
@@ -1005,7 +942,6 @@ const SEOKeywordsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Column Headers */}
                     <div className="flex items-center gap-2 mb-2 pl-2">
                       <div className="flex-1 text-sm font-medium text-gray-700">Keyword</div>
                       <div className="w-24 text-sm font-medium text-gray-700 flex items-center">
@@ -1021,7 +957,9 @@ const SEOKeywordsPage: React.FC = () => {
                           <input
                             type="text"
                             value={keyword.term}
-                            onChange={(e) => updateKeywordInGroup(groupIndex, keywordIndex, e.target.value, 'term')}
+                            onChange={(e) =>
+                              updateKeywordInGroup(groupIndex, keywordIndex, e.target.value, 'term')
+                            }
                             className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Enter a keyword for this group"
                             ref={el => {
@@ -1030,17 +968,22 @@ const SEOKeywordsPage: React.FC = () => {
                               }
                               groupInputRefs.current[groupIndex][keywordIndex] = el;
                             }}
-                            data-group-keyword={`${groupIndex}-${keywordIndex}`}
                           />
                           <input
                             type="number"
                             value={keyword.volume || 0}
-                            onChange={(e) => updateKeywordInGroup(groupIndex, keywordIndex, parseInt(e.target.value) || 0, 'volume')}
+                            onChange={(e) =>
+                              updateKeywordInGroup(
+                                groupIndex,
+                                keywordIndex,
+                                parseInt(e.target.value) || 0,
+                                'volume'
+                              )
+                            }
                             className="w-24 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Volume"
                             min="0"
                           />
-
                           {group.keywords.length > 1 && (
                             <button
                               type="button"
@@ -1064,6 +1007,7 @@ const SEOKeywordsPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+
               <button
                 type="button"
                 onClick={addKeywordGroup}
@@ -1081,7 +1025,6 @@ const SEOKeywordsPage: React.FC = () => {
               </div>
             )}
 
-            {/* Submit button */}
             <div className="flex justify-end mt-6">
               <button
                 type="submit"
