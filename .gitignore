@@ -66,3 +66,6 @@ yarn.lock
 
 #APIs
 
+#Derided features
+/src/pages/seo-keywords.txt
+/src/components/features/MarketingWalkthrough/components/SeoKeywordsStep
