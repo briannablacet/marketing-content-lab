@@ -198,13 +198,7 @@ export default function Home({ initialMarketingState }) {
             true
           )}
 
-          {renderToolCard(
-            "SEO Keywords",
-            "Discover high-value keywords to target in your content marketing",
-            "/seo-keywords",
-            true
-          )}
-
+      
           {renderToolCard(
             "Campaign Builder",
             "Set a theme and create multiple pieces of content for any funnel stage",

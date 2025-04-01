@@ -128,6 +128,7 @@ const ContentCreatorPage = () => {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Load content type from URL parameter
   useEffect(() => {
@@ -654,24 +655,44 @@ const ContentCreatorPage = () => {
 
                   {/* Divider */}
                   <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div className="relative flex justify-center">
-                      <span className="px-2 bg-white text-sm text-gray-500">OR</span>
-                    </div>
-                  </div>
-
-                  {/* File Upload */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Upload notes or starter content:
-                    </label>
-                    <FileHandler
-                      onContentLoaded={handleFileContent}
-                      showExport={false}
-                      acceptedFormats=".txt,.doc,.docx,.md,.rtf,.html,.csv,.xlsx"
-                    />
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Download
+                    </button>
+                    {isDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
+                        <button
+                          onClick={() => {
+                            handleExportContent('markdown');
+                            setIsDropdownOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Markdown (.md)
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleExportContent('html');
+                            setIsDropdownOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          HTML (.html)
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleExportContent('text');
+                            setIsDropdownOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Plain Text (.txt)
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Next button to go to Keywords tab */}
@@ -870,159 +891,187 @@ const ContentCreatorPage = () => {
           </div>
         );
 
-      case 'edit':
-        return (
-          <>
-            {generatedContent ? (
-              <div className="space-y-6">
-                <Card className="overflow-hidden">
-                  <CardHeader className="border-b flex justify-between items-center">
-                    <CardTitle>Your Generated {contentType?.title}</CardTitle>
-                    <div className="flex space-x-2">
-                      {/* Toggle Edit Mode Button */}
-                      <button
-                        onClick={() => setIsEditMode(!isEditMode)}
-                        className={`px-3 py-1 text-sm border rounded-md flex items-center ${isEditMode
-                          ? 'bg-blue-100 border-blue-500 text-blue-700'
-                          : 'border-gray-300 hover:bg-gray-50'
-                          }`}
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        {isEditMode ? 'View Mode' : 'Edit Mode'}
-                      </button>
-
-                      {/* Show Save button when in edit mode */}
-                      {isEditMode && (
+        case 'edit':
+          return (
+            <>
+              {generatedContent ? (
+                <div className="space-y-6">
+                  <Card className="overflow-hidden">
+                    <CardHeader className="border-b flex justify-between items-center">
+                      <CardTitle>Your Generated {contentType?.title}</CardTitle>
+                      <div className="flex space-x-2">
+                        {/* Toggle Edit Mode Button */}
                         <button
-                          onClick={saveContentEdits}
-                          className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                          onClick={() => setIsEditMode(!isEditMode)}
+                          className={`px-3 py-1 text-sm border rounded-md flex items-center ${isEditMode
+                            ? 'bg-blue-100 border-blue-500 text-blue-700'
+                            : 'border-gray-300 hover:bg-gray-50'
+                            }`}
                         >
-                          <Save className="w-4 h-4 mr-1" />
-                          Save Edits
+                          <Edit className="w-4 h-4 mr-1" />
+                          {isEditMode ? 'View Mode' : 'Edit Mode'}
                         </button>
-                      )}
-
-
-
-                      <div className="group relative">
-                        <button
-                          onClick={() => handleExportContent('markdown')}
-                          className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
-                        >
-                          <Download className="w-4 h-4 mr-1" />
-                          Download
-                        </button>
-                        <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10 hidden group-hover:block">
+        
+                        {/* Show Save button when in edit mode */}
+                        {isEditMode && (
                           <button
-                            onClick={() => handleExportContent('markdown')}
-                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            onClick={saveContentEdits}
+                            className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
                           >
-                            Markdown (.md)
+                            <Save className="w-4 h-4 mr-1" />
+                            Save Edits
                           </button>
+                        )}
+        
+                        {/* Download Button with Dropdown */}
+                        <div className="relative">
                           <button
-                            onClick={() => handleExportContent('html')}
-                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
                           >
-                            HTML (.html)
+                            <Download className="w-4 h-4 mr-1" />
+                            Download
                           </button>
-                          <button
-                            onClick={() => handleExportContent('text')}
-                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                          >
-                            Plain Text (.txt)
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleSaveToLibrary}
-                        className="px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 flex items-center"
-                      >
-                        <Save className="w-4 h-4 mr-1" />
-                        Save to Library
-                      </button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="p-6">
-                      {isEditMode ? (
-                        /* Edit Mode - Show textarea */
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium text-blue-800">Editing Content</h3>
-                          <p className="text-sm text-gray-600">
-                            Make direct edits to your content below. Use markdown formatting for headings, lists, and styling.
-                          </p>
-                          <textarea
-                            value={editedContent}
-                            onChange={handleContentEdit}
-                            className="w-full p-4 border border-gray-300 rounded-lg min-h-[500px] font-mono"
-                            placeholder="Edit your content here..."
-                          />
-                        </div>
-                      ) : (
-                        /* View Mode - Show formatted content */
-                        <>
-                          {/* Title */}
-                          <h1 className="text-2xl font-bold mb-4">{parsedContent.title || generatedTitle}</h1>
-
-                          {/* Introduction */}
-                          {parsedContent.introduction && (
-                            <div className="text-gray-700 mb-6">
-                              {parsedContent.introduction.split('\n').map((para, idx) => (
-                                <p key={idx} className={idx > 0 ? 'mt-4' : ''}>{para}</p>
-                              ))}
+                          {isDropdownOpen && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
+                              <button
+                                onClick={() => {
+                                  handleExportContent('markdown');
+                                  setIsDropdownOpen(false);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                              >
+                                Markdown (.md)
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleExportContent('html');
+                                  setIsDropdownOpen(false);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                              >
+                                HTML (.html)
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleExportContent('text');
+                                  setIsDropdownOpen(false);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                              >
+                                Plain Text (.txt)
+                              </button>
                             </div>
                           )}
-
-                          {/* Content Sections */}
-                          {parsedContent.sections.map((section, idx) => (
-                            <div key={idx} className="mb-6">
-                              <h2 className="text-xl font-semibold text-blue-700 mb-3">{section.title}</h2>
-                              <div className="text-gray-700">
-                                {section.content.split('\n').filter(p => p.trim()).map((para, pIdx) => (
-                                  <p key={pIdx} className={pIdx > 0 ? 'mt-4' : ''}>{para}</p>
+                        </div>
+        
+                        <button
+                          onClick={handleSaveToLibrary}
+                          className="px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 flex items-center"
+                        >
+                          <Save className="w-4 h-4 mr-1" />
+                          Save to Library
+                        </button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="p-6">
+                        {isEditMode ? (
+                          /* Edit Mode - Show textarea */
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium text-blue-800">Editing Content</h3>
+                            <p className="text-sm text-gray-600">
+                              Make direct edits to your content below. Use markdown formatting for headings, lists, and styling.
+                            </p>
+                            <textarea
+                              value={editedContent}
+                              onChange={handleContentEdit}
+                              className="w-full p-4 border border-gray-300 rounded-lg min-h-[500px] font-mono"
+                              placeholder="Edit your content here..."
+                            />
+                          </div>
+                        ) : (
+                          /* View Mode - Show formatted content */
+                          <>
+                            {/* Title */}
+                            <h1 className="text-2xl font-bold mb-4">{parsedContent.title || generatedTitle}</h1>
+        
+                            {/* Introduction */}
+                            {parsedContent.introduction && (
+                              <div className="text-gray-700 mb-6">
+                                {parsedContent.introduction.split('\n').map((para, idx) => (
+                                  <p key={idx} className={idx > 0 ? 'mt-4' : ''}>{para}</p>
                                 ))}
                               </div>
-                            </div>
-                          ))}
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Action Buttons */}
-                <div className="flex justify-between mt-4">
+                            )}
+        
+                            {/* Content Sections */}
+                            {parsedContent.sections.map((section, idx) => (
+                              <div key={idx} className="mb-6">
+                                <h2 className="text-xl font-semibold text-blue-700 mb-3">{section.title}</h2>
+                                <div className="text-gray-700">
+                                  {section.content.split('\n').filter(p => p.trim()).map((para, pIdx) => (
+                                    <p key={pIdx} className={pIdx > 0 ? 'mt-4' : ''}>{para}</p>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+        
+                  {/* Chat for content improvements */}
+                  <Card className="mt-6">
+                    <CardHeader className="border-b">
+                      <CardTitle className="flex items-center">
+                        <MessageSquare className="w-5 h-5 mr-2" />
+                        Ask for Improvements
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <ContentEditChat 
+                        originalContent={generatedContent}
+                        originalTitle={generatedTitle}
+                        contentType={contentType?.title || 'content'}
+                        onContentUpdate={handleContentUpdate}
+                      />
+                    </CardContent>
+                  </Card>
+        
+                  {/* Action Buttons */}
+                  <div className="flex justify-between mt-4">
+                    <button
+                      onClick={handleResetContent}
+                      className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Start Over
+                    </button>
+        
+                    <button
+                      onClick={handleGenerateContent}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Regenerate Content
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <p className="text-gray-500 mb-4">No content generated yet</p>
                   <button
-                    onClick={handleResetContent}
-                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                    onClick={() => setActiveTab('create')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Start Over
-                  </button>
-
-                  <button
-                    onClick={handleGenerateContent}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Regenerate Content
+                    Start Creating Content
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="p-8 text-center">
-                <p className="text-gray-500 mb-4">No content generated yet</p>
-                <button
-                  onClick={() => setActiveTab('create')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Start Creating Content
-                </button>
-              </div>
-            )}
-          </>
-        );
+              )}
+            </>
+          );
 
       default:
         return null;
