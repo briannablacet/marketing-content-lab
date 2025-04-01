@@ -13,7 +13,6 @@ const CompetitiveStep = dynamic(() => import('./components/CompetitiveStep'), { 
 const ContentStrategyStep = dynamic(() => import('./components/ContentStrategyStep'), { ssr: false });
 const StyleGuideStep = dynamic(() => import('./components/StyleGuideStep'), { ssr: false });
 const BrandVoiceModule = dynamic(() => import('../BrandVoiceModule'), { ssr: false });
-const SeoKeywordsStep = dynamic(() => import('./components/SeoKeywordsStep'), { ssr: false });
 const ReviewStep = dynamic(() => import('./components/ReviewStep'), { ssr: false });
 
 interface StepProps {
@@ -31,32 +30,31 @@ const STEPS = [
   { id: '3', component: PersonaStep, title: 'Your Ideal Customer' },
   { id: '4', component: MessagingStep, title: 'Your Message Framework' },
   { id: '5', component: CompetitiveStep, title: 'Who\'s Your Competition?', skippable: true },
-  { 
-    id: '6', 
-    component: (props: StepProps) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />, 
-    title: 'Select Your First Content Assets' 
+  {
+    id: '6',
+    component: (props: StepProps) => <ContentStrategyStep isWalkthrough={true} onNext={props.onNext} />,
+    title: 'Select Your First Content Assets'
   },
-  { 
-    id: '7', 
-    component: (props: StepProps) => <StyleGuideStep isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
-    title: 'Select Your Writing Style' 
+  {
+    id: '7',
+    component: (props: StepProps) => <StyleGuideStep isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />,
+    title: 'Select Your Writing Style'
   },
-  { 
-    id: '8', 
-    component: (props: StepProps) => <BrandVoiceModule isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />, 
-    title: 'Your Brand Voice' 
+  {
+    id: '8',
+    component: (props: StepProps) => <BrandVoiceModule isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />,
+    title: 'Your Brand Voice'
   },
-  { id: '9', component: SeoKeywordsStep, title: 'SEO Keywords', skippable: true },
-  { id: '10', component: ReviewStep, title: 'Putting it All Together' }
+  { id: '9', component: ReviewStep, title: 'Putting it All Together' }
 ];
 
 const MarketingWalkthrough: React.FC = () => {
   const router = useRouter();
   const { step } = router.query;
-  
+
   const currentStepIndex = STEPS.findIndex(s => s.id === step);
   const currentStep = STEPS[currentStepIndex];
-  
+
   React.useEffect(() => {
     if (step && !currentStep) {
       router.replace('/walkthrough/1');
@@ -68,7 +66,7 @@ const MarketingWalkthrough: React.FC = () => {
       router.push('/walkthrough/complete');
       return;
     }
-    
+
     const nextStep = STEPS[currentStepIndex + 1];
     if (nextStep) {
       router.push(`/walkthrough/${nextStep.id}`);
@@ -95,7 +93,7 @@ const MarketingWalkthrough: React.FC = () => {
     const confirmExit = window.confirm(
       'Are you sure you want to exit the walkthrough? Your progress will be saved.'
     );
-    
+
     if (confirmExit) {
       router.push('/');
     }
@@ -107,10 +105,10 @@ const MarketingWalkthrough: React.FC = () => {
 
   // Determine if current step is skippable
   const isSkippable = SKIPPABLE_STEPS.includes(currentStep.id);
-  
+
   // Force a specific button text for the last step
   const buttonText = currentStep.id === '10' ? 'Finish Walkthrough →' : 'Next →';
-  
+
   // For debugging
   console.log(`Current step: ${currentStep.id}, Button text: ${buttonText}`);
 
@@ -132,15 +130,15 @@ const MarketingWalkthrough: React.FC = () => {
       nextButtonText={buttonText}
       hideExitButton={true} // Add this prop to hide the duplicate exit button
     >
-      {typeof currentStep.component === 'function' 
+      {typeof currentStep.component === 'function'
         ? currentStep.component({ onNext: handleNext, onBack: handleBack, isWalkthrough: true })
-        : React.createElement(currentStep.component, { 
-            onNext: handleNext, 
-            onBack: handleBack,
-            isWalkthrough: true 
-          })}
+        : React.createElement(currentStep.component, {
+          onNext: handleNext,
+          onBack: handleBack,
+          isWalkthrough: true
+        })}
     </ScreenTemplate>
   );
-  };
-  
-  export default MarketingWalkthrough;
+};
+
+export default MarketingWalkthrough;
