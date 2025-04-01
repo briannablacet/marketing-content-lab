@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'prose-perfector':
         return handleProsePerfector(data, res);
 
-      // Handle generate content endpoint
+      // Handle generate keywords endpoint
       case 'generate-keywords':
         return handleGenerateKeywords(data, res);
 
@@ -38,22 +38,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'analyze-competitors':
         return handleAnalyzeCompetitors(data, res);
 
-      // NEW: Handle keyword volume lookup endpoint
-      case 'lookup-keyword-volume':
-        return handleKeywordVolumeLookup(data, res);
-
+      // Handle generate content endpoint
       case 'generate-content':
         return handleGenerateContent(data, res);
-      case 'modify-content':
 
+      // Handle modify content endpoint
+      case 'modify-content':
         return handleModifyContent(data, res);
 
-      // Other endpoints (from your existing code) would stay unchanged
+      // Other endpoints
       case 'content-repurposer':
       case 'value-proposition-generator':
       case 'persona-generator':
-
-
         // Your existing handlers here
         return res.status(200).json({
           message: 'Handler not fully implemented yet',
@@ -64,22 +60,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             status: 'success'
           }
         });
-        // Handler for content modification through chat
-        async function handleModifyContent(data: any, res: NextApiResponse) {
-          try {
-            // Validate input
-            if (!data.originalContent || !data.userRequest) {
-              return res.status(400).json({
-                error: 'Invalid request',
-                message: 'Missing required fields'
-              });
-            }
 
-            // Extract data
-            const { contentType, originalContent, originalTitle, userRequest, previousMessages } = data;
+      default:
+        return res.status(400).json({
+          error: 'Invalid endpoint',
+          message: `Endpoint '${endpoint}' not found`
+        });
+    }
+  } catch (error: any) {
+    console.error('Server Error:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      message: process.env.NODE_ENV === 'development'
+        ? error.message
+        : 'An unexpected error occurred'
+    });
+  }
+}
 
-            // Create a prompt for the AI
-            const prompt = `You are an AI content editor specializing in editing and improving ${contentType || 'content'}.
+// Handler for content modification through chat
+async function handleModifyContent(data: any, res: NextApiResponse) {
+  try {
+    // Validate input
+    if (!data.originalContent || !data.userRequest) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Missing required fields'
+      });
+    }
+
+    // Extract data
+    const { contentType, originalContent, originalTitle, userRequest, previousMessages } = data;
+
+    // Create a prompt for the AI
+    const prompt = `You are an AI content editor specializing in editing and improving ${contentType || 'content'}.
     
 Current content title: ${originalTitle || 'Untitled content'}
 
@@ -96,71 +110,76 @@ Please edit the content according to the user's request. Provide the following:
 1. A brief message explaining what changes you've made
 2. The updated content in full with all changes applied
 
-Format your response as JSON:
+Format your response as JSON with these exact keys:
 {
   "message": "Brief explanation of changes made",
   "updatedContent": "Full updated content with all changes applied",
   "updatedTitle": "Updated title if applicable, otherwise keep original"
-}`;
+}
 
-            // Call OpenAI API
-            const completion = await openai.chat.completions.create({
-              model: 'gpt-4',
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are an expert content editor that helps improve content based on user requests.'
-                },
-                {
-                  role: 'user',
-                  content: prompt
-                }
-              ],
-              temperature: 0.7,
-            });
+IMPORTANT: Make sure your response is valid JSON that can be parsed. Don't include any explanation text outside the JSON object.`;
 
-            const responseText = completion.choices[0].message?.content || '';
-
-            try {
-              // Parse the JSON response
-              const parsedResponse = JSON.parse(responseText);
-
-              return res.status(200).json({
-                message: parsedResponse.message || 'Content updated successfully',
-                updatedContent: parsedResponse.updatedContent || originalContent,
-                updatedTitle: parsedResponse.updatedTitle || originalTitle
-              });
-            } catch (error) {
-              console.error('Failed to parse OpenAI response:', responseText);
-
-              // Return a fallback response
-              return res.status(200).json({
-                message: 'I processed your request, but had trouble formatting the response. The content may not be fully updated.',
-                updatedContent: originalContent,
-                updatedTitle: originalTitle
-              });
-            }
-          } catch (error) {
-            console.error('Error modifying content:', error);
-            return res.status(500).json({
-              error: 'Server error',
-              message: 'Failed to modify content'
-            });
-          }
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert content editor that helps improve content based on user requests. Always respond with valid, parseable JSON.'
+        },
+        {
+          role: 'user',
+          content: prompt
         }
-        // Add this function to handle content generation
-        async function handleGenerateContent(data: any, res: NextApiResponse) {
-          try {
-            // Validate input
-            if (!data.contentType) {
-              return res.status(400).json({
-                error: 'Invalid request',
-                message: 'Missing required contentType field for content generation'
-              });
-            }
+      ],
+      response_format: { type: "json_object" }, // Use the JSON response format to ensure parseable JSON
+      temperature: 0.7,
+    });
 
-            // Generate a prompt for content creation
-            const contentPrompt = `You are an expert content creator specializing in creating high-quality ${data.contentType} content.
+    const responseText = completion.choices[0].message?.content || '';
+
+    try {
+      // Parse the JSON response
+      const parsedResponse = JSON.parse(responseText);
+
+      return res.status(200).json({
+        message: parsedResponse.message || 'Content updated successfully',
+        updatedContent: parsedResponse.updatedContent || originalContent,
+        updatedTitle: parsedResponse.updatedTitle || originalTitle,
+      });
+    } catch (error) {
+      console.error('Failed to parse OpenAI response:', error);
+      console.error('Response text:', responseText);
+
+      // Return a fallback response
+      return res.status(200).json({
+        message: 'I processed your request, but had trouble formatting the response. The content may not be fully updated.',
+        updatedContent: originalContent,
+        updatedTitle: originalTitle,
+      });
+    }
+  } catch (error) {
+    console.error('Error modifying content:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      message: 'Failed to modify content',
+    });
+  }
+}
+
+// Function to generate content
+async function handleGenerateContent(data: any, res: NextApiResponse) {
+  try {
+    // Validate input
+    if (!data.contentType) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Missing required contentType field for content generation'
+      });
+    }
+
+    // Generate a prompt for content creation
+    const contentPrompt = `You are an expert content creator specializing in creating high-quality ${data.contentType} content.
 
     Create ${data.contentType} content based on the following parameters:
     
@@ -175,74 +194,54 @@ Format your response as JSON:
     Format the content in Markdown with appropriate headings, paragraphs, and formatting.
     Ensure the content is original, valuable, and tailored to the target audience.`;
 
-            // Call OpenAI API
-            const completion = await openai.chat.completions.create({
-              model: 'gpt-4',
-              messages: [
-                {
-                  role: 'system',
-                  content: `You are an expert content creator specializing in ${data.contentType}.`
-                },
-                {
-                  role: 'user',
-                  content: contentPrompt
-                }
-              ],
-              temperature: 0.7,
-            });
-
-            const content = completion.choices[0].message?.content || '';
-
-            // Create a title from first line or first sentence
-            let title = '';
-            if (content.startsWith('# ')) {
-              // Extract title from markdown heading
-              title = content.split('\n')[0].replace(/^#\s+/, '');
-            } else {
-              // Extract first sentence as title
-              title = content.split('.')[0].trim();
-            }
-
-            return res.status(200).json({
-              content: content,
-              title: title,
-              metadata: {
-                contentType: data.contentType,
-                description: content.substring(0, 160).replace(/[#*_]/g, ''),
-                keywords: data.parameters?.keywords || ['content', 'marketing'],
-                createdAt: new Date().toISOString()
-              }
-            });
-          } catch (error) {
-            console.error('Error generating content:', error);
-            return res.status(500).json({
-              error: 'Server error',
-              message: 'Failed to generate content'
-            });
-          }
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert content creator specializing in ${data.contentType}.`
+        },
+        {
+          role: 'user',
+          content: contentPrompt
         }
+      ],
+      temperature: 0.7,
+    });
 
-      default:
-        return res.status(400).json({
-          error: 'Invalid endpoint',
-          message: `Endpoint '${endpoint}' not found`
-        });
+    const content = completion.choices[0].message?.content || '';
+
+    // Create a title from first line or first sentence
+    let title = '';
+    if (content.startsWith('# ')) {
+      // Extract title from markdown heading
+      title = content.split('\n')[0].replace(/^#\s+/, '');
+    } else {
+      // Extract first sentence as title
+      title = content.split('.')[0].trim();
     }
 
-    // Rest of your existing API implementation...
-
-  } catch (error: any) {
-    console.error('Server Error:', error);
+    return res.status(200).json({
+      content: content,
+      title: title,
+      metadata: {
+        contentType: data.contentType,
+        description: content.substring(0, 160).replace(/[#*_]/g, ''),
+        keywords: data.parameters?.keywords || ['content', 'marketing'],
+        createdAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error generating content:', error);
     return res.status(500).json({
       error: 'Server error',
-      message: process.env.NODE_ENV === 'development'
-        ? error.message
-        : 'An unexpected error occurred'
+      message: 'Failed to generate content'
     });
   }
 }
 
-// NEW: Add keyword volume lookup handler
+// Keyword volume lookup handler
 async function handleKeywordVolumeLookup(data: any, res: NextApiResponse) {
   try {
     // Validate input
@@ -308,7 +307,7 @@ async function handleKeywordVolumeLookup(data: any, res: NextApiResponse) {
   }
 }
 
-// NEW: Implement generate keywords handler
+// Implement generate keywords handler
 async function handleGenerateKeywords(data: any, res: NextApiResponse) {
   try {
     // Validate input
@@ -319,49 +318,138 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
       });
     }
 
-    const { messages, personas, topic, contentType } = data.context;
+    // Extract context data
+    const { messages, personas, productInfo, topic, contentType } = data.context;
 
-    // Default response with fallback keywords
-    const fallbackResponse = {
-      primaryKeywords: [
-        "content marketing",
-        "blog post",
-        "best practices",
-        "how to guide",
-        "marketing strategy"
-      ],
-      secondaryKeywords: [
-        "content strategies",
-        "marketing examples",
-        "content tips",
-        "blog ideas",
-        "content optimization",
-        "what is content marketing",
-        "how do I create content",
-        "when to use content marketing"
+    // Build topic text from available data
+    const topicText = topic ||
+      (Array.isArray(messages) ? messages.join(". ") : messages) ||
+      (productInfo?.valueProposition) ||
+      "content marketing";
+
+    console.log("Generating keywords for topic:", topicText);
+
+    // Generate a prompt for keyword generation
+    const prompt = `Generate SEO keywords for: ${topicText}
+    Target audience: ${Array.isArray(personas) ? personas.join(", ") : personas || "marketing professionals"}
+    Content type: ${contentType || "blog post"}
+    
+    Please provide the following in your response:
+    1. Primary Keywords (5-7 most important keywords directly related to the topic)
+    2. Secondary Keywords (8-10 supporting keywords, related terms, and long-tail variations)
+    3. Keyword Groups (3-4 thematic groups of related keywords)
+    
+    Format your response as a JSON object with these exact fields:
+    {
+      "primaryKeywords": ["keyword1", "keyword2", ...],
+      "secondaryKeywords": ["keyword1", "keyword2", ...],
+      "keywordGroups": [
+        {
+          "category": "Group Name",
+          "keywords": ["keyword1", "keyword2", ...]
+        }
       ]
-    };
+    }
+    
+    Ensure your response is valid JSON that can be parsed.`;
 
     try {
-      // Simple prompt to generate keywords
-      const prompt = `Generate SEO keywords for: ${topic || messages || "content marketing"}
-      For audience: ${personas || "marketing professionals"}
-      Content type: ${contentType || "blog post"}`;
-
+      // Call OpenAI to generate keywords
       const completion = await openai.chat.completions.create({
         model: 'gpt-4',
         messages: [
-          { role: 'system', content: 'You are an SEO expert.' },
+          { role: 'system', content: 'You are an SEO expert specialized in keyword research.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
       });
 
-      // Just return our fallback for now to make it work
-      return res.status(200).json(fallbackResponse);
+      // Get response text
+      const responseText = completion.choices[0].message?.content || '';
+      console.log("Got keyword response:", responseText.substring(0, 100) + "...");
 
-    } catch (innerError) {
-      console.error('OpenAI error:', innerError);
+      try {
+        // Try to parse the JSON response
+        const parsedResponse = JSON.parse(responseText);
+        return res.status(200).json(parsedResponse);
+      } catch (parseError) {
+        console.error('Failed to parse keyword response:', parseError);
+
+        // If we can't parse the response, return the fallback
+        const fallbackResponse = {
+          primaryKeywords: [
+            "content marketing",
+            "blog post",
+            "marketing strategy",
+            "content creation",
+            "digital marketing"
+          ],
+          secondaryKeywords: [
+            "content strategy",
+            "marketing examples",
+            "content tips",
+            "blog ideas",
+            "SEO content",
+            "content optimization",
+            "marketing plan",
+            "content calendar"
+          ],
+          keywordGroups: [
+            {
+              category: "Content Types",
+              keywords: ["blog posts", "social media content", "email newsletters", "ebooks", "white papers"]
+            },
+            {
+              category: "Marketing Goals",
+              keywords: ["lead generation", "brand awareness", "customer engagement", "conversion rate"]
+            },
+            {
+              category: "Content Strategy",
+              keywords: ["content planning", "content distribution", "content audit", "editorial calendar"]
+            }
+          ]
+        };
+
+        return res.status(200).json(fallbackResponse);
+      }
+    } catch (apiError) {
+      console.error('OpenAI API error:', apiError);
+
+      // Return fallback keywords if the API call fails
+      const fallbackResponse = {
+        primaryKeywords: [
+          "content marketing",
+          "blog post",
+          "marketing strategy",
+          "content creation",
+          "digital marketing"
+        ],
+        secondaryKeywords: [
+          "content strategy",
+          "marketing examples",
+          "content tips",
+          "blog ideas",
+          "SEO content",
+          "content optimization",
+          "marketing plan",
+          "content calendar"
+        ],
+        keywordGroups: [
+          {
+            category: "Content Types",
+            keywords: ["blog posts", "social media content", "email newsletters", "ebooks", "white papers"]
+          },
+          {
+            category: "Marketing Goals",
+            keywords: ["lead generation", "brand awareness", "customer engagement", "conversion rate"]
+          },
+          {
+            category: "Content Strategy",
+            keywords: ["content planning", "content distribution", "content audit", "editorial calendar"]
+          }
+        ]
+      };
+
       return res.status(200).json(fallbackResponse);
     }
   } catch (error) {
@@ -372,6 +460,7 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
     });
   }
 }
+
 // Add the competitor analysis handler
 async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   try {
