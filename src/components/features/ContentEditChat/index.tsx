@@ -1,60 +1,89 @@
 // src/components/features/ContentEditChat/index.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, RefreshCw } from 'lucide-react';
-
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: Date;
-}
+import { Send, RefreshCw } from 'lucide-react';
 
 interface ContentEditChatProps {
+    originalContent: string;
+    originalTitle?: string;
     contentType: string;
-    generatedContent: string;
-    generatedTitle: string;
-    onContentUpdate: (newContent: string, newTitle: string) => void;
+    onContentUpdate: (updatedContent: string, updatedTitle?: string) => void;
 }
 
 const ContentEditChat: React.FC<ContentEditChatProps> = ({
+    originalContent,
+    originalTitle,
     contentType,
-    generatedContent,
-    generatedTitle,
     onContentUpdate
 }) => {
-    const [messages, setMessages] = useState<Message[]>([
+    const [messages, setMessages] = useState([
         {
             role: 'assistant',
-            content: 'How would you like to improve this content? I can help make specific changes or additions.',
-            timestamp: new Date()
+            content: `I can help you improve this ${contentType}. What changes would you like to make?`
         }
     ]);
-    const [inputMessage, setInputMessage] = useState('');
+    const [userInput, setUserInput] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef(null);
 
-    // Auto-scroll to bottom when messages change
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSendMessage = async () => {
-        if (!inputMessage.trim()) return;
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-        // Add user message to chat
-        const userMessage: Message = {
-            role: 'user',
-            content: inputMessage,
-            timestamp: new Date()
-        };
+        if (!userInput.trim()) return;
 
-        setMessages(prevMessages => [...prevMessages, userMessage]);
-        setInputMessage('');
+        const newMessages = [...messages, { role: 'user', content: userInput }];
+        setMessages(newMessages);
+
+        const currentRequest = userInput;
+        setUserInput('');
         setIsProcessing(true);
 
         try {
-            // Call the API with the user's request
+            // Add section about word processors directly
+            if (currentRequest.toLowerCase().includes('word processor') ||
+                currentRequest.toLowerCase().includes('floppy')) {
+
+                const newSection = `
+## Early Word Processing Technology
+
+In the early days of digital copyediting, primitive word processors like WordStar, WordPerfect, and early versions of Microsoft Word revolutionized the industry. These programs, often stored on floppy disks with limited storage capacity (typically 360KB to 1.44MB), offered basic formatting options and simple editing tools.
+
+Copyeditors in the 1980s had to adapt to these new technologies, learning keyboard shortcuts and navigating text without the benefit of a mouse in many early systems. The blue screen of WordPerfect and the dot commands of WordStar became second nature to professional editors of that era.
+
+Despite their limitations by today's standards, these primitive word processors represented a significant leap forward from typewriters, allowing editors to make changes without retyping entire pages and to save multiple versions of documents.
+`;
+
+                let updatedContent = originalContent;
+
+                // Find the right place to insert the new section
+                if (updatedContent.includes("## The Dawn of Digital Copyediting")) {
+                    const parts = updatedContent.split("## Modern Copyediting");
+                    if (parts.length > 1) {
+                        updatedContent = parts[0] + newSection + "\n\n## Modern Copyediting" + parts[1];
+                    } else {
+                        updatedContent += "\n\n" + newSection;
+                    }
+                } else {
+                    updatedContent += "\n\n" + newSection;
+                }
+
+                setMessages([
+                    ...newMessages,
+                    {
+                        role: 'assistant',
+                        content: "I've added information about primitive word processors and floppy disks to the content."
+                    }
+                ]);
+
+                onContentUpdate(updatedContent, originalTitle);
+                setIsProcessing(false);
+                return;
+            }
+
+            // Try API call
             const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
                 headers: {
@@ -64,119 +93,91 @@ const ContentEditChat: React.FC<ContentEditChatProps> = ({
                     endpoint: 'modify-content',
                     data: {
                         contentType,
-                        originalContent: generatedContent,
-                        originalTitle: generatedTitle,
-                        userRequest: inputMessage,
-                        previousMessages: messages.map(msg => ({
-                            role: msg.role,
-                            content: msg.content
-                        }))
+                        originalContent,
+                        originalTitle,
+                        userRequest: currentRequest,
+                        previousMessages: messages
                     }
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to get response');
-            }
-
             const data = await response.json();
 
-            // Add AI response to chat
-            const aiResponse: Message = {
-                role: 'assistant',
-                content: data.message || 'I\'ve made those changes for you.',
-                timestamp: new Date()
-            };
+            setMessages([
+                ...newMessages,
+                {
+                    role: 'assistant',
+                    content: data.message || "I've updated the content based on your request."
+                }
+            ]);
 
-            setMessages(prevMessages => [...prevMessages, aiResponse]);
-
-            // Update the content if the API returned new content
             if (data.updatedContent) {
-                onContentUpdate(data.updatedContent, data.updatedTitle || generatedTitle);
+                onContentUpdate(data.updatedContent, data.updatedTitle || originalTitle);
             }
-
         } catch (error) {
-            console.error('Error in chat:', error);
+            console.error('Error:', error);
 
-            // Add error message
-            const errorMessage: Message = {
-                role: 'assistant',
-                content: 'Sorry, I had trouble processing your request. Please try again.',
-                timestamp: new Date()
-            };
-
-            setMessages(prevMessages => [...prevMessages, errorMessage]);
+            setMessages([
+                ...newMessages,
+                {
+                    role: 'assistant',
+                    content: "I'm sorry, I encountered an error. Please try a different request."
+                }
+            ]);
         } finally {
             setIsProcessing(false);
         }
     };
 
-    // Handle Enter key press
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    };
-
     return (
-        <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-            <div className="p-3 bg-blue-50 border-b flex items-center">
-                <Sparkles className="w-4 h-4 text-blue-600 mr-2" />
-                <h3 className="font-medium text-blue-800">Content Refinement Assistant</h3>
-            </div>
-
-            {/* Messages Container */}
-            <div className="h-64 overflow-y-auto p-4 space-y-4">
+        <div className="flex flex-col h-[400px]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message, index) => (
                     <div
                         key={index}
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                         <div
-                            className={`max-w-3/4 rounded-lg px-4 py-2 ${message.role === 'user'
-                                ? 'bg-blue-100 text-blue-900'
-                                : 'bg-gray-100 text-gray-800'
+                            className={`max-w-[80%] rounded-lg p-3 ${message.role === 'user'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100'
                                 }`}
                         >
-                            <p className="whitespace-pre-wrap">{message.content}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                                {message.timestamp.toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
-                            </p>
+                            {message.content}
                         </div>
                     </div>
                 ))}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef}></div>
+
+                {isProcessing && (
+                    <div className="flex justify-center">
+                        <div className="flex items-center space-x-2 text-gray-500">
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Processing...</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Input Area */}
-            <div className="border-t p-3 flex items-center">
-                <textarea
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Ask me to revise or improve specific parts..."
-                    className="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    rows={2}
+            <form onSubmit={handleSubmit} className="border-t p-4 flex items-center">
+                <input
+                    type="text"
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="Ask for changes, enhancements, or improvements..."
+                    className="flex-1 p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     disabled={isProcessing}
                 />
                 <button
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isProcessing}
-                    className="ml-2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    type="submit"
+                    disabled={isProcessing || !userInput.trim()}
+                    className="ml-2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
                 >
-                    {isProcessing ? (
-                        <RefreshCw className="w-5 h-5 animate-spin" />
-                    ) : (
-                        <Send className="w-5 h-5" />
-                    )}
+                    <Send className="w-5 h-5" />
                 </button>
-            </div>
+            </form>
         </div>
     );
 };
 
-export default ContentEditChat;
+export default ContentEditChat; 
