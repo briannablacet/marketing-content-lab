@@ -58,17 +58,16 @@ export const CONTENT_TYPES = {
     ]
   },
   'Email Campaigns': {
-    description: 'Create email content for newsletters, nurture sequences, and announcements',
+    description: 'Create multi-email sequences designed to nurture leads and drive conversions',
     activities: [
-      'Welcome sequences',
-      'Nurture campaigns',
-      'Product announcements',
-      'Newsletter content'
+      'Design email sequences',
+      'Create cohesive campaign narratives',
+      'Develop optimized subject lines'
     ],
     aiSupport: [
-      'Subject line suggestions',
-      'Sequence planning',
-      'Call-to-action optimization'
+      'A/B Testing Ideas',
+      'Sequence Planning',
+      'Personalization Options'
     ]
   },
   'Digital Ads': {
@@ -111,6 +110,32 @@ export const CONTENT_TYPES = {
       'Script structure templates',
       'Timing optimization',
       'Visual suggestion notes'
+    ]
+  },
+  "Web Pages": {
+    description: "Professional website content optimized for SEO and user engagement",
+    activities: [
+      "Write SEO-optimized page content",
+      "Create compelling calls-to-action",
+      "Develop user-friendly navigation text"
+    ],
+    aiSupport: [
+      "SEO Analysis",
+      "Conversion Optimization",
+      "Mobile Readability"
+    ]
+  },
+  "Internal Email Comms": {
+    description: "Internal communications to keep your team informed and aligned",
+    activities: [
+      "Create company announcements",
+      "Develop team updates",
+      "Design employee newsletters"
+    ],
+    aiSupport: [
+      "Tone Consistency",
+      "Clarity Check",
+      "Engagement Metrics"
     ]
   }
 };

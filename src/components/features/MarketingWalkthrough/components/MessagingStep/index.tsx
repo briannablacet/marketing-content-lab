@@ -1,9 +1,10 @@
 // src/components/features/MarketingWalkthrough/components/MessagingStep/index.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
-import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, Lightbulb } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotification } from '../../../../../context/NotificationContext';
+// Add FileText to this import
+import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, Lightbulb, FileText, Upload, ArrowRight, CheckCircle } from 'lucide-react';
 
 interface MessagingStepProps {
   onNext?: () => void;
@@ -11,16 +12,16 @@ interface MessagingStepProps {
   isWalkthrough?: boolean;
 }
 
-const MessagingStep: React.FC<MessagingStepProps> = ({ 
-  onNext, 
-  onBack, 
+const MessagingStep: React.FC<MessagingStepProps> = ({
+  onNext,
+  onBack,
   isWalkthrough = true
 }) => {
   const router = useRouter();
   const { showNotification } = useNotification();
   const [selectedOption, setSelectedOption] = useState<'manual' | 'upload' | 'ai' | null>(null);
   const [aiStep, setAiStep] = useState<'review' | 'focus' | 'generate' | 'results'>('review');
-  
+
   const [messages, setMessages] = useState<{
     valueProposition: string;
     differentiators: string[];
@@ -30,7 +31,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
     differentiators: ['', '', ''],
     keyBenefits: ['', '', '']
   });
-  
+
   const [uploadedFramework, setUploadedFramework] = useState<File | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiInsights, setAiInsights] = useState<string[]>([]);
@@ -55,7 +56,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
   // NEW: Create refs to handle focus on added fields
   const newDifferentiatorRef = useRef<HTMLInputElement>(null);
   const newBenefitRef = useRef<HTMLInputElement>(null);
-  
+
   // NEW: State to track which field should receive focus
   const [focusField, setFocusField] = useState<{
     type: 'differentiator' | 'benefit' | null;
@@ -73,16 +74,16 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
         console.error('Error parsing saved messages:', error);
       }
     }
-    
+
     // Try to load product info from localStorage as well
     const productInfo = localStorage.getItem('marketingProduct');
     const targetAudience = localStorage.getItem('marketingTargetAudience');
-    
+
     if (productInfo || targetAudience) {
       try {
         const product = productInfo ? JSON.parse(productInfo) : null;
         const audience = targetAudience ? JSON.parse(targetAudience) : null;
-        
+
         if (product) {
           const productDescription = `${product.name || 'Our product'} is a ${product.type || 'solution'} that ${product.valueProposition || 'helps businesses'}. Key benefits include: ${(product.keyBenefits || []).join(', ') || 'various features'}`;
           setAiData(prev => ({
@@ -91,7 +92,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
             uniqueValue: product.valueProposition || prev.uniqueValue
           }));
         }
-        
+
         if (audience) {
           const audienceDescription = `${audience.role || 'Professionals'} in the ${audience.industry || 'various industries'} who face challenges including: ${(audience.challenges || []).join(', ') || 'multiple business challenges'}`;
           setAiData(prev => ({
@@ -120,22 +121,22 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
 
   const updateAiInsights = () => {
     const insights = [];
-    
+
     if (messages.valueProposition) {
       if (messages.valueProposition.length < 50) {
         insights.push("Consider expanding your value proposition to better communicate your unique value.");
       }
-      if (!messages.valueProposition.toLowerCase().includes('you') && 
-          !messages.valueProposition.toLowerCase().includes('your')) {
+      if (!messages.valueProposition.toLowerCase().includes('you') &&
+        !messages.valueProposition.toLowerCase().includes('your')) {
         insights.push("Try making your value proposition more customer-centric by addressing them directly.");
       }
     }
 
     const filledDiffs = messages.differentiators.filter(d => d.trim());
     if (filledDiffs.length > 0) {
-      const hasCompetitiveDiff = filledDiffs.some(d => 
-        d.toLowerCase().includes('only') || 
-        d.toLowerCase().includes('unique') || 
+      const hasCompetitiveDiff = filledDiffs.some(d =>
+        d.toLowerCase().includes('only') ||
+        d.toLowerCase().includes('unique') ||
         d.toLowerCase().includes('first')
       );
       if (!hasCompetitiveDiff) {
@@ -145,8 +146,8 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
 
     const filledBenefits = messages.keyBenefits.filter(b => b.trim());
     if (filledBenefits.length > 0) {
-      const hasMetrics = filledBenefits.some(b => 
-        b.includes('%') || 
+      const hasMetrics = filledBenefits.some(b =>
+        b.includes('%') ||
         /\d+/.test(b)
       );
       if (!hasMetrics) {
@@ -180,7 +181,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
 
   const handleGenerateMessages = async () => {
     setIsGenerating(true);
-    
+
     try {
       // Prepare the API request
       const requestBody = {
@@ -198,7 +199,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
           tone: aiData.tone
         }
       };
-      
+
       // Call the API
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
@@ -207,26 +208,26 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
         },
         body: JSON.stringify(requestBody)
       });
-      
+
       if (!response.ok) {
         throw new Error(`API responded with status ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Transform API response to our message format
       setMessages({
         valueProposition: data.valueProposition || '',
         differentiators: data.keyDifferentiators || ['', '', ''],
         keyBenefits: Object.values(data.targetedMessages || {}).flat() || ['', '', '']
       });
-      
+
       setAiStep('results');
       showNotification('success', 'Generated messaging framework based on your inputs');
     } catch (error) {
       console.error('Error generating messages:', error);
       showNotification('error', 'Failed to generate messages. Using fallback suggestions.');
-      
+
       // Fallback messaging if API fails
       setMessages({
         valueProposition: `Our content marketing platform helps ${aiData.targetAudience.split(' in the ')[0] || 'marketing teams'} create effective content strategies faster and with more consistency.`,
@@ -241,7 +242,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
           `Improve team collaboration and content consistency across channels`
         ]
       });
-      
+
       setAiStep('results');
     } finally {
       setIsGenerating(false);
@@ -254,12 +255,12 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
       ...prev,
       [field]: [...prev[field], '']
     }));
-    
+
     // Set focus on the newly added field
     const newIndex = messages[field].length;
-    setFocusField({ 
-      type: field === 'differentiators' ? 'differentiator' : 'benefit', 
-      index: newIndex 
+    setFocusField({
+      type: field === 'differentiators' ? 'differentiator' : 'benefit',
+      index: newIndex
     });
   };
 
@@ -268,13 +269,13 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
       ...prev,
       [field]: value
     }));
-    
+
     // Save to localStorage for persistence
     const updatedMessages = {
       ...messages,
       [field]: value
     };
-    
+
     localStorage.setItem('marketingMessages', JSON.stringify(updatedMessages));
   };
 
@@ -295,16 +296,16 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
       showNotification('error', 'Please provide a value proposition');
       return;
     }
-    
+
     if (!messages.differentiators.some(d => d.trim()) || !messages.keyBenefits.some(b => b.trim())) {
       showNotification('error', 'Please provide at least one differentiator and one key benefit');
       return;
     }
-    
+
     // Save to localStorage
     localStorage.setItem('marketingMessages', JSON.stringify(messages));
     showNotification('success', 'Messaging framework saved');
-    
+
     if (onNext) onNext();
   };
 
@@ -336,8 +337,8 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
                 placeholder={`What makes you uniquely different from competitors? (#${index + 1})`}
               />
               {messages.differentiators.length > 1 && (
-                <button 
-                  onClick={() => removeField('differentiators', index)} 
+                <button
+                  onClick={() => removeField('differentiators', index)}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-5 h-5" />
@@ -369,8 +370,8 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
                 placeholder={`What specific value do customers gain? (#${index + 1})`}
               />
               {messages.keyBenefits.length > 1 && (
-                <button 
-                  onClick={() => removeField('keyBenefits', index)} 
+                <button
+                  onClick={() => removeField('keyBenefits', index)}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-5 h-5" />
@@ -423,7 +424,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
             <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md w-fit">
               <FileText className="w-4 h-4 text-gray-500" />
               <span className="text-sm text-gray-600">{uploadedFramework.name}</span>
-              <button 
+              <button
                 onClick={() => setUploadedFramework(null)}
                 className="ml-2 text-gray-400 hover:text-red-600"
               >
@@ -467,7 +468,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
           <h4 className="font-medium mb-2">We've gathered information from your previous steps</h4>
           <p className="text-sm text-gray-600">Review and enhance this information to generate more targeted messaging.</p>
         </div>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Product/Service Description</label>
@@ -527,7 +528,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
         <div>
           <h4 className="font-medium mb-4">Choose Your Messaging Focus</h4>
           <p className="text-sm text-gray-600 mb-4">Select the areas you want to emphasize in your messaging (choose up to 2)</p>
-          
+
           <div className="grid md:grid-cols-2 gap-4 mb-6">
             {[
               { id: 'technical', label: 'Technical Excellence', description: 'Emphasize technical capabilities and innovation' },
@@ -551,8 +552,8 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
                   }
                 }}
                 className={`p-4 rounded-lg border-2 text-left relative
-                  ${aiData.focusAreas.includes(focus.id) 
-                    ? 'border-blue-500 bg-blue-50' 
+                  ${aiData.focusAreas.includes(focus.id)
+                    ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300'}`}
               >
                 <h5 className="font-medium mb-1">{focus.label}</h5>
@@ -578,8 +579,8 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
                 key={tone.id}
                 onClick={() => setAiData(prev => ({ ...prev, tone: tone.id }))}
                 className={`p-3 rounded-lg border-2 text-center
-                  ${aiData.tone === tone.id 
-                    ? 'border-blue-500 bg-blue-50' 
+                  ${aiData.tone === tone.id
+                    ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300'}`}
               >
                 {tone.label}
@@ -621,11 +622,11 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
             <h4 className="font-medium mb-1">Generated Based On:</h4>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• Your product description and target audience</li>
-              <li>• Focus on: {aiData.focusAreas.map(f => 
-                ['technical', 'business', 'user', 'market'].indexOf(f) >= 0 ? 
-                ['Technical Excellence', 'Business Value', 'User Benefits', 'Market Position'][['technical', 'business', 'user', 'market'].indexOf(f)] : f
+              <li>• Focus on: {aiData.focusAreas.map(f =>
+                ['technical', 'business', 'user', 'market'].indexOf(f) >= 0 ?
+                  ['Technical Excellence', 'Business Value', 'User Benefits', 'Market Position'][['technical', 'business', 'user', 'market'].indexOf(f)] : f
               ).join(', ')}</li>
-              <li>• {['professional', 'friendly', 'innovative', 'trusted'].indexOf(aiData.tone) >= 0 ? 
+              <li>• {['professional', 'friendly', 'innovative', 'trusted'].indexOf(aiData.tone) >= 0 ?
                 ['Professional & Authoritative', 'Friendly & Approachable', 'Innovative & Forward-thinking', 'Trusted & Established'][['professional', 'friendly', 'innovative', 'trusted'].indexOf(aiData.tone)] : aiData.tone} tone</li>
             </ul>
           </div>
@@ -677,7 +678,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
           <Sparkles className="w-5 h-5 text-blue-600" />
           <h3 className="text-lg font-semibold">AI-Generated Framework</h3>
         </div>
-        
+
         {isGenerating && aiStep !== 'focus' ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -767,7 +768,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
   return (
     <div className="space-y-6">
       {renderContent()}
-      
+
       {/* Save & Continue button for manual form if not showing results */}
       {selectedOption === 'manual' && (
         <div className="flex justify-end mt-8">
@@ -779,7 +780,7 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
           </button>
         </div>
       )}
-      
+
       {/* Save & Continue button for AI results */}
       {selectedOption === 'ai' && aiStep === 'results' && (
         <div className="flex justify-end mt-8">
@@ -791,17 +792,17 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
           </button>
         </div>
       )}
-      
+
       {/* Navigation Buttons - Only show if we're not in a walkthrough and not showing specific content */}
       {!isWalkthrough && !((selectedOption === 'manual') || (selectedOption === 'ai' && aiStep === 'results')) && (
         <div className="flex justify-between mt-8">
-          <button 
+          <button
             onClick={onBack}
             className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
           >
             Back
           </button>
-          <button 
+          <button
             onClick={saveAndContinue}
             className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >

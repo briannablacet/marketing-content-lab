@@ -8,14 +8,14 @@ import { MessagingProvider } from '../../context/MessagingContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
 import Link from 'next/link';
-import { 
-  FileText, 
-  MessageSquare, 
-  Mail, 
-  FileCheck, 
-  Layout, 
-  Video, 
-  PenTool, 
+import {
+  FileText,
+  MessageSquare,
+  Mail,
+  FileCheck,
+  Layout,
+  Video,
+  PenTool,
   BookOpen,
   Sparkles,
   ChevronDown,
@@ -31,14 +31,14 @@ const ContentCreatorPage: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [showTypeModal, setShowTypeModal] = useState<boolean>(false);
-  
+
   // Basic fields state - would expand based on selected content type
   const [title, setTitle] = useState<string>('');
   const [audience, setAudience] = useState<string>('');
   const [objective, setObjective] = useState<string>('');
   const [keyPoints, setKeyPoints] = useState<string>('');
   const [tone, setTone] = useState<string>('professional');
-  
+
   // Initial AI insights - shown when page loads
   const initialInsights = [
     "Content with clear audience targeting performs 2-3x better",
@@ -46,7 +46,7 @@ const ContentCreatorPage: React.FC = () => {
     "AI-assisted content creation can reduce production time by up to 70%",
     "The right tone of voice can improve audience engagement by 40%"
   ];
-  
+
   // Define content types with their detailss
   const CONTENT_TYPES = [
     {
@@ -73,13 +73,46 @@ const ContentCreatorPage: React.FC = () => {
     },
     {
       id: 'email',
-      title: 'Email Campaign',
-      description: 'Create email content that drives opens, clicks, and conversions for your business.',
-      icon: <Mail className="w-8 h-8 text-green-600" />,
+      title: 'Individual Email',
+      description: 'Create a single email that drives opens, clicks, and conversions for your business.',
+      icon: <Mail className="w-8 h-8 text-red-600" />,
       tips: [
         "Craft subject lines of 40-60 characters",
         "Keep email body between 100-200 words",
         "Include a single, prominent call-to-action"
+      ]
+    },
+    {
+      id: 'email',
+      title: 'Email Campaign',
+      description: 'Create multi-email sequences designed to nurture leads and drive conversions.',
+      icon: <Mail className="w-8 h-8 text-emerald-600" />,
+      tips: [
+        "Plan sequential messaging with clear goals",
+        "Space emails appropriately (3-7 days apart)",
+        "Include progressive calls-to-action"
+      ]
+    },
+    {
+      id: 'internal-comms',
+      title: 'Internal Email',
+      description: 'Create an email to send to your team.',
+      icon: <Mail className="w-8 h-8 text-blue-600" />,
+      tips: [
+        "Think about voice, especially if you're writing on behalf of an executive",
+        "Shorter is always better",
+        "Be clear about any actions you need your readers to take"
+      ]
+    },
+    {
+      id: 'web-page',
+      title: 'Web Page',
+      description: 'Create a professional, engaging page for your website.',
+      icon: <Mail className="w-8 h-8 text-blue-600" />,
+      tips: [
+        "Use simple, declarative language",
+        "Keep paragraphs short for readability",
+        "Subheads let readers skim for key points"
       ]
     },
     {
@@ -136,12 +169,35 @@ const ContentCreatorPage: React.FC = () => {
         "Include visual elements every 1-2 pages",
         "Add interactive worksheets or checklists"
       ]
+    },
+    {
+      id: 'web-page',
+      title: 'Web Page',
+      description: 'Create optimized web page content that engages visitors and improves conversion rates.',
+      icon: <Layout className="w-8 h-8 text-blue-600" />,
+      tips: [
+        "Keep important content above the fold",
+        "Use clear, benefit-focused headlines",
+        "Include strong calls-to-action throughout"
+      ]
+    },
+    {
+      id: 'internal-email',
+      title: 'Internal Email Comms',
+      description: 'Create effective internal communications to keep your team informed and aligned.',
+      icon: <Mail className="w-8 h-8 text-cyan-600" />,
+      tips: [
+        "Use clear, action-oriented subject lines",
+        "Keep content concise and scannable",
+        "Clearly highlight any required actions"
+      ]
     }
+
   ];
-  
+
   // Get the selected content type details
   const selectedTypeDetails = CONTENT_TYPES.find(type => type.id === selectedType);
-  
+
   // Reset form when content type changes
   useEffect(() => {
     setTitle('');
@@ -150,7 +206,7 @@ const ContentCreatorPage: React.FC = () => {
     setKeyPoints('');
     setTone('professional');
   }, [selectedType]);
-  
+
   // Prevent background scrolling when modal is open
   useEffect(() => {
     if (showTypeModal) {
@@ -162,15 +218,15 @@ const ContentCreatorPage: React.FC = () => {
       document.body.style.overflow = 'auto';
     };
   }, [showTypeModal]);
-  
+
   const handleContentGeneration = () => {
     if (!selectedType || !title || !audience || !objective) {
       // Show validation error in a real app
       return;
     }
-    
+
     setIsGenerating(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsGenerating(false);
@@ -178,12 +234,12 @@ const ContentCreatorPage: React.FC = () => {
       // and perhaps navigate to a results page
     }, 2000);
   };
-  
+
   // Helper to determine if form is valid
   const isFormValid = () => {
     return selectedType && title && audience && objective;
   };
-  
+
   return (
     <NotificationProvider>
       <WritingStyleProvider>
@@ -205,16 +261,16 @@ const ContentCreatorPage: React.FC = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-blue-800 mb-3">Pro Tip!</h3>
                         <p className="text-blue-700 mb-4">
-                          Select a template from our template gallery to help you get started!  
-                          <Link 
-                  href="/templates" 
-                  className="inline-flex items-center ml-2 text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Browse templates
-                  <ExternalLink className="w-3 h-3 ml-1" />
-                </Link>
+                          Select a template from our template gallery to help you get started!
+                          <Link
+                            href="/templates"
+                            className="inline-flex items-center ml-2 text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Browse templates
+                            <ExternalLink className="w-3 h-3 ml-1" />
+                          </Link>
                         </p>
-                        
+
                         <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                           <Sparkles className="w-5 h-5 mr-2" />
                           AI Content Insights
@@ -232,11 +288,11 @@ const ContentCreatorPage: React.FC = () => {
                   </CardContent>
                 </Card>
               )}
-              
+
               {/* Content Type Selector */}
               <div className="mb-8">
                 <h2 className="text-lg font-semibold mb-3">Select Content Type</h2>
-                <button 
+                <button
                   className="w-full flex items-center justify-between px-4 py-3 border rounded-lg bg-white"
                   onClick={() => setShowTypeModal(true)}
                 >
@@ -255,29 +311,28 @@ const ContentCreatorPage: React.FC = () => {
                   <ChevronDown className="w-5 h-5" />
                 </button>
               </div>
-              
+
               {/* Content Type Modal */}
               {showTypeModal && (
                 <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
                     <div className="p-4 border-b flex justify-between items-center">
                       <h3 className="text-lg font-semibold">Select Content Type</h3>
-                      <button 
+                      <button
                         onClick={() => setShowTypeModal(false)}
                         className="text-gray-500 hover:text-gray-700"
                       >
                         <X className="w-5 h-5" />
                       </button>
                     </div>
-                    
+
                     <div className="overflow-auto flex-grow">
                       <ul className="py-2">
                         {CONTENT_TYPES.map((type) => (
-                          <li 
+                          <li
                             key={type.id}
-                            className={`px-6 py-4 flex items-start hover:bg-gray-50 cursor-pointer ${
-                              selectedType === type.id ? 'bg-blue-50' : ''
-                            }`}
+                            className={`px-6 py-4 flex items-start hover:bg-gray-50 cursor-pointer ${selectedType === type.id ? 'bg-blue-50' : ''
+                              }`}
                             onClick={() => {
                               setSelectedType(type.id);
                               setShowTypeModal(false);
@@ -298,7 +353,7 @@ const ContentCreatorPage: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               {selectedTypeDetails && (
                 <>
                   {/* Selected Content Type Info */}
@@ -313,7 +368,7 @@ const ContentCreatorPage: React.FC = () => {
                           <p className="text-gray-600">{selectedTypeDetails.description}</p>
                         </div>
                       </div>
-                      
+
                       <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                         <div className="flex items-start">
                           <Sparkles className="w-5 h-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
@@ -332,7 +387,7 @@ const ContentCreatorPage: React.FC = () => {
                       </div>
                     </CardContent>
                   </Card>
-                  
+
                   {/* Content Creation Form */}
                   <Card className="mb-6">
                     <CardHeader>
@@ -353,7 +408,7 @@ const ContentCreatorPage: React.FC = () => {
                             placeholder={`Enter a title for your ${selectedTypeDetails.title}`}
                           />
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium mb-1" htmlFor="audience">
                             Target Audience
@@ -367,7 +422,7 @@ const ContentCreatorPage: React.FC = () => {
                             placeholder="Who is this content for? (e.g., Marketing Directors, Small Business Owners)"
                           />
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium mb-1" htmlFor="objective">
                             Primary Objective
@@ -386,7 +441,7 @@ const ContentCreatorPage: React.FC = () => {
                             <option value="retention">Improve Retention</option>
                           </select>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium mb-1" htmlFor="keyPoints">
                             Key Points
@@ -400,7 +455,7 @@ const ContentCreatorPage: React.FC = () => {
                             placeholder="List the main points you want to include (one per line)"
                           />
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium mb-1">
                             Tone of Voice
@@ -411,11 +466,10 @@ const ContentCreatorPage: React.FC = () => {
                                 key={toneOption}
                                 type="button"
                                 onClick={() => setTone(toneOption)}
-                                className={`py-2 px-3 border rounded-md text-sm capitalize ${
-                                  tone === toneOption 
-                                    ? 'bg-blue-100 border-blue-300 text-blue-800' 
-                                    : 'bg-white hover:bg-gray-50'
-                                }`}
+                                className={`py-2 px-3 border rounded-md text-sm capitalize ${tone === toneOption
+                                  ? 'bg-blue-100 border-blue-300 text-blue-800'
+                                  : 'bg-white hover:bg-gray-50'
+                                  }`}
                               >
                                 {toneOption}
                               </button>
@@ -425,7 +479,7 @@ const ContentCreatorPage: React.FC = () => {
                       </div>
                     </CardContent>
                   </Card>
-                  
+
                   <div className="flex justify-between mt-6">
                     <button
                       onClick={() => router.back()}
@@ -434,7 +488,7 @@ const ContentCreatorPage: React.FC = () => {
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Back
                     </button>
-                    
+
                     <button
                       onClick={handleContentGeneration}
                       disabled={!isFormValid() || isGenerating}

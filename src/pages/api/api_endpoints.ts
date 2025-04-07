@@ -658,10 +658,16 @@ Only include information that would be publicly available or reasonably inferred
     });
   }
 }
-
-// Function to generate content
+// Handler for generate content endpoint
 async function handleGenerateContent(data: any, res: NextApiResponse) {
   try {
+    // Log the incoming request for debugging
+    console.log("Generate content request received:", {
+      contentType: data.contentType,
+      hasPrompt: !!data.prompt,
+      hasSourceContent: !!data.sourceContent
+    });
+
     // Validate input
     if (!data.contentType) {
       return res.status(400).json({
@@ -670,21 +676,58 @@ async function handleGenerateContent(data: any, res: NextApiResponse) {
       });
     }
 
+    // Parse source content if it's a string (from campaign data)
+    let parsedSourceContent = data.sourceContent;
+    if (typeof data.sourceContent === 'string') {
+      try {
+        parsedSourceContent = JSON.parse(data.sourceContent);
+        console.log("Successfully parsed source content");
+      } catch (err) {
+        console.log("Could not parse source content as JSON, using as-is");
+      }
+    }
+
+    // Create a more detailed prompt based on the content type
+    let detailedPrompt = `Create high-quality ${data.contentType} content`;
+
+    if (data.contentType === "campaign") {
+      detailedPrompt = `
+Generate a comprehensive content package for a marketing campaign with the following information:
+${data.prompt ? `Campaign Name: ${data.prompt}` : ''}
+
+${parsedSourceContent?.targetAudience ? `Target Audience: ${parsedSourceContent.targetAudience}` : ''}
+
+${parsedSourceContent?.keyMessages ? `Key Messages:
+${parsedSourceContent.keyMessages.map((msg: string, i: number) => `${i + 1}. ${msg}`).join('\n')}` : ''}
+
+${parsedSourceContent?.contentTypes ? `Content Types: ${parsedSourceContent.contentTypes.join(', ')}` : ''}
+
+Include the following in your response:
+1. An eBook outline with title and 4-6 chapter headings
+2. 3-5 social media posts for LinkedIn
+3. 3-5 social media posts for Twitter
+4. 3 nurture emails (subject lines and preview text)
+5. 3 SDR follow-up emails (subject lines and email body)
+
+Format everything clearly with appropriate headers and sections.`;
+    }
+
     // Generate a prompt for content creation
     const contentPrompt = `You are an expert content creator specializing in creating high-quality ${data.contentType} content.
 
-    Create ${data.contentType} content based on the following parameters:
+    ${detailedPrompt}
     
-    ${data.prompt ? `Topic/Prompt: ${data.prompt}` : ''}
-    ${data.sourceContent ? `Source Content to use as reference: ${data.sourceContent}` : ''}
-    ${data.parameters?.audience ? `Target Audience: ${data.parameters.audience}` : 'Target Audience: General audience'}
+    ${data.prompt && data.contentType !== "campaign" ? `Topic/Prompt: ${data.prompt}` : ''}
+    ${data.parameters?.audience ? `Target Audience: ${data.parameters.audience}` : ''}
     ${data.parameters?.keywords ? `Keywords: ${Array.isArray(data.parameters.keywords) ? data.parameters.keywords.join(', ') : data.parameters.keywords}` : ''}
     ${data.parameters?.tone ? `Tone: ${data.parameters.tone}` : 'Tone: professional'}
     ${data.parameters?.additionalNotes ? `Additional Notes: ${data.parameters.additionalNotes}` : ''}
     
-    Please create comprehensive, engaging content that follows best practices for ${data.contentType}.
-    Format the content in Markdown with appropriate headings, paragraphs, and formatting.
+    Please create comprehensive, engaging content that follows best practices.
+    Format the content with appropriate headings, paragraphs, and formatting.
     Ensure the content is original, valuable, and tailored to the target audience.`;
+
+    console.log("Sending prompt to OpenAI:", contentPrompt.substring(0, 200) + "...");
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
@@ -692,19 +735,19 @@ async function handleGenerateContent(data: any, res: NextApiResponse) {
       messages: [
         {
           role: 'system',
-          content: `You are an expert content creator specializing in ${data.contentType}.`
+          content: `You are an expert content creator specializing in ${data.contentType}.`,
         },
         {
           role: 'user',
-          content: contentPrompt
-        }
+          content: contentPrompt,
+        },
       ],
       temperature: 0.7,
     });
 
     const content = completion.choices[0].message?.content || '';
 
-    // Create a title from first line or first sentence
+    // Create a title from the first line or first sentence
     let title = '';
     if (content.startsWith('# ')) {
       // Extract title from markdown heading
@@ -721,14 +764,14 @@ async function handleGenerateContent(data: any, res: NextApiResponse) {
         contentType: data.contentType,
         description: content.substring(0, 160).replace(/[#*_]/g, ''),
         keywords: data.parameters?.keywords || ['content', 'marketing'],
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     });
   } catch (error) {
     console.error('Error generating content:', error);
     return res.status(500).json({
       error: 'Server error',
-      message: 'Failed to generate content'
+      message: 'Failed to generate content',
     });
   }
 }

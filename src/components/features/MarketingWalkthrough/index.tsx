@@ -46,7 +46,9 @@ const STEPS = [
     title: 'Your Brand Voice'
   },
   { id: '9', component: ReviewStep, title: 'Putting it All Together' }
+
 ];
+
 
 const MarketingWalkthrough: React.FC = () => {
   const router = useRouter();
@@ -62,7 +64,7 @@ const MarketingWalkthrough: React.FC = () => {
   }, [step, currentStep, router]);
 
   const handleNext = () => {
-    if (currentStep?.id === '10') {
+    if (currentStep?.id === '9') {
       router.push('/walkthrough/complete');
       return;
     }
@@ -107,7 +109,7 @@ const MarketingWalkthrough: React.FC = () => {
   const isSkippable = SKIPPABLE_STEPS.includes(currentStep.id);
 
   // Force a specific button text for the last step
-  const buttonText = currentStep.id === '10' ? 'Finish Walkthrough →' : 'Next →';
+  const buttonText = currentStep.id === '9' ? 'Finish Walkthrough →' : 'Next →';
 
   // For debugging
   console.log(`Current step: ${currentStep.id}, Button text: ${buttonText}`);

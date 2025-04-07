@@ -29,6 +29,11 @@ import {
 // Define content types directly in this file to ensure proper format
 const CONTENT_TYPES = [
   {
+    id: 'web-page',
+    title: 'Web Page',
+    description: 'Create optimized web page content that engages visitors and improves conversion rates.'
+  },
+  {
     id: 'blog-post',
     title: 'Blog Post',
     description: 'Create engaging blog content to establish your expertise and attract organic traffic.'
@@ -40,8 +45,19 @@ const CONTENT_TYPES = [
   },
   {
     id: 'email',
+    title: 'Email',
+    description: 'Create individual email content that drives opens, clicks, and conversions for your business.'
+  },
+ 
+  {
+    id: 'internal-email',
+    title: 'Internal or Exec Email Comms',
+    description: 'Create effective internal communications or executive communications to keep your team informed and aligned.'
+  },
+  {
+    id: 'email-campaign',
     title: 'Email Campaign',
-    description: 'Create email content that drives opens, clicks, and conversions for your business.'
+    description: 'Create multi-email sequences designed to nurture leads and drive conversions.'
   },
   {
     id: 'case-study',

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ScreenTemplate } from '../components/shared/UIComponents';
-import { PlusCircle, CheckCircle, ChevronRight, Calendar, Target, MessageCircle, Sparkles } from 'lucide-react';
+import { PlusCircle, CheckCircle, ChevronRight, Calendar, Target, MessageCircle, Sparkles, RefreshCw } from 'lucide-react';
 import { CONTENT_TYPES } from '../data/contentTypesData';
 import { useContent } from '../context/ContentContext';
 import ContentPreview from '../components/features/ContentEngine/screens/ContentPreview';
@@ -11,7 +11,7 @@ import StyleGuideNotificationBanner from '../components/features/StyleGuideNotif
 // Goal recommendations mapping
 const GOAL_RECOMMENDATIONS = {
   'awareness': {
-    contentTypes: ['Blog Posts', 'Social Posts', 'Video Scripts'],
+    contentTypes: ['Blog Posts', 'Social Posts', 'Video Scripts', 'Web Pages'],
     channels: ['Social Media', 'Blog', 'Website'],
     insights: [
       "Brand awareness campaigns perform best with consistent visual identity across all assets",
@@ -20,7 +20,7 @@ const GOAL_RECOMMENDATIONS = {
     ]
   },
   'lead_generation': {
-    contentTypes: ['eBooks & White Papers', 'Landing Pages', 'Case Studies'],
+    contentTypes: ['eBooks & White Papers', 'Landing Pages', 'Case Studies', 'Web Pages'],
     channels: ['Email', 'Paid Ads', 'Webinar'],
     insights: [
       "eBooks with clear value propositions convert 32% better than generic lead magnets",
@@ -29,7 +29,7 @@ const GOAL_RECOMMENDATIONS = {
     ]
   },
   'conversion': {
-    contentTypes: ['Case Studies', 'Email Campaigns', 'Digital Ads'],
+    contentTypes: ['Case Studies', 'Email Campaigns', 'Digital Ads', 'Landing Pages'],
     channels: ['Email', 'Webinar', 'Paid Ads'],
     insights: [
       "Case studies with specific ROI metrics improve conversion rates by 27%",
@@ -38,7 +38,7 @@ const GOAL_RECOMMENDATIONS = {
     ]
   },
   'retention': {
-    contentTypes: ['Email Campaigns', 'Blog Posts', 'Case Studies'],
+    contentTypes: ['Email Campaigns', 'Blog Posts', 'Case Studies', 'Internal Email Comms'],
     channels: ['Email', 'Social Media', 'Webinar'],
     insights: [
       "Regular email updates increase customer retention rates by 29% on average",
@@ -84,7 +84,7 @@ const CHANNELS = [
 // Campaign type recommendations
 const CAMPAIGN_TYPE_RECOMMENDATIONS = {
   'awareness': {
-    contentTypes: ['Blog Posts', 'Social Posts', 'Video Scripts'],
+    contentTypes: ['Blog Posts', 'Social Posts', 'Video Scripts', 'Web Pages'],
     description: 'Brand awareness campaigns perform best with content that educates your audience and establishes your expertise.',
     insights: [
       "Visual consistency across all campaign assets increases brand recall by 49%",
@@ -93,7 +93,7 @@ const CAMPAIGN_TYPE_RECOMMENDATIONS = {
     ]
   },
   'lead_generation': {
-    contentTypes: ['eBooks & White Papers', 'Case Studies', 'Landing Pages'],
+    contentTypes: ['eBooks & White Papers', 'Case Studies', 'Landing Pages', 'Web Pages'],
     description: 'Lead generation campaigns need valuable content that motivates prospects to share their information.',
     insights: [
       "Gated content with clear value propositions converts 32% better",
@@ -102,7 +102,7 @@ const CAMPAIGN_TYPE_RECOMMENDATIONS = {
     ]
   },
   'conversion': {
-    contentTypes: ['Case Studies', 'Email Campaigns', 'Digital Ads'],
+    contentTypes: ['Case Studies', 'Email Campaigns', 'Digital Ads', 'Landing Pages'],
     description: 'Conversion campaigns should focus on addressing objections and demonstrating clear value.',
     insights: [
       "Case studies with specific ROI metrics improve conversion rates by 27%",
@@ -111,7 +111,7 @@ const CAMPAIGN_TYPE_RECOMMENDATIONS = {
     ]
   },
   'retention': {
-    contentTypes: ['Email Campaigns', 'Blog Posts', 'Case Studies'],
+    contentTypes: ['Email Campaigns', 'Blog Posts', 'Case Studies', 'Internal Email Comms'],
     description: 'Retention campaigns should provide ongoing value and strengthen the relationship with customers.',
     insights: [
       "Customer education content increases retention rates by 29% on average",
@@ -137,6 +137,9 @@ const CampaignBuilder: React.FC = () => {
   const [goalInsights, setGoalInsights] = useState<string[]>([]);
   const [campaignTypeInsights, setCampaignTypeInsights] = useState<string[]>([]);
   const [recommendedContentTypes, setRecommendedContentTypes] = useState<string[]>([]);
+  // Add state for showing reset button and tracking reset status
+  const [showResetButton, setShowResetButton] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Add this ref to track the newly added input field
   const newMessageInputRef = useRef<HTMLInputElement>(null);
@@ -144,12 +147,72 @@ const CampaignBuilder: React.FC = () => {
   // Content type selection state
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
 
-  // Clean up selected content types when component unmounts
-  useEffect(() => {
-    return () => {
+  // More aggressive clearing function
+  const clearAllStorageAndState = () => {
+    setIsResetting(true);
+    console.log("STARTING COMPLETE RESET...");
+
+    // 1. Clear all localStorage items that might be related
+    try {
+      localStorage.removeItem('marketing-content-lab-content-settings');
+      localStorage.removeItem('currentCampaign');
+      localStorage.removeItem('contentLibrary');
+      localStorage.removeItem('marketingSeoKeywords');
+      localStorage.removeItem('marketingMessages');
+      localStorage.removeItem('marketingProgramState');
+
+      // Clear any other potential items
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('marketing') || key.includes('content'))) {
+          keysToRemove.push(key);
+        }
+      }
+
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      console.log("localStorage items cleared:", keysToRemove);
+    } catch (e) {
+      console.error("Error clearing localStorage:", e);
+    }
+
+    // 2. Reset context state
+    if (setSelectedContentTypes) {
       setSelectedContentTypes([]);
-    };
-  }, [setSelectedContentTypes]);
+      console.log("Context state reset");
+    }
+
+    // 3. Reset all component state
+    setCampaignType(null);
+    setCampaignName('');
+    setCampaignGoal('');
+    setTargetAudience('');
+    setStartDate('');
+    setEndDate('');
+    setCampaignChannels([]);
+    setKeyMessages(['']);
+    setContentPieces([]);
+    setRecommendedContentTypes([]);
+    setCampaignTypeInsights([]);
+    setGoalInsights([]);
+
+    console.log("Local state reset");
+
+    // 4. Reset the step back to 1
+    setStep(1);
+
+    // 5. Hide reset button after successful reset
+    setShowResetButton(false);
+    setIsResetting(false);
+
+    console.log("RESET COMPLETED");
+  };
+
+  // Clear everything on component mount
+  useEffect(() => {
+    clearAllStorageAndState();
+    // No dependency array because we only want this to run once on mount
+  }, []);
 
   // Add a useEffect to focus on newly added input field
   useEffect(() => {
@@ -159,6 +222,8 @@ const CampaignBuilder: React.FC = () => {
       newMessageInputRef.current.focus();
     }
   }, [keyMessages.length]); // This effect runs when the length of keyMessages changes
+
+  console.log("Current selectedContentTypes:", selectedContentTypes);
 
   // Handle campaign type selection
   const handleSelectCampaignType = (typeId: string) => {
@@ -270,7 +335,8 @@ const CampaignBuilder: React.FC = () => {
       targetAudience: targetAudience,
       keyMessages: keyMessages.filter(msg => msg.trim() !== ''),
       channels: campaignChannels,
-      contentTypes: selectedContentTypes
+      contentTypes: selectedContentTypes,
+      timestamp: new Date().toISOString() // Add timestamp to prevent stale data
     };
 
     localStorage.setItem('currentCampaign', JSON.stringify(campaignData));
@@ -279,6 +345,23 @@ const CampaignBuilder: React.FC = () => {
   // Step 1: Campaign Type and Content Type Selection
   const renderTypeAndContentSelection = () => (
     <div className="space-y-6">
+      {/* Reset Button */}
+      {showResetButton && (
+        <button
+          onClick={clearAllStorageAndState}
+          disabled={isResetting}
+          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center mb-4"
+        >
+          {isResetting ? (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Resetting...
+            </>
+          ) : (
+            <>Reset Campaign Builder</>
+          )}
+        </button>
+      )}
+
       {/* Campaign Type Section */}
       <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
         <div className="bg-blue-900 h-2"></div>
@@ -293,8 +376,8 @@ const CampaignBuilder: React.FC = () => {
           <div
             key={type.id}
             className={`p-6 cursor-pointer transition-all rounded-lg ${campaignType === type.id
-                ? 'border-2 border-blue-500 shadow-md bg-white'
-                : 'border border-gray-200 hover:border-blue-300 bg-white'
+              ? 'border-2 border-blue-500 shadow-md bg-white'
+              : 'border border-gray-200 hover:border-blue-300 bg-white'
               }`}
             onClick={() => handleSelectCampaignType(type.id)}
           >
@@ -332,8 +415,8 @@ const CampaignBuilder: React.FC = () => {
                 <button
                   key={type}
                   className={`px-3 py-1.5 rounded-full text-sm ${selectedContentTypes.includes(type)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                     }`}
                   onClick={() => {
                     if (!selectedContentTypes.includes(type)) {
@@ -375,16 +458,16 @@ const CampaignBuilder: React.FC = () => {
           <Card
             key={type}
             className={`p-6 cursor-pointer transition-all ${selectedContentTypes.includes(type)
-                ? 'border-2 border-blue-500 bg-blue-50 shadow-md'
-                : 'border border-gray-200 hover:border-blue-300'
+              ? 'border-2 border-blue-500 bg-blue-50 shadow-md'
+              : 'border border-gray-200 hover:border-blue-300'
               }`}
             onClick={() => toggleContentType(type)}
           >
             <div className="flex justify-between items-start">
               <h3 className="font-semibold mb-2">{type}</h3>
               <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedContentTypes.includes(type)
-                  ? 'border-blue-600 bg-blue-600'
-                  : 'border-gray-300'
+                ? 'border-blue-600 bg-blue-600'
+                : 'border-gray-300'
                 }`}>
                 {selectedContentTypes.includes(type) && (
                   <span className="text-white">✓</span>

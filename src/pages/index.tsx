@@ -202,7 +202,7 @@ export default function Home({ initialMarketingState }) {
           {renderToolCard(
             "Campaign Builder",
             "Set a theme and create multiple pieces of content for any funnel stage",
-            "/brand-voice"
+            "/campaign-builder"
           )}
         </div>
       </div>
