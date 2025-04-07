@@ -1,4 +1,6 @@
 // src/pages/campaign-builder.tsx
+// This component handles the campaign creation process across multiple steps
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ScreenTemplate } from '../components/shared/UIComponents';
@@ -140,12 +142,52 @@ const CampaignBuilder: React.FC = () => {
   // Add state for showing reset button and tracking reset status
   const [showResetButton, setShowResetButton] = useState(true);
   const [isResetting, setIsResetting] = useState(false);
+  // Add state to track whether we've saved campaign data
+  const [hasSavedCampaign, setHasSavedCampaign] = useState(false);
 
   // Add this ref to track the newly added input field
   const newMessageInputRef = useRef<HTMLInputElement>(null);
 
   // Content type selection state
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
+
+  // Load any existing campaign data on mount
+  useEffect(() => {
+    try {
+      const savedCampaign = localStorage.getItem('currentCampaign');
+      if (savedCampaign) {
+        const campaignData = JSON.parse(savedCampaign);
+
+        // Only update state with saved values if they exist
+        if (campaignData.type) setCampaignType(campaignData.type);
+        if (campaignData.name) setCampaignName(campaignData.name);
+        if (campaignData.goal) setCampaignGoal(campaignData.goal);
+        if (campaignData.targetAudience) setTargetAudience(campaignData.targetAudience);
+        if (campaignData.keyMessages && campaignData.keyMessages.length > 0) {
+          setKeyMessages(campaignData.keyMessages);
+        }
+        if (campaignData.channels) setCampaignChannels(campaignData.channels);
+
+        // Update selected content types in context
+        if (campaignData.contentTypes && campaignData.contentTypes.length > 0) {
+          setSelectedContentTypes(campaignData.contentTypes);
+        }
+
+        // Set campaign type insights if a type is loaded
+        if (campaignData.type && CAMPAIGN_TYPE_RECOMMENDATIONS[campaignData.type]) {
+          setRecommendedContentTypes(CAMPAIGN_TYPE_RECOMMENDATIONS[campaignData.type].contentTypes);
+          setCampaignTypeInsights(CAMPAIGN_TYPE_RECOMMENDATIONS[campaignData.type].insights);
+        }
+
+        // Mark as having saved campaign if we loaded data
+        setHasSavedCampaign(true);
+
+        console.log("Loaded existing campaign data:", campaignData);
+      }
+    } catch (err) {
+      console.error("Error loading saved campaign:", err);
+    }
+  }, []);
 
   // More aggressive clearing function
   const clearAllStorageAndState = () => {
@@ -195,6 +237,7 @@ const CampaignBuilder: React.FC = () => {
     setRecommendedContentTypes([]);
     setCampaignTypeInsights([]);
     setGoalInsights([]);
+    setHasSavedCampaign(false);
 
     console.log("Local state reset");
 
@@ -208,12 +251,6 @@ const CampaignBuilder: React.FC = () => {
     console.log("RESET COMPLETED");
   };
 
-  // Clear everything on component mount
-  useEffect(() => {
-    clearAllStorageAndState();
-    // No dependency array because we only want this to run once on mount
-  }, []);
-
   // Add a useEffect to focus on newly added input field
   useEffect(() => {
     // Check if the ref is assigned and if it's the last element in the keyMessages array
@@ -223,7 +260,13 @@ const CampaignBuilder: React.FC = () => {
     }
   }, [keyMessages.length]); // This effect runs when the length of keyMessages changes
 
-  console.log("Current selectedContentTypes:", selectedContentTypes);
+  console.log("Current state:", {
+    step: step,
+    campaignType: campaignType,
+    typeName: campaignType ? CAMPAIGN_TYPES.find(t => t.id === campaignType)?.name : 'none',
+    selectedContentTypes: selectedContentTypes,
+    hasSavedCampaign: hasSavedCampaign
+  });
 
   // Handle campaign type selection
   const handleSelectCampaignType = (typeId: string) => {
@@ -326,11 +369,20 @@ const CampaignBuilder: React.FC = () => {
     setKeyMessages(prev => [...prev, '']);
   };
 
+  // Find campaign type name for display
+  const getCampaignTypeName = () => {
+    if (!campaignType) return "Not Selected";
+    const found = CAMPAIGN_TYPES.find(t => t.id === campaignType);
+    return found ? found.name : "Unknown Type";
+  };
+
   // Save campaign data to localStorage before navigating to preview
+  // Fix for the saveCampaignData function
   const saveCampaignData = () => {
     const campaignData = {
       name: campaignName,
       type: campaignType,
+      typeName: getCampaignTypeName(), // Save the display name too for easier access
       goal: campaignGoal,
       targetAudience: targetAudience,
       keyMessages: keyMessages.filter(msg => msg.trim() !== ''),
@@ -340,6 +392,13 @@ const CampaignBuilder: React.FC = () => {
     };
 
     localStorage.setItem('currentCampaign', JSON.stringify(campaignData));
+    setHasSavedCampaign(true);
+    console.log("Campaign data saved:", campaignData);
+
+    // Change this line to fix the issue
+    setTimeout(() => {
+      setStep(3);
+    }, 100);
   };
 
   // Step 1: Campaign Type and Content Type Selection
@@ -382,12 +441,12 @@ const CampaignBuilder: React.FC = () => {
             onClick={() => handleSelectCampaignType(type.id)}
           >
             <div className="flex items-start gap-4">
-              <div className={campaignType === type.id ? 'text-white' : ''}>
+              <div className={campaignType === type.id ? 'text-blue-500' : ''}>
                 {type.icon}
               </div>
               <div>
                 <h3 className="font-semibold mb-2">{type.name}</h3>
-                <p className={`text-sm ${campaignType === type.id ? 'text-black-100' : 'text-slate-600'}`}>
+                <p className={`text-sm ${campaignType === type.id ? 'text-blue-900' : 'text-slate-600'}`}>
                   {type.description}
                 </p>
               </div>
@@ -513,9 +572,9 @@ const CampaignBuilder: React.FC = () => {
           <h3 className="text-lg font-semibold text-blue-800 mb-3">Your Campaign Setup</h3>
 
           <div className="space-y-3">
-            <div className="flex">
+            <div className="flex items-start">
               <span className="font-medium text-blue-700 w-32">Campaign Type:</span>
-              <span className="text-blue-700">{CAMPAIGN_TYPES.find(t => t.id === campaignType)?.name}</span>
+              <span className="text-blue-700">{getCampaignTypeName()}</span>
             </div>
 
             <div className="flex items-start">
@@ -605,10 +664,7 @@ const CampaignBuilder: React.FC = () => {
           Back
         </button>
         <button
-          onClick={() => {
-            saveCampaignData();
-            setStep(3);
-          }}
+          onClick={saveCampaignData}
           disabled={!campaignName || keyMessages[0].trim() === ''}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
         >
@@ -618,21 +674,26 @@ const CampaignBuilder: React.FC = () => {
     </div>
   );
 
-  // Step 3: Content Preview using the ContentPreview component
-  const renderContentPreview = () => (
-    <ContentPreview />
-  );
-
   // Render the current step
   const renderCurrentStep = () => {
+    console.log("Rendering step:", step);
+
     switch (step) {
       case 1:
         return renderTypeAndContentSelection();
       case 2:
         return renderCampaignDetailsAndMessages();
       case 3:
-        return renderContentPreview();
+        // Ensure we have saved campaign data before rendering ContentPreview
+        if (!hasSavedCampaign) {
+          console.log("No saved campaign data, going back to step 2");
+          setStep(2);
+          return renderCampaignDetailsAndMessages();
+        }
+        console.log("Rendering ContentPreview component");
+        return <ContentPreview />;
       default:
+        console.log("Default case, rendering step 1");
         return renderTypeAndContentSelection();
     }
   };

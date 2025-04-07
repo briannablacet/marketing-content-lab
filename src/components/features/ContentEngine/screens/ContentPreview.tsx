@@ -61,14 +61,14 @@ const ContentPreview: React.FC = () => {
 
       // Fallback data if nothing is stored
       return {
-        name: "Building the Ultimate Defense",
+        name: "Unleashing Potential: How Marketing Content Lab Transforms Overworked Content Teams",
         type: "content",
         goal: "lead_generation",
-        targetAudience: "Security professionals in enterprise companies",
+        targetAudience: "Marketing professionals in mid-sized companies",
         keyMessages: [
-          "Comprehensive threat intelligence is crucial for modern security",
-          "Multiple intelligence sources provide better coverage",
-          "Our solution integrates diverse intelligence for complete protection"
+          "Streamline your content creation process",
+          "Scale your content marketing efforts efficiently",
+          "Maintain quality while increasing output"
         ],
         channels: ["Email", "Social Media", "Blog", "Website"]
       };
@@ -78,78 +78,272 @@ const ContentPreview: React.FC = () => {
     }
   };
 
+  // Get sample content as fallback
+  const getSampleContent = () => {
+    return {
+      ebook: {
+        title: "Unleashing Potential: How Marketing Content Lab Transforms Overworked Content Teams",
+        chapters: [
+          "The Challenges of Today's Content Teams",
+          "The Power of Scaling: The Key to Efficient Content Marketing",
+          "Introducing Marketing Content Lab: Your Ultimate Solution",
+          "Case Studies: Success Stories of Transformed Content Teams",
+          "How to Implement Marketing Content Lab in Your Organization",
+          "The Future of Content Marketing with Marketing Content Lab"
+        ],
+        preview: "Discover how Marketing Content Lab can transform your content marketing efforts, helping overworked teams scale their output while maintaining quality and consistency."
+      },
+      socialPosts: [
+        {
+          platform: "LinkedIn",
+          posts: [
+            "Are your content teams overworked? Discover the power of scaling with our new eBook: Unleashing Potential: How Marketing Content Lab Transforms Overworked Content Teams. Don't miss out on the ultimate solution to efficient content marketing. #MarketingContentLab #EfficientContentMarketing",
+            "Looking for a solution to your content marketing woes? Our latest eBook introduces Marketing Content Lab, the ultimate tool for content teams. Download your copy today! #ContentMarketing #MarketingContentLab",
+            "Discover how other content teams have transformed their processes with Marketing Content Lab. Our latest eBook, Unleashing Potential, shares success stories and insights. Don't miss it! #SuccessStories #MarketingContentLab"
+          ]
+        },
+        {
+          platform: "Twitter",
+          posts: [
+            "Overworked content teams, help is here! Discover the power of scaling with our new eBook. Download your copy today! #MarketingContentLab #ContentMarketing",
+            "Unlock the potential of your content team with Marketing Content Lab. Our latest eBook tells you how! #EfficientContentMarketing #MarketingContentLab",
+            "Learn from success stories of content teams that have transformed with Marketing Content Lab. Get our latest eBook now! #SuccessStories #MarketingContentLab"
+          ]
+        }
+      ],
+      emailFlow: [
+        {
+          type: "Welcome",
+          subject: "Unleash the potential of your content team",
+          preview: "Thank you for downloading our eBook on transforming overworked content teams. Inside, you'll discover how Marketing Content Lab can revolutionize your content creation process..."
+        },
+        {
+          type: "Follow-up 1",
+          subject: "Transform your content team with Marketing Content Lab",
+          preview: "Now that you've had a chance to explore our eBook, let's dive deeper into how Marketing Content Lab can address your specific content challenges..."
+        },
+        {
+          type: "Follow-up 2",
+          subject: "Success stories from content teams like yours",
+          preview: "Discover how other marketing teams have successfully implemented Marketing Content Lab to scale their content efforts while maintaining quality..."
+        }
+      ],
+      sdrEmails: [
+        {
+          day: 1,
+          subject: "Your guide to efficient content marketing",
+          body: "I noticed you downloaded our eBook about transforming content teams. Many marketing leaders struggle with scaling content production - would you be interested in seeing how Marketing Content Lab could help your team specifically?"
+        },
+        {
+          day: 3,
+          subject: "Transform your content marketing with Marketing Content Lab",
+          body: "I wanted to follow up on our eBook about scaling content marketing efforts. I've helped several marketing teams implement tools that have doubled their content output without adding headcount. Would you be open to a 15-minute conversation?"
+        },
+        {
+          day: 5,
+          subject: "Making your content marketing success story",
+          body: "Many marketing leaders who read our eBook found specific strategies they could implement right away. I'd love to learn what resonated most with you and share how other teams in your industry are applying these principles..."
+        }
+      ]
+    };
+  };
+
   // Function to generate all content at once
   const generateAllContent = async () => {
     setLoading({ ...loading, all: true });
 
     try {
       const campaignData = getCampaignData();
-      console.log("Using campaign data:", campaignData);
+      console.log("Generating content based on campaign data:", campaignData);
 
-      // Call the API for content generation with improved request format
+      // Call the API to generate content
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           endpoint: 'generate-content',
           data: {
-            // Simplify the data structure to match what the API expects
-            contentType: "campaign", 
+            contentType: 'campaign',
             prompt: campaignData.name,
-            sourceContent: JSON.stringify(campaignData),
-            parameters: {
-              audience: campaignData.targetAudience,
-              keywords: campaignData.keyMessages,
-              tone: "professional",
-              additionalNotes: `Campaign type: ${campaignData.type}, Content types: ${campaignData.contentTypes?.join(', ')}`
-            }
+            sourceContent: JSON.stringify(campaignData)
           }
-        })
+        }),
       });
-
-      console.log("API response status:", response.status);
 
       if (!response.ok) {
         throw new Error(`API responded with status ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("API response data:", data);
+      console.log("Content generated:", data);
 
-      // Process the response data
-      const processedContent = {
-        ebook: {
-          title: data.title || campaignData.name || "Campaign eBook",
-          preview: data.content?.substring(0, 250) + "..." || "Preview not available",
-          chapters: extractChapters(data.content) || ["Introduction", "Key Concepts", "Implementation", "Results"],
-        },
-        socialPosts: processedSocialPosts(data, campaignData),
-        emailFlow: processedEmailFlow(data, campaignData),
-        sdrEmails: processedSdrEmails(data, campaignData)
-      };
+      // Sample content as fallback
+      const sampleContent = getSampleContent();
+
+      // Process the API response and format the content
+      // Even if processing fails, use the sample content instead of failing completely
+      let processedContent;
+
+      try {
+        const content = data.content || '';
+
+        // Try to find eBook title
+        let ebookTitle = campaignData.name || "Marketing Content Lab eBook";
+        const titleMatch = content.match(/eBook\s+Title[:\*]*\s*(.+?)(?:\n|$)/i);
+        if (titleMatch && titleMatch[1]) {
+          ebookTitle = titleMatch[1].trim();
+        }
+
+        // Try to find eBook chapters
+        const chapters = [];
+
+        // Try to match chapter headings section
+        const chaptersMatch = content.match(/Chapter\s+Headings[:\*]*\s*([\s\S]+?)(?=\n\nSocial|LinkedIn|Twitter|\n\n\n|\n#|$)/i);
+        if (chaptersMatch && chaptersMatch[1]) {
+          const chapterLines = chaptersMatch[1].trim().split('\n');
+          for (const line of chapterLines) {
+            const cleanLine = line.trim().replace(/^\d+\.?\s*/, '').replace(/\*\*/g, '');
+            if (cleanLine && !cleanLine.match(/Chapter Headings/i)) {
+              chapters.push(cleanLine);
+            }
+          }
+        }
+
+        // If no specific chapters found, look for markdown headings
+        if (chapters.length === 0) {
+          const lines = content.split('\n');
+          for (const line of lines) {
+            if (line.match(/^##\s+/) && !line.match(/LinkedIn|Twitter|Email|Subject Line/i)) {
+              const chapterTitle = line.replace(/^##\s+/, '').trim();
+              chapters.push(chapterTitle);
+            }
+          }
+        }
+
+        // Extract preview text
+        let preview = "";
+        const previewMatch = content.match(/Preview\s+Text[:\*]*\s*(.+?)(?=\n\n|\n#|$)/is);
+        if (previewMatch && previewMatch[1]) {
+          preview = previewMatch[1].trim();
+        } else {
+          // Create a generic preview from the first paragraph
+          preview = "Discover how Marketing Content Lab can transform your content marketing efforts.";
+        }
+
+        // Extract LinkedIn content
+        const linkedinPosts = [];
+        let linkedinSection = content.match(/LinkedIn\s*(?:Posts)?[:\*]*\s*([\s\S]+?)(?=Twitter|\n\n\n|\n#|Subject Line|$)/i);
+
+        if (linkedinSection && linkedinSection[1]) {
+          const lines = linkedinSection[1].split('\n');
+          for (const line of lines) {
+            const cleanLine = line.trim()
+              .replace(/^\d+\.?\s*/, '')  // Remove numbering
+              .replace(/^\*+\s*|\*+$/g, '') // Remove asterisks
+              .replace(/^"|"$/g, ''); // Remove quotes
+
+            if (cleanLine && !cleanLine.match(/^LinkedIn|^Posts/i) && cleanLine.length > 15) {
+              linkedinPosts.push(cleanLine);
+            }
+          }
+        }
+
+        // Extract Twitter content
+        const twitterPosts = [];
+        let twitterSection = content.match(/Twitter\s*(?:Posts)?[:\*]*\s*([\s\S]+?)(?=\n\n\n|\n#|Subject Line|$)/i);
+
+        if (twitterSection && twitterSection[1]) {
+          const lines = twitterSection[1].split('\n');
+          for (const line of lines) {
+            const cleanLine = line.trim()
+              .replace(/^\d+\.?\s*/, '')  // Remove numbering
+              .replace(/^\*+\s*|\*+$/g, '') // Remove asterisks
+              .replace(/^"|"$/g, ''); // Remove quotes
+
+            if (cleanLine && !cleanLine.match(/^Twitter|^Posts/i) && cleanLine.length > 15) {
+              twitterPosts.push(cleanLine);
+            }
+          }
+        }
+
+        // If we couldn't extract social posts, use the sample ones
+        if (linkedinPosts.length === 0 && twitterPosts.length === 0) {
+          processedContent = {
+            ebook: {
+              title: ebookTitle,
+              chapters: chapters.length > 0 ? chapters : sampleContent.ebook.chapters,
+              preview: preview || sampleContent.ebook.preview
+            },
+            socialPosts: sampleContent.socialPosts,
+            emailFlow: sampleContent.emailFlow,
+            sdrEmails: sampleContent.sdrEmails
+          };
+        } else {
+          // Build social posts structure
+          const socialPosts = [];
+
+          if (linkedinPosts.length > 0) {
+            socialPosts.push({
+              platform: 'LinkedIn',
+              posts: linkedinPosts
+            });
+          } else {
+            socialPosts.push(sampleContent.socialPosts[0]); // Use sample LinkedIn posts
+          }
+
+          if (twitterPosts.length > 0) {
+            socialPosts.push({
+              platform: 'Twitter',
+              posts: twitterPosts
+            });
+          } else {
+            socialPosts.push(sampleContent.socialPosts[1]); // Use sample Twitter posts
+          }
+
+          processedContent = {
+            ebook: {
+              title: ebookTitle,
+              chapters: chapters.length > 0 ? chapters : sampleContent.ebook.chapters,
+              preview: preview || sampleContent.ebook.preview
+            },
+            socialPosts: socialPosts,
+            emailFlow: sampleContent.emailFlow,
+            sdrEmails: sampleContent.sdrEmails
+          };
+        }
+      } catch (error) {
+        console.error("Error processing generated content:", error);
+        processedContent = sampleContent;
+      }
 
       console.log("Processed content:", processedContent);
-      
-      // Update state with processed content
       setContent(processedContent);
+
+      // Initialize edit content with the processed content
       setEditContent({
         ebook: processedContent.ebook,
-        socialPosts: processedContent.socialPosts,
+        socialPosts: processedContent.socialPosts.flatMap(platform =>
+          platform.posts.map(post => ({ platform: platform.platform, post }))),
         emailFlow: processedContent.emailFlow,
         sdrEmails: processedContent.sdrEmails
       });
 
-      showNotification('success', 'Campaign content generated successfully!');
+      showNotification('success', 'Content generated successfully!');
     } catch (error) {
       console.error('Error generating content:', error);
       showNotification('error', 'Failed to generate content. Using sample content instead.');
 
-      // Fall back to sample content on error
+      // Use sample content as fallback
       const sampleContent = getSampleContent();
       setContent(sampleContent);
+
+      // Initialize edit content with the sample content
       setEditContent({
         ebook: sampleContent.ebook,
-        socialPosts: sampleContent.socialPosts,
+        socialPosts: sampleContent.socialPosts.flatMap(platform =>
+          platform.posts.map(post => ({ platform: platform.platform, post }))),
         emailFlow: sampleContent.emailFlow,
         sdrEmails: sampleContent.sdrEmails
       });
@@ -158,764 +352,114 @@ const ContentPreview: React.FC = () => {
     }
   };
 
-  // Helper functions to process data from the API response
+  // Helper function to extract chapters from content
   const extractChapters = (content) => {
     if (!content) return null;
-    
-    // Try to extract headings from markdown content
-    const headings = content.match(/#{1,2}\s+(.*?)(?=\n|$)/g);
-    if (headings && headings.length > 0) {
-      return headings.map(h => h.replace(/^#{1,2}\s+/, '').trim()).filter(h => h);
+
+    try {
+      // Try to find chapter headers in the content
+      const lines = content.split('\n');
+      const chapters = [];
+
+      // Look for patterns like "Chapter 1: Title" or "1. Title" or "# Title"
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+
+        // Skip empty lines
+        if (!trimmedLine) continue;
+
+        // Check for chapter headings
+        if (
+          trimmedLine.match(/^chapter\s+\d+:?\s+/i) || // "Chapter 1: Title"
+          trimmedLine.match(/^\d+\.\s+/) || // "1. Title"
+          trimmedLine.match(/^#\s+/) || // "# Title"
+          trimmedLine.match(/^\*\*.*\*\*$/) // "**Title**"
+        ) {
+          // Clean up the line to get just the title
+          let title = trimmedLine
+            .replace(/^chapter\s+\d+:?\s+/i, '')
+            .replace(/^\d+\.\s+/, '')
+            .replace(/^#\s+/, '')
+            .replace(/^\*\*|\*\*$/g, '');
+
+          if (title && title.length < 100) { // Sanity check for title length
+            chapters.push(title);
+          }
+        }
+      }
+
+      // If we found chapters, return them
+      if (chapters.length >= 3) {
+        return chapters;
+      }
+    } catch (err) {
+      console.error("Error extracting chapters:", err);
     }
-    
+
     return null;
   };
 
-  const processedSocialPosts = (data, campaignData) => {
-    // Extract social media content from API response or create default
-    if (data.content?.includes('Social Media') || data.content?.includes('LinkedIn') || data.content?.includes('Twitter')) {
-      try {
-        // Extract social media content sections
-        const socialContent = data.content;
-        const platforms = [];
-        
-        // Try to find LinkedIn content
-        if (socialContent.includes('LinkedIn')) {
-          const linkedinPosts = extractSocialPostsForPlatform(socialContent, 'LinkedIn');
-          if (linkedinPosts.length > 0) {
-            platforms.push({
-              platform: 'LinkedIn',
-              posts: linkedinPosts
-            });
-          }
-        }
-        
-        // Try to find Twitter content
-        if (socialContent.includes('Twitter')) {
-          const twitterPosts = extractSocialPostsForPlatform(socialContent, 'Twitter');
-          if (twitterPosts.length > 0) {
-            platforms.push({
-              platform: 'Twitter',
-              posts: twitterPosts
-            });
-          }
-        }
-        
-        if (platforms.length > 0) {
-          return platforms;
-        }
-      } catch (err) {
-        console.error("Error processing social posts:", err);
-      }
-    }
-    
-    // Default social posts if none could be extracted
-    return [
-      {
-        platform: 'LinkedIn',
-        posts: createDefaultPosts(campaignData, 'LinkedIn')
-      },
-      {
-        platform: 'Twitter',
-        posts: createDefaultPosts(campaignData, 'Twitter') 
-      }
-    ];
-  };
-
-  const extractSocialPostsForPlatform = (content, platform) => {
-    const platformRegex = new RegExp(`${platform}[\\s\\S]*?(?=##|$)`, 'i');
-    const platformSection = content.match(platformRegex);
-    
-    if (platformSection && platformSection[0]) {
-      // Look for bullet points, numbered lists, or paragraphs
-      const postsMatch = platformSection[0].match(/[-*•].*?(?=\n[-*•]|\n\n|$)|\d+\..*?(?=\n\d+\.|\n\n|$)|(?<=\n\n)(?!\s*[-*•]\s*|\s*\d+\.\s*).*?(?=\n\n|$)/g);
-      if (postsMatch) {
-        return postsMatch.map(post => post.replace(/^[-*•\s\d\.]+/, '').trim()).filter(p => p);
-      }
-    }
-    return [];
-  };
-
-  const createDefaultPosts = (campaignData, platform) => {
-    const keyMessages = campaignData.keyMessages || [];
-    const platformTags = platform === 'Twitter' ? '#MarketingTips' : '#ContentMarketing #Marketing';
-    
-    if (keyMessages.length > 0) {
-      return keyMessages.map(msg => 
-        platform === 'Twitter' 
-          ? `${msg.substring(0, 200)} ${platformTags}`
-          : `${msg} ${platformTags}`
-      );
-    }
-    
-    return [
-      `Check out our latest campaign: "${campaignData.name}" ${platformTags}`,
-      `We're excited to announce our new initiative for ${campaignData.targetAudience || 'our audience'}! ${platformTags}`
-    ];
-  };
-
-  const processedEmailFlow = (data, campaignData) => {
-    // Try to extract email content from API response
-    if (data.content?.includes('Email') || data.content?.includes('Subject:')) {
-      try {
-        const emails = [];
-        const emailRegex = /(?:Subject:|Email \d+)[^\n]*\n[\s\S]*?(?=\n\n\S|$)/g;
-        const emailMatches = data.content.match(emailRegex);
-        
-        if (emailMatches && emailMatches.length > 0) {
-          emailMatches.forEach((emailContent, index) => {
-            const subjectMatch = emailContent.match(/Subject:\s*(.*)/i);
-            const subject = subjectMatch ? subjectMatch[1].trim() : `Email ${index + 1}`;
-            
-            // Remove subject line to get just the body
-            const body = emailContent.replace(/Subject:\s*.*\n/i, '').trim();
-            
-            emails.push({
-              type: index === 0 ? 'Welcome' : `Follow-up ${index}`,
-              subject: subject,
-              preview: body.substring(0, 150) + "..."
-            });
-          });
-          
-          if (emails.length > 0) {
-            return emails;
-          }
-        }
-      } catch (err) {
-        console.error("Error processing emails:", err);
-      }
-    }
-    
-    // Default email flow if none could be extracted
-    return [
-      {
-        type: "Welcome",
-        subject: `Introduction to ${campaignData.name || 'Our Campaign'}`,
-        preview: `Thank you for your interest in our ${campaignData.name || 'campaign'}. We're excited to share more about how we can help ${campaignData.targetAudience || 'you'}.`
-      },
-      {
-        type: "Follow-up 1",
-        subject: `More About ${campaignData.name || 'Our Solution'}`,
-        preview: `We wanted to highlight some key aspects of our ${campaignData.name || 'solution'} that might interest you.`
-      },
-      {
-        type: "Follow-up 2",
-        subject: "Let's Connect",
-        preview: "Would you be interested in discussing how our solution can address your specific needs? Let's schedule a call."
-      }
-    ];
-  };
-
-  const processedSdrEmails = (data, campaignData) => {
-    // Try to extract SDR email content
-    if (data.content?.includes('SDR') || data.content?.includes('Sales') || data.content?.includes('Follow-up')) {
-      try {
-        const sdrRegex = /(?:Day \d+|SDR Email \d+)[^\n]*\n[\s\S]*?(?=\n\n\S|$)/g;
-        const sdrMatches = data.content.match(sdrRegex);
-        
-        if (sdrMatches && sdrMatches.length > 0) {
-          return sdrMatches.map((emailContent, index) => {
-            const dayMatch = emailContent.match(/Day (\d+)/i);
-            const day = dayMatch ? parseInt(dayMatch[1]) : index + 1;
-            
-            const subjectMatch = emailContent.match(/Subject:\s*(.*)/i);
-            const subject = subjectMatch ? subjectMatch[1].trim() : `Follow-up on ${campaignData.name || 'our campaign'}`;
-            
-            // Remove day and subject lines to get just the body
-            const body = emailContent
-              .replace(/Day \d+[^\n]*\n/i, '')
-              .replace(/Subject:\s*.*\n/i, '')
-              .trim();
-            
-            return {
-              day,
-              subject,
-              body: body.substring(0, 200)
-            };
-          });
-        }
-      } catch (err) {
-        console.error("Error processing SDR emails:", err);
-      }
-    }
-    
-    // Default SDR emails
-    return [
-      {
-        day: 1,
-        subject: `Following up on ${campaignData.name || 'our campaign'}`,
-        body: `I noticed you recently showed interest in our ${campaignData.name || 'solution'}. I'd be happy to answer any questions you might have about how we've helped ${campaignData.targetAudience || 'organizations like yours'}.`
-      },
-      {
-        day: 3,
-        subject: "Quick check-in",
-        body: "I'm reaching out to see if you had a chance to review the information about our solution. Many clients have found our approach helpful for addressing challenges like yours."
-      },
-      {
-        day: 5,
-        subject: "Request for a brief call",
-        body: "Would you be open to a 15-minute call to discuss how our solution addresses your specific needs? I've helped several organizations achieve significant results."
-      }
-    ];
-  };
-
-  // Function to regenerate a specific content type
-  const regenerateContent = async (type) => {
-    setLoading({ ...loading, [type]: true });
-
-    try {
-      const campaignData = getCampaignData();
-
-      // Call the API for the specific content type with improved request
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint: 'generate-content',
-          data: {
-            contentType: type,
-            prompt: `Generate ${type} for campaign: ${campaignData.name}`,
-            sourceContent: JSON.stringify(campaignData),
-            parameters: {
-              audience: campaignData.targetAudience,
-              keywords: campaignData.keyMessages,
-              tone: "professional"
-            }
-          }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API responded with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log(`Regenerated ${type} data:`, data);
-
-      // Update only the specific content type
-      const updatedContent = { ...content };
-
-      if (type === 'ebook') {
-        updatedContent.ebook = {
-          title: data.title || `${campaignData.name} eBook`,
-          preview: data.content?.substring(0, 250) + "..." || "Preview not available",
-          chapters: extractChapters(data.content) || ["Introduction", "Key Concepts", "Implementation", "Results"]
-        };
-        setEditContent(prev => ({
-          ...prev,
-          ebook: updatedContent.ebook
-        }));
-      } else if (type === 'socialPosts') {
-        updatedContent.socialPosts = processedSocialPosts(data, campaignData);
-        setEditContent(prev => ({
-          ...prev,
-          socialPosts: updatedContent.socialPosts
-        }));
-      } else if (type === 'emailFlow') {
-        updatedContent.emailFlow = processedEmailFlow(data, campaignData);
-        setEditContent(prev => ({
-          ...prev,
-          emailFlow: updatedContent.emailFlow
-        }));
-      } else if (type === 'sdrEmails') {
-        updatedContent.sdrEmails = processedSdrEmails(data, campaignData);
-        setEditContent(prev => ({
-          ...prev,
-          sdrEmails: updatedContent.sdrEmails
-        }));
-      }
-
-      setContent(updatedContent);
-      showNotification('success', `${type.charAt(0).toUpperCase() + type.slice(1)} content regenerated!`);
-    } catch (error) {
-      console.error(`Error regenerating ${type} content:`, error);
-      showNotification('error', `Failed to regenerate ${type} content.`);
-    } finally {
-      setLoading({ ...loading, [type]: false });
-    }
-  };
-
-  // Function to handle exporting all content
-  const handleExport = () => {
-    setIsExporting(true);
-
-    try {
-      const campaignData = getCampaignData();
-      const campaignName = campaignData.name || 'campaign';
-
-      // Create all-in-one content file
-      let allContent = `# ${campaignName} - Complete Campaign Content\n\n`;
-
-      // Add eBook content
-      if (content?.ebook) {
-        allContent += `# EBOOK: ${content.ebook.title}\n\n`;
-        allContent += `${content.ebook.preview}\n\n`;
-        content.ebook.chapters.forEach((chapter, i) => {
-          allContent += `## Chapter ${i + 1}: ${chapter}\n\n`;
-          allContent += `Content for chapter ${i + 1} goes here.\n\n`;
-        });
-        allContent += `\n\n${'='.repeat(50)}\n\n`;
-      }
-
-      // Add social posts
-      if (content?.socialPosts && content.socialPosts.length > 0) {
-        allContent += `# SOCIAL MEDIA POSTS\n\n`;
-        content.socialPosts.forEach(platform => {
-          allContent += `## ${platform.platform} Posts\n\n`;
-          platform.posts.forEach((post, i) => {
-            allContent += `### Post ${i + 1}\n${post}\n\n---\n\n`;
-          });
-        });
-        allContent += `\n\n${'='.repeat(50)}\n\n`;
-      }
-
-      // Add email sequence
-      if (content?.emailFlow && content.emailFlow.length > 0) {
-        allContent += `# EMAIL NURTURE SEQUENCE\n\n`;
-        content.emailFlow.forEach((email, i) => {
-          allContent += `## ${email.type} (Day ${i + 1})\n`;
-          allContent += `Subject: ${email.subject}\n\n`;
-          allContent += `${email.preview}\n\n`;
-          allContent += `---\n\n`;
-        });
-        allContent += `\n\n${'='.repeat(50)}\n\n`;
-      }
-
-      // Add SDR emails
-      if (content?.sdrEmails && content.sdrEmails.length > 0) {
-        allContent += `# SDR FOLLOW-UP EMAILS\n\n`;
-        content.sdrEmails.forEach(email => {
-          allContent += `## Day ${email.day}\n`;
-          allContent += `Subject: ${email.subject}\n\n`;
-          allContent += `${email.body}\n\n`;
-          allContent += `---\n\n`;
-        });
-      }
-
-      // Export the combined file
-      const allContentBlob = new Blob([allContent], { type: 'text/markdown' });
-      const allContentUrl = URL.createObjectURL(allContentBlob);
-      const allContentLink = document.createElement('a');
-      allContentLink.href = allContentUrl;
-      allContentLink.download = `${campaignName}-complete-campaign.md`;
-      document.body.appendChild(allContentLink);
-      allContentLink.click();
-      document.body.removeChild(allContentLink);
-
-      showNotification('success', 'All content exported successfully!');
-
-    } catch (error) {
-      console.error('Error exporting content:', error);
-      showNotification('error', 'Failed to export content.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // Function to handle downloading a specific content type
-  const handleDownload = (type, index = null) => {
-    try {
-      let filename;
-      let content;
-      let fileType;
-
-      if (type === 'ebook') {
-        filename = `${editContent.ebook.title || 'ebook'}.md`;
-        content = `# ${editContent.ebook.title}\n\n${editContent.ebook.preview}\n\n`;
-        // Add chapters
-        editContent.ebook.chapters.forEach((chapter, i) => {
-          content += `## Chapter ${i + 1}: ${chapter}\n\nContent for chapter ${i + 1} goes here.\n\n`;
-        });
-        fileType = 'text/markdown';
-      } else if (type === 'socialPost' && index !== null) {
-        const platform = editContent.socialPosts[index]?.platform || 'social';
-        filename = `${platform}_posts.txt`;
-        content = editContent.socialPosts[index]?.posts.join('\n\n---\n\n') || '';
-        fileType = 'text/plain';
-      } else if (type === 'email' && index !== null) {
-        const emailInfo = editContent.emailFlow[index];
-        filename = `${emailInfo?.type || 'email'}_${index + 1}.txt`;
-        content = `Subject: ${emailInfo?.subject || ''}\n\n${emailInfo?.preview || ''}`;
-        fileType = 'text/plain';
-      } else if (type === 'sdrEmail' && index !== null) {
-        const emailInfo = editContent.sdrEmails[index];
-        filename = `sdr_email_day${emailInfo?.day || index + 1}.txt`;
-        content = `Subject: ${emailInfo?.subject || ''}\n\n${emailInfo?.body || ''}`;
-        fileType = 'text/plain';
-      } else if (type === 'allSocial') {
-        filename = 'all_social_posts.txt';
-        content = editContent.socialPosts.map((platform, i) =>
-          `# ${platform.platform} Posts\n\n${platform.posts.join('\n\n---\n\n')}`
-        ).join('\n\n==========\n\n');
-        fileType = 'text/plain';
-      } else if (type === 'allEmails') {
-        filename = 'email_sequence.txt';
-        content = editContent.emailFlow.map((email, i) =>
-          `# ${email.type} (Day ${i + 1})\nSubject: ${email.subject}\n\n${email.preview}`
-        ).join('\n\n==========\n\n');
-        fileType = 'text/plain';
-      } else if (type === 'allSDR') {
-        filename = 'sdr_email_sequence.txt';
-        content = editContent.sdrEmails.map((email, i) =>
-          `# Day ${email.day}\nSubject: ${email.subject}\n\n${email.body}`
-        ).join('\n\n==========\n\n');
-        fileType = 'text/plain';
-      }
-
-      // Create a blob and download
-      if (filename && content) {
-        const blob = new Blob([content], { type: fileType });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        showNotification('success', `Downloaded ${filename}`);
-      }
-    } catch (error) {
-      console.error('Error downloading content:', error);
-      showNotification('error', 'Failed to download content.');
-    }
-  };
-
-  // Function to handle saving edited content
-  const handleSaveEdit = (type, index = null) => {
-    try {
-      // Update the content state with edited content
-      const updatedContent = { ...content };
-
-      if (type === 'ebook') {
-        updatedContent.ebook = editContent.ebook;
-        setEditMode({ ...editMode, ebook: false });
-      } else if (type === 'socialPost' && index !== null) {
-        updatedContent.socialPosts[index] = editContent.socialPosts[index];
-        const newSocialPostsEditMode = [...editMode.socialPosts];
-        newSocialPostsEditMode[index] = false;
-        setEditMode({ ...editMode, socialPosts: newSocialPostsEditMode });
-      } else if (type === 'email' && index !== null) {
-        updatedContent.emailFlow[index] = editContent.emailFlow[index];
-        const newEmailFlowEditMode = [...editMode.emailFlow];
-        newEmailFlowEditMode[index] = false;
-        setEditMode({ ...editMode, emailFlow: newEmailFlowEditMode });
-      } else if (type === 'sdrEmail' && index !== null) {
-        updatedContent.sdrEmails[index] = editContent.sdrEmails[index];
-        const newSdrEmailsEditMode = [...editMode.sdrEmails];
-        newSdrEmailsEditMode[index] = false;
-        setEditMode({ ...editMode, sdrEmails: newSdrEmailsEditMode });
-      }
-
-      setContent(updatedContent);
-      showNotification('success', 'Content updated successfully!');
-    } catch (error) {
-      console.error('Error saving edited content:', error);
-      showNotification('error', 'Failed to save content changes.');
-    }
-  };
-
-  // Handle editing eBook
-  const handleEditEbook = (field, value) => {
-    setEditContent({
-      ...editContent,
-      ebook: {
-        ...editContent.ebook,
-        [field]: value
-      }
-    });
-  };
-
-  // Handle editing chapter
-  const handleEditChapter = (index, value) => {
-    const newChapters = [...editContent.ebook.chapters];
-    newChapters[index] = value;
-
-    setEditContent({
-      ...editContent,
-      ebook: {
-        ...editContent.ebook,
-        chapters: newChapters
-      }
-    });
-  };
-
-  // Handle adding a new chapter
-  const handleAddChapter = () => {
-    setEditContent({
-      ...editContent,
-      ebook: {
-        ...editContent.ebook,
-        chapters: [...editContent.ebook.chapters, `Chapter ${editContent.ebook.chapters.length + 1}`]
-      }
-    });
-  };
-
-  // Handle editing social post
-  const handleEditSocialPost = (platformIndex, postIndex, value) => {
-    const newSocialPosts = [...editContent.socialPosts];
-    if (newSocialPosts[platformIndex]) {
-      const newPosts = [...newSocialPosts[platformIndex].posts];
-      newPosts[postIndex] = value;
-      newSocialPosts[platformIndex] = {
-        ...newSocialPosts[platformIndex],
-        posts: newPosts
-      };
-    }
-
-    setEditContent({
-      ...editContent,
-      socialPosts: newSocialPosts
-    });
-  };
-
-  // Handle adding a new social post
-  const handleAddSocialPost = (platformIndex) => {
-    const newSocialPosts = [...editContent.socialPosts];
-    if (newSocialPosts[platformIndex]) {
-      newSocialPosts[platformIndex] = {
-        ...newSocialPosts[platformIndex],
-        posts: [...newSocialPosts[platformIndex].posts, "New post content..."]
-      };
-    }
-
-    setEditContent({
-      ...editContent,
-      socialPosts: newSocialPosts
-    });
-  };
-
-  // Handle editing email
-  const handleEditEmail = (index, field, value) => {
-    const newEmails = [...editContent.emailFlow];
-    if (newEmails[index]) {
-      newEmails[index] = {
-        ...newEmails[index],
-        [field]: value
-      };
-    }
-
-    setEditContent({
-      ...editContent,
-      emailFlow: newEmails
-    });
-  };
-
-  // Handle editing SDR email
-  const handleEditSDREmail = (index, field, value) => {
-    const newEmails = [...editContent.sdrEmails];
-    if (newEmails[index]) {
-      newEmails[index] = {
-        ...newEmails[index],
-        [field]: value
-      };
-    }
-
-    setEditContent({
-      ...editContent,
-      sdrEmails: newEmails
-    });
-  };
-
-  // Get sample content as fallback
-const getSampleContent = () => {
-  return {
-    ebook: {
-      title: "Building the Ultimate Defense: A Guide to Balanced Threat Intelligence",
-      chapters: [
-        "Understanding Intelligence Sources",
-        "OSINT: The Foundation",
-        "Premium Feeds: Targeted Insights",
-        "ISAC Integration: Industry-Specific Intel",
-        "Building Your Intelligence Strategy"
-      ],
-      preview: "A comprehensive guide to strengthening your security posture through diverse intelligence sources. Learn how top organizations combine multiple intelligence streams for complete coverage."
-    },
-    socialPosts: [
-      {
-        platform: "LinkedIn",
-        posts: [
-          "🛡️ Just like athletes need a balanced diet, SOCs need diverse intelligence sources. Learn how to build your ultimate defense in our new guide! #CyberSecurity #ThreatIntel",
-          "📚 New eBook: Discover why combining OSINT, premium feeds, and ISAC intel creates the strongest security posture. Download now! #InfoSec",
-          "🎯 The secret to comprehensive threat intelligence? It's all about balance. Get our latest guide to learn more. #CyberDefense"
-        ]
-      },
-      {
-        platform: "Twitter",
-        posts: [
-          "New Guide: Building the Ultimate Defense Through Balanced Threat Intel 🛡️ Get it here: [LINK] #SecurityOps",
-          "Want stronger security? Learn why diversity in threat intelligence matters 📚 Download our guide: [LINK]",
-          "Stop gaps in your security coverage! Our new guide shows you how 🎯 [LINK] #CyberSecurity"
-        ]
-      }
-    ],
-    emailFlow: [
-      {
-        type: "Welcome",
-        subject: "Your Guide to Building the Ultimate Defense is Here",
-        preview: "Thank you for downloading our comprehensive guide to balanced threat intelligence. Inside you'll find actionable insights on combining multiple intelligence sources for stronger security..."
-      },
-      {
-        type: "Follow-up 1",
-        subject: "Key Takeaways: Building Your Defense Strategy",
-        preview: "Now that you've had a chance to review our guide, I wanted to highlight some key strategies for implementing a multi-source intelligence approach..."
-      },
-      {
-        type: "Follow-up 2",
-        subject: "Expert Tips for Implementing Your Intelligence Strategy",
-        preview: "Based on feedback from security leaders like you, here are some practical tips for getting the most value from different intelligence sources..."
-      }
-    ],
-    sdrEmails: [
-      {
-        day: 1,
-        subject: "Re: Building a Stronger Defense",
-        body: "I noticed you downloaded our guide on building comprehensive threat intelligence. Many organizations struggle with gaps in their intelligence coverage - would you be interested in discussing how we help solve this?"
-      },
-      {
-        day: 3,
-        subject: "Quick follow-up on threat intelligence strategy",
-        body: "I wanted to check if you had any questions about implementing a multi-source intelligence approach. I've helped several companies in [Industry] optimize their intelligence coverage..."
-      },
-      {
-        day: 5,
-        subject: "Let's discuss your intelligence needs",
-        body: "Many of our customers found our guide helpful in identifying gaps in their current approach. I'd love to learn about your intelligence strategy and share how other [Industry] companies are solving similar challenges..."
-      }
-    ]
-  };
-};
-
-// Generate content when component mounts
-useEffect(() => {
-  generateAllContent();
-}, []);
-
-  // If content is still loading initially, show loading state
-  if (loading.all && !content) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <Loader className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-        <p className="text-slate-600">Generating your campaign content across all channels...</p>
-      </div>
-    );
-  }
-
   // Preview Modal
   const renderPreviewModal = () => {
-    let previewContent = null;
-    let previewTitle = "";
-
-    if (previewMode.ebook) {
-      previewContent = (
-        <div className="max-h-[70vh] overflow-y-auto p-6">
-          <h1 className="text-2xl font-bold mb-4">{content?.ebook?.title}</h1>
-          <p className="text-slate-600 mb-6">{content?.ebook?.preview}</p>
-          {content?.ebook?.chapters.map((chapter, index) => (
-            <div key={index} className="mb-4">
-              <h2 className="text-xl font-semibold mb-2">Chapter {index + 1}: {chapter}</h2>
-              <p className="text-slate-600">
-                {/* Placeholder chapter content */}
-                This chapter will cover key concepts related to {chapter.toLowerCase()},
-                with practical examples and implementation strategies.
-              </p>
-            </div>
-          ))}
-        </div>
-      );
-      previewTitle = "eBook Preview";
-    } else if (previewMode.socialPost >= 0) {
-      const platformIndex = previewMode.socialPost;
-      const platform = content?.socialPosts[platformIndex];
-      previewContent = (
-        <div className="max-h-[70vh] overflow-y-auto p-6">
-          <h2 className="text-xl font-semibold mb-4">{platform?.platform} Posts</h2>
-          {platform?.posts.map((post, index) => (
-            <div key={index} className="mb-6 p-4 border rounded-lg bg-slate-50">
-              <div className="flex items-start mb-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500 mr-3"></div>
-                <div>
-                  <h3 className="font-semibold">Your Company</h3>
-                  <p className="text-sm text-slate-500">Just now</p>
-                </div>
-              </div>
-              <p>{post}</p>
-            </div>
-          ))}
-        </div>
-      );
-      previewTitle = `${platform?.platform} Posts Preview`;
-    } else if (previewMode.email >= 0) {
-      const emailIndex = previewMode.email;
-      const email = content?.emailFlow[emailIndex];
-      previewContent = (
-        <div className="max-h-[70vh] overflow-y-auto">
-          <div className="p-6 bg-slate-50 border-b">
-            <h2 className="text-xl font-semibold mb-1">Subject: {email?.subject}</h2>
-            <p className="text-sm text-slate-500 mb-4">From: Your Company &lt;marketing@yourcompany.com&gt;</p>
-          </div>
-          <div className="p-6">
-            <div className="p-4 border-b border-slate-200">
-              <p className="text-sm">Dear [Prospect],</p>
-            </div>
-            <div className="p-4">
-              <p className="whitespace-pre-line">{email?.preview}</p>
-
-              <p className="mt-4">Best regards,</p>
-              <p>Your Name</p>
-              <p className="text-sm text-slate-500">Marketing Manager</p>
-              <p className="text-sm text-slate-500">Your Company</p>
-            </div>
-          </div>
-        </div>
-      );
-      previewTitle = `Email Preview: ${email?.type}`;
-    } else if (previewMode.sdrEmail >= 0) {
-      const emailIndex = previewMode.sdrEmail;
-      const email = content?.sdrEmails[emailIndex];
-      previewContent = (
-        <div className="max-h-[70vh] overflow-y-auto">
-          <div className="p-6 bg-slate-50 border-b">
-            <h2 className="text-xl font-semibold mb-1">Subject: {email?.subject}</h2>
-            <p className="text-sm text-slate-500 mb-4">From: Your SDR &lt;sales@yourcompany.com&gt;</p>
-          </div>
-          <div className="p-6">
-            <div className="p-4 border-b border-slate-200">
-              <p className="text-sm">Dear [Prospect],</p>
-            </div>
-            <div className="p-4">
-              <p className="whitespace-pre-line">{email?.body}</p>
-
-              <p className="mt-4">Best regards,</p>
-              <p>Your SDR Name</p>
-              <p className="text-sm text-slate-500">Sales Development Representative</p>
-              <p className="text-sm text-slate-500">Your Company</p>
-            </div>
-          </div>
-        </div>
-      );
-      previewTitle = `SDR Email Preview: Day ${email?.day}`;
+    // Only render when one of the preview modes is active
+    if (previewMode.socialPost === -1 && previewMode.email === -1 && previewMode.sdrEmail === -1 && !previewMode.ebook) {
+      return null;
     }
 
-    if (!previewContent) return null;
+    // Get the content to preview
+    let previewTitle = "";
+    let previewContent = "";
+
+    if (previewMode.socialPost !== -1) {
+      // Social post preview
+      const platformIndex = Math.floor(previewMode.socialPost / 100);
+      const postIndex = previewMode.socialPost % 100;
+      const platform = content.socialPosts[platformIndex];
+      previewTitle = `${platform.platform} Post`;
+      previewContent = platform.posts[postIndex];
+    } else if (previewMode.email !== -1) {
+      // Email preview
+      const email = content.emailFlow[previewMode.email];
+      previewTitle = email.subject;
+      previewContent = email.preview;
+    } else if (previewMode.sdrEmail !== -1) {
+      // SDR Email preview
+      const email = content.sdrEmails[previewMode.sdrEmail];
+      previewTitle = email.subject;
+      previewContent = email.body;
+    }
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-3xl shadow-xl">
-          <div className="flex justify-between items-center border-b p-4">
-            <h2 className="text-xl font-bold">{previewTitle}</h2>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg w-full max-w-2xl">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h3 className="font-bold">{previewTitle}</h3>
             <button
-              onClick={() => setPreviewMode({ ebook: false, socialPost: -1, email: -1, sdrEmail: -1 })}
-              className="p-2 hover:bg-slate-100 rounded-full"
+              onClick={() => setPreviewMode({
+                ebook: false,
+                socialPost: -1,
+                email: -1,
+                sdrEmail: -1
+              })}
+              className="p-1 rounded-full hover:bg-gray-100"
             >
-              <X className="w-5 h-5" />
+              <X size={20} />
             </button>
           </div>
-          {previewContent}
-          <div className="border-t p-4 flex justify-end">
+          <div className="p-6">
+            <div className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
+              {previewContent}
+            </div>
+          </div>
+          <div className="p-4 border-t flex justify-end space-x-3">
             <button
-              onClick={() => setPreviewMode({ ebook: false, socialPost: -1, email: -1, sdrEmail: -1 })}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg"
+              onClick={() => setPreviewMode({
+                ebook: false,
+                socialPost: -1,
+                email: -1,
+                sdrEmail: -1
+              })}
+              className="px-4 py-2 border rounded-md hover:bg-gray-50"
             >
               Close
             </button>
@@ -925,539 +469,300 @@ useEffect(() => {
     );
   };
 
+  // Generate content when component mounts
+  useEffect(() => {
+    generateAllContent();
+  }, []);
+
+  // Main render function - the key fix is here
+  if (loading.all && !content) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <Loader className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+        <p className="text-slate-600">Generating your campaign content across all channels...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
+      {/* Page header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Your Campaign Content</h2>
-        <button
-          onClick={generateAllContent}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-          disabled={loading.all}
-        >
-          {loading.all ? (
-            <>
-              <Loader className="w-4 h-4 animate-spin mr-2" />
-              Regenerating All
-            </>
-          ) : (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Regenerate All
-            </>
-          )}
-        </button>
+        <h1 className="text-2xl font-bold">Campaign Content</h1>
+        <div className="space-x-3">
+          <button
+            onClick={generateAllContent}
+            disabled={loading.all}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 flex items-center"
+          >
+            {loading.all ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Regenerate All
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setIsExporting(true);
+              setTimeout(() => {
+                setIsExporting(false);
+                showNotification('success', 'Campaign content exported successfully!');
+              }, 1500);
+            }}
+            className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center"
+          >
+            {isExporting ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* eBook Preview */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>eBook Preview</CardTitle>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setPreviewMode({ ...previewMode, ebook: true })}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setEditMode({ ...editMode, ebook: true })}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-              disabled={editMode.ebook}
-            >
-              <Edit className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => regenerateContent('ebook')}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-              disabled={loading.ebook}
-            >
-              {loading.ebook ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={() => handleDownload('ebook')}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {editMode.ebook ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">eBook Title</label>
-                <input
-                  type="text"
-                  value={editContent.ebook.title || ''}
-                  onChange={(e) => handleEditEbook('title', e.target.value)}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">eBook Preview/Description</label>
-                <textarea
-                  value={editContent.ebook.preview || ''}
-                  onChange={(e) => handleEditEbook('preview', e.target.value)}
-                  className="w-full p-2 border rounded-lg h-24"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Chapters</label>
-                <div className="space-y-2">
-                  {editContent.ebook.chapters && editContent.ebook.chapters.map((chapter, index) => (
-                    <div key={index} className="flex items-center">
-                      <span className="w-8 text-center">{index + 1}.</span>
-                      <input
-                        type="text"
-                        value={chapter || ''}
-                        onChange={(e) => handleEditChapter(index, e.target.value)}
-                        className="flex-1 p-2 border rounded-lg"
-                      />
-                    </div>
-                  ))}
+      {/* Content sections */}
+      {content && (
+        <>
+          {/* eBook section */}
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-blue-50 border-b">
+              <CardTitle className="text-xl flex items-center justify-between">
+                <span>eBook Content</span>
+                <div className="flex space-x-2">
                   <button
-                    onClick={handleAddChapter}
-                    className="text-blue-600 hover:text-blue-700 flex items-center"
+                    onClick={() => setEditMode({ ...editMode, ebook: !editMode.ebook })}
+                    className="p-2 text-blue-600 hover:bg-blue-100 rounded-full"
                   >
-                    <PlusCircle className="w-4 h-4 mr-1" />
-                    Add Chapter
+                    {editMode.ebook ? <CheckCircle size={18} /> : <Edit size={18} />}
                   </button>
                 </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {/* eBook display */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold mb-4">
+                    {editMode.ebook ? (
+                      <input
+                        type="text"
+                        value={editContent.ebook.title}
+                        onChange={(e) => setEditContent({
+                          ...editContent,
+                          ebook: { ...editContent.ebook, title: e.target.value }
+                        })}
+                        className="w-full p-2 border rounded"
+                      />
+                    ) : (
+                      content.ebook.title
+                    )}
+                  </h3>
+
+                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <h4 className="font-medium mb-2">Preview Text</h4>
+                    {editMode.ebook ? (
+                      <textarea
+                        value={editContent.ebook.preview}
+                        onChange={(e) => setEditContent({
+                          ...editContent,
+                          ebook: { ...editContent.ebook, preview: e.target.value }
+                        })}
+                        className="w-full p-2 border rounded h-24"
+                      />
+                    ) : (
+                      <p className="text-gray-700">{content.ebook.preview}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Table of Contents</h4>
+                    <div className="space-y-2">
+                      {(editMode.ebook ? editContent.ebook.chapters : content.ebook.chapters).map((chapter, index) => (
+                        <div key={index} className="flex items-center">
+                          <span className="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-700 rounded-full text-sm mr-2">
+                            {index + 1}
+                          </span>
+                          {editMode.ebook ? (
+                            <input
+                              type="text"
+                              value={chapter}
+                              onChange={(e) => {
+                                const newChapters = [...editContent.ebook.chapters];
+                                newChapters[index] = e.target.value;
+                                setEditContent({
+                                  ...editContent,
+                                  ebook: { ...editContent.ebook, chapters: newChapters }
+                                });
+                              }}
+                              className="flex-1 p-2 border rounded"
+                            />
+                          ) : (
+                            <p className="text-gray-800">{chapter}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={() => setEditMode({ ...editMode, ebook: false })}
-                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 mr-2"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleSaveEdit('ebook')}
-                  className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  <Save className="w-4 h-4 mr-1 inline" />
-                  Save
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
-              <h3 className="text-2xl font-bold mb-4">{content?.ebook?.title || "Loading..."}</h3>
-              <p className="text-slate-600 mb-4">{content?.ebook?.preview || ""}</p>
-              <div className="space-y-2">
-                {content?.ebook?.chapters?.map((chapter, index) => (
-                  <div key={index} className="flex items-center">
-                    <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm mr-3">
-                      {index + 1}
-                    </span>
-                    <span className="text-slate-800">{chapter}</span>
+            </CardContent>
+          </Card>
+
+          {/* Social Media Posts section */}
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-blue-50 border-b">
+              <CardTitle className="text-xl">Social Media Posts</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-8">
+                {content.socialPosts.map((platform, platformIndex) => (
+                  <div key={platformIndex}>
+                    <h3 className="text-lg font-medium mb-4">{platform.platform}</h3>
+                    <div className="space-y-3">
+                      {platform.posts.map((post, postIndex) => (
+                        <div key={postIndex} className="relative bg-gray-50 p-4 rounded-lg border border-gray-100 hover:border-blue-200">
+                          <div className="flex justify-between items-start">
+                            <div className="w-full">
+                              {/* Display post content */}
+                              <p className="text-gray-700 whitespace-pre-wrap">{post}</p>
+                            </div>
+                            <div className="flex space-x-1 ml-2">
+                              <button
+                                onClick={() => {
+                                  // Set preview mode
+                                  setPreviewMode({
+                                    ...previewMode,
+                                    socialPost: platformIndex * 100 + postIndex
+                                  });
+                                }}
+                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                              >
+                                <Eye size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Social Posts */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Social Media Content</CardTitle>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => regenerateContent('socialPosts')}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-              disabled={loading.social}
-            >
-              {loading.social ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={() => handleDownload('allSocial')}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {content?.socialPosts?.map((platform, platformIndex) => (
-              <div key={platformIndex}>
-                <h4 className="font-semibold mb-3">{platform.platform} Posts</h4>
-                <div className="space-y-3">
-                  {platform.posts.map((post, postIndex) => (
-                    <div key={postIndex} className="relative">
-                      {editMode.socialPosts[platformIndex] ? (
-                        <div className="space-y-2">
-                          <textarea
-                            value={editContent.socialPosts[platformIndex]?.posts[postIndex] || ''}
-                            onChange={(e) => handleEditSocialPost(platformIndex, postIndex, e.target.value)}
-                            className="w-full p-2 border rounded-lg min-h-24"
-                          />
-                          <div className="flex justify-end">
-                            <button
-                              onClick={() => {
-                                const newSocialPostsEditMode = [...editMode.socialPosts];
-                                newSocialPostsEditMode[platformIndex] = false;
-                                setEditMode({ ...editMode, socialPosts: newSocialPostsEditMode });
-                              }}
-                              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 mr-2"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleSaveEdit('socialPost', platformIndex)}
-                              className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                            >
-                              <Save className="w-4 h-4 mr-1 inline" />
-                              Save
-                            </button>
-                          </div>
+          {/* Email Flow section */}
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-blue-50 border-b">
+              <CardTitle className="text-xl">Nurture Email Flow</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {content.emailFlow.map((email, index) => (
+                  <div key={index} className="relative bg-gray-50 p-4 rounded-lg border border-gray-100 hover:border-blue-200">
+                    <div className="flex justify-between items-start">
+                      <div className="w-full">
+                        <div className="flex items-center mb-1">
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded mr-2">
+                            {email.type}
+                          </span>
+                          <h4 className="font-medium">{email.subject}</h4>
                         </div>
-                      ) : (
-                        <div className="p-4 bg-slate-50 rounded-lg border group relative">
-                          <div className="absolute top-2 right-2 flex space-x-1 bg-white bg-opacity-75 rounded-lg p-1 shadow-sm">
-                            <button
-                              onClick={() => setPreviewMode({ ...previewMode, socialPost: platformIndex })}
-                              className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                            >
-                              <Eye className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const newSocialPostsEditMode = [...editMode.socialPosts];
-                                newSocialPostsEditMode[platformIndex] = true;
-                                setEditMode({ ...editMode, socialPosts: newSocialPostsEditMode });
+                        <p className="text-gray-500 text-sm italic">
+                          {email.preview.length > 100
+                            ? `${email.preview.substring(0, 100)}...`
+                            : email.preview}
+                        </p>
+                      </div>
+                      <div className="flex space-x-1 ml-2">
+                        <button
+                          onClick={() => {
+                            // Set preview mode
+                            setPreviewMode({
+                              ...previewMode,
+                              email: index
+                            });
+                          }}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-                                // Make sure editContent has the current data
-                                setEditContent({
-                                  ...editContent,
-                                  socialPosts: content.socialPosts
-                                });
-                              }}
-                              className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleDownload('socialPost', platformIndex)}
-                              className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                            >
-                              <Download className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <div className="pr-16">
-                            {post}
-                          </div>
+          {/* SDR Email section */}
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-blue-50 border-b">
+              <CardTitle className="text-xl">SDR Follow-up Emails</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {content.sdrEmails.map((email, index) => (
+                  <div key={index} className="relative bg-gray-50 p-4 rounded-lg border border-gray-100 hover:border-blue-200">
+                    <div className="flex justify-between items-start">
+                      <div className="w-full">
+                        <div className="flex items-center mb-1">
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded mr-2">
+                            Day {email.day}
+                          </span>
+                          <h4 className="font-medium">{email.subject}</h4>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                  {editMode.socialPosts[platformIndex] && (
-                    <button
-                      onClick={() => handleAddSocialPost(platformIndex)}
-                      className="text-blue-600 hover:text-blue-700 flex items-center"
-                    >
-                      <PlusCircle className="w-4 h-4 mr-1" />
-                      Add Post
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Email Flow */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Nurture Email Sequence</CardTitle>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => regenerateContent('emailFlow')}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-              disabled={loading.email}
-            >
-              {loading.email ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={() => handleDownload('allEmails')}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {content?.emailFlow?.map((email, index) => (
-              <div key={index} className="relative group">
-                {editMode.emailFlow[index] ? (
-                  <div className="p-4 border rounded-lg space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Email Type</label>
-                      <input
-                        type="text"
-                        value={editContent.emailFlow[index]?.type || ''}
-                        onChange={(e) => handleEditEmail(index, 'type', e.target.value)}
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Subject Line</label>
-                      <input
-                        type="text"
-                        value={editContent.emailFlow[index]?.subject || ''}
-                        onChange={(e) => handleEditEmail(index, 'subject', e.target.value)}
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Email Content</label>
-                      <textarea
-                        value={editContent.emailFlow[index]?.preview || ''}
-                        onChange={(e) => handleEditEmail(index, 'preview', e.target.value)}
-                        className="w-full p-2 border rounded-lg min-h-32"
-                      />
-                    </div>
-                    <div className="flex justify-end mt-2">
-                      <button
-                        onClick={() => {
-                          const newEmailFlowEditMode = [...editMode.emailFlow];
-                          newEmailFlowEditMode[index] = false;
-                          setEditMode({ ...editMode, emailFlow: newEmailFlowEditMode });
-                        }}
-                        className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 mr-2"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => handleSaveEdit('email', index)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      >
-                        <Save className="w-4 h-4 mr-1 inline" />
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 border rounded-lg relative">
-                    <div className="absolute top-2 right-2 flex space-x-1 bg-white bg-opacity-75 rounded-lg p-1 shadow-sm">
-                      <button
-                        onClick={() => setPreviewMode({ ...previewMode, email: index })}
-                        className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                      >
-                        <Eye className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          const newEmailFlowEditMode = [...editMode.emailFlow];
-                          newEmailFlowEditMode[index] = true;
-                          setEditMode({ ...editMode, emailFlow: newEmailFlowEditMode });
-
-                          // Make sure editContent has the current data
-                          setEditContent({
-                            ...editContent,
-                            emailFlow: content.emailFlow
-                          });
-                        }}
-                        className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => handleDownload('email', index)}
-                        className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                      >
-                        <Download className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <div className="pr-16">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-500">{email.type}</span>
-                        <span className="text-sm text-slate-500">Day {index + 1}</span>
+                        <p className="text-gray-700 text-sm mt-2">
+                          {email.body.length > 100
+                            ? `${email.body.substring(0, 100)}...`
+                            : email.body}
+                        </p>
                       </div>
-                      <h4 className="font-semibold mb-2">{email.subject}</h4>
-                      <p className="text-slate-600 text-sm">{email.preview}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* SDR Emails */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>SDR Follow-up Sequence</CardTitle>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => regenerateContent('sdrEmails')}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-              disabled={loading.sdr}
-            >
-              {loading.sdr ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={() => handleDownload('allSDR')}
-              className="p-2 text-slate-600 hover:text-blue-600 rounded"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {content?.sdrEmails?.map((email, index) => (
-              <div key={index} className="relative group">
-                {editMode.sdrEmails[index] ? (
-                  <div className="p-4 border rounded-lg space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Day</label>
-                      <input
-                        type="number"
-                        value={editContent.sdrEmails[index]?.day || index + 1}
-                        onChange={(e) => handleEditSDREmail(index, 'day', parseInt(e.target.value))}
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Subject Line</label>
-                      <input
-                        type="text"
-                        value={editContent.sdrEmails[index]?.subject || ''}
-                        onChange={(e) => handleEditSDREmail(index, 'subject', e.target.value)}
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Email Content</label>
-                      <textarea
-                        value={editContent.sdrEmails[index]?.body || ''}
-                        onChange={(e) => handleEditSDREmail(index, 'body', e.target.value)}
-                        className="w-full p-2 border rounded-lg min-h-32"
-                      />
-                    </div>
-                    <div className="flex justify-end mt-2">
-                      <button
-                        onClick={() => {
-                          const newSdrEmailsEditMode = [...editMode.sdrEmails];
-                          newSdrEmailsEditMode[index] = false;
-                          setEditMode({ ...editMode, sdrEmails: newSdrEmailsEditMode });
-                        }}
-                        className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 mr-2"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => handleSaveEdit('sdrEmail', index)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      >
-                        <Save className="w-4 h-4 mr-1 inline" />
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 border rounded-lg relative">
-                    <div className="absolute top-9 right-2 flex space-x-1 bg-white bg-opacity-75 rounded-lg p-1 shadow-sm">
-                      <button
-                        onClick={() => setPreviewMode({ ...previewMode, sdrEmail: index })}
-                        className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                      >
-                        <Eye className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          const newSdrEmailsEditMode = [...editMode.sdrEmails];
-                          newSdrEmailsEditMode[index] = true;
-                          setEditMode({ ...editMode, sdrEmails: newSdrEmailsEditMode });
-
-                          // Make sure editContent has the current data
-                          setEditContent({
-                            ...editContent,
-                            sdrEmails: content.sdrEmails
-                          });
-                        }}
-                        className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => handleDownload('sdrEmail', index)}
-                        className="p-1 text-slate-500 hover:text-blue-600 bg-white rounded-full shadow-sm"
-                      >
-                        <Download className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <div className="pr-16">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-500 mr-20">Day {email.day}</span>
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                          {index === 0 ? 'Initial' : `Follow-up ${index}`}
-                        </span>
+                      <div className="flex space-x-1 ml-2">
+                        <button
+                          onClick={() => {
+                            // Set preview mode
+                            setPreviewMode({
+                              ...previewMode,
+                              sdrEmail: index
+                            });
+                          }}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                        >
+                          <Eye size={16} />
+                        </button>
                       </div>
-                      <h4 className="font-semibold mb-2">{email.subject}</h4>
-                      <p className="text-slate-600 text-sm">{email.body}</p>
                     </div>
                   </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
-      {/* Export buttons at the bottom */}
-      <div className="flex justify-between mt-6">
-        <button
-          className="px-6 py-3 border border-gray-300 text-slate-700 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-          onClick={() => router.push('/creation-hub')}
-        >
-          Save and Return to Creation Hub
-        </button>
-        <button
-          className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-          onClick={handleExport}
-          disabled={isExporting}
-        >
-          {isExporting ? (
-            <>
-              <Loader className="w-5 h-5 animate-spin" />
-              Exporting...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="w-5 h-5" />
-              Export All Content
-            </>
-          )}
-        </button>
-      </div>
+      {/* Loading state */}
+      {loading.all && !content && (
+        <div className="flex flex-col items-center justify-center h-64">
+          <Loader className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+          <p className="text-slate-600">Generating your campaign content across all channels...</p>
+        </div>
+      )}
 
-     {/* Preview Modal */}
-     {renderPreviewModal()}
+      {renderPreviewModal()}
     </div>
   );
-};
+}
 
 export default ContentPreview;

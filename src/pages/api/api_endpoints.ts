@@ -668,6 +668,7 @@ async function handleGenerateContent(data: any, res: NextApiResponse) {
       hasSourceContent: !!data.sourceContent
     });
 
+
     // Validate input
     if (!data.contentType) {
       return res.status(400).json({
