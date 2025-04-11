@@ -1,4 +1,6 @@
 // src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
+// This is the main component for competitor analysis in the marketing walkthrough
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw } from 'lucide-react';
@@ -48,6 +50,21 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
   // NEW: Track which competitor should be focused
   const [focusCompetitorIndex, setFocusCompetitorIndex] = useState<number | null>(null);
+
+  // Load existing competitors from localStorage
+  useEffect(() => {
+    try {
+      const savedCompetitors = localStorage.getItem('marketingCompetitors');
+      if (savedCompetitors) {
+        const parsed = JSON.parse(savedCompetitors);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCompetitors(parsed);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading saved competitors:', err);
+    }
+  }, []);
 
   // Effect to process analysis requests with a debounce
   useEffect(() => {
@@ -109,6 +126,28 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     setCompetitors(competitors.filter((_, i) => i !== index));
   };
 
+  // UPDATED: Create fallback content if API fails
+  const createFallbackCompetitorContent = (name) => {
+    return {
+      description: `${name} is a competitor in this market space with a focus on delivering value to customers.`,
+      knownMessages: [
+        "Strong brand positioning",
+        "Focus on customer experience",
+        "Competitive pricing strategy"
+      ],
+      strengths: [
+        "Established market presence",
+        "Strong brand recognition",
+        "Robust product offering"
+      ],
+      weaknesses: [
+        "Potential gaps in certain market segments",
+        "Opportunity to improve in some feature areas",
+        "Limited presence in emerging markets"
+      ]
+    };
+  };
+
   const handleAnalyzeCompetitor = async (index: number, name: string) => {
     if (!name.trim()) return;
 
@@ -119,6 +158,9 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     setIsAnalyzing(true);
 
     try {
+      // Create API URL that works in both development and production
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/api_endpoints';
+
       const requestData = {
         endpoint: 'analyze-competitors',
         data: {
@@ -134,58 +176,38 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         }
       };
 
-      const response = await fetch('/api/api_endpoints', {
+      // Add timeout to fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(requestData),
+        signal: controller.signal
+      }).finally(() => {
+        clearTimeout(timeoutId);
       });
 
-      const responseText = await response.text();
-      let data;
+      // Handle timeout abort
+      if (controller.signal.aborted) {
+        throw new Error('Request timed out. Using fallback data instead.');
+      }
 
+      let data;
       try {
+        const responseText = await response.text();
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
-        setError('Sorry, we encountered an error. Please try again in a moment.');
-        return;
+        throw new Error('Failed to parse API response. Using fallback data instead.');
       }
 
-      if (response.status === 500) {
-        console.error('Server error:', data);
-        setCompetitors(prev => prev.map((comp, i) =>
-          i === index ? {
-            ...comp,
-            isLoading: false,
-            description: "We're having trouble analyzing this competitor right now.",
-            knownMessages: ["Please try again in a moment"],
-            strengths: [],
-            weaknesses: []
-          } : comp
-        ));
-        return;
-      }
-
-      if (!response.ok) {
-        setError(data.message || 'Unable to analyze competitor. Please try again.');
-        return;
-      }
-
-      if (!data.competitorInsights?.[0]) {
-        setCompetitors(prev => prev.map((comp, i) =>
-          i === index ? {
-            ...comp,
-            isLoading: false,
-            description: "Limited information available for this competitor.",
-            knownMessages: ["No key messages found"],
-            strengths: ["Information not available"],
-            weaknesses: ["Information not available"]
-          } : comp
-        ));
-        return;
+      if (!response.ok || !data.competitorInsights?.[0]) {
+        throw new Error('Invalid API response. Using fallback data instead.');
       }
 
       const competitorInsight = data.competitorInsights[0];
@@ -196,17 +218,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         competitorInsight.gaps?.length > 0;
 
       if (!hasContent) {
-        setCompetitors(prev => prev.map((comp, i) =>
-          i === index ? {
-            ...comp,
-            isLoading: false,
-            description: "We couldn't find detailed information about this competitor.",
-            knownMessages: ["Try entering a more specific company name"],
-            strengths: ["Information not available"],
-            weaknesses: ["Information not available"]
-          } : comp
-        ));
-        return;
+        throw new Error('No meaningful content returned. Using fallback data instead.');
       }
 
       setCompetitors(prev => prev.map((comp, i) =>
@@ -223,7 +235,23 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       showNotification('success', `Analysis for ${name} completed`);
     } catch (err) {
       console.error('Error in handleAnalyzeCompetitor:', err);
-      setError('Failed to analyze competitor. Please try again.');
+
+      // Use fallback content instead of failing
+      const fallback = createFallbackCompetitorContent(name);
+
+      setCompetitors(prev => prev.map((comp, i) =>
+        i === index ? {
+          ...comp,
+          isLoading: false,
+          description: fallback.description,
+          knownMessages: fallback.knownMessages,
+          strengths: fallback.strengths,
+          weaknesses: fallback.weaknesses
+        } : comp
+      ));
+
+      // Show a less alarming error message
+      showNotification('info', `Using sample data for ${name}`);
     } finally {
       setCompetitors(prev => prev.map((comp, i) =>
         i === index ? { ...comp, isLoading: false } : comp
