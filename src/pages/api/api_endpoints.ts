@@ -549,7 +549,8 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
   }
 }
 
-// Add the competitor analysis handler
+// src/pages/api/api_endpoints.ts - Updated handleAnalyzeCompetitors function (No Fallback Data)
+
 async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   try {
     // Validate input
@@ -562,7 +563,6 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
 
     const competitors = data.competitors;
     const industry = data.industry || 'technology';
-    const userMessages = data.userMessages || [];
 
     // Process each competitor
     const processedCompetitors = [];
@@ -571,6 +571,8 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
       try {
         // Skip empty competitors
         if (!competitor.name.trim()) continue;
+
+        console.log(`Analyzing competitor: ${competitor.name}`);
 
         // Create a prompt for analyzing this competitor
         const prompt = `Analyze the following competitor in the ${industry} industry:
@@ -613,6 +615,7 @@ Only include information that would be publicly available or reasonably inferred
 
         try {
           // Parse the JSON response
+          console.log(`Got response for ${competitor.name}, parsing JSON`);
           const parsedResponse = JSON.parse(responseText);
 
           // Add to processed competitors
@@ -622,26 +625,20 @@ Only include information that would be publicly available or reasonably inferred
             keyThemes: parsedResponse.keyThemes || [],
             gaps: parsedResponse.gaps || []
           });
-        } catch (error) {
-          console.error('Failed to parse OpenAI response:', responseText);
+        } catch (parseError) {
+          console.error('Failed to parse OpenAI response:', parseError);
+          console.log('Response was:', responseText.substring(0, 200) + '...');
 
-          // Add a basic response structure if parsing fails
-          processedCompetitors.push({
-            name: competitor.name,
-            uniquePositioning: [`Key positioning for ${competitor.name}`],
-            keyThemes: [`Key theme for ${competitor.name}`],
-            gaps: [`Potential gap for ${competitor.name}`]
-          });
+          // Instead of fallback data, throw an error to be handled by the client
+          throw new Error('Failed to parse API response. Please try again.');
         }
-      } catch (error) {
-        console.error(`Error processing competitor ${competitor.name}:`, error);
+      } catch (competitorError) {
+        console.error(`Error processing competitor ${competitor.name}:`, competitorError);
 
-        // Add a basic response structure if processing fails
-        processedCompetitors.push({
-          name: competitor.name,
-          uniquePositioning: [`Information currently unavailable for ${competitor.name}`],
-          keyThemes: [`Could not analyze messaging for ${competitor.name}`],
-          gaps: [`Analysis unavailable for ${competitor.name}`]
+        // Return an error for this competitor instead of fallback data
+        return res.status(500).json({
+          error: 'Analysis error',
+          message: competitorError.message || 'Failed to analyze competitor'
         });
       }
     }
@@ -654,7 +651,7 @@ Only include information that would be publicly available or reasonably inferred
     console.error('Error in competitor analysis:', error);
     return res.status(500).json({
       error: 'Server error',
-      message: 'Failed to analyze competitors'
+      message: error.message || 'Failed to analyze competitors'
     });
   }
 }

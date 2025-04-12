@@ -1,10 +1,11 @@
 // src/components/features/MarketingWalkthrough/components/MessagingStep/index.tsx
+// This component handles the creation and management of messaging frameworks
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
+import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, Lightbulb, CheckCircle, ArrowRight, FileText, Upload } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotification } from '../../../../../context/NotificationContext';
-// Add FileText to this import
-import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, Lightbulb, FileText, Upload, ArrowRight, CheckCircle } from 'lucide-react';
 
 interface MessagingStepProps {
   onNext?: () => void;
@@ -179,10 +180,37 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
     }
   };
 
+  // NEW: Fallback messaging data in case API fails
+  const getFallbackMessagingData = () => {
+    // Create relevant fallbacks based on the AI data
+    const industry = aiData.targetAudience.includes(' in the ') ?
+      aiData.targetAudience.split(' in the ')[1]?.split(' who')[0] || 'your industry' :
+      'your industry';
+
+    const role = aiData.targetAudience.split(' in the ')[0] || 'marketing teams';
+
+    return {
+      valueProposition: `Our content marketing platform helps ${role} create effective content strategies faster and with more consistency.`,
+      differentiators: [
+        `Only platform combining ${aiData.focusAreas.includes('technical') ? 'advanced AI technology' : 'intuitive design'} with ease of use`,
+        `Specialized for ${industry} with tailored features`,
+        `Proven to deliver faster results than alternatives`
+      ],
+      keyBenefits: [
+        `Reduce content creation time by up to 50%`,
+        `Gain deeper insights into your ${aiData.focusAreas.includes('business') ? 'content performance' : 'audience engagement'}`,
+        `Improve team collaboration and content consistency across channels`
+      ]
+    };
+  };
+
   const handleGenerateMessages = async () => {
     setIsGenerating(true);
 
     try {
+      // Create API URL that works in both development and production
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/api_endpoints';
+
       // Prepare the API request
       const requestBody = {
         endpoint: 'value-proposition-generator',
@@ -200,14 +228,26 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
         }
       };
 
+      // Set up a timeout to abort the fetch if it takes too long
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       // Call the API
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      }).finally(() => {
+        clearTimeout(timeoutId);
       });
+
+      // Check if the request was aborted (timeout)
+      if (controller.signal.aborted) {
+        throw new Error('Request timed out');
+      }
 
       if (!response.ok) {
         throw new Error(`API responded with status ${response.status}`);
@@ -216,6 +256,10 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
       const data = await response.json();
 
       // Transform API response to our message format
+      if (data.success === false || !data.valueProposition) {
+        throw new Error('Invalid API response format');
+      }
+
       setMessages({
         valueProposition: data.valueProposition || '',
         differentiators: data.keyDifferentiators || ['', '', ''],
@@ -226,22 +270,11 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
       showNotification('success', 'Generated messaging framework based on your inputs');
     } catch (error) {
       console.error('Error generating messages:', error);
-      showNotification('error', 'Failed to generate messages. Using fallback suggestions.');
+      showNotification('info', 'Using alternative messaging based on your inputs.');
 
       // Fallback messaging if API fails
-      setMessages({
-        valueProposition: `Our content marketing platform helps ${aiData.targetAudience.split(' in the ')[0] || 'marketing teams'} create effective content strategies faster and with more consistency.`,
-        differentiators: [
-          `Only platform combining ${aiData.focusAreas.includes('technical') ? 'advanced AI technology' : 'intuitive design'} with ease of use`,
-          `Specialized for ${aiData.targetAudience.split(' in the ')[1]?.split(' who')[0] || 'marketing teams'} with tailored features`,
-          `Proven to deliver faster results than alternatives`
-        ],
-        keyBenefits: [
-          `Reduce content creation time by up to 50%`,
-          `Gain deeper insights into your ${aiData.focusAreas.includes('business') ? 'content performance' : 'audience engagement'}`,
-          `Improve team collaboration and content consistency across channels`
-        ]
-      });
+      const fallbackData = getFallbackMessagingData();
+      setMessages(fallbackData);
 
       setAiStep('results');
     } finally {
@@ -754,14 +787,18 @@ const MessagingStep: React.FC<MessagingStepProps> = ({
     }
   };
 
-  // Since we don't want to show our own navigation in walkthrough mode,
-  // we'll just return the content
-  if (isWalkthrough) {
-    return (
-      <div>
-        {renderContent()}
+  {/* This button should ALWAYS appear in standalone mode */ }
+  {
+    !isWalkthrough && (
+      <div className="flex justify-end mt-8">
+        <button
+          onClick={saveAndContinue}
+          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Save Messaging Framework
+        </button>
       </div>
-    );
+    )
   }
 
   // For standalone mode, we'll add our own navigation

@@ -1,6 +1,4 @@
 // src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
-// This is the main component for competitor analysis in the marketing walkthrough
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw } from 'lucide-react';
@@ -51,18 +49,18 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   // NEW: Track which competitor should be focused
   const [focusCompetitorIndex, setFocusCompetitorIndex] = useState<number | null>(null);
 
-  // Load existing competitors from localStorage
+  // Load competitors from localStorage when component mounts
   useEffect(() => {
     try {
       const savedCompetitors = localStorage.getItem('marketingCompetitors');
       if (savedCompetitors) {
-        const parsed = JSON.parse(savedCompetitors);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setCompetitors(parsed);
+        const parsedCompetitors = JSON.parse(savedCompetitors);
+        if (Array.isArray(parsedCompetitors) && parsedCompetitors.length > 0) {
+          setCompetitors(parsedCompetitors);
         }
       }
-    } catch (err) {
-      console.error('Error loading saved competitors:', err);
+    } catch (error) {
+      console.error('Error loading saved competitors:', error);
     }
   }, []);
 
@@ -126,26 +124,16 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     setCompetitors(competitors.filter((_, i) => i !== index));
   };
 
-  // UPDATED: Create fallback content if API fails
-  const createFallbackCompetitorContent = (name) => {
-    return {
-      description: `${name} is a competitor in this market space with a focus on delivering value to customers.`,
-      knownMessages: [
-        "Strong brand positioning",
-        "Focus on customer experience",
-        "Competitive pricing strategy"
-      ],
-      strengths: [
-        "Established market presence",
-        "Strong brand recognition",
-        "Robust product offering"
-      ],
-      weaknesses: [
-        "Potential gaps in certain market segments",
-        "Opportunity to improve in some feature areas",
-        "Limited presence in emerging markets"
-      ]
-    };
+  const clearCompetitorAnalysis = (index: number) => {
+    setCompetitors(prev => prev.map((comp, i) =>
+      i === index ? {
+        ...comp,
+        description: '',
+        knownMessages: [],
+        strengths: [],
+        weaknesses: []
+      } : comp
+    ));
   };
 
   const handleAnalyzeCompetitor = async (index: number, name: string) => {
@@ -158,9 +146,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     setIsAnalyzing(true);
 
     try {
-      // Create API URL that works in both development and production
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/api_endpoints';
-
       const requestData = {
         endpoint: 'analyze-competitors',
         data: {
@@ -176,38 +161,24 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         }
       };
 
-      // Add timeout to fetch request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(requestData),
-        signal: controller.signal
-      }).finally(() => {
-        clearTimeout(timeoutId);
+        body: JSON.stringify(requestData)
       });
 
-      // Handle timeout abort
-      if (controller.signal.aborted) {
-        throw new Error('Request timed out. Using fallback data instead.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Unable to analyze competitor. Please try again.');
       }
 
-      let data;
-      try {
-        const responseText = await response.text();
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        throw new Error('Failed to parse API response. Using fallback data instead.');
-      }
+      const data = await response.json();
 
-      if (!response.ok || !data.competitorInsights?.[0]) {
-        throw new Error('Invalid API response. Using fallback data instead.');
+      if (!data.competitorInsights?.[0]) {
+        throw new Error('No competitor insights returned from API');
       }
 
       const competitorInsight = data.competitorInsights[0];
@@ -218,7 +189,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         competitorInsight.gaps?.length > 0;
 
       if (!hasContent) {
-        throw new Error('No meaningful content returned. Using fallback data instead.');
+        throw new Error('Limited information available for this competitor');
       }
 
       setCompetitors(prev => prev.map((comp, i) =>
@@ -235,23 +206,12 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       showNotification('success', `Analysis for ${name} completed`);
     } catch (err) {
       console.error('Error in handleAnalyzeCompetitor:', err);
+      setError(`Failed to analyze competitor: ${err.message || 'Unknown error'}. Please try again.`);
 
-      // Use fallback content instead of failing
-      const fallback = createFallbackCompetitorContent(name);
+      // Clear any previously generated analysis for this competitor
+      clearCompetitorAnalysis(index);
 
-      setCompetitors(prev => prev.map((comp, i) =>
-        i === index ? {
-          ...comp,
-          isLoading: false,
-          description: fallback.description,
-          knownMessages: fallback.knownMessages,
-          strengths: fallback.strengths,
-          weaknesses: fallback.weaknesses
-        } : comp
-      ));
-
-      // Show a less alarming error message
-      showNotification('info', `Using sample data for ${name}`);
+      showNotification('error', 'Failed to analyze competitor. Please try again.');
     } finally {
       setCompetitors(prev => prev.map((comp, i) =>
         i === index ? { ...comp, isLoading: false } : comp
@@ -280,6 +240,27 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
   // Check if we have any valid competitors (with names)
   const hasValidCompetitors = competitors.some(comp => comp.name.trim() !== '');
+
+  // Save and continue function for walkthrough
+  const handleSaveAndContinue = () => {
+    // Only save if we have valid competitors
+    if (hasValidCompetitors) {
+      localStorage.setItem('marketingCompetitors',
+        JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
+      showNotification('success', 'Competitor analysis saved');
+
+      // Navigate to next step if in walkthrough
+      if (onNext) {
+        onNext();
+      }
+    } else {
+      showNotification('info', 'No competitors added. You can come back to this step later.');
+      // Allow skipping this step
+      if (onNext) {
+        onNext();
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -390,11 +371,22 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
                     </ul>
                   </div>
                 )}
+
+                {/* Add a button to clear the analysis */}
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => clearCompetitorAnalysis(index)}
+                    className="text-sm font-medium text-blue-600 hover:text-red-600 underline py-1 px-2"
+                  >
+                    Clear analysis
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </Card>
-      ))}
+      ))
+      }
 
       {/* Add Competitor Button */}
       <button
@@ -406,47 +398,77 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       </button>
 
       {/* Error Display */}
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <div className="flex items-center gap-3 p-4">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <div className="flex-1">
-              <h4 className="font-medium text-red-900">Analysis Error</h4>
-              <p className="text-red-700 text-sm mt-1">{error}</p>
-              <button
-                onClick={() => setError('')}
-                className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
-              >
-                Dismiss
-              </button>
+      {
+        error && (
+          <Card className="border-red-200 bg-red-50">
+            <div className="flex items-center gap-3 p-4">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="font-medium text-red-900">Analysis Error</h4>
+                <p className="text-red-700 text-sm mt-1">{error}</p>
+                <button
+                  onClick={() => setError('')}
+                  className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
+          </Card>
+        )
+      }
+
+      {/* Navigation buttons for walkthrough mode */}
+      {
+        isWalkthrough && (
+          <div className="flex justify-between mt-8">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Back
+              </button>
+            )}
+            <button
+              onClick={handleSaveAndContinue}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              {hasValidCompetitors ? 'Save and Continue' : 'Skip this step'}
+            </button>
           </div>
-        </Card>
-      )}
+        )
+      }
 
       {/* Save button for standalone version - but not when used in the competitive-analysis page */}
-      {!isWalkthrough && !isStandalone && (
-        <div className="flex justify-end mt-6 space-x-4">
-          <button
-            onClick={() => router.push('/')}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              showNotification('success', 'Competitor analysis saved successfully!');
-              setTimeout(() => router.push('/'), 1500);
-            }}
-            className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${!hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            disabled={!hasValidCompetitors}
-          >
-            Save Analysis
-          </button>
-        </div>
-      )}
-    </div>
+      {
+        !isWalkthrough && !isStandalone && (
+          <div className="flex justify-end mt-6 space-x-4">
+            <button
+              onClick={() => router.push('/')}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (hasValidCompetitors) {
+                  localStorage.setItem('marketingCompetitors',
+                    JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
+                }
+                showNotification('success', 'Competitor analysis saved successfully!');
+                setTimeout(() => router.push('/'), 1500);
+              }}
+              className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${!hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              disabled={!hasValidCompetitors}
+            >
+              Save Analysis
+            </button>
+          </div>
+        )
+      }
+    </div >
   );
 };
 
