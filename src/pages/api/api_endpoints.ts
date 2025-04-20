@@ -549,8 +549,7 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
   }
 }
 
-// src/pages/api/api_endpoints.ts - Updated handleAnalyzeCompetitors function (No Fallback Data)
-
+// Handler for analyzing competitors
 async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   try {
     // Validate input
@@ -655,6 +654,7 @@ Only include information that would be publicly available or reasonably inferred
     });
   }
 }
+
 // Handler for generate content endpoint
 async function handleGenerateContent(data: any, res: NextApiResponse) {
   try {
@@ -773,6 +773,7 @@ Format everything clearly with appropriate headers and sections.`;
     });
   }
 }
+
 // Handler for value proposition generator endpoint
 async function handleValuePropositionGenerator(data: any, res: NextApiResponse) {
   try {
@@ -873,6 +874,7 @@ Make the content specific, substantive and actionable. Do not use generic market
     });
   }
 }
+
 // Handler for content modification through chat
 async function handleModifyContent(data: any, res: NextApiResponse) {
   try {
@@ -1056,6 +1058,107 @@ async function handleKeywordVolumeLookup(data: any, res: NextApiResponse) {
   }
 }
 
+// Handler for persona generator endpoint
+async function handlePersonaGenerator(data: any, res: NextApiResponse) {
+  try {
+    console.log("Persona generator received data:", data);
+
+    // Validate input
+    if (!data.productName || !data.productType) {
+      console.log("Missing required fields");
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Missing product name or type'
+      });
+    }
+
+    const { productName, productType, currentPersona } = data;
+    console.log(`Generating personas for: ${productName} (${productType})`);
+
+    // Create a prompt for persona generation
+    const prompt = `Generate target audience personas for the following product:
+
+Product: ${productName}
+Product Type: ${productType}
+${currentPersona?.role ? `Current Target Role: ${currentPersona.role}` : ''}
+${currentPersona?.industry ? `Current Industry Focus: ${currentPersona.industry}` : ''}
+
+Please provide 2 detailed target audience personas that would be ideal customers for this product.
+Each persona should include:
+1. A specific job role/title
+2. Their industry
+3. 3-5 specific business challenges they face that the product could solve
+
+Format your response as a valid JSON array with this structure:
+[
+  {
+    "role": "Job Title/Role",
+    "industry": "Industry",
+    "challenges": ["Challenge 1", "Challenge 2", "Challenge 3"]
+  }
+]
+
+Make the personas realistic, specific and detail-oriented.`;
+
+    console.log("Sending prompt to OpenAI");
+
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert marketing strategist who specializes in identifying target audiences.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+    });
+
+    const responseText = completion.choices[0].message?.content || '';
+    console.log("Got OpenAI response");
+
+    try {
+      // Parse the JSON response
+      console.log("Parsing AI response for personas");
+      const parsedResponse = JSON.parse(responseText);
+
+      // Validate response format
+      if (!Array.isArray(parsedResponse)) {
+        console.log("Response is not an array:", typeof parsedResponse);
+        return res.status(500).json({
+          error: 'Invalid AI response',
+          message: 'AI did not return array of personas'
+        });
+      }
+
+      console.log("Sending personas back to client:", parsedResponse.length, "personas");
+
+      return res.status(200).json({
+        personas: parsedResponse
+      });
+    } catch (parseError) {
+      console.error('Failed to parse personas response:', parseError);
+      console.log("Response text sample:", responseText.substring(0, 200));
+
+      // No fallback data - just return an error
+      return res.status(500).json({
+        error: 'Parse error',
+        message: 'Failed to parse AI response for personas'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating personas:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      message: error.message || 'Failed to generate personas'
+    });
+  }
+}
+
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -1093,16 +1196,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'value-proposition-generator':
         return handleValuePropositionGenerator(data, res);
 
+      // Handle persona-generator endpoint
+      case 'persona-generator':
+        return handlePersonaGenerator(data, res);
+
+      // Handle generate-keywords endpoint
+      case 'generate-keywords':
+        return handleGenerateKeywords(data, res);
+
       // Handle other endpoints
       case 'content-repurposer':
-      case 'persona-generator':
-      case 'generate-keywords':
-        // Your existing handlers here
+        // Your existing handler here
         return res.status(200).json({
           message: 'Handler not fully implemented yet',
           success: true,
           data: {
-            // Return fallback data for testing
             results: 'Sample results',
             status: 'success'
           }
@@ -1124,7 +1232,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 }
-
-
-
-

@@ -20,7 +20,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
   const [keyBenefits, setKeyBenefits] = useState([""]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Create a ref to track the newly added input field
   const newBenefitRef = useRef<HTMLInputElement>(null);
   // Track the index of the newly added field
@@ -29,21 +29,18 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
   const userId = "user123"; // Replace with actual user ID when authentication is added
 
   useEffect(() => {
-    fetch(`/api/product-info?userId=${userId}`, { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.product) {
-          setProductName(data.product.name || "");
-          setProductType(data.product.type || "");
-          setValueProposition(data.product.valueProposition || "");
-          setKeyBenefits(data.product.keyBenefits?.length ? data.product.keyBenefits : [""]);
-        }
+    fetch('/api/api_endpoints', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        endpoint: 'product-info',
+        data: { userId }
       })
-      .catch((error) => {
-        console.error("Error fetching product info:", error);
-      });
+    })
   }, []);
-  
+
   // Effect to focus on newly added input when focusIndex changes
   useEffect(() => {
     if (focusIndex !== null && newBenefitRef.current) {
@@ -73,7 +70,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
           }
         })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setValueProposition(data.valueProposition || 'Our business helps clients achieve their goals through our high-quality services and personalized approach.');
@@ -84,7 +81,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
     } catch (error) {
       console.error('Error generating value proposition:', error);
       showNotification('error', 'Failed to generate. Using fallback suggestion.');
-      
+
       // Provide a fallback value proposition
       setValueProposition(`${productName || 'Our business'} helps clients through ${productType || 'our services'} that deliver real results and exceptional customer experiences.`);
     } finally {
@@ -113,9 +110,9 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
         valueProposition,
         keyBenefits: keyBenefits.filter(b => b.trim()),
       };
-      
+
       localStorage.setItem('marketingProduct', JSON.stringify(productData));
-      
+
       // Then try API call
       await fetch("/api/product-info", {
         method: "POST",
@@ -125,9 +122,9 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
           ...productData
         }),
       });
-      
+
       showNotification('success', 'Business information saved successfully!');
-      
+
       // If in walkthrough mode, proceed to next step
       if (isWalkthrough && onNext) {
         onNext();
@@ -140,7 +137,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
       setIsSaving(false);
     }
   };
-  
+
   // Updated to set focus index when adding a new benefit
   const addBenefit = () => {
     setKeyBenefits([...keyBenefits, ""]);
@@ -242,7 +239,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
               rows={4}
             />
           </div>
-          
+
           {/* Navigation controls */}
           {!isWalkthrough && (
             <div className="flex justify-between items-center pt-4 mt-6">
@@ -252,7 +249,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
               >
                 Back to Dashboard
               </button>
-              
+
               <button
                 onClick={saveProductInfo}
                 disabled={isSaving}

@@ -41,11 +41,11 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
             data: { userId: 'user123' }
           })
         });
-        
+
         if (!response.ok) {
           throw new Error(`API responded with status ${response.status}`);
         }
-        
+
         const data = await response.json();
         if (data.success && data.data) {
           setProductInfo({
@@ -99,7 +99,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
   const generateAudienceSuggestions = async () => {
     console.log("Generate audience suggestions triggered");
     console.log("Product info:", productInfo);
-    
+
     setIsGenerating(true);
     setSuggestedAudiences([]);
 
@@ -114,7 +114,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
         }
       };
       console.log("Request body:", requestBody);
-      
+
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
@@ -122,7 +122,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
         },
         body: JSON.stringify(requestBody)
       });
-      
+
       console.log("API response received:", response);
 
       if (!response.ok) {
@@ -131,7 +131,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
 
       const data = await response.json();
       console.log("API data:", data);
-      
+
       if (data.personas && Array.isArray(data.personas)) {
         setSuggestedAudiences(data.personas);
         showNotification('success', 'Audience suggestions based on your product.');
@@ -140,30 +140,10 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
       }
     } catch (error) {
       console.error('Error generating audience suggestions:', error);
-      showNotification('error', 'Failed to generate audience suggestions. Using fallback suggestions.');
-      
-      // Fallback default audiences if API fails
-      console.log("Using fallback audiences");
-      setSuggestedAudiences([
-        {
-          role: 'Marketing Director',
-          industry: productInfo.type || 'Technology',
-          challenges: [
-            'Scaling content creation with limited resources',
-            'Demonstrating ROI from content marketing efforts',
-            'Maintaining consistent brand voice across channels'
-          ]
-        },
-        {
-          role: 'Content Manager',
-          industry: productInfo.type || 'Technology',
-          challenges: [
-            'Meeting aggressive content deadlines',
-            'Producing high-quality content consistently',
-            'Optimizing content for multiple channels'
-          ]
-        }
-      ]);
+      showNotification('error', 'Failed to generate audience suggestions. Please try again.');
+
+      // NO FALLBACK DATA - just set empty array
+      setSuggestedAudiences([]);
     } finally {
       console.log("Setting isGenerating to false");
       setIsGenerating(false);
@@ -199,7 +179,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
     <div className="space-y-6">
       <Card className="p-6">
         <h2 className="text-xl font-bold mb-4">Who are we delighting with your solution? 🎯</h2>
-        
+
         {/* Target Audience Entry Form */}
         <div className="space-y-4">
           {/* Role Field */}
@@ -213,7 +193,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
               placeholder="e.g. CTO, Marketing Director"
             />
           </div>
-          
+
           {/* Industry Field */}
           <div>
             <label className="block text-sm font-medium mb-1">Industry</label>
@@ -225,7 +205,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
               placeholder="e.g. SaaS, Healthcare"
             />
           </div>
-          
+
           {/* Key Challenges */}
           <div>
             <label className="block text-sm font-medium mb-1">Key Challenges</label>
@@ -240,8 +220,8 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
                     placeholder={`Challenge ${index + 1}`}
                   />
                   {audience.challenges.length > 1 && (
-                    <button 
-                      onClick={() => removeChallenge(index)} 
+                    <button
+                      onClick={() => removeChallenge(index)}
                       className="text-gray-400 hover:text-gray-600"
                     >
                       <X className="w-5 h-5" />
@@ -249,8 +229,8 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
                   )}
                 </div>
               ))}
-              <button 
-                onClick={addChallenge} 
+              <button
+                onClick={addChallenge}
                 className="text-blue-600 hover:text-blue-700 flex items-center"
               >
                 <Plus className="w-4 h-4 mr-1" />
@@ -275,7 +255,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Help Me Identify My Ideal Customer 
+                Help Me Identify My Ideal Customer
               </>
             )}
           </button>
@@ -292,11 +272,11 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
           <p className="text-sm text-blue-700 mb-4">
             Based on your product information, here are potential customers who might benefit from your solution:
           </p>
-          
+
           <div className="space-y-4">
             {suggestedAudiences.map((suggestedAudience, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="bg-white rounded-lg p-4 border border-blue-100 hover:border-blue-300 transition-colors"
               >
                 <div className="flex justify-between items-start mb-2">
@@ -311,7 +291,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
                     ))}
                   </ul>
                 </div>
-                <button 
+                <button
                   onClick={() => selectSuggestedAudience(suggestedAudience)}
                   className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
