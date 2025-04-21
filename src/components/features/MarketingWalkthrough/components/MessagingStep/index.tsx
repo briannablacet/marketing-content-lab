@@ -43,6 +43,10 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditingValueProp, setIsEditingValueProp] = useState(false);
 
+  // State to store product data and target audience
+  const [productData, setProductData] = useState<any>(null);
+  const [targetAudience, setTargetAudience] = useState<any>(null);
+
   // References for focus management
   const newBenefitRef = useRef<HTMLInputElement>(null);
 
@@ -59,6 +63,8 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       const savedProduct = localStorage.getItem('marketingProduct');
       if (savedProduct) {
         const productData = JSON.parse(savedProduct);
+        setProductData(productData);
+        console.log("Loaded product data:", productData);
         if (productData.valueProposition) {
           setFramework(prev => ({
             ...prev,
@@ -68,6 +74,29 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       }
     } catch (error) {
       console.error('Error loading product data:', error);
+    }
+
+    // Try to load target audience data
+    try {
+      // First try multiple audiences
+      const savedAudiences = localStorage.getItem('marketingTargetAudiences');
+      if (savedAudiences) {
+        const audiences = JSON.parse(savedAudiences);
+        if (Array.isArray(audiences) && audiences.length > 0) {
+          setTargetAudience(audiences);
+          console.log("Loaded multiple target audiences:", audiences);
+        }
+      } else {
+        // Try single audience format
+        const savedAudience = localStorage.getItem('marketingTargetAudience');
+        if (savedAudience) {
+          const audience = JSON.parse(savedAudience);
+          setTargetAudience([audience]);
+          console.log("Loaded single target audience:", audience);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading target audience data:', error);
     }
 
     // Then try to load saved framework (will override product data if exists)
@@ -135,6 +164,18 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
     updateField(field, newArray);
   };
 
+  // Check if the framework has meaningful content
+  const hasContent = () => {
+    const hasValueProp = framework.valueProposition.trim() !== '';
+    const hasPillar = framework.pillar1.trim() !== '' ||
+      framework.pillar2.trim() !== '' ||
+      framework.pillar3.trim() !== '';
+    const hasBenefits = framework.keyBenefits.some(b => b.trim() !== '');
+
+    // Only return true if we have at least a value proposition AND either a pillar or benefit
+    return hasValueProp && (hasPillar || hasBenefits);
+  };
+
   // Generate AI-enhanced framework
   const generateAIFramework = async () => {
     setIsGenerating(true);
@@ -142,20 +183,37 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
     setAiSuggestions(null);
 
     try {
+      // Extract audience information for the API call
+      let audienceInfo = ["Marketing professionals"]; // Default
+
+      // If we have target audience data, use it
+      if (targetAudience && Array.isArray(targetAudience) && targetAudience.length > 0) {
+        audienceInfo = targetAudience.map(a => a.role || "").filter(r => r);
+        if (audienceInfo.length === 0) {
+          audienceInfo = ["Marketing professionals"];
+        }
+      }
+
+      // Get product name and type if available
+      const productName = productData?.name || "Product";
+      const productDescription = productData?.type || "Marketing tool";
+
+      // Gather benefits from either framework or product data
+      const benefits = framework.keyBenefits.filter(b => b.trim()).length > 0
+        ? framework.keyBenefits.filter(b => b.trim())
+        : (productData?.keyBenefits || ["Improved content creation"]);
+
       // Prepare the request data with all required fields
       const requestBody = {
         endpoint: 'value-proposition-generator',
         data: {
           productInfo: {
-            // Add specific product info as required by the API
-            name: "Marketing Content Lab", // Default name if none provided
-            description: framework.valueProposition || "Content marketing platform",
-            benefits: framework.keyBenefits.filter(b => b.trim()).length > 0
-              ? framework.keyBenefits.filter(b => b.trim())
-              : ["Improved content creation"],
-            targetAudience: ["Marketing professionals"]
+            name: productName,
+            description: productDescription,
+            benefits: benefits,
+            targetAudience: audienceInfo
           },
-          competitors: ["ContentCal", "HubSpot", "CoSchedule"],
+          competitors: [], // Could be populated if we had competitor data
           industry: "Technology",
           focusAreas: ["user", "business"],
           tone: "professional",
@@ -357,7 +415,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
     }
   };
 
-  // Export framework as JSON file
+  // Export framework as Markdown
   const exportFramework = () => {
     try {
       // Clean up empty entries
@@ -366,22 +424,47 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
         keyBenefits: framework.keyBenefits.filter(b => b.trim())
       };
 
-      // Convert to JSON string
-      const jsonData = JSON.stringify(cleanedFramework, null, 2);
+      // Get business name if available
+      const businessName = productData?.name || "Our Business";
+
+      // Create a markdown string
+      const markdown = `# Message Framework for ${businessName}
+
+## Value Proposition
+${cleanedFramework.valueProposition}
+
+## Key Message Pillars
+
+### Pillar 1
+${cleanedFramework.pillar1 || "N/A"}
+
+### Pillar 2
+${cleanedFramework.pillar2 || "N/A"}
+
+### Pillar 3
+${cleanedFramework.pillar3 || "N/A"}
+
+## Key Benefits
+
+${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}`).join('\n')}
+
+---
+*Generated by Marketing Content Lab*
+`;
 
       // Create blob and download link
-      const blob = new Blob([jsonData], { type: 'application/json' });
+      const blob = new Blob([markdown], { type: 'text/markdown' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'message_framework.json';
+      link.download = 'message_framework.md';
 
       // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      showNotification('success', 'Framework exported successfully');
+      showNotification('success', 'Framework exported as Markdown');
     } catch (error) {
       console.error('Error exporting framework:', error);
       showNotification('error', 'Failed to export framework. Please try again.');
@@ -456,23 +539,16 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
             />
           </label>
 
-          {/* Export Button */}
-          <button
-            onClick={exportFramework}
-            className="px-3 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 border flex items-center"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </button>
-
-          {/* Clear Button */}
-          <button
-            onClick={handleClearFramework}
-            className="px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 border flex items-center"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Clear
-          </button>
+          {/* Clear Button - Only visible if framework has content */}
+          {hasContent() && (
+            <button
+              onClick={handleClearFramework}
+              className="px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 border flex items-center"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear
+            </button>
+          )}
 
           {/* Save Button */}
           <button
@@ -748,6 +824,19 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
             className="ml-auto text-gray-400 hover:text-gray-600"
           >
             <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Footer Actions - Export button only shows when there's meaningful content */}
+      {hasContent() && (
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            onClick={exportFramework}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export as Markdown
           </button>
         </div>
       )}
