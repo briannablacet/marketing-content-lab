@@ -43,10 +43,10 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   // Timer for debounce
   const [analyzeTimer, setAnalyzeTimer] = useState<NodeJS.Timeout | null>(null);
 
-  // NEW: Add ref for the newly added competitor input
+  // Add ref for the newly added competitor input
   const newCompetitorRef = useRef<HTMLInputElement>(null);
 
-  // NEW: Track which competitor should be focused
+  // Track which competitor should be focused
   const [focusCompetitorIndex, setFocusCompetitorIndex] = useState<number | null>(null);
 
   // Load competitors from localStorage when component mounts
@@ -88,7 +88,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     };
   }, [competitorToAnalyze]);
 
-  // NEW: Effect to focus on newly added competitor input
+  // Effect to focus on newly added competitor input
   useEffect(() => {
     if (focusCompetitorIndex !== null && newCompetitorRef.current) {
       newCompetitorRef.current.focus();
@@ -109,7 +109,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     }
   }, [competitors, onDataChange]);
 
-  // UPDATED: Add competitor with focus handling
+  // Add competitor with focus handling
   const addCompetitor = () => {
     setCompetitors([
       ...competitors,
@@ -136,9 +136,11 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     ));
   };
 
+  // FIXED VERSION - Updated handleAnalyzeCompetitor function
   const handleAnalyzeCompetitor = async (index: number, name: string) => {
     if (!name.trim()) return;
 
+    // Update UI to show loading state
     setCompetitors(prev => prev.map((comp, i) =>
       i === index ? { ...comp, isLoading: true } : comp
     ));
@@ -146,6 +148,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     setIsAnalyzing(true);
 
     try {
+      // Prepare request data
       const requestData = {
         endpoint: 'analyze-competitors',
         data: {
@@ -156,28 +159,57 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             strengths: [],
             weaknesses: []
           }],
-          industry: 'technology',
-          userMessages: ['']
+          industry: 'technology'
         }
       };
 
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
+      console.log('Sending competitor analysis request:', JSON.stringify(requestData));
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Unable to analyze competitor. Please try again.');
+      // Make API request with error handling
+      let response;
+      try {
+        response = await fetch('/api/api_endpoints', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(requestData)
+        });
+      } catch (fetchError) {
+        console.error('Network error:', fetchError);
+        throw new Error('Network error. Please check your connection and try again.');
       }
 
-      const data = await response.json();
+      // Check if response is OK
+      if (!response.ok) {
+        let errorMessage = 'Unable to analyze competitor. Please try again.';
 
-      if (!data.competitorInsights?.[0]) {
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If we can't parse the error JSON, just use the default message
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      // Parse response data with error handling
+      let data;
+      try {
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        throw new Error('Failed to parse API response. Please try again.');
+      }
+
+      console.log('Parsed competitor analysis response:', data);
+
+      // Check if we have valid competitor insights
+      if (!data.competitorInsights || !Array.isArray(data.competitorInsights) || data.competitorInsights.length === 0) {
         throw new Error('No competitor insights returned from API');
       }
 
@@ -192,6 +224,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         throw new Error('Limited information available for this competitor');
       }
 
+      // Update the competitor with the analysis results
       setCompetitors(prev => prev.map((comp, i) =>
         i === index ? {
           ...comp,
@@ -203,6 +236,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         } : comp
       ));
 
+      // Show success notification
       showNotification('success', `Analysis for ${name} completed`);
     } catch (err) {
       console.error('Error in handleAnalyzeCompetitor:', err);
@@ -211,8 +245,10 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       // Clear any previously generated analysis for this competitor
       clearCompetitorAnalysis(index);
 
+      // Show error notification
       showNotification('error', 'Failed to analyze competitor. Please try again.');
     } finally {
+      // Always reset loading states
       setCompetitors(prev => prev.map((comp, i) =>
         i === index ? { ...comp, isLoading: false } : comp
       ));
@@ -292,7 +328,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <input
-                  // NEW: Add ref to the most recently added competitor
+                  // Add ref to the most recently added competitor
                   ref={index === competitors.length - 1 ? newCompetitorRef : null}
                   type="text"
                   value={competitor.name}
@@ -385,8 +421,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             )}
           </div>
         </Card>
-      ))
-      }
+      ))}
 
       {/* Add Competitor Button */}
       <button
@@ -398,77 +433,70 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       </button>
 
       {/* Error Display */}
-      {
-        error && (
-          <Card className="border-red-200 bg-red-50">
-            <div className="flex items-center gap-3 p-4">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <div className="flex-1">
-                <h4 className="font-medium text-red-900">Analysis Error</h4>
-                <p className="text-red-700 text-sm mt-1">{error}</p>
-                <button
-                  onClick={() => setError('')}
-                  className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
-                >
-                  Dismiss
-                </button>
-              </div>
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <div className="flex items-center gap-3 p-4">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-medium text-red-900">Analysis Error</h4>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+              <button
+                onClick={() => setError('')}
+                className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
+              >
+                Dismiss
+              </button>
             </div>
-          </Card>
-        )
-      }
+          </div>
+        </Card>
+      )}
 
       {/* Navigation buttons for walkthrough mode */}
-      {
-        isWalkthrough && (
-          <div className="flex justify-between mt-8">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Back
-              </button>
-            )}
+      {isWalkthrough && (
+        <div className="flex justify-between mt-8">
+          {onBack && (
             <button
-              onClick={handleSaveAndContinue}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              onClick={onBack}
+              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              {hasValidCompetitors ? 'Save and Continue' : 'Skip this step'}
+              Back
             </button>
-          </div>
-        )
-      }
+          )}
+          <button
+            onClick={handleSaveAndContinue}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            {hasValidCompetitors ? 'Save and Continue' : 'Skip this step'}
+          </button>
+        </div>
+      )}
 
       {/* Save button for standalone version - but not when used in the competitive-analysis page */}
-      {
-        !isWalkthrough && !isStandalone && (
-          <div className="flex justify-end mt-6 space-x-4">
-            <button
-              onClick={() => router.push('/')}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                if (hasValidCompetitors) {
-                  localStorage.setItem('marketingCompetitors',
-                    JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
-                }
-                showNotification('success', 'Competitor analysis saved successfully!');
-                setTimeout(() => router.push('/'), 1500);
-              }}
-              className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${!hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              disabled={!hasValidCompetitors}
-            >
-              Save Analysis
-            </button>
-          </div>
-        )
-      }
-    </div >
+      {!isWalkthrough && !isStandalone && (
+        <div className="flex justify-end mt-6 space-x-4">
+          <button
+            onClick={() => router.push('/')}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (hasValidCompetitors) {
+                localStorage.setItem('marketingCompetitors',
+                  JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
+              }
+              showNotification('success', 'Competitor analysis saved successfully!');
+              setTimeout(() => router.push('/'), 1500);
+            }}
+            className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${!hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!hasValidCompetitors}
+          >
+            Save Analysis
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 
