@@ -58,32 +58,43 @@ const ProductStep: React.FC<ProductStepProps> = ({ onNext, onBack, isWalkthrough
 
     setIsGenerating(true);
     try {
+      // Format data properly for the API endpoint
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          endpoint: 'generate-value-prop',
+          endpoint: 'value-proposition-generator',
           data: {
-            productName,
-            productType,
-            keyBenefits: keyBenefits.filter(b => b.trim())
+            productInfo: {
+              name: productName,
+              description: productType,
+              benefits: keyBenefits.filter(b => b.trim()),
+              targetAudience: ["Business customers"]  // You can update this if you have audience data
+            },
+            competitors: [],  // Add competitors if available
+            industry: 'technology',  // You can update this based on your application
+            tone: 'professional'
           }
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setValueProposition(data.valueProposition || 'Our business helps clients achieve their goals through our high-quality services and personalized approach.');
-        showNotification('success', 'Generated value proposition based on your inputs');
-      } else {
-        throw new Error('Failed to generate value proposition');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API error:', errorData);
+        throw new Error(errorData.message || 'Failed to generate value proposition');
       }
+
+      const data = await response.json();
+
+      if (!data.valueProposition) {
+        throw new Error('API returned empty value proposition');
+      }
+
+      setValueProposition(data.valueProposition);
+      showNotification('success', 'Generated value proposition based on your inputs');
     } catch (error) {
       console.error('Error generating value proposition:', error);
-      showNotification('error', 'Failed to generate. Using fallback suggestion.');
-
-      // Provide a fallback value proposition
-      setValueProposition(`${productName || 'Our business'} helps clients through ${productType || 'our services'} that deliver real results and exceptional customer experiences.`);
+      showNotification('error', `Failed to generate: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
