@@ -4,76 +4,87 @@ import { Card } from '@/components/ui/card';
 import { Sparkles, Plus, X, Loader } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
 
-interface TargetAudience {
-  role: string;
-  industry: string;
-  challenges: string[];
-}
-
-interface PersonaStepProps {
-  onNext?: () => void;
-  onBack?: () => void;
-  isWalkthrough?: boolean;
-}
-
-const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough = true }) => {
+// A clean PersonaStep component without debug panel
+const PersonaStep = () => {
   const { showNotification } = useNotification();
-  const [audience, setAudience] = useState<TargetAudience>({
+
+  // Basic form state
+  const [audience, setAudience] = useState({
     role: '',
     industry: '',
     challenges: ['']
   });
+
+  // Component state
   const [isGenerating, setIsGenerating] = useState(false);
-  const [suggestedAudiences, setSuggestedAudiences] = useState<TargetAudience[]>([]);
-  const [productInfo, setProductInfo] = useState({ name: 'Marketing Product', type: 'Marketing Tool' });
+  const [suggestedAudiences, setSuggestedAudiences] = useState([]);
+  const [productInfo, setProductInfo] = useState(null);
 
-  // Fetch product info to help with audience suggestions
+  // Load previously saved audience data if available
   useEffect(() => {
-    const fetchProductInfo = async () => {
-      try {
-        const response = await fetch('/api/api_endpoints', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            endpoint: 'product-info',
-            data: { userId: 'user123' }
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`API responded with status ${response.status}`);
+    try {
+      const savedAudience = localStorage.getItem('marketingTargetAudience');
+      if (savedAudience) {
+        const parsed = JSON.parse(savedAudience);
+        if (parsed && parsed.role && parsed.industry && Array.isArray(parsed.challenges)) {
+          setAudience(parsed);
         }
-
-        const data = await response.json();
-        if (data.success && data.data) {
-          setProductInfo({
-            name: data.data.name || 'Marketing Product',
-            type: data.data.type || 'Marketing Tool'
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching product info:', error);
-        // Use defaults if API fails
-        setProductInfo({
-          name: 'Marketing Product',
-          type: 'Marketing Tool'
-        });
       }
-    };
-
-    fetchProductInfo();
+    } catch (error) {
+      console.error('Error loading saved audience:', error);
+    }
   }, []);
 
-  const handleTextChange = (field: keyof TargetAudience, value: string) => {
+  // Load product info on component mount
+  useEffect(() => {
+    try {
+      const productData = localStorage.getItem('marketingProduct');
+
+      if (productData) {
+        try {
+          const parsedData = JSON.parse(productData);
+          console.log("Found product data:", parsedData);
+
+          if (parsedData && parsedData.name && parsedData.type) {
+            setProductInfo({
+              name: parsedData.name,
+              type: parsedData.type
+            });
+          }
+        } catch (e) {
+          console.error("Error parsing product data:", e);
+        }
+      } else {
+        console.log("No product info found in localStorage");
+      }
+    } catch (e) {
+      console.error("Error accessing localStorage:", e);
+    }
+  }, []);
+
+  // Auto-save audience data when it changes
+  useEffect(() => {
+    // Skip initial render with empty data
+    if (!audience.role && !audience.industry && audience.challenges.length === 1 && !audience.challenges[0]) {
+      return;
+    }
+
+    try {
+      localStorage.setItem('marketingTargetAudience', JSON.stringify(audience));
+      console.log("Auto-saved audience data:", audience);
+    } catch (error) {
+      console.error("Error auto-saving audience:", error);
+    }
+  }, [audience]);
+
+  const handleTextChange = (field, value) => {
     setAudience(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleChallengeChange = (index: number, value: string) => {
+  const handleChallengeChange = (index, value) => {
     const newChallenges = [...audience.challenges];
     newChallenges[index] = value;
     setAudience(prev => ({
@@ -89,32 +100,41 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
     }));
   };
 
-  const removeChallenge = (index: number) => {
+  const removeChallenge = (index) => {
     setAudience(prev => ({
       ...prev,
       challenges: prev.challenges.filter((_, i) => i !== index)
     }));
   };
 
+  // Generate audience suggestions
   const generateAudienceSuggestions = async () => {
-    console.log("Generate audience suggestions triggered");
-    console.log("Product info:", productInfo);
+    if (!productInfo) {
+      showNotification('error', 'Product information is missing. Please complete the previous step first.');
+      return;
+    }
 
     setIsGenerating(true);
     setSuggestedAudiences([]);
 
     try {
-      console.log("Preparing to fetch from API");
+      // Prepare the API request
       const requestBody = {
         endpoint: 'persona-generator',
         data: {
           productName: productInfo.name,
           productType: productInfo.type,
-          currentPersona: audience
+          currentPersona: {
+            role: audience.role || '',
+            industry: audience.industry || '',
+            challenges: audience.challenges.filter(c => c.trim())
+          }
         }
       };
-      console.log("Request body:", requestBody);
 
+      console.log("Sending API request:", requestBody);
+
+      // Make the API call
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
@@ -123,64 +143,50 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
         body: JSON.stringify(requestBody)
       });
 
-      console.log("API response received:", response);
-
       if (!response.ok) {
-        throw new Error(`API responded with status ${response.status}`);
+        throw new Error(`API error: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log("API data:", data);
+      // Get response text for debugging
+      const responseText = await response.text();
+      console.log("API response text:", responseText);
 
-      if (data.personas && Array.isArray(data.personas)) {
-        setSuggestedAudiences(data.personas);
-        showNotification('success', 'Audience suggestions based on your product.');
-      } else {
-        throw new Error('Invalid response format');
+      try {
+        // Parse the JSON response
+        const data = JSON.parse(responseText);
+        console.log("Parsed API response:", data);
+
+        if (data.personas && Array.isArray(data.personas)) {
+          setSuggestedAudiences(data.personas);
+          showNotification('success', 'Generated audience suggestions');
+        } else {
+          throw new Error('Invalid response format - missing personas array');
+        }
+      } catch (parseError) {
+        console.error("Error parsing API response:", parseError);
+        throw new Error(`Failed to parse API response: ${parseError.message}`);
       }
     } catch (error) {
-      console.error('Error generating audience suggestions:', error);
-      showNotification('error', 'Failed to generate audience suggestions. Please try again.');
-
-      // NO FALLBACK DATA - just set empty array
-      setSuggestedAudiences([]);
+      console.error('Error generating suggestions:', error);
+      showNotification('error', `Failed to generate suggestions: ${error.message}`);
     } finally {
-      console.log("Setting isGenerating to false");
       setIsGenerating(false);
     }
   };
 
-  const selectSuggestedAudience = (suggestedAudience: TargetAudience) => {
+  // Select a suggested audience
+  const selectSuggestedAudience = (suggestedAudience) => {
     setAudience(suggestedAudience);
     setSuggestedAudiences([]);
-    showNotification('success', 'Selected audience applied to your profile');
-  };
-
-  const saveAndContinue = async () => {
-    // Basic validation
-    if (!audience.role.trim() || !audience.industry.trim() || audience.challenges.filter(c => c.trim()).length === 0) {
-      showNotification('error', 'Please fill in the required fields');
-      return;
-    }
-
-    try {
-      // Simplified for demo purposes - in a real app, you'd save to a database
-      localStorage.setItem('marketingTargetAudience', JSON.stringify(audience));
-      showNotification('success', 'Target audience saved successfully!');
-      if (onNext) onNext();
-    } catch (error) {
-      console.error('Error saving target audience:', error);
-      showNotification('error', 'Failed to save target audience. Continuing anyway.');
-      if (onNext) onNext(); // Continue even if save fails
-    }
+    showNotification('success', 'Selected audience applied');
   };
 
   return (
     <div className="space-y-6">
+      {/* Main Form - No debug panel */}
       <Card className="p-6">
         <h2 className="text-xl font-bold mb-4">Who are we delighting with your solution? 🎯</h2>
 
-        {/* Target Audience Entry Form */}
         <div className="space-y-4">
           {/* Role Field */}
           <div>
@@ -244,7 +250,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
         <div className="mt-6 flex justify-end">
           <button
             onClick={generateAudienceSuggestions}
-            disabled={isGenerating}
+            disabled={isGenerating || !productInfo}
             className="text-blue-600 hover:text-blue-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isGenerating ? (
@@ -301,24 +307,6 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, isWalkthrough
             ))}
           </div>
         </Card>
-      )}
-
-      {/* Navigation Buttons (only when not in walkthrough) */}
-      {!isWalkthrough && (
-        <div className="flex justify-between pt-4">
-          <button
-            onClick={onBack}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Back
-          </button>
-          <button
-            onClick={saveAndContinue}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Continue
-          </button>
-        </div>
       )}
     </div>
   );

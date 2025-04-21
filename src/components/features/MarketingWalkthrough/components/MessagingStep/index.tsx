@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import {
   Sparkles, AlertCircle, PlusCircle, X, RefreshCw,
-  Lightbulb, Download, Upload, Trash2, Save, ExternalLink, HelpCircle
+  Lightbulb, Download, Upload, Trash2, Save, Edit, FileText
 } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
 import { useRouter } from 'next/router';
@@ -11,7 +11,9 @@ import { useRouter } from 'next/router';
 // Define the main data structure
 interface MessageFramework {
   valueProposition: string;
-  differentiators: string[];
+  pillar1: string;
+  pillar2: string;
+  pillar3: string;
   keyBenefits: string[];
 }
 
@@ -26,7 +28,9 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
   // Main state for the message framework
   const [framework, setFramework] = useState<MessageFramework>({
     valueProposition: '',
-    differentiators: [''],
+    pillar1: '',
+    pillar2: '',
+    pillar3: '',
     keyBenefits: ['']
   });
 
@@ -37,43 +41,64 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
   const [aiSuggestions, setAiSuggestions] = useState<Partial<MessageFramework> | null>(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingValueProp, setIsEditingValueProp] = useState(false);
 
   // References for focus management
-  const newDifferentiatorRef = useRef<HTMLInputElement>(null);
   const newBenefitRef = useRef<HTMLInputElement>(null);
 
   // State for tracking which field to focus
   const [focusField, setFocusField] = useState<{
-    type: 'differentiator' | 'benefit' | null;
+    type: 'benefit' | null;
     index: number | null;
   }>({ type: null, index: null });
 
   // Load existing data from localStorage on mount
   useEffect(() => {
-    const savedFramework = localStorage.getItem('messageFramework');
-    if (savedFramework) {
-      try {
-        const parsedFramework = JSON.parse(savedFramework);
-        setFramework(parsedFramework);
-      } catch (error) {
-        console.error('Error loading saved message framework:', error);
+    // First try to load from product step
+    try {
+      const savedProduct = localStorage.getItem('marketingProduct');
+      if (savedProduct) {
+        const productData = JSON.parse(savedProduct);
+        if (productData.valueProposition) {
+          setFramework(prev => ({
+            ...prev,
+            valueProposition: productData.valueProposition
+          }));
+        }
       }
+    } catch (error) {
+      console.error('Error loading product data:', error);
+    }
+
+    // Then try to load saved framework (will override product data if exists)
+    try {
+      const savedFramework = localStorage.getItem('messageFramework');
+      if (savedFramework) {
+        const parsedFramework = JSON.parse(savedFramework);
+        setFramework(prev => ({
+          ...prev,
+          valueProposition: parsedFramework.valueProposition || prev.valueProposition,
+          pillar1: parsedFramework.pillar1 || '',
+          pillar2: parsedFramework.pillar2 || '',
+          pillar3: parsedFramework.pillar3 || '',
+          keyBenefits: parsedFramework.keyBenefits || ['']
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading saved message framework:', error);
     }
   }, []);
 
   // Handle focus on newly added fields
   useEffect(() => {
-    if (focusField.type === 'differentiator' && focusField.index !== null && newDifferentiatorRef.current) {
-      newDifferentiatorRef.current.focus();
-      setFocusField({ type: null, index: null });
-    } else if (focusField.type === 'benefit' && focusField.index !== null && newBenefitRef.current) {
+    if (focusField.type === 'benefit' && focusField.index !== null && newBenefitRef.current) {
       newBenefitRef.current.focus();
       setFocusField({ type: null, index: null });
     }
   }, [focusField]);
 
-  // Add a new field (differentiator or benefit)
-  const addField = (field: 'differentiators' | 'keyBenefits') => {
+  // Add a new field (benefit)
+  const addField = (field: 'keyBenefits') => {
     setFramework(prev => ({
       ...prev,
       [field]: [...prev[field], '']
@@ -82,13 +107,13 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
     // Set focus to the new field
     const newIndex = framework[field].length;
     setFocusField({
-      type: field === 'differentiators' ? 'differentiator' : 'benefit',
+      type: 'benefit',
       index: newIndex
     });
   };
 
-  // Remove a field (differentiator or benefit)
-  const removeField = (field: 'differentiators' | 'keyBenefits', index: number) => {
+  // Remove a field (benefit)
+  const removeField = (field: 'keyBenefits', index: number) => {
     setFramework(prev => ({
       ...prev,
       [field]: prev[field].filter((_, i) => i !== index)
@@ -104,32 +129,10 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
   };
 
   // Update a single item in an array field
-  const updateArrayField = (field: 'differentiators' | 'keyBenefits', index: number, value: string) => {
+  const updateArrayField = (field: 'keyBenefits', index: number, value: string) => {
     const newArray = [...framework[field]];
     newArray[index] = value;
     updateField(field, newArray);
-  };
-
-  // Navigate to writing style page
-  const goToWritingStyle = () => {
-    // First save the current framework
-    try {
-      // Clean up empty entries
-      const cleanedFramework = {
-        ...framework,
-        differentiators: framework.differentiators.filter(d => d.trim()),
-        keyBenefits: framework.keyBenefits.filter(b => b.trim())
-      };
-
-      // Save to localStorage
-      localStorage.setItem('messageFramework', JSON.stringify(cleanedFramework));
-
-      // Navigate to writing style page
-      router.push('/writing-style');
-    } catch (error) {
-      console.error('Error saving before navigation:', error);
-      showNotification('error', 'Failed to save framework before navigating');
-    }
   };
 
   // Generate AI-enhanced framework
@@ -191,16 +194,13 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       const data = await response.json();
       console.log("API response:", data);
 
-      // Validate data
-      if (!data.valueProposition && !data.keyDifferentiators && !data.keyBenefits) {
-        throw new Error('The API returned an invalid response. Please try again.');
-      }
-
-      // Show the AI suggestions
+      // Map API response to our new structure
       setAiSuggestions({
         valueProposition: data.valueProposition || '',
-        differentiators: data.keyDifferentiators || [],
-        keyBenefits: data.keyBenefits || []
+        pillar1: data.keyDifferentiators?.[0] || '',
+        pillar2: data.keyDifferentiators?.[1] || '',
+        pillar3: data.keyDifferentiators?.[2] || '',
+        keyBenefits: data.targetedMessages || []
       });
 
       showNotification('success', 'AI enhancements generated successfully');
@@ -221,7 +221,9 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
     const updatedFramework = {
       ...framework,
       valueProposition: aiSuggestions.valueProposition || framework.valueProposition,
-      differentiators: aiSuggestions.differentiators || framework.differentiators,
+      pillar1: aiSuggestions.pillar1 || framework.pillar1,
+      pillar2: aiSuggestions.pillar2 || framework.pillar2,
+      pillar3: aiSuggestions.pillar3 || framework.pillar3,
       keyBenefits: aiSuggestions.keyBenefits || framework.keyBenefits
     };
 
@@ -249,10 +251,12 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       // Try to parse as JSON
       try {
         const parsedData = JSON.parse(text);
-        if (parsedData.valueProposition || parsedData.differentiators || parsedData.keyBenefits) {
+        if (parsedData.valueProposition || parsedData.pillar1 || parsedData.keyBenefits) {
           setFramework({
             valueProposition: parsedData.valueProposition || '',
-            differentiators: parsedData.differentiators || [''],
+            pillar1: parsedData.pillar1 || parsedData.differentiators?.[0] || '',
+            pillar2: parsedData.pillar2 || parsedData.differentiators?.[1] || '',
+            pillar3: parsedData.pillar3 || parsedData.differentiators?.[2] || '',
             keyBenefits: parsedData.keyBenefits || ['']
           });
           showNotification('success', 'Framework loaded from file successfully');
@@ -270,9 +274,10 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
           line.length > 80
         ) || '';
 
-        const potentialDifferentiators = lines.filter(line =>
+        const potentialPillars = lines.filter(line =>
           line.includes('different') ||
           line.includes('unique') ||
+          line.includes('pillar') ||
           (line.length > 20 && line.length < 100)
         );
 
@@ -280,12 +285,14 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
           line.includes('benefit') ||
           line.includes('value') ||
           line.includes('gain') ||
-          (line.length > 10 && line.length < 80 && !potentialDifferentiators.includes(line))
+          (line.length > 10 && line.length < 80 && !potentialPillars.includes(line))
         );
 
         setFramework({
           valueProposition: valueProposition,
-          differentiators: potentialDifferentiators.length ? potentialDifferentiators : [''],
+          pillar1: potentialPillars[0] || '',
+          pillar2: potentialPillars[1] || '',
+          pillar3: potentialPillars[2] || '',
           keyBenefits: potentialBenefits.length ? potentialBenefits : ['']
         });
 
@@ -309,9 +316,8 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
         return;
       }
 
-      if (!framework.differentiators.some(d => d.trim()) ||
-        !framework.keyBenefits.some(b => b.trim())) {
-        showNotification('error', 'Please provide at least one differentiator and one benefit');
+      if (!framework.keyBenefits.some(b => b.trim())) {
+        showNotification('error', 'Please provide at least one benefit');
         setIsSaving(false);
         return;
       }
@@ -319,12 +325,23 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       // Clean up empty entries
       const cleanedFramework = {
         ...framework,
-        differentiators: framework.differentiators.filter(d => d.trim()),
         keyBenefits: framework.keyBenefits.filter(b => b.trim())
       };
 
       // Save to localStorage
       localStorage.setItem('messageFramework', JSON.stringify(cleanedFramework));
+
+      // Also update product valueProposition for consistency
+      try {
+        const savedProduct = localStorage.getItem('marketingProduct');
+        if (savedProduct) {
+          const productData = JSON.parse(savedProduct);
+          productData.valueProposition = framework.valueProposition;
+          localStorage.setItem('marketingProduct', JSON.stringify(productData));
+        }
+      } catch (error) {
+        console.error('Error updating product data:', error);
+      }
 
       // If onSave callback is provided, call it
       if (onSave) {
@@ -346,7 +363,6 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       // Clean up empty entries
       const cleanedFramework = {
         ...framework,
-        differentiators: framework.differentiators.filter(d => d.trim()),
         keyBenefits: framework.keyBenefits.filter(b => b.trim())
       };
 
@@ -381,7 +397,9 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
   const confirmClearFramework = () => {
     setFramework({
       valueProposition: '',
-      differentiators: [''],
+      pillar1: '',
+      pillar2: '',
+      pillar3: '',
       keyBenefits: ['']
     });
 
@@ -389,121 +407,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
     setShowConfirmClear(false);
     showNotification('success', 'Framework cleared successfully');
   };
-  // Add this section to MessageFramework/index.tsx, above the main Card component
 
-  {/* Company Messaging Document Upload Section */ }
-  <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
-    <div className="mb-4">
-      <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-lg font-semibold">Upload Company Messaging Document</h3>
-        <HelpCircle className="h-5 w-5 text-gray-400" />
-      </div>
-      <p className="text-sm text-gray-600">
-        If you already have a company messaging document or brand guidelines, upload it here to pre-populate your message framework.
-      </p>
-    </div>
-
-    {/* File Upload Section */}
-    {uploadedFile ? (
-      <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md border border-gray-200">
-        <FileText className="w-5 h-5 text-gray-500" />
-        <div className="flex-1">
-          <span className="text-sm font-medium">{uploadedFile.name}</span>
-          <p className="text-xs text-gray-500">
-            {(uploadedFile.size / 1024).toFixed(0)} KB • Uploaded {new Date().toLocaleTimeString()}
-          </p>
-        </div>
-        <button
-          onClick={() => setUploadedFile(null)}
-          className="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-gray-100"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-    ) : (
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-        <input
-          type="file"
-          onChange={handleFileUpload}
-          className="hidden"
-          accept=".txt,.json,.md,.docx,.pdf"
-          id="message-file-upload"
-        />
-        <label
-          htmlFor="message-file-upload"
-          className="cursor-pointer flex flex-col items-center space-y-2"
-        >
-          <Upload className="h-8 w-8 text-gray-400" />
-          <span className="text-sm text-gray-600">Upload your company messaging document</span>
-          <span className="text-xs text-gray-500">PDF, DOC, DOCX, JSON, TXT, or MD (max 5MB)</span>
-        </label>
-      </div>
-    )}
-
-    <div className="text-sm text-gray-600 space-y-1 mt-4">
-      <p>ℹ️ This will attempt to extract:</p>
-      <ul className="list-disc pl-5 space-y-1">
-        <li>Value proposition statements</li>
-        <li>Key differentiators and unique selling points</li>
-        <li>Customer benefits and value points</li>
-      </ul>
-    </div>
-  </div>
-
-  {/* Then, also modify the top action bar to remove the Import button */ }
-  <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-wrap justify-between items-center gap-3">
-    <div className="flex items-center gap-2">
-      <h2 className="text-xl font-bold">Message Framework</h2>
-    </div>
-
-    <div className="flex flex-wrap gap-2">
-      {/* Export Button */}
-      <button
-        onClick={exportFramework}
-        className="px-3 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 border flex items-center"
-      >
-        <Download className="w-4 h-4 mr-2" />
-        Export
-      </button>
-
-      {/* Voice & Tone Link */}
-      <button
-        onClick={goToWritingStyle}
-        className="px-3 py-2 rounded-lg border flex items-center bg-gray-50 text-gray-700 hover:bg-gray-100"
-      >
-        <ExternalLink className="w-4 h-4 mr-2" />
-        Voice & Tone Settings
-      </button>
-
-      {/* Clear Button */}
-      <button
-        onClick={handleClearFramework}
-        className="px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 border flex items-center"
-      >
-        <Trash2 className="w-4 h-4 mr-2" />
-        Clear
-      </button>
-
-      {/* Save Button */}
-      <button
-        onClick={saveFramework}
-        disabled={isSaving}
-        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center"
-      >
-        {isSaving ? (
-          <>
-            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          <>
-            <Save className="w-4 h-4 mr-2" />
-            Save
-          </>
-        )}
-      </button>
-    </div>
-  </div>
   // Main render method
   return (
     <div className="space-y-6">
@@ -543,7 +447,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
           {/* File Upload */}
           <label className="inline-flex items-center px-3 py-2 bg-gray-50 text-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 border">
             <Upload className="w-4 h-4 mr-2" />
-            <span>Import</span>
+            <span>Import Framework</span>
             <input
               type="file"
               onChange={handleFileUpload}
@@ -559,15 +463,6 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
           >
             <Download className="w-4 h-4 mr-2" />
             Export
-          </button>
-
-          {/* Voice & Tone Link */}
-          <button
-            onClick={goToWritingStyle}
-            className="px-3 py-2 rounded-lg border flex items-center bg-gray-50 text-gray-700 hover:bg-gray-100"
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Voice & Tone Settings
           </button>
 
           {/* Clear Button */}
@@ -600,21 +495,14 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
         </div>
       </div>
 
-      {/* Writing Style Callout */}
+      {/* File Upload Information */}
       <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 flex items-center">
         <Lightbulb className="w-5 h-5 text-amber-600 mr-3 flex-shrink-0" />
         <div className="flex-1">
           <p className="text-amber-800">
-            Need to define your brand voice and tone? Use our Writing Style tool for a guided approach.
+            Already have a message framework document? Upload it above to use it as a starting point.
           </p>
         </div>
-        <button
-          onClick={goToWritingStyle}
-          className="px-3 py-1 ml-2 bg-amber-100 text-amber-800 rounded-md hover:bg-amber-200 flex items-center text-sm"
-        >
-          <ExternalLink className="w-3 h-3 mr-1" />
-          Go to Writing Style
-        </button>
       </div>
 
       {/* Main Message Framework Content */}
@@ -641,86 +529,115 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
           </button>
         </div>
 
-        <textarea
-          value={framework.valueProposition}
-          onChange={(e) => updateField('valueProposition', e.target.value)}
-          className="w-full p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
-          rows={4}
-          placeholder="Enter your value proposition statement here..."
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-          {/* Differentiators Section */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Key Differentiators</h3>
-            <p className="text-gray-600 text-sm mb-4">What makes you uniquely different from competitors?</p>
-
-            <div className="space-y-3">
-              {framework.differentiators.map((differentiator, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    ref={index === framework.differentiators.length - 1 ? newDifferentiatorRef : null}
-                    value={differentiator}
-                    onChange={(e) => updateArrayField('differentiators', index, e.target.value)}
-                    className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder={`Differentiator #${index + 1}`}
-                  />
-                  {framework.differentiators.length > 1 && (
-                    <button
-                      onClick={() => removeField('differentiators', index)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-
+        {/* Value Proposition Section */}
+        <div className="mb-8">
+          {isEditingValueProp ? (
+            <textarea
+              value={framework.valueProposition}
+              onChange={(e) => updateField('valueProposition', e.target.value)}
+              className="w-full p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
+              rows={4}
+              placeholder="Enter your value proposition statement here..."
+              autoFocus
+            />
+          ) : (
+            <div className="relative">
+              <div className="p-4 bg-gray-50 rounded-lg border mb-2 text-lg">
+                {framework.valueProposition ? framework.valueProposition : (
+                  <span className="text-gray-400 italic">No value proposition added yet</span>
+                )}
+              </div>
               <button
-                onClick={() => addField('differentiators')}
-                className="flex items-center text-blue-600 hover:text-blue-700"
+                onClick={() => setIsEditingValueProp(true)}
+                className="absolute top-2 right-2 p-1 text-gray-400 hover:text-blue-600 rounded-full"
               >
-                <PlusCircle className="w-4 h-4 mr-1" />
-                Add Differentiator
+                <Edit className="w-4 h-4" />
               </button>
             </div>
-          </div>
+          )}
 
-          {/* Benefits Section */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Key Benefits</h3>
-            <p className="text-gray-600 text-sm mb-4">What specific value do customers gain from your solution?</p>
-
-            <div className="space-y-3">
-              {framework.keyBenefits.map((benefit, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    ref={index === framework.keyBenefits.length - 1 ? newBenefitRef : null}
-                    value={benefit}
-                    onChange={(e) => updateArrayField('keyBenefits', index, e.target.value)}
-                    className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder={`Benefit #${index + 1}`}
-                  />
-                  {framework.keyBenefits.length > 1 && (
-                    <button
-                      onClick={() => removeField('keyBenefits', index)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-
+          {isEditingValueProp && (
+            <div className="flex justify-end mt-2">
               <button
-                onClick={() => addField('keyBenefits')}
-                className="flex items-center text-blue-600 hover:text-blue-700"
+                onClick={() => setIsEditingValueProp(false)}
+                className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
               >
-                <PlusCircle className="w-4 h-4 mr-1" />
-                Add Benefit
+                Save Changes
               </button>
             </div>
+          )}
+        </div>
+
+        <h3 className="text-lg font-semibold mb-4">Message Pillars</h3>
+        <p className="text-gray-600 text-sm mb-4">
+          Define 3 key pillars that support your value proposition. These will be the foundation of all your messaging.
+        </p>
+
+        {/* Three Pillars */}
+        <div className="grid grid-cols-1 gap-6 mb-8">
+          <div>
+            <label className="block text-sm font-medium mb-2">Pillar 1</label>
+            <input
+              value={framework.pillar1}
+              onChange={(e) => updateField('pillar1', e.target.value)}
+              className="w-full p-3 border rounded-lg"
+              placeholder="First key differentiator or messaging pillar"
+            />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Pillar 2</label>
+            <input
+              value={framework.pillar2}
+              onChange={(e) => updateField('pillar2', e.target.value)}
+              className="w-full p-3 border rounded-lg"
+              placeholder="Second key differentiator or messaging pillar"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Pillar 3</label>
+            <input
+              value={framework.pillar3}
+              onChange={(e) => updateField('pillar3', e.target.value)}
+              className="w-full p-3 border rounded-lg"
+              placeholder="Third key differentiator or messaging pillar"
+            />
+          </div>
+        </div>
+
+        <h3 className="text-lg font-semibold mb-4">Key Benefits</h3>
+        <p className="text-gray-600 text-sm mb-4">What specific value do customers gain from your solution?</p>
+
+        {/* Benefits Section */}
+        <div className="space-y-3">
+          {framework.keyBenefits.map((benefit, index) => (
+            <div key={index} className="flex gap-2">
+              <input
+                ref={index === framework.keyBenefits.length - 1 ? newBenefitRef : null}
+                value={benefit}
+                onChange={(e) => updateArrayField('keyBenefits', index, e.target.value)}
+                className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder={`Benefit #${index + 1}`}
+              />
+              {framework.keyBenefits.length > 1 && (
+                <button
+                  onClick={() => removeField('keyBenefits', index)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          ))}
+
+          <button
+            onClick={() => addField('keyBenefits')}
+            className="flex items-center text-blue-600 hover:text-blue-700"
+          >
+            <PlusCircle className="w-4 h-4 mr-1" />
+            Add Benefit
+          </button>
         </div>
 
         {/* Error Display */}
@@ -732,7 +649,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
               <p className="text-sm mt-1">{error}</p>
               <button
                 onClick={() => setError('')}
-                className="text-sm text-red-700 hover:text-red-900 font-medium underline mt-2"
+                className="text-sm text-red-700 hover:text-red-800 underline mt-2"
               >
                 Dismiss
               </button>
@@ -766,18 +683,30 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
                 </div>
               )}
 
-              {aiSuggestions.differentiators && aiSuggestions.differentiators.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2 text-blue-800">Enhanced Differentiators</h4>
-                  <ul className="space-y-2">
-                    {aiSuggestions.differentiators.map((diff, index) => (
-                      <li key={index} className="p-3 bg-white rounded-lg border border-blue-100">
-                        {diff}
-                      </li>
-                    ))}
-                  </ul>
+              {/* Message Pillars */}
+              <div>
+                <h4 className="font-medium mb-2 text-blue-800">Enhanced Message Pillars</h4>
+                <div className="space-y-2">
+                  {aiSuggestions.pillar1 && (
+                    <div className="p-3 bg-white rounded-lg border border-blue-100">
+                      <div className="font-medium text-sm text-blue-600">Pillar 1</div>
+                      {aiSuggestions.pillar1}
+                    </div>
+                  )}
+                  {aiSuggestions.pillar2 && (
+                    <div className="p-3 bg-white rounded-lg border border-blue-100">
+                      <div className="font-medium text-sm text-blue-600">Pillar 2</div>
+                      {aiSuggestions.pillar2}
+                    </div>
+                  )}
+                  {aiSuggestions.pillar3 && (
+                    <div className="p-3 bg-white rounded-lg border border-blue-100">
+                      <div className="font-medium text-sm text-blue-600">Pillar 3</div>
+                      {aiSuggestions.pillar3}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
               {aiSuggestions.keyBenefits && aiSuggestions.keyBenefits.length > 0 && (
                 <div>
@@ -806,7 +735,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
         )}
       </Card>
 
-      {/* File Upload Information */}
+      {/* Uploaded File Info */}
       {uploadedFile && (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg border flex items-start gap-3">
           <FileText className="w-5 h-5 text-gray-500 mt-0.5" />

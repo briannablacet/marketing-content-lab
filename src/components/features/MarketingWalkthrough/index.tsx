@@ -46,9 +46,7 @@ const STEPS = [
     title: 'Your Brand Personality'
   },
   { id: '9', component: ReviewStep, title: 'Putting it All Together' }
-
 ];
-
 
 const MarketingWalkthrough: React.FC = () => {
   const router = useRouter();
@@ -63,7 +61,36 @@ const MarketingWalkthrough: React.FC = () => {
     }
   }, [step, currentStep, router]);
 
-  const handleNext = () => {
+  // Modified handleNext to include validation for certain steps
+  const handleNext = async () => {
+    // For Product step, validate form before proceeding
+    if (currentStep?.id === '2' && typeof window !== 'undefined' && (window as any).validateProductStep) {
+      try {
+        const isValid = await (window as any).validateProductStep();
+        if (!isValid) {
+          // If validation fails, don't proceed
+          return;
+        }
+      } catch (error) {
+        console.error("Error validating Product step:", error);
+        return;
+      }
+    }
+
+    // For Persona step, validate form before proceeding
+    if (currentStep?.id === '3' && typeof window !== 'undefined' && (window as any).validatePersonaStep) {
+      try {
+        const isValid = await (window as any).validatePersonaStep();
+        if (!isValid) {
+          // If validation fails, don't proceed
+          return;
+        }
+      } catch (error) {
+        console.error("Error validating Persona step:", error);
+        return;
+      }
+    }
+
     if (currentStep?.id === '9') {
       router.push('/walkthrough/complete');
       return;

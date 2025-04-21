@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { HelpCircle, FileText, X } from 'lucide-react';
+import { HelpCircle, FileText, X, Info } from 'lucide-react';
 import { useRouter } from 'next/router';
 // Import our new FileHandler component
 import FileHandler from '../../shared/FileHandler';
@@ -29,11 +29,75 @@ const HEADING_STYLES = [
   'Custom'
 ];
 
+// New Voice & Tone options
+const BRAND_PERSONALITIES = [
+  'Professional',
+  'Friendly',
+  'Authoritative',
+  'Innovative',
+  'Playful',
+  'Trustworthy',
+  'Empathetic',
+  'Bold'
+];
+
+const TONE_OPTIONS = [
+  'Formal',
+  'Neutral',
+  'Conversational',
+  'Technical',
+  'Inspirational',
+  'Educational',
+  'Persuasive'
+];
+
+// Examples for different tones
+const TONE_EXAMPLES = {
+  'Formal': 'We are pleased to announce the launch of our new platform, which offers significant advantages to marketing professionals.',
+  'Neutral': 'Our new platform is now available. It helps marketing professionals create better content more efficiently.',
+  'Conversational': 'Guess what? We just launched our new platform! You\'re going to love how it makes content creation so much easier.',
+  'Technical': 'The Marketing Content Lab platform utilizes advanced NLP algorithms to generate semantically coherent content with 37% higher engagement metrics.',
+  'Inspirational': 'Transform your content marketing with a platform that empowers you to create authentic connections that resonate with your audience.',
+  'Educational': 'Content marketing involves creating valuable content that attracts and engages your target audience. Our platform simplifies this process.',
+  'Persuasive': 'Stop wasting time on ineffective content. Our platform delivers results that will dramatically improve your marketing ROI.'
+};
+
+// Examples for different personalities
+const PERSONALITY_EXAMPLES = {
+  'Professional': 'Our solution provides enterprise-grade capabilities for content marketing teams.',
+  'Friendly': 'Hey there! We\'ve built something that\'ll make your content marketing so much easier!',
+  'Authoritative': 'Based on our decade of marketing expertise, we\'ve developed the definitive content marketing platform.',
+  'Innovative': 'We\'re reimagining content creation with breakthrough AI that thinks like a creative strategist.',
+  'Playful': 'Ready to make content marketing fun again? Our platform brings joy back to the creative process!',
+  'Trustworthy': 'With bank-level security and transparent analytics, our platform ensures your content strategy is built on reliable foundations.',
+  'Empathetic': 'We understand the challenges you face as a marketer. That\'s why we designed our platform to address your specific pain points.',
+  'Bold': 'Disrupt your industry with content that breaks through the noise. Our platform isn\'t for the faint-hearted.'
+};
+
 const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext, onBack, returnTo }) => {
   const { writingStyle, updateWritingStyle, applyStyleGuideRules, saveStyleToStorage } = useWritingStyle();
   const { showNotification } = useNotification();
   const [uploadedStyleGuide, setUploadedStyleGuide] = useState<File | null>(null);
   const router = useRouter();
+
+  // Add new state for Voice & Tone
+  const [showExampleModal, setShowExampleModal] = useState<{
+    show: boolean;
+    type: 'tone' | 'personality';
+    value: string;
+  }>({ show: false, type: 'tone', value: '' });
+
+  // Initialize brandVoice if not present
+  useEffect(() => {
+    if (!writingStyle.brandVoice) {
+      updateWritingStyle({
+        brandVoice: {
+          personality: [],
+          tone: 'Conversational'
+        }
+      });
+    }
+  }, [writingStyle, updateWritingStyle]);
 
   // Explicitly save to storage on any change
   useEffect(() => {
@@ -44,14 +108,14 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
   // This function will handle the content loaded from the file
   const handleStyleGuideContent = (content: string | object) => {
     // Convert to string if it's not already
-    const textContent = typeof content === 'string' 
-      ? content 
+    const textContent = typeof content === 'string'
+      ? content
       : JSON.stringify(content, null, 2);
-    
+
     // Create a File object to maintain consistency with existing code
     const file = new File([textContent], "uploaded-style-guide.txt", { type: "text/plain" });
     setUploadedStyleGuide(file);
-    
+
     // Update the writing style context
     updateWritingStyle({
       styleGuide: {
@@ -60,9 +124,9 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
         uploadedGuide: file.name
       }
     });
-    
+
     showNotification('success', 'Style guide uploaded and processed successfully');
-    
+
     // Here you could add more sophisticated handling of the style guide content
     // For example, extracting specific rules and applying them automatically
   };
@@ -111,6 +175,35 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
     });
   };
 
+  // New handlers for Voice & Tone
+  const togglePersonality = (personality: string) => {
+    updateWritingStyle({
+      brandVoice: {
+        ...writingStyle.brandVoice,
+        personality: writingStyle.brandVoice?.personality?.includes(personality)
+          ? writingStyle.brandVoice.personality.filter(p => p !== personality)
+          : [...(writingStyle.brandVoice?.personality || []), personality]
+      }
+    });
+  };
+
+  const handleToneUpdate = (tone: string) => {
+    updateWritingStyle({
+      brandVoice: {
+        ...writingStyle.brandVoice,
+        tone
+      }
+    });
+  };
+
+  const showExample = (type: 'tone' | 'personality', value: string) => {
+    setShowExampleModal({
+      show: true,
+      type,
+      value
+    });
+  };
+
   // Handle button text based on context
   const getButtonText = () => {
     if (isWalkthrough) {
@@ -125,9 +218,9 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
   const handleSubmit = () => {
     // Force an explicit save to storage
     saveStyleToStorage();
-    
+
     showNotification('success', 'Writing style preferences saved successfully');
-    
+
     // Handle navigation based on context
     if (isWalkthrough && onNext) {
       // If in walkthrough, call the onNext function
@@ -143,6 +236,30 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
 
   return (
     <div className="space-y-8">
+      {/* Voice & Tone Modal */}
+      {showExampleModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md">
+            <h3 className="text-lg font-bold mb-4">
+              {showExampleModal.type === 'tone' ? 'Tone Example' : 'Personality Example'}: {showExampleModal.value}
+            </h3>
+            <p className="mb-6 text-gray-700">
+              {showExampleModal.type === 'tone'
+                ? TONE_EXAMPLES[showExampleModal.value]
+                : PERSONALITY_EXAMPLES[showExampleModal.value]}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowExampleModal({ ...showExampleModal, show: false })}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Style Guide Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <div className="mb-6">
@@ -150,7 +267,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
             <h2 className="text-xl font-semibold">Style Guide Selection</h2>
             <HelpCircle className="h-5 w-5 text-gray-400" />
           </div>
-          
+
           {/* Standard Style Guide Selection */}
           <div className="mb-6">
             <select
@@ -165,16 +282,16 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
             </select>
           </div>
 
-          {/* Upload Option - REPLACED WITH FILEHANDLER */}
+          {/* Upload Option */}
           <div className="border-t pt-4">
             <p className="text-sm text-gray-700 mb-3">Already have a company style guide?</p>
-            
+
             {/* Display the uploaded file information if a file has been uploaded */}
             {uploadedStyleGuide ? (
               <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md">
                 <FileText className="w-4 h-4 text-gray-500" />
                 <span className="text-sm text-gray-600">{uploadedStyleGuide.name}</span>
-                <button 
+                <button
                   onClick={handleRemoveUpload}
                   className="ml-2 text-gray-400 hover:text-red-600"
                 >
@@ -182,7 +299,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
                 </button>
               </div>
             ) : (
-              <FileHandler 
+              <FileHandler
                 onContentLoaded={handleStyleGuideContent}
                 acceptedFormats=".txt,.doc,.docx,.md,.pdf"
                 showExport={false}
@@ -205,12 +322,114 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
         </div>
       </div>
 
+      {/* NEW Voice & Tone Section */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold">Voice & Tone</h2>
+          <p className="text-sm text-gray-600 mt-2">
+            Define how your brand sounds and feels to your audience
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {/* Brand Personality */}
+          <div>
+            <div className="flex items-center mb-2">
+              <label className="block text-sm font-medium">Brand Personality</label>
+              <button
+                onClick={() => showNotification('info', 'Select attributes that describe your brand\'s character')}
+                className="ml-2 text-gray-400 hover:text-gray-600"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Choose up to 3 personality traits that define your brand</p>
+
+            <div className="flex flex-wrap gap-2">
+              {BRAND_PERSONALITIES.map(personality => (
+                <div key={personality} className="flex items-center">
+                  <button
+                    onClick={() => togglePersonality(personality)}
+                    className={`px-3 py-1.5 rounded-full text-sm mr-1 ${writingStyle.brandVoice?.personality?.includes(personality)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                  >
+                    {personality}
+                  </button>
+                  <button
+                    onClick={() => showExample('personality', personality)}
+                    className="text-gray-400 hover:text-blue-600"
+                  >
+                    <Info className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Warning if more than 3 selected */}
+            {writingStyle.brandVoice?.personality?.length > 3 && (
+              <p className="text-yellow-600 text-xs mt-2">
+                ⚠️ We recommend selecting no more than 3 personality traits for clarity
+              </p>
+            )}
+          </div>
+
+          {/* Tone Selection */}
+          <div>
+            <div className="flex items-center mb-2">
+              <label className="block text-sm font-medium">Dominant Tone</label>
+              <button
+                onClick={() => showNotification('info', 'The general tone your brand uses in communication')}
+                className="ml-2 text-gray-400 hover:text-gray-600"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {TONE_OPTIONS.map(tone => (
+                <div key={tone} className="flex items-center">
+                  <input
+                    type="radio"
+                    id={`tone-${tone}`}
+                    name="tone"
+                    checked={writingStyle.brandVoice?.tone === tone}
+                    onChange={() => handleToneUpdate(tone)}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300 mr-2"
+                  />
+                  <label htmlFor={`tone-${tone}`} className="text-sm text-gray-700">
+                    {tone}
+                  </label>
+                  <button
+                    onClick={() => showExample('tone', tone)}
+                    className="ml-2 text-gray-400 hover:text-blue-600"
+                  >
+                    <Info className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tone Examples */}
+          {writingStyle.brandVoice?.tone && (
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="text-sm font-medium mb-2">Example: {writingStyle.brandVoice.tone} Tone</h4>
+              <p className="text-sm text-gray-600 italic">
+                "{TONE_EXAMPLES[writingStyle.brandVoice.tone]}"
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Formatting Preferences Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <div className="mb-4">
           <h2 className="text-xl font-semibold">Formatting Preferences</h2>
           <p className="text-sm text-gray-600 mt-2">
-            {writingStyle.styleGuide.primary && writingStyle.styleGuide.primary !== 'Custom Style Guide' 
+            {writingStyle.styleGuide.primary && writingStyle.styleGuide.primary !== 'Custom Style Guide'
               ? `Using ${writingStyle.styleGuide.primary} defaults. Override any specific rules below as needed.`
               : 'Set your custom formatting preferences below. All fields are optional.'}
           </p>

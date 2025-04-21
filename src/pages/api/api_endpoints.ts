@@ -876,105 +876,77 @@ Make the content specific, substantive and actionable. Do not use generic market
 }
 
 // Handler for persona generator endpoint
-async function handlePersonaGenerator(data: any, res: NextApiResponse) {
+// Make a minimal change to just this function in the PersonaStep component
+const generateAudienceSuggestions = async () => {
+  console.log("Generate audience suggestions triggered");
+  console.log("Product info:", productInfo);
+
+  setIsGenerating(true);
+  setSuggestedAudiences([]);
+
   try {
-    console.log("Persona generator received data:", data);
+    console.log("Preparing to fetch from API");
 
-    // Validate input
-    if (!data.productName || !data.productType) {
-      console.log("Missing required fields");
-      return res.status(400).json({
-        error: 'Invalid request',
-        message: 'Missing product name or type'
-      });
-    }
+    // Ensure we have product info by using defaults if not set
+    const productName = productInfo.name || 'Marketing Product';
+    const productType = productInfo.type || 'Marketing Tool';
 
-    const { productName, productType, currentPersona } = data;
-    console.log(`Generating personas for: ${productName} (${productType})`);
-
-    // Create a prompt for persona generation
-    const prompt = `Generate target audience personas for the following product:
-
-Product: ${productName}
-Product Type: ${productType}
-${currentPersona?.role ? `Current Target Role: ${currentPersona.role}` : ''}
-${currentPersona?.industry ? `Current Industry Focus: ${currentPersona.industry}` : ''}
-
-Please provide 2 detailed target audience personas that would be ideal customers for this product.
-Each persona should include:
-1. A specific job role/title
-2. Their industry
-3. 3-5 specific business challenges they face that the product could solve
-
-Format your response as a valid JSON array with this structure:
-[
-  {
-    "role": "Job Title/Role",
-    "industry": "Industry",
-    "challenges": ["Challenge 1", "Challenge 2", "Challenge 3"]
-  }
-]
-
-Make the personas realistic, specific and detail-oriented.`;
-
-    console.log("Sending prompt to OpenAI");
-
-    // Call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert marketing strategist who specializes in identifying target audiences.'
-        },
-        {
-          role: 'user',
-          content: prompt
+    const requestBody = {
+      endpoint: 'persona-generator',
+      data: {
+        productName: productName,
+        productType: productType,
+        currentPersona: {
+          role: audience.role || '',
+          industry: audience.industry || '',
+          challenges: audience.challenges || ['']
         }
-      ],
-      temperature: 0.7,
+      }
+    };
+
+    console.log("Request body:", JSON.stringify(requestBody));
+
+    const response = await fetch('/api/api_endpoints', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
     });
 
-    const responseText = completion.choices[0].message?.content || '';
-    console.log("Got OpenAI response");
+    console.log("API response status:", response.status);
 
+    // Read the response text first for debugging
+    const responseText = await response.text();
+    console.log("Response text:", responseText);
+
+    // Try to parse the response as JSON
+    let data;
     try {
-      // Parse the JSON response
-      console.log("Parsing AI response for personas");
-      const parsedResponse = JSON.parse(responseText);
-
-      // Validate response format
-      if (!Array.isArray(parsedResponse)) {
-        console.log("Response is not an array:", typeof parsedResponse);
-        return res.status(500).json({
-          error: 'Invalid AI response',
-          message: 'AI did not return array of personas'
-        });
-      }
-
-      console.log("Sending personas back to client:", parsedResponse.length, "personas");
-
-      return res.status(200).json({
-        personas: parsedResponse
-      });
+      data = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('Failed to parse personas response:', parseError);
-      console.log("Response text sample:", responseText.substring(0, 200));
+      console.error("Error parsing response:", parseError);
+      throw new Error("Could not parse API response as JSON");
+    }
 
-      // No fallback data - just return an error
-      return res.status(500).json({
-        error: 'Parse error',
-        message: 'Failed to parse AI response for personas'
-      });
+    if (data.personas && Array.isArray(data.personas)) {
+      console.log("Received personas:", data.personas);
+      setSuggestedAudiences(data.personas);
+      showNotification('success', 'Audience suggestions based on your product.');
+    } else {
+      console.error("Invalid response format:", data);
+      throw new Error('Invalid response format - missing personas array');
     }
   } catch (error) {
-    console.error('Error generating personas:', error);
-    return res.status(500).json({
-      error: 'Server error',
-      message: error.message || 'Failed to generate personas'
-    });
+    console.error('Error generating audience suggestions:', error);
+    showNotification('error', `Failed to generate audience suggestions: ${error.message}`);
+    // IMPORTANT: Set empty array, NOT fallback data
+    setSuggestedAudiences([]);
+  } finally {
+    console.log("Setting isGenerating to false");
+    setIsGenerating(false);
   }
-}
+};
 
 // Handler for content modification through chat
 async function handleModifyContent(data: any, res: NextApiResponse) {
@@ -1281,7 +1253,107 @@ Return your response as JSON with the following structure:
     });
   }
 }
+// Add this function to your api_endpoints.ts file, before the main handler function
+// Add this function to your api_endpoints.ts file
+async function handlePersonaGenerator(data: any, res: NextApiResponse) {
+  try {
+    console.log("Persona generator received data:", data);
 
+    // Validate input
+    if (!data.productName || !data.productType) {
+      console.log("Missing required fields");
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Missing product name or type'
+      });
+    }
+
+    const { productName, productType, currentPersona } = data;
+    console.log(`Generating personas for: ${productName} (${productType})`);
+
+    // Create a prompt for persona generation
+    const prompt = `Generate target audience personas for the following product:
+
+Product: ${productName}
+Product Type: ${productType}
+${currentPersona?.role ? `Current Target Role: ${currentPersona.role}` : ''}
+${currentPersona?.industry ? `Current Industry Focus: ${currentPersona.industry}` : ''}
+
+Please provide 2 detailed target audience personas that would be ideal customers for this product.
+Each persona should include:
+1. A specific job role/title
+2. Their industry
+3. 3-5 specific business challenges they face that the product could solve
+
+Format your response as a valid JSON array with this structure:
+[
+  {
+    "role": "Job Title/Role",
+    "industry": "Industry",
+    "challenges": ["Challenge 1", "Challenge 2", "Challenge 3"]
+  }
+]
+
+Make the personas realistic, specific and detail-oriented.`;
+
+    console.log("Sending prompt to OpenAI");
+
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert marketing strategist who specializes in identifying target audiences.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+    });
+
+    const responseText = completion.choices[0].message?.content || '';
+    console.log("Got OpenAI response");
+
+    try {
+      // Parse the JSON response
+      console.log("Parsing AI response for personas");
+      const parsedResponse = JSON.parse(responseText);
+
+      // Validate response format
+      if (!Array.isArray(parsedResponse)) {
+        console.log("Response is not an array:", typeof parsedResponse);
+        return res.status(500).json({
+          error: 'Invalid AI response',
+          message: 'AI did not return array of personas'
+        });
+      }
+
+      console.log("Sending personas back to client:", parsedResponse.length, "personas");
+
+      return res.status(200).json({
+        personas: parsedResponse
+      });
+    } catch (parseError) {
+      console.error('Failed to parse personas response:', parseError);
+      console.log("Response text sample:", responseText.substring(0, 200));
+
+      // No fallback data - just return an error
+      return res.status(500).json({
+        error: 'Parse error',
+        message: 'Failed to parse AI response for personas'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating personas:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      message: error.message || 'Failed to generate personas'
+    });
+  }
+}
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
