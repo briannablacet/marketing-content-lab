@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import {
   Sparkles, AlertCircle, PlusCircle, X, RefreshCw,
-  Lightbulb, Download, Upload, Trash2, Save, ExternalLink
+  Lightbulb, Download, Upload, Trash2, Save, ExternalLink, HelpCircle
 } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
 import { useRouter } from 'next/router';
@@ -389,7 +389,121 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
     setShowConfirmClear(false);
     showNotification('success', 'Framework cleared successfully');
   };
+  // Add this section to MessageFramework/index.tsx, above the main Card component
 
+  {/* Company Messaging Document Upload Section */ }
+  <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+    <div className="mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <h3 className="text-lg font-semibold">Upload Company Messaging Document</h3>
+        <HelpCircle className="h-5 w-5 text-gray-400" />
+      </div>
+      <p className="text-sm text-gray-600">
+        If you already have a company messaging document or brand guidelines, upload it here to pre-populate your message framework.
+      </p>
+    </div>
+
+    {/* File Upload Section */}
+    {uploadedFile ? (
+      <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md border border-gray-200">
+        <FileText className="w-5 h-5 text-gray-500" />
+        <div className="flex-1">
+          <span className="text-sm font-medium">{uploadedFile.name}</span>
+          <p className="text-xs text-gray-500">
+            {(uploadedFile.size / 1024).toFixed(0)} KB • Uploaded {new Date().toLocaleTimeString()}
+          </p>
+        </div>
+        <button
+          onClick={() => setUploadedFile(null)}
+          className="p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-gray-100"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+    ) : (
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+        <input
+          type="file"
+          onChange={handleFileUpload}
+          className="hidden"
+          accept=".txt,.json,.md,.docx,.pdf"
+          id="message-file-upload"
+        />
+        <label
+          htmlFor="message-file-upload"
+          className="cursor-pointer flex flex-col items-center space-y-2"
+        >
+          <Upload className="h-8 w-8 text-gray-400" />
+          <span className="text-sm text-gray-600">Upload your company messaging document</span>
+          <span className="text-xs text-gray-500">PDF, DOC, DOCX, JSON, TXT, or MD (max 5MB)</span>
+        </label>
+      </div>
+    )}
+
+    <div className="text-sm text-gray-600 space-y-1 mt-4">
+      <p>ℹ️ This will attempt to extract:</p>
+      <ul className="list-disc pl-5 space-y-1">
+        <li>Value proposition statements</li>
+        <li>Key differentiators and unique selling points</li>
+        <li>Customer benefits and value points</li>
+      </ul>
+    </div>
+  </div>
+
+  {/* Then, also modify the top action bar to remove the Import button */ }
+  <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-wrap justify-between items-center gap-3">
+    <div className="flex items-center gap-2">
+      <h2 className="text-xl font-bold">Message Framework</h2>
+    </div>
+
+    <div className="flex flex-wrap gap-2">
+      {/* Export Button */}
+      <button
+        onClick={exportFramework}
+        className="px-3 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 border flex items-center"
+      >
+        <Download className="w-4 h-4 mr-2" />
+        Export
+      </button>
+
+      {/* Voice & Tone Link */}
+      <button
+        onClick={goToWritingStyle}
+        className="px-3 py-2 rounded-lg border flex items-center bg-gray-50 text-gray-700 hover:bg-gray-100"
+      >
+        <ExternalLink className="w-4 h-4 mr-2" />
+        Voice & Tone Settings
+      </button>
+
+      {/* Clear Button */}
+      <button
+        onClick={handleClearFramework}
+        className="px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 border flex items-center"
+      >
+        <Trash2 className="w-4 h-4 mr-2" />
+        Clear
+      </button>
+
+      {/* Save Button */}
+      <button
+        onClick={saveFramework}
+        disabled={isSaving}
+        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center"
+      >
+        {isSaving ? (
+          <>
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            Saving...
+          </>
+        ) : (
+          <>
+            <Save className="w-4 h-4 mr-2" />
+            Save
+          </>
+        )}
+      </button>
+    </div>
+  </div>
   // Main render method
   return (
     <div className="space-y-6">

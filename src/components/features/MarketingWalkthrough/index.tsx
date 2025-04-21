@@ -43,7 +43,7 @@ const STEPS = [
   {
     id: '8',
     component: (props: StepProps) => <BrandVoiceModule isWalkthrough={true} onNext={props.onNext} onBack={props.onBack} />,
-    title: 'Your Brand Voice'
+    title: 'Your Brand Personality'
   },
   { id: '9', component: ReviewStep, title: 'Putting it All Together' }
 

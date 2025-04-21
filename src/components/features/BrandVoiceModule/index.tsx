@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
-import { Upload, FileText, X, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/router';
 
 interface Props {
@@ -81,10 +81,10 @@ const HelpText = ({ text, link }: { text: string; link?: string }) => (
     <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-sm rounded p-2 absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64">
       {text}
       {link && (
-        <a 
-          href={link} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
           className="block text-blue-300 hover:text-blue-200 mt-1 text-xs"
         >
           Learn more →
@@ -98,18 +98,17 @@ const HelpText = ({ text, link }: { text: string; link?: string }) => (
 );
 
 const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) => {
-  const { brandVoice, updateBrandVoice, addUploadedGuide, removeUploadedGuide } = useBrandVoice();
-  const [fileError, setFileError] = useState<string>('');
+  const { brandVoice, updateBrandVoice } = useBrandVoice();
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const router = useRouter();
-  
+
   // Load saved messaging data from previous steps
   useEffect(() => {
     // Try to load audience data
     try {
       const audienceData = localStorage.getItem('marketingTargetAudience');
       const messagingData = localStorage.getItem('marketingMessages');
-      
+
       if (audienceData) {
         const audience = JSON.parse(audienceData);
         // Pre-populate the primary audience field
@@ -122,7 +121,7 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
           });
         }
       }
-      
+
       if (messagingData) {
         const messaging = JSON.parse(messagingData);
         // Pre-populate key terms from differentiators or benefits if available
@@ -137,10 +136,10 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
               return words.filter(word => word.length > 3).slice(0, 2).join(' ');
             })
             .join(', ');
-          
+
           keyTerms = terms;
         }
-        
+
         if (keyTerms) {
           updateBrandVoice({
             contentGuidelines: {
@@ -155,28 +154,6 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
     }
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 5000000) {
-        setFileError('File size must be less than 5MB');
-        return;
-      }
-
-      try {
-        const content = await file.text();
-        addUploadedGuide({
-          name: file.name,
-          content,
-          type: 'messaging-doc'
-        });
-        setFileError('');
-      } catch (error) {
-        setFileError('Error reading file. Please try again.');
-      }
-    }
-  };
-
   const handleBrandVoiceUpdate = (field: string, value: string): void => {
     updateBrandVoice({
       brandVoice: {
@@ -190,7 +167,7 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       if (isWalkthrough && onNext) {
         onNext();
       } else {
@@ -209,15 +186,15 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Brand Voice and Tone</CardTitle>
+            <CardTitle>Set the vibe with voice and tone</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Brand Archetype
-                  <HelpText 
-                    text="Brand archetypes are universal character patterns that help define your brand's personality and connect with your audience." 
+                  <HelpText
+                    text="Brand archetypes are universal character patterns that help define your brand's personality and connect with your audience."
                     link="https://iconicfox.com.au/brand-archetypes/"
                   />
                   <span className="text-gray-500 text-sm ml-2">(Optional)</span>
@@ -274,62 +251,6 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Company Messaging Platform
-              <span className="text-gray-500 text-sm ml-2">(Optional)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  accept=".doc,.docx,.pdf,.txt"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <label 
-                  htmlFor="file-upload"
-                  className="cursor-pointer flex flex-col items-center space-y-2"
-                >
-                  <Upload className="h-8 w-8 text-gray-400" />
-                  <span className="text-sm text-gray-600">Upload your company messaging document</span>
-                  <span className="text-xs text-gray-500">PDF, DOC, DOCX, or TXT (max 5MB)</span>
-                </label>
-              </div>
-
-              {fileError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
-                  {fileError}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                {brandVoice.uploadedGuides.map((guide) => (
-                  <div 
-                    key={guide.name}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm">{guide.name}</span>
-                    </div>
-                    <button
-                      onClick={() => removeUploadedGuide(guide.name)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {!isWalkthrough && (
           <div className="flex justify-between items-center pt-6">
             <button
@@ -338,7 +259,7 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
             >
               ← Back
             </button>
-            
+
             <div className="flex space-x-4">
               <button
                 onClick={() => router.push('/')}
@@ -346,7 +267,7 @@ const BrandVoiceModule: React.FC<Props> = ({ isWalkthrough, onNext, onBack }) =>
               >
                 Cancel
               </button>
-              
+
               <button
                 onClick={saveAndContinue}
                 disabled={isSaving}

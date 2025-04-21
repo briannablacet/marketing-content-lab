@@ -10,8 +10,8 @@ const BrandVoicePage = () => {
       <WritingStyleProvider>
         <div className="max-w-6xl mx-auto px-4">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-2">Brand Voice and Messaging</h1>
-            <p className="text-gray-600">Define your brand's voice, tone, and messaging guidelines to ensure consistency across all content.</p>
+            <h1 className="text-2xl font-bold mb-2">Brand Personality</h1>
+            <p className="text-gray-600">Define your brand's voice, tone, and personality to ensure consistency across all content.</p>
           </div>
           <BrandVoiceModule />
         </div>
