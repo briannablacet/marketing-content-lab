@@ -136,7 +136,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     ));
   };
 
-  // FIXED VERSION - Updated handleAnalyzeCompetitor function
   const handleAnalyzeCompetitor = async (index: number, name: string) => {
     if (!name.trim()) return;
 
@@ -165,48 +164,26 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
       console.log('Sending competitor analysis request:', JSON.stringify(requestData));
 
-      // Make API request with error handling
-      let response;
-      try {
-        response = await fetch('/api/api_endpoints', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(requestData)
-        });
-      } catch (fetchError) {
-        console.error('Network error:', fetchError);
-        throw new Error('Network error. Please check your connection and try again.');
-      }
+      // Make API request
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
 
       // Check if response is OK
       if (!response.ok) {
-        let errorMessage = 'Unable to analyze competitor. Please try again.';
-
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          // If we can't parse the error JSON, just use the default message
-        }
-
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Unable to analyze competitor. Please try again.');
       }
 
-      // Parse response data with error handling
-      let data;
-      try {
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Failed to parse response:', parseError);
-        throw new Error('Failed to parse API response. Please try again.');
-      }
-
-      console.log('Parsed competitor analysis response:', data);
+      // Parse response data
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      const data = JSON.parse(responseText);
 
       // Check if we have valid competitor insights
       if (!data.competitorInsights || !Array.isArray(data.competitorInsights) || data.competitorInsights.length === 0) {
@@ -216,9 +193,10 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       const competitorInsight = data.competitorInsights[0];
 
       // Check if we have meaningful data
-      const hasContent = competitorInsight.uniquePositioning?.length > 0 ||
-        competitorInsight.keyThemes?.length > 0 ||
-        competitorInsight.gaps?.length > 0;
+      const hasContent =
+        (competitorInsight.uniquePositioning && competitorInsight.uniquePositioning.length > 0) ||
+        (competitorInsight.keyThemes && competitorInsight.keyThemes.length > 0) ||
+        (competitorInsight.gaps && competitorInsight.gaps.length > 0);
 
       if (!hasContent) {
         throw new Error('Limited information available for this competitor');
@@ -229,7 +207,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         i === index ? {
           ...comp,
           isLoading: false,
-          description: competitorInsight.uniquePositioning.join(' '),
+          description: competitorInsight.uniquePositioning ? competitorInsight.uniquePositioning.join(' ') : '',
           knownMessages: competitorInsight.keyThemes || [],
           strengths: competitorInsight.uniquePositioning || [],
           weaknesses: competitorInsight.gaps || []
@@ -328,7 +306,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <input
-                  // Add ref to the most recently added competitor
                   ref={index === competitors.length - 1 ? newCompetitorRef : null}
                   type="text"
                   value={competitor.name}
@@ -359,66 +336,71 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
               )}
             </div>
 
-            {/* AI Generated Content */}
-            {competitor.name && !competitor.isLoading && (competitor.description || competitor.knownMessages.length > 0) && (
-              <div className="space-y-6 bg-gray-50 p-4 rounded-lg">
-                {competitor.description && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Key Positioning</h4>
-                    <p className="text-gray-600">{competitor.description}</p>
-                  </div>
-                )}
+            {/* AI Generated Content - FIXED WITH NULL CHECKS */}
+            {competitor.name && !competitor.isLoading && (
+              competitor.description ||
+              (competitor.knownMessages && competitor.knownMessages.length > 0) ||
+              (competitor.strengths && competitor.strengths.length > 0) ||
+              (competitor.weaknesses && competitor.weaknesses.length > 0)
+            ) && (
+                <div className="space-y-6 bg-gray-50 p-4 rounded-lg">
+                  {competitor.description && (
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">Key Positioning</h4>
+                      <p className="text-gray-600">{competitor.description}</p>
+                    </div>
+                  )}
 
-                {competitor.knownMessages.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Key Messages</h4>
-                    <ul className="space-y-2">
-                      {competitor.knownMessages.map((message, i) => (
-                        <li key={i} className="bg-white p-3 rounded text-gray-600">
-                          {message}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {competitor.knownMessages && competitor.knownMessages.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">Key Messages</h4>
+                      <ul className="space-y-2">
+                        {competitor.knownMessages.map((message, i) => (
+                          <li key={i} className="bg-white p-3 rounded text-gray-600">
+                            {message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                {competitor.strengths.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Strengths</h4>
-                    <ul className="space-y-2">
-                      {competitor.strengths.map((strength, i) => (
-                        <li key={i} className="bg-white p-3 rounded text-gray-600">
-                          {strength}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {competitor.strengths && competitor.strengths.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">Strengths</h4>
+                      <ul className="space-y-2">
+                        {competitor.strengths.map((strength, i) => (
+                          <li key={i} className="bg-white p-3 rounded text-gray-600">
+                            {strength}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                {competitor.weaknesses.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Gaps</h4>
-                    <ul className="space-y-2">
-                      {competitor.weaknesses.map((weakness, i) => (
-                        <li key={i} className="bg-white p-3 rounded text-gray-600">
-                          {weakness}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {competitor.weaknesses && competitor.weaknesses.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">Gaps</h4>
+                      <ul className="space-y-2">
+                        {competitor.weaknesses.map((weakness, i) => (
+                          <li key={i} className="bg-white p-3 rounded text-gray-600">
+                            {weakness}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                {/* Add a button to clear the analysis */}
-                <div className="flex justify-end mt-4">
-                  <button
-                    onClick={() => clearCompetitorAnalysis(index)}
-                    className="text-sm font-medium text-blue-600 hover:text-red-600 underline py-1 px-2"
-                  >
-                    Clear analysis
-                  </button>
+                  {/* Add a button to clear the analysis */}
+                  <div className="flex justify-end mt-4">
+                    <button
+                      onClick={() => clearCompetitorAnalysis(index)}
+                      className="text-sm font-medium text-blue-600 hover:text-red-600 underline py-1 px-2"
+                    >
+                      Clear analysis
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </Card>
       ))}

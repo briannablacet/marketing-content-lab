@@ -1,528 +1,553 @@
 // src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Sparkles, ThumbsUp, X, Eye, EyeOff, Check, DownloadCloud, RefreshCw } from 'lucide-react';
+import { Check, Edit2, ChevronRight, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useNotification } from '../../../../../context/NotificationContext';
 
-interface ReviewStepProps {
-  onNext?: () => void;
-  onBack?: () => void;
-  isWalkthrough?: boolean;
-}
+// Define the complete step sequence based on your walkthrough
+const STEPS = {
+  WELCOME: 1,
+  PRODUCT: 2,
+  AUDIENCE: 3,
+  MESSAGING: 4,
+  COMPETITOR: 5,
+  CONTENT_STRATEGY: 6,
+  WRITING_STYLE: 7,
+  BRAND_VOICE: 8,
+  REVIEW: 9
+};
 
-const ReviewStep: React.FC<ReviewStepProps> = ({ onNext, onBack, isWalkthrough = true }) => {
+// List of all possible localStorage keys to check
+const STORAGE_KEYS = {
+  PRODUCT: ['marketingProduct', 'productInfo', 'product'],
+  AUDIENCE: ['marketingAudiences', 'audiences', 'targetAudience', 'persona'],
+  MESSAGING: ['marketingMessaging', 'messaging', 'messagingFramework', 'keyMessages'],
+  COMPETITORS: ['marketingCompetitors', 'competitors', 'competitorAnalysis']
+};
+
+const ReviewStep = ({ onNext, onBack }) => {
   const router = useRouter();
-  const { showNotification } = useNotification();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showConfirmFinish, setShowConfirmFinish] = useState(false);
-  const [showDetails, setShowDetails] = useState({
-    product: false,
-    audience: false,
-    messages: false,
-    competitors: false
-  });
+  const [productData, setProductData] = useState(null);
+  const [audienceData, setAudienceData] = useState([]);
+  const [messagingData, setMessagingData] = useState(null);
+  const [competitorsData, setCompetitorsData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [storageInfo, setStorageInfo] = useState({});
 
-  // State to store all the user data
-  const [userData, setUserData] = useState({
-    product: null,
-    audience: null,
-    messages: null,
-    competitors: []
-  });
+  // Helper function to dump all localStorage contents for debugging
+  const dumpLocalStorage = () => {
+    const storage = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      try {
+        const value = localStorage.getItem(key);
+        storage[key] = value ? JSON.parse(value) : null;
+      } catch (e) {
+        storage[key] = `[Error parsing]: ${localStorage.getItem(key)}`;
+      }
+    }
+    console.log('All localStorage items:', storage);
+    setStorageInfo(storage);
+    return storage;
+  };
 
-  // State for the marketing summary
-  const [marketingSummary, setMarketingSummary] = useState<string | null>(null);
+  // Helper to find data in multiple possible keys
+  const findDataInStorage = (keyOptions, storage) => {
+    for (const key of keyOptions) {
+      if (storage[key]) {
+        console.log(`Found data in key: ${key}`, storage[key]);
+        return storage[key];
+      }
+    }
+    return null;
+  };
+  // Add this inside your ReviewStep component
+  // Debug function to log all localStorage contents
+  useEffect(() => {
+    console.log("All localStorage keys:", Object.keys(localStorage));
 
-  // Load data from localStorage on component mount
+    // Try to log each item
+    Object.keys(localStorage).forEach(key => {
+      try {
+        const value = localStorage.getItem(key);
+        console.log(`${key}:`, JSON.parse(value));
+      } catch (e) {
+        console.log(`${key} (couldn't parse):`, localStorage.getItem(key));
+      }
+    });
+  }, []);
+
+  // Function to insert test data
+  const insertTestData = () => {
+    // Sample messaging data
+    localStorage.setItem('marketingMessaging', JSON.stringify({
+      valueProposition: "Marketing Content Lab: The first AI platform built for real content marketers",
+      keyDifferentiators: [
+        "Strategy-first approach",
+        "Full-funnel content generation",
+        "Brand voice preservation"
+      ],
+      targetedMessages: [
+        "Save time with automated content creation",
+        "Maintain brand consistency across channels",
+        "Create content that converts"
+      ]
+    }));
+
+    // Sample product data
+    localStorage.setItem('marketingProduct', JSON.stringify({
+      name: "Marketing Content Lab",
+      type: "Marketing Platform",
+      valueProposition: "The first and only strategy-first, full-funnel AI content engine"
+    }));
+
+    // Sample audience data
+    localStorage.setItem('marketingAudiences', JSON.stringify([
+      {
+        role: "Marketing Manager",
+        industry: "SaaS",
+        challenges: [
+          "Creating consistent content at scale",
+          "Maintaining brand voice across channels",
+          "Measuring content effectiveness"
+        ]
+      }
+    ]));
+
+    // Sample competitor data
+    localStorage.setItem('marketingCompetitors', JSON.stringify([
+      {
+        name: "ContentBot",
+        description: "AI-powered content generation tool",
+        strengths: ["Simple interface", "Fast content generation", "Affordable pricing"],
+        weaknesses: ["Lacks strategy focus", "Generic content", "Limited customization"]
+      }
+    ]));
+
+    alert("Test data added! Refresh the page to see it.");
+    window.location.reload(); // Auto reload the page
+  };
+  // Add this at the beginning of your ReviewStep component
+  useEffect(() => {
+    console.log("All localStorage keys:", Object.keys(localStorage));
+
+    // Try to log each item
+    Object.keys(localStorage).forEach(key => {
+      try {
+        const value = localStorage.getItem(key);
+        console.log(`${key}:`, JSON.parse(value));
+      } catch (e) {
+        console.log(`${key} (couldn't parse):`, localStorage.getItem(key));
+      }
+    });
+  }, []);
+  // Load data from localStorage when component mounts
   useEffect(() => {
     try {
-      // Load product info
-      const productData = localStorage.getItem('marketingProduct');
-      if (productData) {
-        setUserData(prev => ({
-          ...prev,
-          product: JSON.parse(productData)
-        }));
+      setIsLoading(true);
+
+      // Dump all localStorage contents
+      const storage = dumpLocalStorage();
+
+      // Try to find product data
+      const foundProduct = findDataInStorage(STORAGE_KEYS.PRODUCT, storage);
+      setProductData(foundProduct);
+
+      // Try to find audience data
+      const foundAudience = findDataInStorage(STORAGE_KEYS.AUDIENCE, storage);
+      setAudienceData(Array.isArray(foundAudience) ? foundAudience : (foundAudience ? [foundAudience] : []));
+
+      // Try to find messaging data
+      const foundMessaging = findDataInStorage(STORAGE_KEYS.MESSAGING, storage);
+      setMessagingData(foundMessaging);
+
+      // Try to find competitors data
+      const foundCompetitors = findDataInStorage(STORAGE_KEYS.COMPETITORS, storage);
+      setCompetitorsData(Array.isArray(foundCompetitors) ? foundCompetitors : (foundCompetitors ? [foundCompetitors] : []));
+
+      // Manual data saving - only if we have nothing yet
+      if (!foundProduct) {
+        console.warn('No product data found, checking if we can create dummy data for testing');
+        // You can add code here to save sample data for testing
       }
 
-      // Load target audience
-      const audienceData = localStorage.getItem('marketingTargetAudience');
-      if (audienceData) {
-        setUserData(prev => ({
-          ...prev,
-          audience: JSON.parse(audienceData)
-        }));
-      }
-
-      // Load key messages
-      const messagesData = localStorage.getItem('marketingMessages');
-      if (messagesData) {
-        setUserData(prev => ({
-          ...prev,
-          messages: JSON.parse(messagesData)
-        }));
-      }
-
-      // Load competitors
-      const competitorsData = localStorage.getItem('marketingCompetitors');
-      if (competitorsData) {
-        setUserData(prev => ({
-          ...prev,
-          competitors: JSON.parse(competitorsData)
-        }));
-      }
     } catch (error) {
       console.error('Error loading marketing data:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  // Handler for toggling detail sections
-  const toggleDetails = (section) => {
-    setShowDetails(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
+  // Function to navigate to specific step
+  const goToStep = (stepNumber) => {
+    console.log(`Navigating to step ${stepNumber}`);
 
-  // Generate marketing summary directly using the API endpoint
-  const handleGenerateSummary = async () => {
-    setIsGenerating(true);
-    try {
-      // Extract key information
-      const productName = userData.product?.name || 'Your product';
-      const productType = userData.product?.type || 'service';
-      const valueProposition = userData.product?.valueProposition || '';
-      const targetRole = userData.audience?.role || 'professionals';
-      const targetIndustry = userData.audience?.industry || 'various industries';
-      const keyMessages = userData.messages?.messages || [];
-      const competitorNames = userData.competitors?.map(comp => comp.name).join(', ') || 'competitors';
-
-      // Call the API to generate content
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          endpoint: 'generate-content',
-          data: {
-            contentType: 'marketing_summary',
-            prompt: 'Marketing Program Summary',
-            sourceContent: JSON.stringify({
-              productName,
-              productType,
-              valueProposition,
-              targetRole,
-              targetIndustry,
-              keyMessages,
-              competitorNames
-            }),
-            parameters: {
-              tone: 'professional',
-              audience: 'marketing team'
-            }
-          }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate summary');
-      }
-
-      const data = await response.json();
-      setMarketingSummary(data.content || generateFallbackSummary({
-        productName,
-        valueProposition,
-        targetRole,
-        targetIndustry
-      }));
-    } catch (error) {
-      console.error('Error generating summary:', error);
-      // Fallback to locally generated summary if API fails
-      setMarketingSummary(generateFallbackSummary({
-        productName: userData.product?.name || 'Your product',
-        valueProposition: userData.product?.valueProposition || '',
-        targetRole: userData.audience?.role || 'professionals',
-        targetIndustry: userData.audience?.industry || 'various industries'
-      }));
-    } finally {
-      setIsGenerating(false);
+    if (onBack) {
+      // If onBack accepts a step parameter
+      onBack(stepNumber);
+    } else {
+      // Direct URL navigation as fallback
+      router.push(`/walkthrough?step=${stepNumber}`);
     }
   };
 
-  // Local fallback summary generator
-  const generateFallbackSummary = ({ productName, valueProposition, targetRole, targetIndustry }) => {
-    return `${productName} is positioned to serve ${targetRole} in ${targetIndustry} with a unique value proposition: ${valueProposition || 'to provide exceptional service and value'}.\n\n` +
-      `The marketing program focuses on addressing key challenges faced by your target audience through consistent messaging and competitive differentiation. Moving forward, creating content that reinforces your core value proposition while addressing competitor gaps will help establish your brand presence.\n\n` +
-      `Your next steps should include developing content pieces that align with your key messages, building campaigns that speak directly to your audience's needs, and measuring engagement to refine your approach over time.`;
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
-  // Function to handle completing the walkthrough
-  const handleFinishWalkthrough = () => {
-    // Save walkthrough completion status to localStorage
-    localStorage.setItem('marketingWalkthroughCompleted', 'true');
-    localStorage.setItem('marketingWalkthroughCompletedDate', new Date().toISOString());
-
-    // Prepare summary data
-    const summaryData = {
-      product: userData.product,
-      audience: userData.audience,
-      messages: userData.messages,
-      competitors: userData.competitors,
-      completedDate: new Date().toISOString(),
-      summary: marketingSummary
-    };
-
-    // Save the summary
-    localStorage.setItem('marketingProgramSummary', JSON.stringify(summaryData));
-
-    showNotification('success', 'Marketing program setup completed!');
-
-    // Navigate to dashboard
-    router.push('/');
-  };
-
-  // Determine if all key sections have data
-  const hasRequiredData = userData.product && userData.audience && userData.messages;
+  // If we don't have key data, show a debug panel
+  const hasKeyData = productData &&
+    (audienceData?.length > 0) &&
+    messagingData &&
+    (competitorsData?.length > 0);
 
   return (
-    <div className="space-y-6">
-      {/* Finish Confirmation Modal */}
-      {showConfirmFinish && (
-        <div className="fixed inset-0 bg-gray-700 bg-opacity-60 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold mb-4">Complete Your Marketing Program Setup</h3>
-            <p className="text-gray-600 mb-6">
-              You're about to finish the walkthrough and set up your marketing program. You can always edit your information later.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowConfirmFinish(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleFinishWalkthrough}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Complete Setup
-              </button>
+    <div className="space-y-8">
+      <h2 className="text-2xl font-bold">Marketing Program Review</h2>
+      <p className="text-gray-600">
+        Here's a summary of your marketing program information. Click the edit button on any section to make changes.
+      </p>
+
+      {/* Debug Panel - Only shown when data is missing */}
+      {!hasKeyData && (
+        <Card className="p-4 border-yellow-300 bg-yellow-50 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-yellow-800">Some data appears to be missing</h4>
+              <p className="text-sm text-yellow-700 mt-1">
+                We couldn't find all the expected data in your browser storage.
+                You may need to go back and complete previous steps.
+              </p>
+              <div className="mt-2 text-sm">
+                <ul className="list-disc pl-5 space-y-1">
+                  <li className={productData ? "text-green-600" : "text-red-600"}>
+                    {productData ? "✓ Product data found" : "✗ Product data missing"}
+                  </li>
+                  <li className={audienceData?.length > 0 ? "text-green-600" : "text-red-600"}>
+                    {audienceData?.length > 0 ? `✓ ${audienceData.length} audience personas found` : "✗ Audience data missing"}
+                  </li>
+                  <li className={messagingData ? "text-green-600" : "text-red-600"}>
+                    {messagingData ? "✓ Messaging framework found" : "✗ Messaging framework missing"}
+                  </li>
+                  <li className={competitorsData?.length > 0 ? "text-green-600" : "text-red-600"}>
+                    {competitorsData?.length > 0 ? `✓ ${competitorsData.length} competitors found` : "✗ Competitor analysis missing"}
+                  </li>
+                </ul>
+              </div>
+              {/* Storage keys found - helpful for debugging */}
+              <div className="mt-2 text-xs text-gray-600">
+                <p>Storage keys found: {Object.keys(storageInfo).join(', ')}</p>
+              </div>
+              <div className="mt-3">
+                <button
+                  onClick={() => goToStep(STEPS.PRODUCT)}
+                  className="text-yellow-800 text-sm underline hover:text-yellow-900"
+                >
+                  Go to Product Info
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* Header Section */}
-      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="flex flex-col items-center text-center">
-          <ThumbsUp className="w-12 h-12 text-blue-600 mb-4" />
-          <h3 className="text-xl font-semibold mb-2">Great Work! Let's Review Your Marketing Program</h3>
-          <p className="text-gray-600 mb-4">
-            You've completed all the steps to set up your marketing program. Here's a review of all the information you've provided.
-          </p>
-        </div>
-      </Card>
-
       {/* Product Information */}
-      <Card className="mb-4">
-        <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-          <div className="font-medium">Product Information</div>
-          <button
-            onClick={() => toggleDetails('product')}
-            className="text-blue-600 hover:text-blue-800"
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold flex items-center">
+            <Check className="w-5 h-5 text-green-500 mr-2" />
+            Product Information
+          </h3>
+          <Link
+            href={`/walkthrough?step=${STEPS.PRODUCT}`}
+            className="text-blue-600 flex items-center hover:text-blue-800"
           >
-            {showDetails.product ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
+            <Edit2 className="w-4 h-4 mr-1" /> Edit
+          </Link>
         </div>
-        <div className="p-4">
-          {userData.product ? (
-            <div>
-              <div className="flex justify-between">
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Business Name</div>
-                  <div className="text-lg">{userData.product.name || 'N/A'}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Type</div>
-                  <div>{userData.product.type || 'N/A'}</div>
-                </div>
-              </div>
 
-              {showDetails.product && (
-                <div className="mt-4">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Value Proposition</div>
-                  <div className="bg-gray-50 p-3 rounded text-gray-700">
-                    {userData.product.valueProposition || 'No value proposition provided'}
-                  </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-gray-500 text-sm">Product Name</p>
+            <p className="font-medium">{productData?.name || "Not specified"}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm">Product Type</p>
+            <p className="font-medium">{productData?.type || "Not specified"}</p>
+          </div>
 
-                  {userData.product.keyBenefits && userData.product.keyBenefits.length > 0 && (
-                    <div className="mt-3">
-                      <div className="text-sm font-medium text-gray-500 mb-1">Key Benefits</div>
-                      <ul className="list-disc pl-5 space-y-1">
-                        {userData.product.keyBenefits.map((benefit, index) => (
-                          <li key={index} className="text-gray-700">{benefit}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
+          {productData?.valueProposition && (
+            <div className="col-span-2 mt-2">
+              <p className="text-gray-500 text-sm">Value Proposition</p>
+              <p className="font-medium">{productData.valueProposition}</p>
             </div>
-          ) : (
-            <div className="text-gray-500 italic">No product information provided</div>
           )}
         </div>
       </Card>
 
       {/* Target Audience */}
-      <Card className="mb-4">
-        <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-          <div className="font-medium">Target Audience</div>
-          <button
-            onClick={() => toggleDetails('audience')}
-            className="text-blue-600 hover:text-blue-800"
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold flex items-center">
+            <Check className="w-5 h-5 text-green-500 mr-2" />
+            Target Audience
+          </h3>
+          <Link
+            href={`/walkthrough?step=${STEPS.AUDIENCE}`}
+            className="text-blue-600 flex items-center hover:text-blue-800"
           >
-            {showDetails.audience ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
+            <Edit2 className="w-4 h-4 mr-1" /> Edit
+          </Link>
         </div>
-        <div className="p-4">
-          {userData.audience ? (
-            <div>
-              <div className="flex justify-between">
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Primary Role</div>
-                  <div className="text-lg">{userData.audience.role || 'N/A'}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Industry</div>
-                  <div>{userData.audience.industry || 'N/A'}</div>
-                </div>
-              </div>
 
-              {showDetails.audience && userData.audience.challenges && userData.audience.challenges.length > 0 && (
-                <div className="mt-4">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Key Challenges</div>
-                  <ul className="list-disc pl-5 space-y-1">
-                    {userData.audience.challenges.map((challenge, index) => (
-                      <li key={index} className="text-gray-700">{challenge}</li>
-                    ))}
-                  </ul>
+        {audienceData && audienceData.length > 0 ? (
+          <div className="space-y-4">
+            {audienceData.map((audience, index) => (
+              <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-500 text-sm">Role</p>
+                    <p className="font-medium">{audience.role || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-sm">Industry</p>
+                    <p className="font-medium">{audience.industry || "Not specified"}</p>
+                  </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-gray-500 italic">No target audience information provided</div>
-          )}
-        </div>
+
+                {audience.challenges && audience.challenges.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-gray-500 text-sm mb-1">Challenges</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {audience.challenges.map((challenge, i) => (
+                        <li key={i}>{challenge}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 italic">No target audience defined</p>
+        )}
       </Card>
 
-      {/* Key Messages */}
-      <Card className="mb-4">
-        <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-          <div className="font-medium">Key Messages</div>
-          <button
-            onClick={() => toggleDetails('messages')}
-            className="text-blue-600 hover:text-blue-800"
+      {/* Messaging Framework */}
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold flex items-center">
+            <Check className="w-5 h-5 text-green-500 mr-2" />
+            Messaging Framework
+          </h3>
+          <Link
+            href={`/walkthrough?step=${STEPS.MESSAGING}`}
+            className="text-blue-600 flex items-center hover:text-blue-800"
           >
-            {showDetails.messages ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
+            <Edit2 className="w-4 h-4 mr-1" /> Edit
+          </Link>
         </div>
-        <div className="p-4">
-          {userData.messages && userData.messages.messages && userData.messages.messages.length > 0 ? (
-            <div>
-              <div className="text-sm font-medium text-gray-500 mb-2">Core Messages</div>
-              <div className="space-y-2">
-                {userData.messages.messages.map((message, index) => (
-                  <div key={index} className="bg-gray-50 p-3 rounded text-gray-700">
-                    {message}
-                  </div>
-                ))}
+
+        {messagingData ? (
+          <div className="space-y-4">
+            {messagingData.valueProposition && (
+              <div>
+                <p className="text-gray-500 text-sm">Value Proposition</p>
+                <p className="font-medium">{messagingData.valueProposition}</p>
               </div>
-            </div>
-          ) : (
-            <div className="text-gray-500 italic">No key messages provided</div>
-          )}
-        </div>
+            )}
+
+            {messagingData.keyDifferentiators && messagingData.keyDifferentiators.length > 0 && (
+              <div>
+                <p className="text-gray-500 text-sm">Key Differentiators</p>
+                <ul className="list-disc pl-5 space-y-1 mt-1">
+                  {messagingData.keyDifferentiators.map((differentiator, i) => (
+                    <li key={i}>{differentiator}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {messagingData.targetedMessages && messagingData.targetedMessages.length > 0 && (
+              <div>
+                <p className="text-gray-500 text-sm">Targeted Messages</p>
+                <ul className="list-disc pl-5 space-y-1 mt-1">
+                  {messagingData.targetedMessages.map((message, i) => (
+                    <li key={i}>{message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-gray-500 italic">No messaging framework defined</p>
+        )}
       </Card>
 
       {/* Competitors Analysis */}
-      <Card className="mb-4">
-        <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-          <div className="font-medium">Competitors Analysis</div>
-          <button
-            onClick={() => toggleDetails('competitors')}
-            className="text-blue-600 hover:text-blue-800"
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold flex items-center">
+            <Check className="w-5 h-5 text-green-500 mr-2" />
+            Competitors Analysis
+          </h3>
+          <Link
+            href={`/walkthrough?step=${STEPS.COMPETITOR}`}
+            className="text-blue-600 flex items-center hover:text-blue-800"
           >
-            {showDetails.competitors ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
+            <Edit2 className="w-4 h-4 mr-1" /> Edit
+          </Link>
         </div>
-        <div className="p-4">
-          {userData.competitors && userData.competitors.length > 0 ? (
-            <div>
-              <div className="text-sm font-medium text-gray-500 mb-2">Analyzed Competitors</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {userData.competitors.map((competitor, index) => (
-                  <div key={index} className="border rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 p-3 font-medium">
-                      {competitor.name}
-                    </div>
-                    {showDetails.competitors && (
-                      <div className="p-3 space-y-3">
-                        {competitor.strengths && competitor.strengths.length > 0 && (
-                          <div>
-                            <div className="text-sm font-medium text-gray-500 mb-1">Strengths</div>
-                            <ul className="list-disc pl-5 space-y-1 text-sm">
-                              {competitor.strengths.slice(0, 2).map((strength, i) => (
-                                <li key={i} className="text-gray-700">{strength}</li>
-                              ))}
-                              {competitor.strengths.length > 2 && (
-                                <li className="text-gray-500 italic">
-                                  +{competitor.strengths.length - 2} more
-                                </li>
-                              )}
-                            </ul>
-                          </div>
-                        )}
 
-                        {competitor.weaknesses && competitor.weaknesses.length > 0 && (
-                          <div>
-                            <div className="text-sm font-medium text-gray-500 mb-1">Gaps</div>
-                            <ul className="list-disc pl-5 space-y-1 text-sm">
-                              {competitor.weaknesses.slice(0, 2).map((weakness, i) => (
-                                <li key={i} className="text-gray-700">{weakness}</li>
-                              ))}
-                              {competitor.weaknesses.length > 2 && (
-                                <li className="text-gray-500 italic">
-                                  +{competitor.weaknesses.length - 2} more
-                                </li>
-                              )}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+        <div>
+          <p className="font-medium mb-2">Analyzed Competitors</p>
+          {competitorsData && competitorsData.length > 0 ? (
+            <div className="space-y-4">
+              {competitorsData.map((competitor, index) => (
+                <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                  <p className="font-medium">{competitor.name}</p>
+
+                  {competitor.description && (
+                    <div className="mt-2">
+                      <p className="text-gray-500 text-sm">Key Positioning</p>
+                      <p>{competitor.description}</p>
+                    </div>
+                  )}
+
+                  {competitor.strengths && competitor.strengths.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-gray-500 text-sm">Strengths</p>
+                      <ul className="list-disc pl-5 space-y-1 mt-1">
+                        {competitor.strengths.slice(0, 3).map((strength, i) => (
+                          <li key={i}>{strength}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {competitor.weaknesses && competitor.weaknesses.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-gray-500 text-sm">Gaps</p>
+                      <ul className="list-disc pl-5 space-y-1 mt-1">
+                        {competitor.weaknesses.slice(0, 3).map((weakness, i) => (
+                          <li key={i}>{weakness}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="text-gray-500 italic">No competitor analysis provided</div>
+            <p className="text-gray-500 italic">No competitors analyzed</p>
           )}
         </div>
       </Card>
 
-      {/* Marketing Summary */}
-      <Card className="mb-6">
-        <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
-          <div className="font-medium flex items-center">
-            <Sparkles className="w-5 h-5 text-blue-500 mr-2" />
-            Marketing Program Summary
-          </div>
+      {/* Marketing Program Summary - Simple version without "generate" */}
+      <Card className="p-6 border-blue-200 bg-blue-50">
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold">Marketing Program Summary</h3>
         </div>
-        <div className="p-6">
-          {marketingSummary ? (
-            <div className="prose max-w-none">
-              {marketingSummary.split('\n\n').map((paragraph, index) => (
-                <p key={index} className={index === 0 ? "font-medium" : ""}>
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <button
-                onClick={handleGenerateSummary}
-                disabled={isGenerating || !hasRequiredData}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center mx-auto"
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                    Generating Summary...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Generate AI Summary
-                  </>
-                )}
-              </button>
-              {!hasRequiredData && (
-                <p className="mt-2 text-sm text-gray-500">
-                  Complete all required steps to generate a summary
-                </p>
-              )}
-            </div>
-          )}
+
+        <div className="mb-6">
+          <p className="text-gray-700 mb-4">
+            Based on your inputs, your marketing program is ready to move to the execution phase.
+            Here's what you've accomplished:
+          </p>
+
+          <ul className="space-y-2 mb-4">
+            <li className="flex items-start">
+              <span className="text-blue-500 mr-2">•</span> Defined your product: <strong>{productData?.name || "Not specified"}</strong>
+            </li>
+            <li className="flex items-start">
+              <span className="text-blue-500 mr-2">•</span> Identified {audienceData?.length || 0} target audience personas with challenges
+            </li>
+            <li className="flex items-start">
+              <span className="text-blue-500 mr-2">•</span> Created a messaging framework with {messagingData?.keyDifferentiators?.length || 0} key differentiators
+            </li>
+            <li className="flex items-start">
+              <span className="text-blue-500 mr-2">•</span> Analyzed {competitorsData?.length || 0} competitors to identify opportunities
+            </li>
+          </ul>
+
+          <p className="text-gray-700">
+            You're now ready to start creating content and building campaigns that align with your strategy.
+          </p>
         </div>
       </Card>
 
       {/* Next Steps */}
-      <Card className="bg-blue-50 border-blue-100">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-4">Next Steps</h3>
-          <ul className="space-y-3">
-            <li className="flex items-start">
-              <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
-              <span className="text-blue-800">Setup your marketing program foundations</span>
-            </li>
-            <li className="flex items-start">
-              <div className="w-5 h-5 rounded-full border-2 border-blue-400 flex items-center justify-center mr-2 mt-0.5">
-                <span className="text-blue-500 text-xs">2</span>
-              </div>
-              <span className="text-blue-800">Create content aligned with your key messages</span>
-            </li>
-            <li className="flex items-start">
-              <div className="w-5 h-5 rounded-full border-2 border-blue-400 flex items-center justify-center mr-2 mt-0.5">
-                <span className="text-blue-500 text-xs">3</span>
-              </div>
-              <span className="text-blue-800">Build campaigns that target your audience's challenges</span>
-            </li>
-          </ul>
+      <div className="mt-8">
+        <h3 className="text-xl font-bold mb-4">Next Steps</h3>
 
-          <div className="mt-6 flex flex-col md:flex-row gap-3">
-            <button
-              onClick={() => router.push('/content-hub')}
-              className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 flex items-center justify-center"
-            >
-              Go to Content Creator
-            </button>
-            <button
-              onClick={() => router.push('/campaign-builder')}
-              className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 flex items-center justify-center"
-            >
-              Build a Campaign
-            </button>
-            <button
-              onClick={() => setShowConfirmFinish(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center"
-            >
-              <DownloadCloud className="w-4 h-4 mr-2" />
-              Finalize Marketing Program
-            </button>
+        <div className="space-y-4 mb-6">
+          <div className="flex items-start">
+            <div className="bg-green-100 text-green-700 rounded-full p-1 mr-3 mt-0.5">
+              <Check className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-medium">Setup your marketing program foundations</p>
+            </div>
+          </div>
+
+          <div className="flex items-start">
+            <div className="bg-blue-100 text-blue-700 rounded-full p-1 mr-3 mt-0.5">
+              <span className="block text-center text-xs font-bold w-4 h-4">2</span>
+            </div>
+            <div>
+              <p className="font-medium">Create content aligned with your key messages</p>
+            </div>
+          </div>
+
+          <div className="flex items-start">
+            <div className="bg-blue-100 text-blue-700 rounded-full p-1 mr-3 mt-0.5">
+              <span className="block text-center text-xs font-bold w-4 h-4">3</span>
+            </div>
+            <div>
+              <p className="font-medium">Build campaigns that target your audience's challenges</p>
+            </div>
           </div>
         </div>
-      </Card>
 
-      {/* Navigation buttons */}
-      {isWalkthrough && (
-        <div className="flex justify-between mt-8">
+        <div className="flex flex-wrap gap-4">
+          <Link href="/content-creator">
+            <button className="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
+              Go to Content Creator
+            </button>
+          </Link>
+
+          <Link href="/campaign-builder">
+            <button className="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
+              Build a Campaign
+            </button>
+          </Link>
+
           <button
-            onClick={onBack}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+            onClick={onNext}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
           >
-            Back
-          </button>
-          <button
-            onClick={() => setShowConfirmFinish(true)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Complete Setup
+            Finalize Marketing Program
+            <ChevronRight className="w-5 h-5 ml-1" />
           </button>
         </div>
-      )}
+      </div>
+      <div className="mt-6 border-t pt-4 border-gray-200">
+        <p className="text-xs text-gray-500 mb-2">Debug Tools:</p>
+        <button
+          onClick={insertTestData}
+          className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 text-sm"
+        >
+          Insert Test Data (Debug)
+        </button>
+      </div>
+
     </div>
   );
 };

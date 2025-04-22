@@ -563,9 +563,6 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
     const competitors = data.competitors;
     const industry = data.industry || 'technology';
 
-    // Add this debugging line
-    console.log(`Starting analysis for ${competitors.length} competitors in the ${industry} industry`);
-
     // Process each competitor
     const processedCompetitors = [];
 
@@ -582,46 +579,69 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
           throw new Error('API key configuration error');
         }
 
-        // Create mock data instead of trying to call OpenAI API
-        // This is a temporary solution until we fix the API key issue
-        const mockCompetitorData = {
-          uniquePositioning: [
-            `${competitor.name} focuses on convenience and quick service.`,
-            `They emphasize fresh ingredients in their marketing.`,
-            `Their menu offers customizable options for various dietary needs.`
-          ],
-          keyThemes: [
-            "Fast casual dining experience",
-            "Value-oriented pricing strategy",
-            "Consistent quality across locations",
-            "Focus on fresh ingredients"
-          ],
-          gaps: [
-            "Limited plant-based options",
-            "Less emphasis on sustainability practices",
-            "Few premium menu offerings",
-            "Limited local ingredient sourcing"
-          ]
-        };
+        // This is likely the issue - if there's mock data being returned instead of making a real API call
+        // Replace the mock data with a real OpenAI API call:
 
-        // Add to processed competitors
-        processedCompetitors.push({
-          name: competitor.name,
-          uniquePositioning: mockCompetitorData.uniquePositioning || [],
-          keyThemes: mockCompetitorData.keyThemes || [],
-          gaps: mockCompetitorData.gaps || []
+        // Create a prompt for analyzing this competitor
+        const prompt = `Analyze the following competitor in the ${industry} industry:
+        
+Company: ${competitor.name}
+
+Please provide a comprehensive analysis of this competitor, including:
+
+1. Their unique positioning and differentiation in the market
+2. Key messaging themes and marketing focus
+3. Apparent strengths based on their public presence
+4. Potential gaps or weaknesses in their positioning
+
+Format your response as a JSON object with these fields:
+{
+  "uniquePositioning": ["point 1", "point 2", ...],
+  "keyThemes": ["theme 1", "theme 2", ...],
+  "gaps": ["gap 1", "gap 2", ...]
+}
+
+Only include information that would be publicly available or reasonably inferred from their market presence.`;
+
+        // Call OpenAI API
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert competitive analyst with deep knowledge of market positioning and messaging strategies.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
         });
 
-        console.log(`Successfully analyzed competitor: ${competitor.name}`);
+        const responseText = completion.choices[0].message?.content || '';
+
+        try {
+          // Parse the JSON response
+          console.log(`Got response for ${competitor.name}, parsing JSON`);
+          const parsedResponse = JSON.parse(responseText);
+
+          // Add to processed competitors
+          processedCompetitors.push({
+            name: competitor.name,
+            uniquePositioning: parsedResponse.uniquePositioning || [],
+            keyThemes: parsedResponse.keyThemes || [],
+            gaps: parsedResponse.gaps || []
+          });
+        } catch (parseError) {
+          console.error('Failed to parse OpenAI response:', parseError);
+          throw new Error('Failed to parse API response. Please try again.');
+        }
       } catch (competitorError) {
         console.error(`Error processing competitor ${competitor.name}:`, competitorError);
-
-        // Add a fallback response instead of throwing an error
-        processedCompetitors.push({
-          name: competitor.name,
-          uniquePositioning: ['Could not analyze positioning.'],
-          keyThemes: ['Analysis unavailable.'],
-          gaps: ['Analysis unavailable.']
+        return res.status(500).json({
+          error: 'Analysis error',
+          message: competitorError.message || 'Failed to analyze competitor'
         });
       }
     }
@@ -632,15 +652,13 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
     });
   } catch (error) {
     console.error('Error in competitor analysis:', error);
-
-    // Return a more detailed error message
     return res.status(500).json({
       error: 'Server error',
-      message: error.message || 'Failed to analyze competitors',
-      competitorInsights: [] // Return empty array to prevent parsing errors
+      message: error.message || 'Failed to analyze competitors'
     });
   }
 }
+
 
 // Handler for generate content endpoint
 async function handleGenerateContent(data: any, res: NextApiResponse) {
