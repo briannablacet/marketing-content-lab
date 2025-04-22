@@ -2,11 +2,12 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import { ScreenTemplate } from '../../shared/UIComponents';
-import { 
+import {
   PenTool,
   Sparkles,
   RefreshCcw,
-  ArrowRight
+  ArrowRight,
+  Layout, // New icon for Content Creator module
 } from 'lucide-react';
 
 const CreationHub: React.FC = () => {
@@ -17,7 +18,7 @@ const CreationHub: React.FC = () => {
     {
       title: "Content Creator",
       description: "Create standalone content pieces, multi-channel campaigns, and A/B test variations",
-      icon: <PenTool className="w-16 h-16 text-blue-600" />,
+      icon: <Layout className="w-16 h-16 text-blue-600" />, // Changed icon to Layout
       path: '/content-creator-tools',
       tools: ["Standalone Content Creator", "Campaign Builder", "A/B Test Creator"]
     },
@@ -50,7 +51,7 @@ const CreationHub: React.FC = () => {
       <div className="py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {modules.map((module, index) => (
-            <div 
+            <div
               key={index}
               className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 hover:border-blue-300 cursor-pointer"
               onClick={() => handleNavigate(module.path)}
@@ -61,13 +62,13 @@ const CreationHub: React.FC = () => {
                     {module.icon}
                   </div>
                 </div>
-                
+
                 <h3 className="text-2xl font-semibold mb-3 text-center">{module.title}</h3>
-                
+
                 <p className="text-gray-600 mb-6 text-center">
                   {module.description}
                 </p>
-                
+
                 <div className="mb-6 flex-grow">
                   <h4 className="text-sm font-medium text-gray-600 mb-2 text-center">Includes</h4>
                   <ul className="space-y-1">
@@ -79,7 +80,7 @@ const CreationHub: React.FC = () => {
                     ))}
                   </ul>
                 </div>
-                
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -95,7 +96,7 @@ const CreationHub: React.FC = () => {
           ))}
         </div>
       </div>
-      
+
       <div className="mt-4">
         <button
           onClick={() => router.push('/')}

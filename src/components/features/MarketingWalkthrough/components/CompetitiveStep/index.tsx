@@ -43,10 +43,10 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   // Timer for debounce
   const [analyzeTimer, setAnalyzeTimer] = useState<NodeJS.Timeout | null>(null);
 
-  // Add ref for the newly added competitor input
+  // NEW: Add ref for the newly added competitor input
   const newCompetitorRef = useRef<HTMLInputElement>(null);
 
-  // Track which competitor should be focused
+  // NEW: Track which competitor should be focused
   const [focusCompetitorIndex, setFocusCompetitorIndex] = useState<number | null>(null);
 
   // Load competitors from localStorage when component mounts
@@ -88,7 +88,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     };
   }, [competitorToAnalyze]);
 
-  // Effect to focus on newly added competitor input
+  // NEW: Effect to focus on newly added competitor input
   useEffect(() => {
     if (focusCompetitorIndex !== null && newCompetitorRef.current) {
       newCompetitorRef.current.focus();
@@ -109,7 +109,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     }
   }, [competitors, onDataChange]);
 
-  // Add competitor with focus handling
+  // UPDATED: Add competitor with focus handling
   const addCompetitor = () => {
     setCompetitors([
       ...competitors,
@@ -139,7 +139,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   const handleAnalyzeCompetitor = async (index: number, name: string) => {
     if (!name.trim()) return;
 
-    // Update UI to show loading state
     setCompetitors(prev => prev.map((comp, i) =>
       i === index ? { ...comp, isLoading: true } : comp
     ));
@@ -147,7 +146,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     setIsAnalyzing(true);
 
     try {
-      // Prepare request data
       const requestData = {
         endpoint: 'analyze-competitors',
         data: {
@@ -158,13 +156,11 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             strengths: [],
             weaknesses: []
           }],
-          industry: 'technology'
+          industry: 'technology',
+          userMessages: ['']
         }
       };
 
-      console.log('Sending competitor analysis request:', JSON.stringify(requestData));
-
-      // Make API request
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
@@ -174,47 +170,39 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         body: JSON.stringify(requestData)
       });
 
-      // Check if response is OK
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Unable to analyze competitor. Please try again.');
       }
 
-      // Parse response data
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
-      const data = JSON.parse(responseText);
+      const data = await response.json();
 
-      // Check if we have valid competitor insights
-      if (!data.competitorInsights || !Array.isArray(data.competitorInsights) || data.competitorInsights.length === 0) {
+      if (!data.competitorInsights?.[0]) {
         throw new Error('No competitor insights returned from API');
       }
 
       const competitorInsight = data.competitorInsights[0];
 
       // Check if we have meaningful data
-      const hasContent =
-        (competitorInsight.uniquePositioning && competitorInsight.uniquePositioning.length > 0) ||
-        (competitorInsight.keyThemes && competitorInsight.keyThemes.length > 0) ||
-        (competitorInsight.gaps && competitorInsight.gaps.length > 0);
+      const hasContent = competitorInsight.uniquePositioning?.length > 0 ||
+        competitorInsight.keyThemes?.length > 0 ||
+        competitorInsight.gaps?.length > 0;
 
       if (!hasContent) {
         throw new Error('Limited information available for this competitor');
       }
 
-      // Update the competitor with the analysis results
       setCompetitors(prev => prev.map((comp, i) =>
         i === index ? {
           ...comp,
           isLoading: false,
-          description: competitorInsight.uniquePositioning ? competitorInsight.uniquePositioning.join(' ') : '',
+          description: competitorInsight.uniquePositioning.join(' '),
           knownMessages: competitorInsight.keyThemes || [],
           strengths: competitorInsight.uniquePositioning || [],
           weaknesses: competitorInsight.gaps || []
         } : comp
       ));
 
-      // Show success notification
       showNotification('success', `Analysis for ${name} completed`);
     } catch (err) {
       console.error('Error in handleAnalyzeCompetitor:', err);
@@ -223,10 +211,8 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       // Clear any previously generated analysis for this competitor
       clearCompetitorAnalysis(index);
 
-      // Show error notification
       showNotification('error', 'Failed to analyze competitor. Please try again.');
     } finally {
-      // Always reset loading states
       setCompetitors(prev => prev.map((comp, i) =>
         i === index ? { ...comp, isLoading: false } : comp
       ));
@@ -306,6 +292,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <input
+                  // NEW: Add ref to the most recently added competitor
                   ref={index === competitors.length - 1 ? newCompetitorRef : null}
                   type="text"
                   value={competitor.name}
@@ -336,74 +323,70 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
               )}
             </div>
 
-            {/* AI Generated Content - FIXED WITH NULL CHECKS */}
-            {competitor.name && !competitor.isLoading && (
-              competitor.description ||
-              (competitor.knownMessages && competitor.knownMessages.length > 0) ||
-              (competitor.strengths && competitor.strengths.length > 0) ||
-              (competitor.weaknesses && competitor.weaknesses.length > 0)
-            ) && (
-                <div className="space-y-6 bg-gray-50 p-4 rounded-lg">
-                  {competitor.description && (
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-2">Key Positioning</h4>
-                      <p className="text-gray-600">{competitor.description}</p>
-                    </div>
-                  )}
-
-                  {competitor.knownMessages && competitor.knownMessages.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-2">Key Messages</h4>
-                      <ul className="space-y-2">
-                        {competitor.knownMessages.map((message, i) => (
-                          <li key={i} className="bg-white p-3 rounded text-gray-600">
-                            {message}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {competitor.strengths && competitor.strengths.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-2">Strengths</h4>
-                      <ul className="space-y-2">
-                        {competitor.strengths.map((strength, i) => (
-                          <li key={i} className="bg-white p-3 rounded text-gray-600">
-                            {strength}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {competitor.weaknesses && competitor.weaknesses.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-2">Gaps</h4>
-                      <ul className="space-y-2">
-                        {competitor.weaknesses.map((weakness, i) => (
-                          <li key={i} className="bg-white p-3 rounded text-gray-600">
-                            {weakness}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Add a button to clear the analysis */}
-                  <div className="flex justify-end mt-4">
-                    <button
-                      onClick={() => clearCompetitorAnalysis(index)}
-                      className="text-sm font-medium text-blue-600 hover:text-red-600 underline py-1 px-2"
-                    >
-                      Clear analysis
-                    </button>
+            {/* AI Generated Content */}
+            {competitor.name && !competitor.isLoading && (competitor.description || competitor.knownMessages.length > 0) && (
+              <div className="space-y-6 bg-gray-50 p-4 rounded-lg">
+                {competitor.description && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Key Positioning</h4>
+                    <p className="text-gray-600">{competitor.description}</p>
                   </div>
+                )}
+
+                {competitor.knownMessages.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Key Messages</h4>
+                    <ul className="space-y-2">
+                      {competitor.knownMessages.map((message, i) => (
+                        <li key={i} className="bg-white p-3 rounded text-gray-600">
+                          {message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {competitor.strengths.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Strengths</h4>
+                    <ul className="space-y-2">
+                      {competitor.strengths.map((strength, i) => (
+                        <li key={i} className="bg-white p-3 rounded text-gray-600">
+                          {strength}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {competitor.weaknesses.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Gaps</h4>
+                    <ul className="space-y-2">
+                      {competitor.weaknesses.map((weakness, i) => (
+                        <li key={i} className="bg-white p-3 rounded text-gray-600">
+                          {weakness}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Add a button to clear the analysis */}
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => clearCompetitorAnalysis(index)}
+                    className="text-sm font-medium text-blue-600 hover:text-red-600 underline py-1 px-2"
+                  >
+                    Clear analysis
+                  </button>
                 </div>
-              )}
+              </div>
+            )}
           </div>
         </Card>
-      ))}
+      ))
+      }
 
       {/* Add Competitor Button */}
       <button
@@ -415,70 +398,77 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       </button>
 
       {/* Error Display */}
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <div className="flex items-center gap-3 p-4">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <div className="flex-1">
-              <h4 className="font-medium text-red-900">Analysis Error</h4>
-              <p className="text-red-700 text-sm mt-1">{error}</p>
-              <button
-                onClick={() => setError('')}
-                className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
-              >
-                Dismiss
-              </button>
+      {
+        error && (
+          <Card className="border-red-200 bg-red-50">
+            <div className="flex items-center gap-3 p-4">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="font-medium text-red-900">Analysis Error</h4>
+                <p className="text-red-700 text-sm mt-1">{error}</p>
+                <button
+                  onClick={() => setError('')}
+                  className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )
+      }
 
       {/* Navigation buttons for walkthrough mode */}
-      {isWalkthrough && (
-        <div className="flex justify-between mt-8">
-          {onBack && (
+      {
+        isWalkthrough && (
+          <div className="flex justify-between mt-8">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Back
+              </button>
+            )}
             <button
-              onClick={onBack}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              onClick={handleSaveAndContinue}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              Back
+              {hasValidCompetitors ? 'Save and Continue' : 'Skip this step'}
             </button>
-          )}
-          <button
-            onClick={handleSaveAndContinue}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            {hasValidCompetitors ? 'Save and Continue' : 'Skip this step'}
-          </button>
-        </div>
-      )}
+          </div>
+        )
+      }
 
       {/* Save button for standalone version - but not when used in the competitive-analysis page */}
-      {!isWalkthrough && !isStandalone && (
-        <div className="flex justify-end mt-6 space-x-4">
-          <button
-            onClick={() => router.push('/')}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              if (hasValidCompetitors) {
-                localStorage.setItem('marketingCompetitors',
-                  JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
-              }
-              showNotification('success', 'Competitor analysis saved successfully!');
-              setTimeout(() => router.push('/'), 1500);
-            }}
-            className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${!hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={!hasValidCompetitors}
-          >
-            Save Analysis
-          </button>
-        </div>
-      )}
-    </div>
+      {
+        !isWalkthrough && !isStandalone && (
+          <div className="flex justify-end mt-6 space-x-4">
+            <button
+              onClick={() => router.push('/')}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (hasValidCompetitors) {
+                  localStorage.setItem('marketingCompetitors',
+                    JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
+                }
+                showNotification('success', 'Competitor analysis saved successfully!');
+                setTimeout(() => router.push('/'), 1500);
+              }}
+              className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${!hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              disabled={!hasValidCompetitors}
+            >
+              Save Analysis
+            </button>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

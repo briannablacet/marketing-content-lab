@@ -18,14 +18,6 @@ const STEPS = {
   REVIEW: 9
 };
 
-// List of all possible localStorage keys to check
-const STORAGE_KEYS = {
-  PRODUCT: ['marketingProduct', 'productInfo', 'product'],
-  AUDIENCE: ['marketingAudiences', 'audiences', 'targetAudience', 'persona'],
-  MESSAGING: ['marketingMessaging', 'messaging', 'messagingFramework', 'keyMessages'],
-  COMPETITORS: ['marketingCompetitors', 'competitors', 'competitorAnalysis']
-};
-
 const ReviewStep = ({ onNext, onBack }) => {
   const router = useRouter();
   const [productData, setProductData] = useState(null);
@@ -35,142 +27,152 @@ const ReviewStep = ({ onNext, onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [storageInfo, setStorageInfo] = useState({});
 
-  // Helper function to dump all localStorage contents for debugging
-  const dumpLocalStorage = () => {
-    const storage = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      try {
-        const value = localStorage.getItem(key);
-        storage[key] = value ? JSON.parse(value) : null;
-      } catch (e) {
-        storage[key] = `[Error parsing]: ${localStorage.getItem(key)}`;
-      }
-    }
-    console.log('All localStorage items:', storage);
-    setStorageInfo(storage);
-    return storage;
-  };
-
-  // Helper to find data in multiple possible keys
-  const findDataInStorage = (keyOptions, storage) => {
-    for (const key of keyOptions) {
-      if (storage[key]) {
-        console.log(`Found data in key: ${key}`, storage[key]);
-        return storage[key];
-      }
-    }
-    return null;
-  };
-  // Add this inside your ReviewStep component
-  // Debug function to log all localStorage contents
-  useEffect(() => {
-    console.log("All localStorage keys:", Object.keys(localStorage));
-
-    // Try to log each item
-    Object.keys(localStorage).forEach(key => {
-      try {
-        const value = localStorage.getItem(key);
-        console.log(`${key}:`, JSON.parse(value));
-      } catch (e) {
-        console.log(`${key} (couldn't parse):`, localStorage.getItem(key));
-      }
-    });
-  }, []);
-
-  // Function to insert test data
-  const insertTestData = () => {
-    // Sample messaging data
-    localStorage.setItem('marketingMessaging', JSON.stringify({
-      valueProposition: "Marketing Content Lab: The first AI platform built for real content marketers",
-      keyDifferentiators: [
-        "Strategy-first approach",
-        "Full-funnel content generation",
-        "Brand voice preservation"
-      ],
-      targetedMessages: [
-        "Save time with automated content creation",
-        "Maintain brand consistency across channels",
-        "Create content that converts"
-      ]
-    }));
-
-    // Sample product data
-    localStorage.setItem('marketingProduct', JSON.stringify({
-      name: "Marketing Content Lab",
-      type: "Marketing Platform",
-      valueProposition: "The first and only strategy-first, full-funnel AI content engine"
-    }));
-
-    // Sample audience data
-    localStorage.setItem('marketingAudiences', JSON.stringify([
-      {
-        role: "Marketing Manager",
-        industry: "SaaS",
-        challenges: [
-          "Creating consistent content at scale",
-          "Maintaining brand voice across channels",
-          "Measuring content effectiveness"
-        ]
-      }
-    ]));
-
-    // Sample competitor data
-    localStorage.setItem('marketingCompetitors', JSON.stringify([
-      {
-        name: "ContentBot",
-        description: "AI-powered content generation tool",
-        strengths: ["Simple interface", "Fast content generation", "Affordable pricing"],
-        weaknesses: ["Lacks strategy focus", "Generic content", "Limited customization"]
-      }
-    ]));
-
-    alert("Test data added! Refresh the page to see it.");
-    window.location.reload(); // Auto reload the page
-  };
-  // Add this at the beginning of your ReviewStep component
-  useEffect(() => {
-    console.log("All localStorage keys:", Object.keys(localStorage));
-
-    // Try to log each item
-    Object.keys(localStorage).forEach(key => {
-      try {
-        const value = localStorage.getItem(key);
-        console.log(`${key}:`, JSON.parse(value));
-      } catch (e) {
-        console.log(`${key} (couldn't parse):`, localStorage.getItem(key));
-      }
-    });
-  }, []);
   // Load data from localStorage when component mounts
   useEffect(() => {
     try {
       setIsLoading(true);
 
-      // Dump all localStorage contents
-      const storage = dumpLocalStorage();
+      // Debug all localStorage keys
+      console.log("All localStorage keys:", Object.keys(localStorage));
 
-      // Try to find product data
-      const foundProduct = findDataInStorage(STORAGE_KEYS.PRODUCT, storage);
-      setProductData(foundProduct);
-
-      // Try to find audience data
-      const foundAudience = findDataInStorage(STORAGE_KEYS.AUDIENCE, storage);
-      setAudienceData(Array.isArray(foundAudience) ? foundAudience : (foundAudience ? [foundAudience] : []));
-
-      // Try to find messaging data
-      const foundMessaging = findDataInStorage(STORAGE_KEYS.MESSAGING, storage);
-      setMessagingData(foundMessaging);
-
-      // Try to find competitors data
-      const foundCompetitors = findDataInStorage(STORAGE_KEYS.COMPETITORS, storage);
-      setCompetitorsData(Array.isArray(foundCompetitors) ? foundCompetitors : (foundCompetitors ? [foundCompetitors] : []));
-
-      // Manual data saving - only if we have nothing yet
-      if (!foundProduct) {
-        console.warn('No product data found, checking if we can create dummy data for testing');
-        // You can add code here to save sample data for testing
+      // Load product data
+      const savedProduct = localStorage.getItem('marketingProduct');
+      if (savedProduct) {
+        const parsed = JSON.parse(savedProduct);
+        console.log("Loaded product data:", parsed);
+        setProductData(parsed);
+      } else {
+        console.warn("No product data found in localStorage");
       }
+
+      // Load audience data
+      // Load audience data from all possible keys
+      const savedAudience1 = localStorage.getItem('marketingAudiences');
+      const savedAudience2 = localStorage.getItem('marketingTargetAudience');
+      const savedAudience3 = localStorage.getItem('marketingTargetAudiences');
+
+      let allAudiences = [];
+
+      // Process marketingAudiences
+      if (savedAudience1) {
+        try {
+          const parsed = JSON.parse(savedAudience1);
+          console.log("Loaded audience data from marketingAudiences:", parsed);
+          if (Array.isArray(parsed)) {
+            allAudiences = [...allAudiences, ...parsed];
+          } else {
+            allAudiences.push(parsed);
+          }
+        } catch (error) {
+          console.error("Error parsing marketingAudiences:", error);
+        }
+      }
+
+      // Process marketingTargetAudience
+      if (savedAudience2) {
+        try {
+          const parsed = JSON.parse(savedAudience2);
+          console.log("Loaded audience data from marketingTargetAudience:", parsed);
+          allAudiences.push(parsed);
+        } catch (error) {
+          console.error("Error parsing marketingTargetAudience:", error);
+        }
+      }
+
+      // Process marketingTargetAudiences
+      if (savedAudience3) {
+        try {
+          const parsed = JSON.parse(savedAudience3);
+          console.log("Loaded audience data from marketingTargetAudiences:", parsed);
+          if (Array.isArray(parsed)) {
+            allAudiences = [...allAudiences, ...parsed];
+          } else {
+            allAudiences.push(parsed);
+          }
+        } catch (error) {
+          console.error("Error parsing marketingTargetAudiences:", error);
+        }
+      }
+
+      // Filter out duplicate audiences (based on role and industry combination)
+      const uniqueAudiences = [];
+      const seen = new Set();
+
+      allAudiences.forEach(audience => {
+        if (audience && audience.role) {
+          const key = `${audience.role}-${audience.industry || ''}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueAudiences.push(audience);
+          }
+        }
+      });
+
+      setAudienceData(uniqueAudiences);
+      // Load messaging data
+
+      const savedMessaging1 = localStorage.getItem('marketingMessaging');
+      const savedMessaging2 = localStorage.getItem('marketing-content-lab-messaging');
+
+      let allMessagingData = null;
+
+      // Process first messaging key
+      if (savedMessaging1) {
+        try {
+          const parsed = JSON.parse(savedMessaging1);
+          console.log("Loaded messaging data from marketingMessaging:", parsed);
+          allMessagingData = parsed;
+        } catch (error) {
+          console.error("Error parsing marketingMessaging:", error);
+        }
+      }
+
+      // If we don't have messaging data yet or it's incomplete, try the alternative key
+      if ((!allMessagingData || !allMessagingData.valueProposition) && savedMessaging2) {
+        try {
+          const parsed = JSON.parse(savedMessaging2);
+          console.log("Loaded messaging data from marketing-content-lab-messaging:", parsed);
+
+          // If we have no messaging data yet, use this one
+          if (!allMessagingData) {
+            allMessagingData = parsed;
+          } else {
+            // Otherwise, merge the data
+            allMessagingData = {
+              ...allMessagingData,
+              valueProposition: allMessagingData.valueProposition || parsed.valueProposition,
+              keyDifferentiators: allMessagingData.keyDifferentiators || parsed.keyDifferentiators || parsed.differentiators,
+              targetedMessages: allMessagingData.targetedMessages || parsed.targetedMessages || parsed.keyMessages
+            };
+          }
+        } catch (error) {
+          console.error("Error parsing marketing-content-lab-messaging:", error);
+        }
+      }
+
+      setMessagingData(allMessagingData);
+
+      // Load competitors data
+      const savedCompetitors = localStorage.getItem('marketingCompetitors');
+      if (savedCompetitors) {
+        const parsed = JSON.parse(savedCompetitors);
+        console.log("Loaded competitors data:", parsed);
+        setCompetitorsData(Array.isArray(parsed) ? parsed : [parsed]);
+      } else {
+        console.warn("No competitors data found in localStorage");
+      }
+
+      // Save all localStorage keys to state for debugging
+      const allItems = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        try {
+          allItems[key] = JSON.parse(localStorage.getItem(key));
+        } catch (e) {
+          allItems[key] = localStorage.getItem(key);
+        }
+      }
+      setStorageInfo(allItems);
 
     } catch (error) {
       console.error('Error loading marketing data:', error);
@@ -538,16 +540,6 @@ const ReviewStep = ({ onNext, onBack }) => {
           </button>
         </div>
       </div>
-      <div className="mt-6 border-t pt-4 border-gray-200">
-        <p className="text-xs text-gray-500 mb-2">Debug Tools:</p>
-        <button
-          onClick={insertTestData}
-          className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 text-sm"
-        >
-          Insert Test Data (Debug)
-        </button>
-      </div>
-
     </div>
   );
 };
