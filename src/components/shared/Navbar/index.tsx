@@ -1,6 +1,7 @@
 // src/components/shared/Navbar/index.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'; // Add this import for the Image component
 import { useRouter } from 'next/router';
 import { Settings, ChevronDown, BarChart2, Edit, FileText, Sparkles } from 'lucide-react';
 
@@ -53,7 +54,14 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link href="/" className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-blue-600">Marketing Content Lab</span>
+              {/* Replace text with logo image */}
+              <Image
+                src="/images/mcl-logo3.png"
+                alt="Marketing Content Lab"
+                width={300}
+                height={84}
+                className="h-8 w-auto"
+              />
             </Link>
 
             {/* Main navigation links */}
@@ -225,8 +233,8 @@ const Navbar: React.FC = () => {
               <Link
                 href="/settings"
                 className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${router.pathname === '/settings' ?
-                    'bg-blue-100 text-blue-700' :
-                    'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  'bg-blue-100 text-blue-700' :
+                  'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                   }`}
               >
                 <Settings className="w-4 h-4 mr-1" />

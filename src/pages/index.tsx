@@ -7,17 +7,17 @@ import { GetStaticProps } from 'next';
 
 // Define the SVG check icon as a React component
 const CheckIcon = (props) => (
-  <svg 
-    className={props.className || "h-6 w-6 text-blue-500 mr-2"} 
-    fill="none" 
-    viewBox="0 0 24 24" 
+  <svg
+    className={props.className || "h-6 w-6 text-blue-500 mr-2"}
+    fill="none"
+    viewBox="0 0 24 24"
     stroke="currentColor"
   >
-    <path 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      strokeWidth={2} 
-      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" 
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
     />
   </svg>
 );
@@ -25,11 +25,11 @@ const CheckIcon = (props) => (
 export default function Home({ initialMarketingState }) {
   // Instead of using the context directly, start with the initial state
   // and only enhance with context on the client side
-  const [marketingState, setMarketingState] = React.useState(initialMarketingState || { 
+  const [marketingState, setMarketingState] = React.useState(initialMarketingState || {
     currentStep: 0,
     completedSteps: []
   });
-  
+
   // Only use context on the client side to avoid SSR issues
   React.useEffect(() => {
     // Import dynamically to avoid SSR issues
@@ -37,7 +37,7 @@ export default function Home({ initialMarketingState }) {
       try {
         const { useMarketing } = await import('../context/MarketingContext');
         const { useContent } = await import('../context/ContentContext');
-        
+
         // Now we can safely use the context
         if (typeof useMarketing === 'function') {
           const { state } = useMarketing();
@@ -49,7 +49,7 @@ export default function Home({ initialMarketingState }) {
         console.error('Error loading context:', error);
       }
     };
-    
+
     importModule();
   }, []);
 
@@ -68,28 +68,30 @@ export default function Home({ initialMarketingState }) {
     </Link>
   );
 
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Enhanced Hero Section */}
-      <div className="text-center my-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Marketing Content Lab
+      <div className="text-center my-16">
+        <h1 className="text-5xl font-bold text-gray-900 leading-tight mb-4">
+          No more <s>shitty</s> crappy content.
         </h1>
-        <div className="max-w-3xl mx-auto">
-          <p className="text-xl text-gray-600 mb-4">
-            The only solution by content marketers for content marketers. 
+        <div className="max-w-2xl mx-auto">
+          <p className="text-3xl text-gray-800 font-semibold mb-4">
+            Start with strategy. Scale with intention.
           </p>
-          <p className="text-lg text-gray-500 mb-8">
-            Create, enhance, repurpose, and scale your content with AI assistance. Automate tedious tasks and close skills gaps while preserving your authentic voice and your unique, human touch.
-          </p>
+          <p className="text-base text-gray-600 font-normal mb-8">
+            Marketing Content Lab turns your voice, messaging, and goals into content that connects &mdash; aligned, reusable, and actually worth publishing.
+            Finally, a content-marketing solution that understands how real-world content marketing actually works. </p>
         </div>
-        <Link 
-          href="/walkthrough/1" 
+        <Link
+          href="/walkthrough/1"
           className="inline-block bg-blue-600 text-white px-8 py-4 rounded-md hover:bg-blue-700 transition-colors text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
         >
-          Start Building Your Program →
+          Build Your Stellar Strategy →
         </Link>
       </div>
+
 
       {/* Value Proposition Sections */}
       <div className="grid md:grid-cols-2 gap-8 mb-12">
@@ -149,7 +151,7 @@ export default function Home({ initialMarketingState }) {
             "/competitive-analysis",
             true
           )}
-          
+
           {renderToolCard(
             "Product Definition",
             "Define your product features and benefits to build compelling value propositions",
@@ -176,7 +178,7 @@ export default function Home({ initialMarketingState }) {
             "Create high-quality content with AI assistance and human oversight",
             "/creation-hub"
           )}
-          
+
           {renderToolCard(
             "Content Humanizer",
             "Ensure your AI-generated content maintains a natural, human touch",
@@ -198,7 +200,7 @@ export default function Home({ initialMarketingState }) {
             true
           )}
 
-      
+
           {renderToolCard(
             "Campaign Builder",
             "Set a theme and create multiple pieces of content for any funnel stage",
@@ -206,36 +208,38 @@ export default function Home({ initialMarketingState }) {
           )}
         </div>
       </div>
-      
+
       {/* Progress Section - Show if walkthrough in progress */}
-      {marketingState.currentStep > 1 && (
-        <div className="bg-white rounded-lg shadow p-6 mb-12">
-          <h2 className="text-2xl font-semibold mb-4">Continue Your Progress</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span>Walkthrough Progress:</span>
-              <span className="font-medium">
-                {marketingState.completedSteps.length} steps completed
-              </span>
+      {
+        marketingState.currentStep > 1 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-12">
+            <h2 className="text-2xl font-semibold mb-4">Continue Your Progress</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Walkthrough Progress:</span>
+                <span className="font-medium">
+                  {marketingState.completedSteps.length} steps completed
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${(marketingState.completedSteps.length / 8) * 100}%`
+                  }}
+                ></div>
+              </div>
+              <Link
+                href={`/walkthrough/${marketingState.currentStep}`}
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors mt-4"
+              >
+                Continue Walkthrough →
+              </Link>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" 
-                style={{ 
-                  width: `${(marketingState.completedSteps.length / 8) * 100}%` 
-                }}
-              ></div>
-            </div>
-            <Link 
-              href={`/walkthrough/${marketingState.currentStep}`}
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors mt-4"
-            >
-              Continue Walkthrough →
-            </Link>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 
