@@ -74,7 +74,7 @@ export default function Home({ initialMarketingState }) {
       {/* Enhanced Hero Section */}
       <div className="text-center my-16">
         <h1 className="text-5xl font-bold text-gray-900 leading-tight mb-4">
-          No more <s>shitty</s> crappy content.
+          No more <s>crappy</s> generic content.
         </h1>
         <div className="max-w-2xl mx-auto">
           <p className="text-3xl text-gray-800 font-semibold mb-4">
