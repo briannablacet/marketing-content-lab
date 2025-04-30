@@ -4,9 +4,13 @@ import React from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { GetStaticProps } from 'next';
+import AnimatedHeader from '../components/AnimatedHeader';
 
-// Define the SVG check icon as a React component
-const CheckIcon = (props) => (
+interface CheckIconProps {
+  className?: string;
+}
+
+const CheckIcon = (props: CheckIconProps) => (
   <svg
     className={props.className || "h-6 w-6 text-blue-500 mr-2"}
     fill="none"
@@ -22,7 +26,16 @@ const CheckIcon = (props) => (
   </svg>
 );
 
-export default function Home({ initialMarketingState }) {
+interface MarketingState {
+  currentStep: number;
+  completedSteps: number[];
+}
+
+interface HomeProps {
+  initialMarketingState: MarketingState;
+}
+
+export default function Home({ initialMarketingState }: HomeProps) {
   // Instead of using the context directly, start with the initial state
   // and only enhance with context on the client side
   const [marketingState, setMarketingState] = React.useState(initialMarketingState || {
@@ -53,8 +66,14 @@ export default function Home({ initialMarketingState }) {
     importModule();
   }, []);
 
-  // Function to render tool cards with optional icon
-  const renderToolCard = (title, description, href, isNew = false) => (
+  interface ToolCardProps {
+    title: string;
+    description: string;
+    href: string;
+    isNew?: boolean;
+  }
+
+  const renderToolCard = ({ title, description, href, isNew = false }: ToolCardProps) => (
     <Link href={href} key={title}>
       <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer relative">
         {isNew && (
@@ -68,21 +87,18 @@ export default function Home({ initialMarketingState }) {
     </Link>
   );
 
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Enhanced Hero Section */}
-      <div className="text-center my-16">
-        <h1 className="text-5xl font-bold text-gray-900 leading-tight mb-4">
-          No more <s>crappy</s> generic content.
-        </h1>
+    <div className="bg-[#FFFFFF]">
+      <div className="text-center my-24">
+        <AnimatedHeader />
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-8">
+          Start with strategy. Scale with intention.
+        </h2>
         <div className="max-w-2xl mx-auto">
-          <p className="text-3xl text-gray-800 font-semibold mb-4">
-            Start with strategy. Scale with intention.
-          </p>
           <p className="text-base text-gray-600 font-normal mb-8">
             Marketing Content Lab turns your voice, messaging, and goals into content that connects &mdash; aligned, reusable, and actually worth publishing.
-            Finally, a content-marketing solution that understands how real-world content marketing actually works. </p>
+            Finally, a content-marketing solution that understands how real-world content marketing actually works.
+          </p>
         </div>
         <Link
           href="/walkthrough/1"
@@ -92,8 +108,6 @@ export default function Home({ initialMarketingState }) {
         </Link>
       </div>
 
-
-      {/* Value Proposition Sections */}
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         {/* Strategic Analysis Tools */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 border border-blue-100">
@@ -145,26 +159,26 @@ export default function Home({ initialMarketingState }) {
         <h2 className="text-2xl font-semibold mb-2">Strategic Tools</h2>
         <p className="text-gray-600 mb-6">Transform your product marketing strategy with AI-powered insights</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {renderToolCard(
-            "Competitive Analysis",
-            "Analyze competitor messaging and identify market opportunities in minutes",
-            "/competitive-analysis",
-            true
-          )}
+          {renderToolCard({
+            title: "Competitive Analysis",
+            description: "Analyze competitor messaging and identify market opportunities in minutes",
+            href: "/competitive-analysis",
+            isNew: true
+          })}
 
-          {renderToolCard(
-            "Product Definition",
-            "Define your product features and benefits to build compelling value propositions",
-            "/product",
-            true
-          )}
+          {renderToolCard({
+            title: "Product Definition",
+            description: "Define your product features and benefits to build compelling value propositions",
+            href: "/product",
+            isNew: true
+          })}
 
-          {renderToolCard(
-            "Messaging Framework",
-            "Generate comprehensive messaging frameworks that resonate",
-            "/key-messages",
-            true
-          )}
+          {renderToolCard({
+            title: "Messaging Framework",
+            description: "Generate comprehensive messaging frameworks that resonate",
+            href: "/key-messages",
+            isNew: true
+          })}
         </div>
       </div>
 
@@ -173,39 +187,38 @@ export default function Home({ initialMarketingState }) {
         <h2 className="text-2xl font-semibold mb-2">Content Tools</h2>
         <p className="text-gray-600 mb-6">AI-powered, human-led content creation: quality, authenticity and scale</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {renderToolCard(
-            "Content Creation Hub",
-            "Create high-quality content with AI assistance and human oversight",
-            "/creation-hub"
-          )}
+          {renderToolCard({
+            title: "Content Creation Hub",
+            description: "Create high-quality content with AI assistance and human oversight",
+            href: "/creation-hub"
+          })}
 
-          {renderToolCard(
-            "Content Humanizer",
-            "Ensure your AI-generated content maintains a natural, human touch",
-            "/content-humanizer",
-            true
-          )}
+          {renderToolCard({
+            title: "Content Humanizer",
+            description: "Ensure your AI-generated content maintains a natural, human touch",
+            href: "/content-humanizer",
+            isNew: true
+          })}
 
-          {renderToolCard(
-            "Content Repurposer",
-            "Scale your content by transforming existing pieces into multiple formats",
-            "/content-repurposer",
-            true
-          )}
+          {renderToolCard({
+            title: "Content Repurposer",
+            description: "Scale your content by transforming existing pieces into multiple formats",
+            href: "/content-repurposer",
+            isNew: true
+          })}
 
-          {renderToolCard(
-            "Set Your Style",
-            "Automatically set and verify content against your brand style guidelines",
-            "/style-checker",
-            true
-          )}
+          {renderToolCard({
+            title: "Set Your Style",
+            description: "Automatically set and verify content against your brand style guidelines",
+            href: "/style-checker",
+            isNew: true
+          })}
 
-
-          {renderToolCard(
-            "Campaign Builder",
-            "Set a theme and create multiple pieces of content for any funnel stage",
-            "/campaign-builder"
-          )}
+          {renderToolCard({
+            title: "Campaign Builder",
+            description: "Set a theme and create multiple pieces of content for any funnel stage",
+            href: "/campaign-builder"
+          })}
         </div>
       </div>
 
@@ -239,7 +252,7 @@ export default function Home({ initialMarketingState }) {
           </div>
         )
       }
-    </div >
+    </div>
   );
 }
 
