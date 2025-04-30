@@ -89,7 +89,7 @@ export default function Home({ initialMarketingState }: HomeProps) {
 
   return (
     <div className="bg-[#FFFFFF]">
-      <div className="text-center my-24">
+      <div className="text-center my-8">
         <AnimatedHeader />
         <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-8">
           Start with strategy. Scale with intention.
@@ -110,7 +110,7 @@ export default function Home({ initialMarketingState }: HomeProps) {
 
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         {/* Strategic Analysis Tools */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 border border-blue-100">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl pt-2 px-8 pb-8 border border-blue-100">
           <h2 className="text-2xl font-bold text-blue-900 mb-4">Strategic Analysis</h2>
           <p className="text-blue-800 mb-6">
             Transform hours of competitive research into minutes of actionable insights
