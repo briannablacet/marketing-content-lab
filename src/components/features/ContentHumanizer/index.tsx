@@ -222,8 +222,10 @@ const ContentHumanizer: React.FC = () => {
   const checkStyleCompliance = (text: string): StyleViolation[] => {
     const violations: StyleViolation[] = [];
     if (styleRules) {
+
       // Check each style rule against the text
       styleRules.forEach(rule => {
+        
         // This is a simplified example - expand based on your style rules
         if (rule.pattern && new RegExp(rule.pattern, 'gi').test(text)) {
           violations.push({
