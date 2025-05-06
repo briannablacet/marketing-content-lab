@@ -157,13 +157,13 @@ const ContentPreview: React.FC = () => {
       console.log("Generating content based on campaign data:", campaignData);
 
       // Call the API to generate content
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'generate-content',
           data: {
             contentType: 'campaign',
             prompt: campaignData.name,

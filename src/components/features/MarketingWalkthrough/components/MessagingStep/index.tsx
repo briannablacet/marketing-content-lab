@@ -228,7 +228,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       const timeoutId = setTimeout(() => controller.abort(), 30000); // Extend timeout to 30 seconds
 
       // Make the API call
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),

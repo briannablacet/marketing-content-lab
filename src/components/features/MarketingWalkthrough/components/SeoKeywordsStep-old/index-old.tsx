@@ -268,7 +268,7 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
         productInfo
       });
 
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -508,7 +508,7 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
       if (term.length < 3) return;
 
       // Call our API endpoint
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -666,7 +666,7 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
       if (term.length < 3) return;
 
       // Call our API endpoint
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

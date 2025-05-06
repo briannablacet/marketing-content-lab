@@ -169,7 +169,7 @@ const ProsePerfector: React.FC = () => {
       const styleGuideName = STYLE_GUIDES.find(sg => sg.id === options.styleGuide)?.name || 'Chicago Manual of Style';
       
       // Call the API endpoint to process the text
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

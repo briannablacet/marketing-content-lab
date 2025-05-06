@@ -299,7 +299,7 @@ const SEOKeywordsPage: React.FC = () => {
       }
 
       // Call your backend
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -538,7 +538,7 @@ const SEOKeywordsPage: React.FC = () => {
       if (term.length < 3) return;
 
       // Call our API endpoint
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -660,7 +660,7 @@ const SEOKeywordsPage: React.FC = () => {
       if (term.length < 3) return;
 
       // Call our API endpoint
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -280,7 +280,6 @@ const ContentCreatorPage = () => {
     try {
       // Prepare request payload
       const payload = {
-        endpoint: 'generate-content',
         data: {
           contentType: contentType?.id || 'blog-post',
           prompt: promptText,
@@ -297,10 +296,11 @@ const ContentCreatorPage = () => {
       console.log('Sending API request:', payload);
 
       // Call API
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(payload),
       });

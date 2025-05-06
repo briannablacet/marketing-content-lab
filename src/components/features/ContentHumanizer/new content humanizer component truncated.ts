@@ -266,7 +266,7 @@ const ContentHumanizer: React.FC = () => {
       });
 
       // Call the API endpoint for content humanization
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
