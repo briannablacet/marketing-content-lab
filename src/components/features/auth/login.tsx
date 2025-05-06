@@ -36,6 +36,8 @@ const LoginPage = () => {
 
       // Store token and redirect
       localStorage.setItem('token', data.token);
+
+      // Redirect to content creator page
       router.push('/content-creator');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
