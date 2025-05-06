@@ -61,7 +61,7 @@ const ABTesting: React.FC = () => {
     
     try {
       // Using the centralized api_endpoints.ts structure
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

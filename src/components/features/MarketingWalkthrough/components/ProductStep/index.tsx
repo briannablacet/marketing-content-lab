@@ -62,7 +62,7 @@ const ProductStep = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
