@@ -57,6 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Save token to localStorage
         localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
 
         // Redirect to  or home
         router.push('/');
@@ -95,6 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Save token to localStorage
         localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
 
         // Redirect to dashboard or home
         router.push('/');
@@ -112,12 +114,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     router.push('/');
   };
 
   // Check authentication on page load
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
     if (token) {
       // Fetch user data using the token
       fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
@@ -141,6 +145,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.error('Error fetching user data:', error);
           logout();
         });
+    }
+    if (user) {
+      setUser(JSON.parse(user));
+    }
+    if (token) {
+      setToken(token);
     }
   }, []);
 

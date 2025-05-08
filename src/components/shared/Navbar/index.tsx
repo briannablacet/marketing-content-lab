@@ -38,6 +38,12 @@ const Navbar: React.FC = () => {
 
   // Close menus when clicking outside
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+    if (token && user) {
+      setIsLoginOpen(false);
+      setIsRegisterOpen(false);
+    }
     function handleClickOutside(event: MouseEvent) {
       if (
         strategicMenuRef.current &&
@@ -333,9 +339,23 @@ const Navbar: React.FC = () => {
                   <User className="w-6 h-6 text-gray-700" />
                   <span>{user?.name}</span>
                 </button>
+                <button
+                  onClick={() => {
+                    logout();
+                    router.push("/");
+                  }}
+                  className="px-3 py-1 text-sm text-white bg-red-500 rounded hover:bg-red-600"
+                >
+                  Logout
+                </button>
               </div>
             ) : (
-              <div className="auth-links ml-6 flex items-center space-x-4">
+              // Login and Register buttons
+              // this two should be displayed if the user not authenticated checking the localstorage
+              // add class to make it right aligned 
+
+              <div className="auth-links ml-6 flex items-center space-x-4"
+                style={{ display: "flex", alignItems: "center" }}>
                 <button
                   onClick={() => setIsLoginOpen(true)}
                   className="text-sm text-blue-600 hover:underline"
@@ -364,10 +384,7 @@ const Navbar: React.FC = () => {
             >
               ✕
             </button>
-            <form
-              onSubmit={handleLoginSubmit}
-              className="space-y-6"
-            >
+            <form onSubmit={handleLoginSubmit} className="space-y-6">
               <h2 className="text-2xl font-semibold text-gray-800 text-center">
                 Login
               </h2>
