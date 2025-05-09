@@ -37,7 +37,6 @@ const StyleComplianceChecker: React.FC = () => {
     try {
       // Prepare the payload - IMPORTANT CHANGE: Now explicitly using style-checker endpoint
       const payload = {
-        endpoint: 'style-checker', // <-- Changed from 'content-humanizer' to 'style-checker'
         data: {
           content: content,
           styleGuide: {
@@ -53,10 +52,11 @@ const StyleComplianceChecker: React.FC = () => {
       console.log('Sending request to API:', payload);
 
       // Call the API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/check-style`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(payload)
       });

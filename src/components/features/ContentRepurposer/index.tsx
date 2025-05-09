@@ -99,13 +99,13 @@ const ContentRepurposer: React.FC = () => {
         targetAudience: messaging?.targetAudience || ''
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/repurpose`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'content-repurposer',
           data: {
             content,
             sourceFormat,

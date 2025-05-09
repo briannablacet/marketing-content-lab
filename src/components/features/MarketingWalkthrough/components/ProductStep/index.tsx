@@ -62,11 +62,13 @@ const ProductStep = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/value-proposition`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
-          endpoint: 'value-proposition-generator',
           data: {
             productInfo: {
               name: productName,

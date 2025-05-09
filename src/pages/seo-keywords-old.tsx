@@ -299,11 +299,13 @@ const SEOKeywordsPage: React.FC = () => {
       }
 
       // Call your backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keywords`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
-          endpoint: 'generate-keywords',
           data: {
             context: {
               messages,
@@ -538,13 +540,13 @@ const SEOKeywordsPage: React.FC = () => {
       if (term.length < 3) return;
 
       // Call our API endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keyword-volume`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'lookup-keyword-volume',
           data: {
             keyword: term
           }
@@ -660,13 +662,13 @@ const SEOKeywordsPage: React.FC = () => {
       if (term.length < 3) return;
 
       // Call our API endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keyword-volume`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'lookup-keyword-volume',
           data: {
             keyword: term
           }

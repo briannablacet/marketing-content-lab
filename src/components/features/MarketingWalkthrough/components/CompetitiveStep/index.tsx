@@ -147,7 +147,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
     try {
       const requestData = {
-        endpoint: 'analyze-competitors',
         data: {
           competitors: [{
             name,
@@ -161,11 +160,12 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         }
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/competitors`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(requestData)
       });

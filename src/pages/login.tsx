@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useRouter } from 'next/router';
 
 const LoginPage = () => {
   const { login } = useAuth();
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,7 +11,6 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       await login(email, password);
-      router.push('/dashboard'); // Redirect to dashboard after login
     } catch (err: any) {
       setError(err.message || 'Failed to login');
     }
