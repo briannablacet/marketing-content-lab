@@ -194,6 +194,7 @@ const PersonaStep = () => {
     try {
       // Prepare the API request
       const requestBody = {
+        endpoint: 'persona-generator',
         data: {
           productName: productInfo.name,
           productType: productInfo.type,
@@ -208,7 +209,7 @@ const PersonaStep = () => {
       console.log("Sending API request:", requestBody);
 
       // Make the API call
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/personal-generator`, {
+      const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

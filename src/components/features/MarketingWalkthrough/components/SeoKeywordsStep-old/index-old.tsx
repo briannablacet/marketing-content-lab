@@ -508,13 +508,14 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
       if (term.length < 3) return;
 
       // Call our API endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keyword-volume`, {
+      const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
+          endpoint: 'keyword-volume-lookup',
           data: {
             keyword: term
           }
@@ -666,13 +667,14 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
       if (term.length < 3) return;
 
       // Call our API endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keyword-volume`, {
+      const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
+          endpoint: 'keyword-volume-lookup',
           data: {
             keyword: term
           }

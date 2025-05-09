@@ -205,6 +205,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
 
       // Prepare the request data with all required fields
       const requestBody = {
+        endpoint: "value-proposition-generator",
         data: {
           productInfo: {
             name: productName,
@@ -220,14 +221,12 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
         }
       };
 
-      console.log("Sending API request:", JSON.stringify(requestBody));
-
       // Set up abort controller for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // Extend timeout to 30 seconds
 
       // Make the API call
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/value-proposition`, {
+      const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
