@@ -54,16 +54,17 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link href="/" className="flex-shrink-0 flex items-center">
-              {/* Replace text with logo image */}
-              <Image
-                src="/images/mcl-logo3.png"
-                alt="Marketing Content Lab"
-                width={300}
-                height={84}
-                className="h-8 w-auto"
-              />
+              {/* Your new logo already has the circle, so no need for background */}
+              <div className="hover:opacity-80 transition-opacity">
+                <Image
+                  src="/images/navbar-beaker.png"  // Update with your actual filename
+                  alt="Marketing Content Lab"
+                  width={60}
+                  height={60}
+                  className="cursor-pointer"
+                />
+              </div>
             </Link>
-
             {/* Main navigation links */}
             <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
               {/* Strategic Tools Dropdown */}
