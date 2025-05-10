@@ -1,5 +1,5 @@
 /**
- * File: src/pages/_app.js
+ * File: src/pages/_app.tsx
  * 
  * Application wrapper component that provides all necessary contexts
  */
@@ -14,10 +14,10 @@ import { DemoModeProvider } from '../context/DemoModeContext';
 import { MessagingProvider } from '../context/MessagingContext';
 import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { BrandVoiceProvider } from '../context/BrandVoiceContext';
-import { AuthProvider } from '../context/AuthContext'; // New import
+import { AuthProvider } from '../context/AuthContext';
 import Navbar from '../components/shared/Navbar';
 
-function MyApp({ Component, pageProps }) {
+function MyApp({ Component, pageProps }: AppProps) {
   return (
     // Wrap providers in order of dependency
     <NotificationProvider>
@@ -28,7 +28,7 @@ function MyApp({ Component, pageProps }) {
               <WritingStyleProvider>
                 <BrandVoiceProvider>
                   <WalkthroughProvider>
-                    <AuthProvider> {/* New AuthProvider */}
+                    <AuthProvider>
                       <div className="min-h-screen bg-gray-50">
                         <Navbar />
                         <main className="container mx-auto px-4 py-8">
