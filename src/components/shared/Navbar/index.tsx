@@ -113,8 +113,8 @@ const Navbar: React.FC = () => {
                 <Image
                   src="/images/navbar-beaker2.png"  // Update with your actual filename
                   alt="Marketing Content Lab"
-                  width={60}
-                  height={60}
+                  width={50}
+                  height={50}
                   className="cursor-pointer"
                 />
               </div>
