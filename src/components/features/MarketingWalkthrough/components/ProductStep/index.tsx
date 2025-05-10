@@ -64,7 +64,10 @@ const ProductStep = () => {
     try {
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
           endpoint: 'value-proposition-generator',
           data: {

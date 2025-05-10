@@ -268,13 +268,13 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
         productInfo
       });
 
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keywords`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'generate-keywords',
           data: {
             context: {
               messages: messages.length ? messages : ['Your value proposition'],
@@ -511,10 +511,11 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'lookup-keyword-volume',
+          endpoint: 'keyword-volume-lookup',
           data: {
             keyword: term
           }
@@ -669,10 +670,11 @@ const SeoKeywordsStep: React.FC<SeoKeywordsStepProps> = ({
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'lookup-keyword-volume',
+          endpoint: 'keyword-volume-lookup',
           data: {
             keyword: term
           }

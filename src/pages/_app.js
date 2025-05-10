@@ -14,6 +14,7 @@ import { DemoModeProvider } from '../context/DemoModeContext';
 import { MessagingProvider } from '../context/MessagingContext';
 import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { BrandVoiceProvider } from '../context/BrandVoiceContext';
+import { AuthProvider } from '../context/AuthContext'; // New import
 import Navbar from '../components/shared/Navbar';
 
 function MyApp({ Component, pageProps }) {
@@ -27,12 +28,14 @@ function MyApp({ Component, pageProps }) {
               <WritingStyleProvider>
                 <BrandVoiceProvider>
                   <WalkthroughProvider>
-                    <div className="min-h-screen bg-gray-50">
-                      <Navbar />
-                      <main className="container mx-auto px-4 py-8">
-                        <Component {...pageProps} />
-                      </main>
-                    </div>
+                    <AuthProvider> {/* New AuthProvider */}
+                      <div className="min-h-screen bg-gray-50">
+                        <Navbar />
+                        <main className="container mx-auto px-4 py-8">
+                          <Component {...pageProps} />
+                        </main>
+                      </div>
+                    </AuthProvider>
                   </WalkthroughProvider>
                 </BrandVoiceProvider>
               </WritingStyleProvider>

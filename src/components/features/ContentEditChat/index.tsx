@@ -84,7 +84,7 @@ Despite their limitations by today's standards, these primitive word processors 
             }
 
             // Try API call
-            const response = await fetch('/api/api_endpoints', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

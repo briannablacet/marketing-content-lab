@@ -222,8 +222,10 @@ const ContentHumanizer: React.FC = () => {
   const checkStyleCompliance = (text: string): StyleViolation[] => {
     const violations: StyleViolation[] = [];
     if (styleRules) {
+
       // Check each style rule against the text
       styleRules.forEach(rule => {
+        
         // This is a simplified example - expand based on your style rules
         if (rule.pattern && new RegExp(rule.pattern, 'gi').test(text)) {
           violations.push({
@@ -266,13 +268,13 @@ const ContentHumanizer: React.FC = () => {
       });
 
       // Call the API endpoint for content humanization
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/humanize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          endpoint: 'content-humanizer',
           data: {
             content: content.original,
             parameters: {

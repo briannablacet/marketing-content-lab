@@ -212,7 +212,8 @@ const PersonaStep = () => {
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(requestBody)
       });

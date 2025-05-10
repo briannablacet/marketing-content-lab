@@ -169,13 +169,14 @@ const ProsePerfector: React.FC = () => {
       const styleGuideName = STYLE_GUIDES.find(sg => sg.id === options.styleGuide)?.name || 'Chicago Manual of Style';
       
       // Call the API endpoint to process the text
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch('api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'prose-perfector',
+          endpoint: 'persona-generator',
           data: {
             text: originalText,
             options: {
