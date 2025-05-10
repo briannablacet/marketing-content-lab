@@ -111,7 +111,7 @@ const Navbar: React.FC = () => {
               {/* Your new logo already has the circle, so no need for background */}
               <div className="hover:opacity-80 transition-opacity">
                 <Image
-                  src="/images/navbar-beaker.png"  // Update with your actual filename
+                  src="/images/navbar-beaker2.png"  // Update with your actual filename
                   alt="Marketing Content Lab"
                   width={60}
                   height={60}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { GetStaticProps } from 'next';
 import AnimatedHeader from '../components/AnimatedHeader';
+import Image from 'next/image';
 
 interface CheckIconProps {
   className?: string;
@@ -90,10 +91,24 @@ export default function Home({ initialMarketingState }: HomeProps) {
   return (
     <div className="bg-[#FFFFFF]">
       <div className="text-center my-8">
+        {/* Full logo with text - smaller proportions */}
+        <div className="-mb-32">
+          <Image
+            src="/images/mcl-logo-new.png"  // Replace with your actual filename
+            alt="Marketing Content Lab"
+            width={400}  // Reduced from 350
+            height={216}  // Reduced proportionally
+            className="mx-auto"
+          />
+        </div>
+
+        {/* Your AnimatedHeader component (animated headline) stays here */}
         <AnimatedHeader />
+
         <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-8">
           Start with strategy. Scale with intention.
         </h2>
+
         <div className="max-w-2xl mx-auto">
           <p className="text-base text-gray-600 font-normal mb-8">
             Marketing Content Lab turns your voice, messaging, and goals into content that connects &mdash; aligned, reusable, and actually worth publishing.
