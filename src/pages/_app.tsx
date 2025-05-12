@@ -16,6 +16,7 @@ import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { BrandVoiceProvider } from '../context/BrandVoiceContext';
 import { AuthProvider } from '../context/AuthContext';
 import Navbar from '../components/shared/Navbar';
+import { Toaster } from 'react-hot-toast';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -34,6 +35,7 @@ function MyApp({ Component, pageProps }: AppProps) {
                         <main className="container mx-auto px-4 py-8">
                           <Component {...pageProps} />
                         </main>
+                        <Toaster position="top-right" />
                       </div>
                     </AuthProvider>
                   </WalkthroughProvider>

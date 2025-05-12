@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { useNotification } from '../../context/NotificationContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import Layout from '@/components/Layout';
 import FileHandler from '../../components/shared/FileHandler';
 import KeywordSuggestions from '../../components/shared/KeywordSuggestions';
 import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
@@ -151,7 +150,7 @@ const ContentCreatorPage = () => {
   const [hasStrategicData, setHasStrategicData] = useState(false);
 
   // State for UI guidance
-  const [showGuidanceCard, setShowGuidanceCard] = useState(true);
+  const [showGuidanceCard, setShowGuidanceCard] = useState(false);
 
   // State for edit mode
   const [isEditMode, setIsEditMode] = useState(false);
@@ -204,9 +203,23 @@ const ContentCreatorPage = () => {
         const data = await StrategicDataService.getAllStrategicData();
         console.log('Loaded strategic data:', data);
         setStrategicData(data);
-
-        // Check if we have meaningful strategic data
-        const hasData = data && data.isComplete;
+        // Force skip walkthrough and style guide prompts
+        useEffect(() => {
+          // Mark walkthrough as completed in localStorage
+          localStorage.setItem('content-creator-walkthrough-completed', 'true');
+          localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify({
+            completed: true,
+            styleGuide: { primary: 'Chicago Manual of Style' }
+          }));
+        }, []);
+        // Check if we have any meaningful strategic data (product, audience, or messaging)
+        const hasData = data && (
+          data.isComplete ||
+          (data.product && data.product.name) ||
+          (data.audiences && data.audiences.length > 0) ||
+          (data.messaging && data.messaging.valueProposition) ||
+          (data.writingStyle && data.writingStyle.styleGuide)
+        );
         setHasStrategicData(hasData);
 
         // Pre-fill advanced options if we have strategic data
