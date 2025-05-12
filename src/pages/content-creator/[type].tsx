@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { toast } from 'react-hot-toast';
 import { useNotification } from '../../context/NotificationContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import Layout from '@/components/Layout';
 import FileHandler from '../../components/shared/FileHandler';
 import KeywordSuggestions from '../../components/shared/KeywordSuggestions';
 import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
@@ -151,15 +153,17 @@ const ContentCreatorPage = () => {
   // State for UI guidance
   const [showGuidanceCard, setShowGuidanceCard] = useState(true);
 
+  // State for edit mode
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Update edited content when generated content changes
   useEffect(() => {
     if (generatedContent) {
       setEditedContent(generatedContent);
     }
   }, [generatedContent]);
-
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Load content type from URL parameter
   useEffect(() => {
@@ -202,7 +206,7 @@ const ContentCreatorPage = () => {
         setStrategicData(data);
 
         // Check if we have meaningful strategic data
-        const hasData = data.isComplete;
+        const hasData = data && data.isComplete;
         setHasStrategicData(hasData);
 
         // Pre-fill advanced options if we have strategic data
@@ -224,7 +228,7 @@ const ContentCreatorPage = () => {
             // Set keywords from SEO keywords
             if (data.seoKeywords) {
               const primaryTerms = (data.seoKeywords.primaryKeywords || [])
-                .map(k => k.term)
+                .map(k => typeof k === 'string' ? k : k.term)
                 .filter(Boolean);
 
               if (primaryTerms.length > 0) {
@@ -237,6 +241,7 @@ const ContentCreatorPage = () => {
         }
       } catch (error) {
         console.error('Error loading strategic data:', error);
+        showNotification('error', 'Could not load your strategic data. Some personalization features may be limited.');
       } finally {
         setIsLoadingStrategicData(false);
       }
@@ -272,26 +277,12 @@ const ContentCreatorPage = () => {
     }));
   };
 
-  // Handle updating keywords from KeywordSuggestions component
-  const handleUpdateKeywords = (selectedKeywords) => {
-    const keywordsString = selectedKeywords.join(', ');
-    console.log('Setting keywords to:', keywordsString);
-
-    setAdvancedOptions(prev => ({
-      ...prev,
-      keywords: keywordsString
-    }));
-
-    // If keywords are updated, show a notification to guide the user
-    if (selectedKeywords.length > 0) {
-      showNotification('info', `${selectedKeywords.length} keywords selected. Continue to the next tab to generate content.`);
-    }
-  };
-
+  // Handle content editing
   const handleContentEdit = (e) => {
     setEditedContent(e.target.value);
   };
 
+  // Save content edits
   const saveContentEdits = () => {
     setGeneratedContent(editedContent);
     setIsEditMode(false);
@@ -306,7 +297,7 @@ const ContentCreatorPage = () => {
     }
   };
 
-  // Enhanced for strategic data integration
+  // Handle content generation with strategic data integration
   const handleGenerateContent = async () => {
     // Validate inputs
     if (!promptText && !uploadedContent) {
@@ -334,7 +325,7 @@ const ContentCreatorPage = () => {
       const enrichedRequest = await StrategicDataService.enrichContentRequest(baseRequest);
       console.log('Enriched API request with strategic data:', enrichedRequest);
 
-      // This is the key fix - properly send the data to the correct endpoint
+      // Send request to API
       let apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
       let endpointName = 'generate-content';
 
@@ -616,7 +607,7 @@ const ContentCreatorPage = () => {
 
         if (strategicData.seoKeywords) {
           const primaryTerms = (strategicData.seoKeywords.primaryKeywords || [])
-            .map(k => k.term)
+            .map(k => typeof k === 'string' ? k : k.term)
             .filter(Boolean);
 
           if (primaryTerms.length > 0) {
@@ -934,7 +925,7 @@ const ContentCreatorPage = () => {
                         {strategicData.seoKeywords.primaryKeywords.map((kw, idx) => (
                           <span key={idx} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm flex items-center">
                             <CheckIcon className="h-4 w-4 mr-1" />
-                            {kw.term}
+                            {typeof kw === 'string' ? kw : kw.term}
                           </span>
                         ))}
                       </div>
