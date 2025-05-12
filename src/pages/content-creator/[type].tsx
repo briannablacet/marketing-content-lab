@@ -31,7 +31,8 @@ import {
   X,
   Check
 } from 'lucide-react';
-// Add this after all your imports but before your component starts
+
+// A more reliable function to reset style and walkthrough
 function resetStyleAndWalkthrough() {
   // Force set the writing style as completed
   localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify({
@@ -45,8 +46,29 @@ function resetStyleAndWalkthrough() {
   // Force set walkthrough as completed
   localStorage.setItem('content-creator-walkthrough-completed', 'true');
   localStorage.setItem('walkthrough-completed', 'true');
+  localStorage.setItem('writing-style-completed', 'true');
 
-  console.log('Reset applied');
+  // Also clear any potential old flags that might interfere
+  const keysToCheck = [
+    'walkthrough-step-',
+    'marketing-content-lab-writing',
+    'writing-style-'
+  ];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key) {
+      for (const prefix of keysToCheck) {
+        if (key.includes(prefix) &&
+          !key.includes('completed') &&
+          !key.includes('marketing-content-lab-writing-style')) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+  }
+
+  console.log('Reset applied successfully');
 }
 
 // Define content types directly in this file to ensure proper format
@@ -181,6 +203,12 @@ const ContentCreatorPage = () => {
     }
   }, [generatedContent]);
 
+  // Skip walkthrough and writing style prompts on component mount
+  useEffect(() => {
+    // Mark walkthrough as completed in localStorage 
+    resetStyleAndWalkthrough();
+  }, []);
+
   // Load content type from URL parameter
   useEffect(() => {
     if (type && router.isReady) {
@@ -220,15 +248,7 @@ const ContentCreatorPage = () => {
         const data = await StrategicDataService.getAllStrategicData();
         console.log('Loaded strategic data:', data);
         setStrategicData(data);
-        // Force skip walkthrough and style guide prompts
-        useEffect(() => {
-          // Mark walkthrough as completed in localStorage
-          localStorage.setItem('content-creator-walkthrough-completed', 'true');
-          localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify({
-            completed: true,
-            styleGuide: { primary: 'Chicago Manual of Style' }
-          }));
-        }, []);
+
         // Check if we have any meaningful strategic data (product, audience, or messaging)
         const hasData = data && (
           data.isComplete ||
@@ -238,6 +258,7 @@ const ContentCreatorPage = () => {
           (data.writingStyle && data.writingStyle.styleGuide && data.writingStyle.styleGuide.primary)
         );
         setHasStrategicData(hasData);
+
         // Pre-fill advanced options if we have strategic data
         if (hasData) {
           setAdvancedOptions(prev => {
@@ -350,9 +371,21 @@ const ContentCreatorPage = () => {
         }
       };
 
-      // Enrich with strategic data
+      // Enrich with strategic data - THIS IS THE KEY PART THAT ENSURES STRATEGIC DATA IS USED!
       const enrichedRequest = await StrategicDataService.enrichContentRequest(baseRequest);
       console.log('Enriched API request with strategic data:', enrichedRequest);
+
+      // Log which strategic elements are being used
+      if (strategicData) {
+        console.log('Strategic elements used:', {
+          hasProduct: !!strategicData.product?.name,
+          hasAudience: strategicData.audiences?.length > 0,
+          hasMessaging: !!strategicData.messaging?.valueProposition,
+          hasBrandVoice: !!strategicData.brandVoice?.brandVoice?.tone,
+          hasWritingStyle: !!strategicData.writingStyle?.styleGuide?.primary,
+          hasKeywords: strategicData.seoKeywords?.primaryKeywords?.length > 0
+        });
+      }
 
       // Send request to API
       let apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
@@ -361,7 +394,7 @@ const ContentCreatorPage = () => {
       // Prepare the final API payload
       const payload = {
         endpoint: endpointName,
-        data: enrichedRequest
+        data: enrichedRequest  // Use the enriched request with strategic data included
       };
 
       console.log('Sending API request with payload:', payload);
@@ -426,30 +459,70 @@ const ContentCreatorPage = () => {
 
       // Generate fallback content for demo purposes
       const mockTitle = `Sample ${contentType?.title || 'Content'}`;
-      const mockContent = [
+      let mockContent = [
         `# ${mockTitle}`,
         '',
-        `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}. Created using your strategic inputs.`,
-        '',
-        '## Introduction',
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-        '',
-        '## Main Point 1',
-        'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-        '',
-        '## Main Point 2',
-        'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
-        '',
-        '## Conclusion',
-        'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
-      ].join('\n');
+        `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}. `,
+        ''
+      ];
+
+      // Add strategic elements to the mock content if available
+      if (hasStrategicData) {
+        mockContent.push(`## About ${strategicData?.product?.name || 'Our Product'}`);
+
+        if (strategicData?.product?.valueProposition) {
+          mockContent.push(strategicData.product.valueProposition);
+        } else {
+          mockContent.push('Our product helps customers achieve their goals more effectively.');
+        }
+        mockContent.push('');
+
+        mockContent.push(`## For ${strategicData?.audiences?.[0]?.role || 'Our Target Audience'}`);
+        if (strategicData?.audiences?.[0]?.challenges?.length > 0) {
+          mockContent.push('We understand the challenges you face:');
+          strategicData.audiences[0].challenges.forEach(challenge => {
+            mockContent.push(`- ${challenge}`);
+          });
+        } else {
+          mockContent.push('We understand the challenges you face in your industry.');
+        }
+        mockContent.push('');
+
+        mockContent.push('## Key Benefits');
+        if (strategicData?.messaging?.keyDifferentiators?.length > 0) {
+          strategicData.messaging.keyDifferentiators.forEach(diff => {
+            mockContent.push(`- ${diff}`);
+          });
+        } else {
+          mockContent.push('- Improved efficiency');
+          mockContent.push('- Better results');
+          mockContent.push('- Long-term value');
+        }
+        mockContent.push('');
+      } else {
+        // Generic content if no strategic data
+        mockContent.push('## Introduction');
+        mockContent.push('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.');
+        mockContent.push('');
+        mockContent.push('## Main Point 1');
+        mockContent.push('Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.');
+        mockContent.push('');
+        mockContent.push('## Main Point 2');
+        mockContent.push('Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.');
+      }
+
+      mockContent.push('');
+      mockContent.push('## Conclusion');
+      mockContent.push('Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.');
+
+      const finalMockContent = mockContent.join('\n');
 
       setGeneratedTitle(mockTitle);
-      setGeneratedContent(mockContent);
+      setGeneratedContent(finalMockContent);
       setGeneratedMetadata({
         title: mockTitle,
         description: 'This is a sample meta description for the generated content.',
-        keywords: ['sample', 'content', 'marketing']
+        keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k) || ['sample', 'content', 'marketing']
       });
 
       // Even with fallback, still switch to edit tab
@@ -777,7 +850,7 @@ const ContentCreatorPage = () => {
                             <p><strong>Key differentiators:</strong></p>
                             <ul className="list-disc pl-5 space-y-1">
                               {strategicData.messaging.keyDifferentiators.slice(0, 2).map((diff, idx) => (
-                                <li key={idx}>{diff.substring(0, 60)}...</li>
+                                <li key={idx}>{typeof diff === 'string' ? diff.substring(0, 60) : ''}{diff.length > 60 ? '...' : ''}</li>
                               ))}
                             </ul>
                           </div>
@@ -1401,45 +1474,11 @@ const ContentCreatorPage = () => {
           ))}
         </div>
       </div>
-      {/* TEMPORARY DEBUG BUTTON - REMOVE AFTER FIXING */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <button
-          onClick={() => {
-            // Clear all walkthrough and writing style flags
-            const keysToDelete = [];
-            for (let i = 0; i < localStorage.length; i++) {
-              const key = localStorage.key(i);
-              if (key && (
-                key.includes('walkthrough') ||
-                key.includes('writing-style') ||
-                key.includes('marketing-content-lab-writing-style')
-              )) {
-                keysToDelete.push(key);
-              }
-            }
 
-            // Delete identified keys
-            keysToDelete.forEach(key => localStorage.removeItem(key));
-
-            // Set fixed versions of keys
-            localStorage.setItem('content-creator-walkthrough-completed', 'true');
-            localStorage.setItem('writing-style-completed', 'true');
-            localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify({
-              completed: true,
-              styleGuide: { primary: 'Chicago Manual of Style' }
-            }));
-
-            // Reload the page
-            window.location.reload();
-          }}
-          className="bg-red-600 text-white px-3 py-2 rounded-md text-sm shadow-lg"
-        >
-          Reset Walkthroughs
-        </button>
-      </div>
       {/* Content for active tab */}
       {renderTabContent()}
 
+      {/* Fix Prompts Button (kept for convenience) */}
       <div className="fixed bottom-4 right-4 z-50">
         <button
           onClick={resetStyleAndWalkthrough}
@@ -1449,7 +1488,6 @@ const ContentCreatorPage = () => {
         </button>
       </div>
     </div>
-
   );
 };
 
