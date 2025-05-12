@@ -1,4 +1,5 @@
-//src/pages/content-creator/[type].tsx
+// src/pages/content-creator/[type].tsx
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import FileHandler from '../../components/shared/FileHandler';
 import KeywordSuggestions from '../../components/shared/KeywordSuggestions';
 import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
 import ContentEditChat from '../../components/features/ContentEditChat';
+import StrategicDataService from '../../services/StrategicDataService';
 import {
   ArrowLeft,
   Sparkles,
@@ -22,9 +24,12 @@ import {
   Settings,
   Search,
   FileText,
-  Edit
+  Edit,
+  FileCheck,
+  AlertCircle,
+  X,
+  Check
 } from 'lucide-react';
-
 
 // Define content types directly in this file to ensure proper format
 const CONTENT_TYPES = [
@@ -48,7 +53,6 @@ const CONTENT_TYPES = [
     title: 'Email',
     description: 'Create individual email content that drives opens, clicks, and conversions for your business.'
   },
-
   {
     id: 'internal-email',
     title: 'Internal or Exec Email Comms',
@@ -105,6 +109,11 @@ const CONTENT_TABS = [
   }
 ];
 
+// Helper component for check icons
+const CheckIcon = ({ className }) => (
+  <Check className={className || "h-5 w-5"} />
+);
+
 const ContentCreatorPage = () => {
   const router = useRouter();
   const { type } = router.query;
@@ -134,8 +143,14 @@ const ContentCreatorPage = () => {
   const [generatedTitle, setGeneratedTitle] = useState('');
   const [generatedMetadata, setGeneratedMetadata] = useState(null);
 
+  // State for strategic data
+  const [strategicData, setStrategicData] = useState(null);
+  const [isLoadingStrategicData, setIsLoadingStrategicData] = useState(true);
+  const [hasStrategicData, setHasStrategicData] = useState(false);
+
   // State for UI guidance
   const [showGuidanceCard, setShowGuidanceCard] = useState(true);
+
   useEffect(() => {
     if (generatedContent) {
       setEditedContent(generatedContent);
@@ -147,42 +162,6 @@ const ContentCreatorPage = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Load content type from URL parameter
-  useEffect(() => {
-    if (type && router.isReady) {
-      // Find content type info based on URL parameter
-      const typeFromUrl = Array.isArray(type) ? type[0] : type;
-      const foundType = CONTENT_TYPES.find(t => t.id === typeFromUrl);
-
-      if (foundType) {
-        setContentType(foundType);
-
-        // Reset state for new content type - Make sure keywords are completely cleared
-        setAdvancedOptions({
-          audience: '',
-          tone: 'professional',
-          keywords: '', // This clears keywords
-          additionalNotes: ''
-        });
-
-        setPromptText('');
-        setUploadedContent('');
-        setGeneratedContent('');
-        setGeneratedTitle('');
-        setGeneratedMetadata(null);
-        setActiveTab('create');
-      } else {
-        // If content type isn't found, redirect to content creator page
-        router.push('/content-creator');
-      }
-    }
-  }, [type, router]);
-
-  // Automatically switch to edit tab when content is generated
-  useEffect(() => {
-    if (generatedContent) {
-      setActiveTab('edit');
-    }
-  }, [generatedContent]);
   useEffect(() => {
     if (type && router.isReady) {
       // Find content type info based on URL parameter
@@ -213,6 +192,66 @@ const ContentCreatorPage = () => {
     }
   }, [type, router]);
 
+  // Load Strategic Data
+  useEffect(() => {
+    const loadStrategicData = async () => {
+      setIsLoadingStrategicData(true);
+      try {
+        const data = await StrategicDataService.getAllStrategicData();
+        console.log('Loaded strategic data:', data);
+        setStrategicData(data);
+
+        // Check if we have meaningful strategic data
+        const hasData = data.isComplete;
+        setHasStrategicData(hasData);
+
+        // Pre-fill advanced options if we have strategic data
+        if (hasData) {
+          setAdvancedOptions(prev => {
+            const updates = { ...prev };
+
+            // Set audience from primary persona
+            if (data.audiences && data.audiences.length > 0) {
+              const primaryPersona = data.audiences[0];
+              updates.audience = `${primaryPersona.role}${primaryPersona.industry ? ` in ${primaryPersona.industry}` : ''}`;
+            }
+
+            // Set tone from brand voice
+            if (data.brandVoice?.brandVoice?.tone) {
+              updates.tone = data.brandVoice.brandVoice.tone;
+            }
+
+            // Set keywords from SEO keywords
+            if (data.seoKeywords) {
+              const primaryTerms = (data.seoKeywords.primaryKeywords || [])
+                .map(k => k.term)
+                .filter(Boolean);
+
+              if (primaryTerms.length > 0) {
+                updates.keywords = primaryTerms.join(', ');
+              }
+            }
+
+            return updates;
+          });
+        }
+      } catch (error) {
+        console.error('Error loading strategic data:', error);
+      } finally {
+        setIsLoadingStrategicData(false);
+      }
+    };
+
+    loadStrategicData();
+  }, []);
+
+  // Automatically switch to edit tab when content is generated
+  useEffect(() => {
+    if (generatedContent) {
+      setActiveTab('edit');
+    }
+  }, [generatedContent]);
+
   // Handle file upload
   const handleFileContent = (content) => {
     if (typeof content === 'string') {
@@ -236,7 +275,7 @@ const ContentCreatorPage = () => {
   // Handle updating keywords from KeywordSuggestions component
   const handleUpdateKeywords = (selectedKeywords) => {
     const keywordsString = selectedKeywords.join(', ');
-    console.log('Setting keywords to:', keywordsString); // Add this for debugging
+    console.log('Setting keywords to:', keywordsString);
 
     setAdvancedOptions(prev => ({
       ...prev,
@@ -248,6 +287,7 @@ const ContentCreatorPage = () => {
       showNotification('info', `${selectedKeywords.length} keywords selected. Continue to the next tab to generate content.`);
     }
   };
+
   const handleContentEdit = (e) => {
     setEditedContent(e.target.value);
   };
@@ -266,8 +306,7 @@ const ContentCreatorPage = () => {
     }
   };
 
-
-  // Updated handleGenerateContent function for [type].tsx
+  // Enhanced for strategic data integration
   const handleGenerateContent = async () => {
     // Validate inputs
     if (!promptText && !uploadedContent) {
@@ -278,29 +317,40 @@ const ContentCreatorPage = () => {
     setIsGenerating(true);
 
     try {
-      // Prepare request payload
-      const payload = {
-        data: {
-          contentType: contentType?.id || 'blog-post',
-          prompt: promptText,
-          sourceContent: uploadedContent,
-          parameters: {
-            audience: advancedOptions.audience,
-            tone: advancedOptions.tone,
-            keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k), // This is the line to update
-            additionalNotes: advancedOptions.additionalNotes
-          }
+      // Create base request
+      const baseRequest = {
+        contentType: contentType?.id || 'blog-post',
+        prompt: promptText,
+        sourceContent: uploadedContent,
+        parameters: {
+          audience: advancedOptions.audience,
+          tone: advancedOptions.tone,
+          keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k),
+          additionalNotes: advancedOptions.additionalNotes
         }
       };
 
-      console.log('Sending API request:', payload);
+      // Enrich with strategic data
+      const enrichedRequest = await StrategicDataService.enrichContentRequest(baseRequest);
+      console.log('Enriched API request with strategic data:', enrichedRequest);
+
+      // This is the key fix - properly send the data to the correct endpoint
+      let apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
+      let endpointName = 'generate-content';
+
+      // Prepare the final API payload
+      const payload = {
+        endpoint: endpointName,
+        data: enrichedRequest
+      };
+
+      console.log('Sending API request with payload:', payload);
 
       // Call API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`, {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(payload),
       });
@@ -359,7 +409,7 @@ const ContentCreatorPage = () => {
       const mockContent = [
         `# ${mockTitle}`,
         '',
-        `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}.`,
+        `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}. Created using your strategic inputs.`,
         '',
         '## Introduction',
         'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
@@ -408,7 +458,6 @@ const ContentCreatorPage = () => {
   };
 
   // Handle exporting content as a file
-  // Update or verify this function in [type].tsx
   const handleExportContent = (format = 'markdown') => {
     if (!generatedContent) {
       showNotification('error', 'No content to export');
@@ -457,6 +506,20 @@ const ContentCreatorPage = () => {
 </body>
 </html>`;
         break;
+      case 'docx':
+        // This would require a more complex library for DOCX generation
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        extension = 'docx';
+        // For now, just use plain text as fallback
+        showNotification('warning', 'DOCX export is coming soon. Exporting as plain text instead.');
+        break;
+      case 'pdf':
+        // This would require a more complex library for PDF generation
+        mimeType = 'application/pdf';
+        extension = 'pdf';
+        // For now, just use plain text as fallback
+        showNotification('warning', 'PDF export is coming soon. Exporting as plain text instead.');
+        break;
       default:
         // Use defaults
         break;
@@ -478,6 +541,7 @@ const ContentCreatorPage = () => {
 
     showNotification('success', `Content exported as ${extension.toUpperCase()}`);
   };
+
   // Save content to library
   const handleSaveToLibrary = () => {
     if (!generatedContent) {
@@ -494,7 +558,14 @@ const ContentCreatorPage = () => {
       content: generatedContent,
       metadata: generatedMetadata,
       contentType: contentType?.title,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      // Add strategic data references
+      strategicDataUsed: hasStrategicData ? {
+        productName: strategicData?.product?.name,
+        audienceName: strategicData?.audiences?.length > 0 ? strategicData.audiences[0].role : null,
+        messagingSource: strategicData?.messaging?.valueProposition ? 'Marketing Program' : 'Manual Entry',
+        styleGuide: strategicData?.writingStyle?.styleGuide?.primary || null
+      } : null
     };
 
     try {
@@ -523,14 +594,41 @@ const ContentCreatorPage = () => {
     setActiveTab('create');
     setIsEditMode(false);
 
-    // Completely reset keywords and other advanced options
-    setAdvancedOptions({
-      audience: '',
-      tone: 'professional',
-      keywords: '',
-      additionalNotes: ''
+    // Reset advanced options but keep strategic data
+    setAdvancedOptions(prev => {
+      const strategicDefaults = {
+        audience: '',
+        tone: 'professional',
+        keywords: '',
+        additionalNotes: ''
+      };
+
+      // If we have strategic data, use it to set defaults
+      if (hasStrategicData) {
+        if (strategicData.audiences && strategicData.audiences.length > 0) {
+          const primaryPersona = strategicData.audiences[0];
+          strategicDefaults.audience = `${primaryPersona.role}${primaryPersona.industry ? ` in ${primaryPersona.industry}` : ''}`;
+        }
+
+        if (strategicData.brandVoice?.brandVoice?.tone) {
+          strategicDefaults.tone = strategicData.brandVoice.brandVoice.tone;
+        }
+
+        if (strategicData.seoKeywords) {
+          const primaryTerms = (strategicData.seoKeywords.primaryKeywords || [])
+            .map(k => k.term)
+            .filter(Boolean);
+
+          if (primaryTerms.length > 0) {
+            strategicDefaults.keywords = primaryTerms.join(', ');
+          }
+        }
+      }
+
+      return strategicDefaults;
     });
   };
+
   // Parse the markdown content for display
   const parseMarkdown = (markdown) => {
     if (!markdown) return { title: '', introduction: '', sections: [] };
@@ -596,6 +694,81 @@ const ContentCreatorPage = () => {
       case 'create':
         return (
           <div className="space-y-6">
+            {/* Strategic Data Banner - Show if we have meaningful strategic data */}
+            {hasStrategicData && (
+              <Card className="mb-6 border-2 border-green-200 overflow-hidden">
+                <CardHeader className="bg-green-50 border-b">
+                  <CardTitle className="flex items-center">
+                    <FileCheck className="w-5 h-5 text-green-600 mr-2" />
+                    <span>Using Your Marketing Program</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-medium text-gray-800 mb-2">Content will be created using:</h3>
+                      <ul className="space-y-2">
+                        {strategicData?.product?.name && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your product:</strong> {strategicData.product.name}
+                            </span>
+                          </li>
+                        )}
+
+                        {strategicData?.audiences?.length > 0 && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your audience:</strong> {strategicData.audiences[0].role}
+                            </span>
+                          </li>
+                        )}
+
+                        {strategicData?.messaging?.valueProposition && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your messaging framework</strong>
+                            </span>
+                          </li>
+                        )}
+
+                        {strategicData?.writingStyle?.styleGuide?.primary && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your writing style:</strong> {strategicData.writingStyle.styleGuide.primary}
+                            </span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-green-100">
+                      <h3 className="font-medium text-gray-800 mb-2">Content will reflect:</h3>
+                      <div className="space-y-2 text-gray-700 text-sm">
+                        {strategicData?.product?.valueProposition && (
+                          <p className="italic">"{strategicData.product.valueProposition.substring(0, 100)}..."</p>
+                        )}
+
+                        {strategicData?.messaging?.keyDifferentiators?.length > 0 && (
+                          <div>
+                            <p><strong>Key differentiators:</strong></p>
+                            <ul className="list-disc pl-5 space-y-1">
+                              {strategicData.messaging.keyDifferentiators.slice(0, 2).map((diff, idx) => (
+                                <li key={idx}>{diff.substring(0, 60)}...</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Guidance Card */}
             {showGuidanceCard && (
               <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
@@ -647,6 +820,31 @@ const ContentCreatorPage = () => {
               </Card>
             )}
 
+            {/* No Strategic Data Warning */}
+            {!isLoadingStrategicData && !hasStrategicData && (
+              <Card className="mb-6 border-2 border-yellow-200 overflow-hidden">
+                <CardHeader className="bg-yellow-50 border-b">
+                  <CardTitle className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+                    <span>Enhance Your Content with a Marketing Program</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <p className="text-yellow-800 mb-4">
+                    Your content will be created without the benefit of your strategic marketing foundation.
+                    For the best results, complete the marketing program walkthrough first.
+                  </p>
+                  <div className="flex justify-end">
+                    <Link href="/walkthrough/1">
+                      <button className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                        Start Marketing Program
+                      </button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
                 <CardTitle className="flex items-center">
@@ -669,44 +867,26 @@ const ContentCreatorPage = () => {
                     />
                   </div>
 
-                  {/* Divider */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
-                    >
-                      <Download className="w-4 h-4 mr-1" />
-                      Download
-                    </button>
-                    {isDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
-                        <button
-                          onClick={() => {
-                            handleExportContent('markdown');
-                            setIsDropdownOpen(false);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                        >
-                          Markdown (.md)
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleExportContent('html');
-                            setIsDropdownOpen(false);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                        >
-                          HTML (.html)
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleExportContent('text');
-                            setIsDropdownOpen(false);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                        >
-                          Plain Text (.txt)
-                        </button>
+                  {/* File Upload Option */}
+                  <div className="border-t pt-6">
+                    <p className="text-sm text-gray-700 mb-4">Or upload a file to use as a starting point:</p>
+                    <FileHandler onFileContent={handleFileContent} />
+
+                    {uploadedContent && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium text-sm">Uploaded Content Preview</h4>
+                          <button
+                            onClick={() => setUploadedContent('')}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          {uploadedContent.substring(0, 200)}
+                          {uploadedContent.length > 200 ? '...' : ''}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -740,6 +920,27 @@ const ContentCreatorPage = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
+                  {/* Strategic Keywords Notice */}
+                  {strategicData?.seoKeywords?.primaryKeywords?.length > 0 && (
+                    <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-200">
+                      <h3 className="font-medium text-green-800 mb-2 flex items-center">
+                        <FileCheck className="w-5 h-5 mr-2" />
+                        Keywords from Your Marketing Program
+                      </h3>
+                      <p className="text-sm text-green-700 mb-3">
+                        We've pre-selected keywords from your SEO strategy. You can add or remove keywords as needed.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {strategicData.seoKeywords.primaryKeywords.map((kw, idx) => (
+                          <span key={idx} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm flex items-center">
+                            <CheckIcon className="h-4 w-4 mr-1" />
+                            {kw.term}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-blue-50 p-4 rounded-lg mb-4">
                     <h3 className="font-medium text-blue-800 mb-2">Why Keywords Matter</h3>
                     <p className="text-sm text-blue-700">
@@ -820,6 +1021,29 @@ const ContentCreatorPage = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
+                  {/* Strategic Brand Voice Notice */}
+                  {strategicData?.brandVoice?.brandVoice?.tone && (
+                    <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-200">
+                      <h3 className="font-medium text-green-800 mb-2 flex items-center">
+                        <FileCheck className="w-5 h-5 mr-2" />
+                        Using Your Brand Voice
+                      </h3>
+                      <p className="text-sm text-green-700">
+                        We're using your brand voice settings from your marketing program:
+                      </p>
+                      <div className="mt-2">
+                        <span className="text-sm font-medium text-green-700">Tone: </span>
+                        <span className="text-sm text-green-800">{strategicData.brandVoice.brandVoice.tone}</span>
+                      </div>
+                      {strategicData.brandVoice.brandVoice.archetype && (
+                        <div>
+                          <span className="text-sm font-medium text-green-700">Archetype: </span>
+                          <span className="text-sm text-green-800">{strategicData.brandVoice.brandVoice.archetype}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium mb-2">
@@ -854,7 +1078,6 @@ const ContentCreatorPage = () => {
                         <option value="empathetic">Empathetic</option>
                         <option value="compassionate">Compassionate</option>
                         <option value="humorous">Jovial and funny</option>
-
                         <option value="technical">Technical</option>
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
@@ -977,6 +1200,24 @@ const ContentCreatorPage = () => {
                             >
                               Plain Text (.txt)
                             </button>
+                            <button
+                              onClick={() => {
+                                handleExportContent('docx');
+                                setIsDropdownOpen(false);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                              Word (.docx)
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleExportContent('pdf');
+                                setIsDropdownOpen(false);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                              PDF (.pdf)
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1038,6 +1279,19 @@ const ContentCreatorPage = () => {
                   </CardContent>
                 </Card>
 
+                {/* Strategic Data Attribution */}
+                {hasStrategicData && (
+                  <Card className="mt-4 p-4 bg-gray-50 border border-gray-200">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <FileCheck className="w-4 h-4 mr-2 text-green-600" />
+                      <span>
+                        Created using your marketing program for {strategicData?.product?.name || "your product"}.
+                        {strategicData?.audiences?.length > 0 ? ` Targeted for ${strategicData.audiences[0].role}.` : ''}
+                      </span>
+                    </div>
+                  </Card>
+                )}
+
                 {/* Chat for content improvements */}
                 <Card className="mt-6">
                   <CardHeader className="border-b">
@@ -1052,6 +1306,14 @@ const ContentCreatorPage = () => {
                       originalTitle={generatedTitle}
                       contentType={contentType?.title || 'content'}
                       onContentUpdate={handleContentUpdate}
+                      // Pass strategic context for better improvements
+                      strategicContext={hasStrategicData ? {
+                        productName: strategicData?.product?.name,
+                        valueProposition: strategicData?.product?.valueProposition,
+                        audience: strategicData?.audiences?.[0]?.role,
+                        industry: strategicData?.audiences?.[0]?.industry,
+                        tone: strategicData?.brandVoice?.brandVoice?.tone || advancedOptions.tone
+                      } : null}
                     />
                   </CardContent>
                 </Card>
@@ -1065,24 +1327,16 @@ const ContentCreatorPage = () => {
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Start Over
                   </button>
-
-                  <button
-                    onClick={handleGenerateContent}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Regenerate Content
-                  </button>
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center">
-                <p className="text-gray-500 mb-4">No content generated yet</p>
+              <div className="text-center p-12">
+                <p className="text-lg text-gray-500">No content generated yet. Go back to create content.</p>
                 <button
                   onClick={() => setActiveTab('create')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  Start Creating Content
+                  Go to Content Creation
                 </button>
               </div>
             )}
@@ -1094,49 +1348,41 @@ const ContentCreatorPage = () => {
     }
   };
 
+  // Render the tabs and active tab content
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <StyleGuideNotificationBanner />
-
-      {/* Back Navigation */}
-      <div className="mb-6">
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
         <Link href="/content-creator">
-          <button className="flex items-center text-blue-600 hover:text-blue-800">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to content types
+          <button className="text-blue-600 hover:text-blue-800 flex items-center mb-4">
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Content Types
           </button>
         </Link>
+        <h1 className="text-3xl font-bold">{contentType?.title || 'Content Creator'}</h1>
+        <p className="text-gray-600 mt-2">{contentType?.description}</p>
       </div>
 
-      {/* Content Type Title */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Create {contentType?.title}
-        </h1>
-        <p className="text-gray-600 mt-1">
-          {contentType?.description || 'Turn your ideas into engaging content'}
-        </p>
+      {/* Tabs */}
+      <div className="mb-6 border-b">
+        <div className="flex space-x-8">
+          {CONTENT_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-3 px-1 flex items-center ${activeTab === tab.id
+                ? 'text-blue-600 border-b-2 border-blue-600 font-medium'
+                : 'text-gray-500 hover:text-gray-700'
+                }`}
+              disabled={tab.id === 'edit' && !generatedContent}
+            >
+              {tab.icon}
+              {tab.name}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex border-b mb-6">
-        {CONTENT_TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`py-3 px-6 flex items-center ${activeTab === tab.id
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-gray-600 hover:text-blue-600'
-              }`}
-            disabled={tab.id === 'edit' && !generatedContent}
-          >
-            {tab.icon}
-            {tab.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
+      {/* Content for active tab */}
       {renderTabContent()}
     </div>
   );

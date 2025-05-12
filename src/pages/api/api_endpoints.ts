@@ -28,8 +28,11 @@ async function handleContentHumanizer(data: any, res: NextApiResponse) {
       styleGuide: 'Chicago Manual of Style'
     };
 
+    // Use strategic data if available (without changing the expected structure)
+    const strategicData = data.strategicData || {};
+
     try {
-      const prompt = `As an expert editor specializing in humanizing AI-generated or overly formal content, enhance the following text to sound more naturally human.
+      let prompt = `As an expert editor specializing in humanizing AI-generated or overly formal content, enhance the following text to sound more naturally human.
 
 Text: ${data.content}
 
@@ -48,16 +51,26 @@ Additional humanization principles:
 - Replace generic words with more specific, vivid alternatives
 - Follow ${parameters.styleGuide || 'Chicago Manual of Style'} for punctuation and formatting
 - Ensure the content sounds like it was written by a thoughtful human expert
-- Maintain the original meaning and expertise level while making it sound more natural
+- Maintain the original meaning and expertise level while making it sound more natural`;
 
-Typography improvements:
-- Use proper em dashes (—) instead of hyphens or double hyphens
-- Use en dashes (–) for ranges
-- Use true quotation marks (" ") rather than straight quotes
-- Use proper ellipses (…) rather than three periods
-- Ensure proper spacing after punctuation
+      // Add strategic data if available
+      if (strategicData.product || strategicData.brandVoice || strategicData.writingStyle) {
+        prompt += `\n\nAdditional brand context (incorporate where appropriate):`;
 
-Return your response as a JSON string with these fields:
+        if (strategicData.product?.valueProposition) {
+          prompt += `\n- Brand value proposition: "${strategicData.product.valueProposition}"`;
+        }
+
+        if (strategicData.brandVoice?.brandVoice?.tone) {
+          prompt += `\n- Brand voice tone: ${strategicData.brandVoice.brandVoice.tone}`;
+        }
+
+        if (strategicData.writingStyle?.styleGuide?.primary) {
+          prompt += `\n- Style guide: ${strategicData.writingStyle.styleGuide.primary}`;
+        }
+      }
+
+      prompt += `\n\nReturn your response as a JSON string with these fields:
 {
   "content": "the humanized text",
   "changes": [

@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
 import { Alert, AlertDescription } from '../../ui/alert';
-import { Check, AlertTriangle, X, Copy, Eye, EyeOff, Upload, FileText, Sparkles } from 'lucide-react';
+import { Check, AlertTriangle, X, Copy, Eye, EyeOff, Upload, FileText, Sparkles, FileCheck } from 'lucide-react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
+// Add this import
+import StrategicDataService from '../../../services/StrategicDataService';
 
 // Enhanced TypeScript interfaces
 interface HumanizerOptions {
@@ -51,7 +53,7 @@ const ContentHumanizer: React.FC = () => {
   const { styleGuide, styleRules } = useWritingStyle();
   const { showNotification } = useNotification();
   const router = useRouter();
-  
+
   const [content, setContent] = useState<ContentState>({
     original: '',
     enhanced: null,
@@ -77,12 +79,43 @@ const ContentHumanizer: React.FC = () => {
     industryContext: ''
   });
 
+  // Add strategic data state
+  const [strategicData, setStrategicData] = useState<any>(null);
+  const [hasStrategicData, setHasStrategicData] = useState<boolean>(false);
+
   const [showComparison, setShowComparison] = useState(false);
   const [keywords, setKeywords] = useState<string>('');
   const [violations, setViolations] = useState<StyleViolation[]>([]);
   const [showDiffView, setShowDiffView] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [aiInsights, setAiInsights] = useState<string[]>([]);
+
+  // Add effect to load strategic data
+  useEffect(() => {
+    const loadStrategicData = async () => {
+      try {
+        const data = await StrategicDataService.getAllStrategicData();
+        console.log('Loaded strategic data for humanizer:', data);
+        setStrategicData(data);
+
+        // Check if we have meaningful strategic data
+        const hasData = data.isComplete;
+        setHasStrategicData(hasData);
+
+        // Set tone from brand voice if available
+        if (hasData && data.brandVoice?.brandVoice?.tone) {
+          setOptions(prev => ({
+            ...prev,
+            tone: data.brandVoice.brandVoice.tone
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading strategic data:', error);
+      }
+    };
+
+    loadStrategicData();
+  }, []);
 
   // Effect to update statistics when content changes
   useEffect(() => {
@@ -107,59 +140,59 @@ const ContentHumanizer: React.FC = () => {
   const generateAiInsights = (text: string) => {
     // Look for potential AI patterns
     const insights = [];
-    
+
     // Check sentence structure variety
     const sentences = text.split(/[.!?]\s+/);
     const avgLength = sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length;
     const sentenceLengthVariation = sentences.reduce((sum, s) => sum + Math.abs(s.length - avgLength), 0) / sentences.length;
-    
+
     if (sentenceLengthVariation < 10) {
       insights.push("Low sentence length variation detected. Humanizing will add more variety.");
     }
-    
+
     // Check for repetitive phrases
     const threeGrams = [];
     const words = text.toLowerCase().split(/\s+/);
     for (let i = 0; i < words.length - 2; i++) {
-      threeGrams.push(`${words[i]} ${words[i+1]} ${words[i+2]}`);
+      threeGrams.push(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
     }
-    
+
     const uniquePercentage = new Set(threeGrams).size / threeGrams.length;
     if (uniquePercentage < 0.8) {
       insights.push("Repetitive phrase patterns detected. Humanizing will add more variety.");
     }
-    
+
     // Check for common AI phrases
     const aiPhrases = [
-      "in conclusion", "to summarize", "it is important to note", 
+      "in conclusion", "to summarize", "it is important to note",
       "as mentioned earlier", "it is worth mentioning",
       "it goes without saying", "needless to say"
     ];
-    
+
     const lowerText = text.toLowerCase();
     const foundAiPhrases = aiPhrases.filter(phrase => lowerText.includes(phrase));
-    
+
     if (foundAiPhrases.length > 0) {
       insights.push("Common AI transition phrases detected. Humanizing will replace these with more natural alternatives.");
     }
-    
+
     // Check for passive voice overuse
     const passivePatterns = [
       /\b(?:is|are|was|were|be|been|being)\s+\w+ed\b/gi,
       /\b(?:is|are|was|were|be|been|being)\s+\w+en\b/gi
     ];
-    
+
     let passiveCount = 0;
     passivePatterns.forEach(pattern => {
       const matches = text.match(pattern);
       if (matches) passiveCount += matches.length;
     });
-    
+
     const passiveRatio = passiveCount / sentences.length;
     if (passiveRatio > 0.3) {
       insights.push("High usage of passive voice detected. Humanizing will convert some to active voice.");
     }
-    
+
     setAiInsights(insights);
   };
 
@@ -180,8 +213,8 @@ const ContentHumanizer: React.FC = () => {
 
       // Validate file type
       const allowedTypes = [
-        'text/plain', 
-        'text/markdown', 
+        'text/plain',
+        'text/markdown',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'text/html',
@@ -193,7 +226,7 @@ const ContentHumanizer: React.FC = () => {
       }
 
       setUploadedFile(file);
-      
+
       try {
         // Read file content
         const text = await file.text();
@@ -225,7 +258,7 @@ const ContentHumanizer: React.FC = () => {
 
       // Check each style rule against the text
       styleRules.forEach(rule => {
-        
+
         // This is a simplified example - expand based on your style rules
         if (rule.pattern && new RegExp(rule.pattern, 'gi').test(text)) {
           violations.push({
@@ -262,29 +295,39 @@ const ContentHumanizer: React.FC = () => {
         }));
       }, 500);
 
-      console.log('Sending request to humanize content:', {
+      // Create the request payload
+      const requestData = {
         content: content.original,
-        parameters: options
-      });
+        parameters: {
+          ...options,
+          styleGuideParameters: styleGuide ? {
+            prohibited: styleGuide.prohibited || [],
+            required: styleGuide.required || []
+          } : undefined
+        }
+      };
 
-      // Call the API endpoint for content humanization
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/humanize`, {
+      // Add strategic data if available
+      if (hasStrategicData) {
+        requestData.parameters.strategicData = {
+          product: strategicData.product,
+          brandVoice: strategicData.brandVoice,
+          writingStyle: strategicData.writingStyle
+        };
+      }
+
+      console.log('Sending request to humanize content:', requestData);
+
+      // Updated to use the proper API endpoint structure
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          data: {
-            content: content.original,
-            parameters: {
-              ...options,
-              styleGuideParameters: styleGuide ? {
-                prohibited: styleGuide.prohibited || [],
-                required: styleGuide.required || []
-              } : undefined
-            }
-          }
+          endpoint: 'content-humanizer',
+          data: requestData
         })
       });
 
@@ -315,7 +358,7 @@ const ContentHumanizer: React.FC = () => {
           ...prev.statistics,
           enhancedLength: responseData.content.length,
           readabilityScore: responseData.readabilityScore || Math.floor(Math.random() * 20) + 80,
-          styleCompliance: styleViolations.length ? 
+          styleCompliance: styleViolations.length ?
             100 - (styleViolations.length * 5) : 100,
           humanityScore: responseData.humanityScore || Math.floor(Math.random() * 15) + 80
         }
@@ -335,7 +378,7 @@ const ContentHumanizer: React.FC = () => {
       // For demonstration/fallback purposes, create a humanized version here
       // This would be removed once API integration is complete
       const fallbackHumanized = createFallbackHumanizedContent(content.original);
-      
+
       setContent(prev => ({
         ...prev,
         enhanced: fallbackHumanized.content,
@@ -359,20 +402,20 @@ const ContentHumanizer: React.FC = () => {
   };
 
   // Generate sample changes for demonstration
-  const generateSampleChanges = (original: string, enhanced: string): Array<{original: string, modified: string, reason: string}> => {
+  const generateSampleChanges = (original: string, enhanced: string): Array<{ original: string, modified: string, reason: string }> => {
     const changes = [];
-    
+
     // Find repeated sentence structures
     const sentences = original.split(/[.!?]\s+/);
     const enhancedSentences = enhanced.split(/[.!?]\s+/);
-    
+
     // Generate a few examples based on common AI patterns
     if (sentences.length > 2 && enhancedSentences.length > 2) {
       for (let i = 0; i < Math.min(4, sentences.length, enhancedSentences.length); i++) {
         if (sentences[i] !== enhancedSentences[i]) {
           // Determine a reason for the change
           let reason = "Improved flow and natural language";
-          
+
           if (sentences[i].startsWith("It is") && !enhancedSentences[i].startsWith("It is")) {
             reason = "Removed classic AI 'It is' pattern";
           } else if (sentences[i].includes("important to note") || sentences[i].includes("worth mentioning")) {
@@ -382,7 +425,7 @@ const ContentHumanizer: React.FC = () => {
           } else if (sentences[i].match(/\b(?:is|are|was|were|be|been|being)\s+\w+ed\b/i)) {
             reason = "Converted passive voice to active voice";
           }
-          
+
           changes.push({
             original: sentences[i],
             modified: enhancedSentences[i],
@@ -391,7 +434,7 @@ const ContentHumanizer: React.FC = () => {
         }
       }
     }
-    
+
     // If we didn't find any changes, create some examples
     if (changes.length === 0) {
       changes.push({
@@ -408,7 +451,7 @@ const ContentHumanizer: React.FC = () => {
         reason: "Simplified language and increased directness"
       });
     }
-    
+
     return changes;
   };
 
@@ -418,9 +461,9 @@ const ContentHumanizer: React.FC = () => {
     // 1. Varying sentence structure
     // 2. Removing common AI phrases
     // 3. Adding some contractions
-    
+
     let humanized = originalContent;
-    
+
     // Replace common AI phrases
     const replacements = [
       { pattern: /it is important to note that/gi, replacement: "notably," },
@@ -431,7 +474,7 @@ const ContentHumanizer: React.FC = () => {
       { pattern: /to summarize/gi, replacement: "in short" },
       { pattern: /needless to say/gi, replacement: "clearly" },
       { pattern: /it goes without saying/gi, replacement: "obviously" },
-      
+
       // Add contractions
       { pattern: /it is/gi, replacement: "it's" },
       { pattern: /there is/gi, replacement: "there's" },
@@ -441,19 +484,19 @@ const ContentHumanizer: React.FC = () => {
       { pattern: /do not/gi, replacement: "don't" },
       { pattern: /does not/gi, replacement: "doesn't" },
       { pattern: /cannot/gi, replacement: "can't" },
-      
+
       // Convert some passive to active
       { pattern: /is being done/gi, replacement: "is happening" },
       { pattern: /has been observed/gi, replacement: "we've seen" },
       { pattern: /it was found that/gi, replacement: "we found that" },
       { pattern: /it can be concluded/gi, replacement: "we can conclude" }
     ];
-    
+
     // Apply all replacements
     replacements.forEach(({ pattern, replacement }) => {
       humanized = humanized.replace(pattern, replacement);
     });
-    
+
     // Track the changes we made
     const changes = [];
     replacements.forEach(({ pattern, replacement }) => {
@@ -469,7 +512,7 @@ const ContentHumanizer: React.FC = () => {
           } else if (/is being|has been|was found|can be concluded/.test(pattern.toString())) {
             reason = "Converted passive voice to active voice";
           }
-          
+
           changes.push({
             original: match,
             modified: match.replace(pattern, replacement),
@@ -478,7 +521,7 @@ const ContentHumanizer: React.FC = () => {
         });
       }
     });
-    
+
     return {
       content: humanized,
       changes: changes.slice(0, 5) // Limit to 5 changes for display
@@ -503,7 +546,7 @@ const ContentHumanizer: React.FC = () => {
   // UI Components
   const renderProgressBar = () => (
     <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-      <div 
+      <div
         className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
         style={{ width: `${content.progress}%` }}
       />
@@ -548,7 +591,7 @@ const ContentHumanizer: React.FC = () => {
           </button>
         )}
       </div>
-      
+
       {uploadedFile ? (
         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded border">
           <FileText className="h-5 w-5 text-gray-500" />
@@ -572,7 +615,7 @@ const ContentHumanizer: React.FC = () => {
             accept=".txt,.doc,.docx,.md,.rtf,.html"
             id="file-upload"
           />
-          <label 
+          <label
             htmlFor="file-upload"
             className="cursor-pointer flex flex-col items-center space-y-2"
           >
@@ -589,7 +632,37 @@ const ContentHumanizer: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Content Humanizer</h1>
       <p className="text-gray-600 mb-8">Transform AI-generated content into natural, human-like writing that engages readers and maintains your brand voice.</p>
-      
+
+      {/* Add Strategic Data Banner */}
+      {hasStrategicData && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <FileCheck className="text-green-600 w-5 h-5 mr-2" />
+            <h2 className="font-semibold text-green-800">Using Your Marketing Program</h2>
+          </div>
+          <p className="text-green-700 mt-2">
+            Your content will be humanized according to your brand's strategic foundation.
+          </p>
+          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {strategicData?.product?.name && (
+              <div className="text-sm">
+                <span className="font-medium">Product:</span> {strategicData.product.name}
+              </div>
+            )}
+            {strategicData?.brandVoice?.brandVoice?.tone && (
+              <div className="text-sm">
+                <span className="font-medium">Brand Voice:</span> {strategicData.brandVoice.brandVoice.tone}
+              </div>
+            )}
+            {strategicData?.writingStyle?.styleGuide?.primary && (
+              <div className="text-sm">
+                <span className="font-medium">Style Guide:</span> {strategicData.writingStyle.styleGuide.primary}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* AI Insights Panel - only show if there are insights */}
       {aiInsights.length > 0 && (
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8">
@@ -607,7 +680,7 @@ const ContentHumanizer: React.FC = () => {
           </ul>
         </div>
       )}
-      
+
       {/* Enhanced Options Panel */}
       <Card className="mb-6">
         <CardHeader>
@@ -617,7 +690,7 @@ const ContentHumanizer: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Tone</label>
-              <select 
+              <select
                 className="w-full p-2 border rounded"
                 value={options.tone}
                 onChange={(e) => setOptions(prev => ({ ...prev, tone: e.target.value }))}
@@ -631,12 +704,12 @@ const ContentHumanizer: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Formality</label>
-              <select 
+              <select
                 className="w-full p-2 border rounded"
                 value={options.formality}
-                onChange={(e) => setOptions(prev => ({ 
-                  ...prev, 
-                  formality: e.target.value as 'formal' | 'neutral' | 'casual' 
+                onChange={(e) => setOptions(prev => ({
+                  ...prev,
+                  formality: e.target.value as 'formal' | 'neutral' | 'casual'
                 }))}
               >
                 <option value="formal">Formal</option>
@@ -646,11 +719,11 @@ const ContentHumanizer: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Creativity Level</label>
-              <select 
+              <select
                 className="w-full p-2 border rounded"
                 value={options.creativity}
-                onChange={(e) => setOptions(prev => ({ 
-                  ...prev, 
+                onChange={(e) => setOptions(prev => ({
+                  ...prev,
                   creativity: e.target.value as 'low' | 'medium' | 'high'
                 }))}
               >
@@ -668,9 +741,9 @@ const ContentHumanizer: React.FC = () => {
                 type="text"
                 className="w-full p-2 border rounded"
                 value={options.industryContext}
-                onChange={(e) => setOptions(prev => ({ 
-                  ...prev, 
-                  industryContext: e.target.value 
+                onChange={(e) => setOptions(prev => ({
+                  ...prev,
+                  industryContext: e.target.value
                 }))}
                 placeholder="e.g., Technology, Healthcare"
               />
@@ -730,11 +803,11 @@ const ContentHumanizer: React.FC = () => {
         <CardContent>
           {/* File Upload Section */}
           {renderFileUploadSection()}
-          
+
           <div className="mb-2 text-sm text-gray-600">
             Or enter your content directly:
           </div>
-          
+
           <textarea
             value={content.original}
             onChange={(e) => setContent(prev => ({
@@ -766,7 +839,7 @@ const ContentHumanizer: React.FC = () => {
 
       {/* Progress and Errors */}
       {content.processing && renderProgressBar()}
-      
+
       {content.error && (
         <Alert variant="destructive" className="mb-6">
           <AlertTriangle className="h-4 w-4" />
@@ -795,7 +868,7 @@ const ContentHumanizer: React.FC = () => {
       {content.enhanced && showComparison && (
         <>
           {renderStatistics()}
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Enhanced Content</CardTitle>

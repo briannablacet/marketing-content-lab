@@ -7,13 +7,15 @@ interface ContentEditChatProps {
     originalTitle?: string;
     contentType: string;
     onContentUpdate: (updatedContent: string, updatedTitle?: string) => void;
+    strategicContext?: any; // Add strategicContext to props
 }
 
 const ContentEditChat: React.FC<ContentEditChatProps> = ({
     originalContent,
     originalTitle,
     contentType,
-    onContentUpdate
+    onContentUpdate,
+    strategicContext
 }) => {
     const [messages, setMessages] = useState([
         {
@@ -23,13 +25,13 @@ const ContentEditChat: React.FC<ContentEditChatProps> = ({
     ]);
     const [userInput, setUserInput] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const messagesEndRef = useRef(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!userInput.trim()) return;
@@ -96,7 +98,8 @@ Despite their limitations by today's standards, these primitive word processors 
                         originalContent,
                         originalTitle,
                         userRequest: currentRequest,
-                        previousMessages: messages
+                        previousMessages: messages,
+                        strategicContext
                     }
                 }),
             });
