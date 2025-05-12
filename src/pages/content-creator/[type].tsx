@@ -31,6 +31,23 @@ import {
   X,
   Check
 } from 'lucide-react';
+// Add this after all your imports but before your component starts
+function resetStyleAndWalkthrough() {
+  // Force set the writing style as completed
+  localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify({
+    completed: true,
+    styleGuide: {
+      primary: 'Chicago Manual of Style',
+      completed: true
+    }
+  }));
+
+  // Force set walkthrough as completed
+  localStorage.setItem('content-creator-walkthrough-completed', 'true');
+  localStorage.setItem('walkthrough-completed', 'true');
+
+  console.log('Reset applied');
+}
 
 // Define content types directly in this file to ensure proper format
 const CONTENT_TYPES = [
@@ -218,10 +235,9 @@ const ContentCreatorPage = () => {
           (data.product && data.product.name) ||
           (data.audiences && data.audiences.length > 0) ||
           (data.messaging && data.messaging.valueProposition) ||
-          (data.writingStyle && data.writingStyle.styleGuide)
+          (data.writingStyle && data.writingStyle.styleGuide && data.writingStyle.styleGuide.primary)
         );
         setHasStrategicData(hasData);
-
         // Pre-fill advanced options if we have strategic data
         if (hasData) {
           setAdvancedOptions(prev => {
@@ -1385,10 +1401,55 @@ const ContentCreatorPage = () => {
           ))}
         </div>
       </div>
+      {/* TEMPORARY DEBUG BUTTON - REMOVE AFTER FIXING */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <button
+          onClick={() => {
+            // Clear all walkthrough and writing style flags
+            const keysToDelete = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && (
+                key.includes('walkthrough') ||
+                key.includes('writing-style') ||
+                key.includes('marketing-content-lab-writing-style')
+              )) {
+                keysToDelete.push(key);
+              }
+            }
 
+            // Delete identified keys
+            keysToDelete.forEach(key => localStorage.removeItem(key));
+
+            // Set fixed versions of keys
+            localStorage.setItem('content-creator-walkthrough-completed', 'true');
+            localStorage.setItem('writing-style-completed', 'true');
+            localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify({
+              completed: true,
+              styleGuide: { primary: 'Chicago Manual of Style' }
+            }));
+
+            // Reload the page
+            window.location.reload();
+          }}
+          className="bg-red-600 text-white px-3 py-2 rounded-md text-sm shadow-lg"
+        >
+          Reset Walkthroughs
+        </button>
+      </div>
       {/* Content for active tab */}
       {renderTabContent()}
+
+      <div className="fixed bottom-4 right-4 z-50">
+        <button
+          onClick={resetStyleAndWalkthrough}
+          className="bg-red-600 text-white px-3 py-2 rounded-md text-sm shadow-lg"
+        >
+          Fix Prompts
+        </button>
+      </div>
     </div>
+
   );
 };
 
