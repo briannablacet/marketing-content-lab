@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Reset Marketing Content Lab Settings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f1f5f9;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Reset Marketing Content Lab Settings</h1>
+    <p>This tool will clear walkthrough flags and other settings that might be causing issues.</p>
+
+    <button id="showStorageBtn">Show Current LocalStorage Items</button>
+    <button id="clearWalkthroughBtn">Clear Walkthrough Flags</button>
+    <button id="clearAllBtn">Clear All Marketing Content Lab Data</button>
+
+    <div class="result" id="result"></div>
+
+    <script>
+        document.getElementById('showStorageBtn').addEventListener('click', function () {
+            const result = document.getElementById('result');
+            let allItems = '';
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                allItems += `<b>${key}</b>: ${localStorage.getItem(key).substring(0, 50)}...<br>`;
+            }
+
+            result.innerHTML = allItems || 'No localStorage items found';
+        });
+
+        document.getElementById('clearWalkthroughBtn').addEventListener('click', function () {
+            const walkthroughKeys = [
+                'content-creator-walkthrough-completed',
+                'walkthrough-completed',
+                'writing-style-completed',
+                'marketing-content-lab-walkthrough'
+            ];
+
+            const result = document.getElementById('result');
+            let cleared = '';
+
+            walkthroughKeys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    cleared += `Cleared: ${key}<br>`;
+                }
+            });
+
+            result.innerHTML = cleared || 'No walkthrough flags found to clear';
+        });
+
+        document.getElementById('clearAllBtn').addEventListener('click', function () {
+            const result = document.getElementById('result');
+            let cleared = '';
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('marketing') ||
+                    key.includes('walkthrough') ||
+                    key.includes('content') ||
+                    key.includes('writing-style')) {
+                    cleared += `Cleared: ${key}<br>`;
+                    localStorage.removeItem(key);
+                    i--; // Adjust index since we're removing items
+                }
+            }
+
+            result.innerHTML = cleared || 'No Marketing Content Lab data found to clear';
+        });
+    </script>
+</body>
+
+</html>
