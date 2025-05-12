@@ -3,8 +3,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, RefreshCw, ArrowUp, CheckCircle, AlertCircle } from 'lucide-react';
-import StrategicDataService from '../../services/StrategicDataService';
-import { callApiWithStrategicData } from '../../services/ApiStrategicConnector';
+import StrategicDataService from '../../../services/StrategicDataService';
+import { callApiWithStrategicData } from '../../../services/ApiStrategicConnector';
 
 // Sample prompt suggestions based on content type
 const PROMPT_SUGGESTIONS = {
@@ -204,8 +204,8 @@ const ContentEditChat = ({
                             >
                                 <div
                                     className={`max-w-3/4 rounded-lg px-4 py-2 ${message.role === 'user'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-200 text-gray-800'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-200 text-gray-800'
                                         }`}
                                 >
                                     {message.content}
@@ -221,10 +221,10 @@ const ContentEditChat = ({
             {statusMessage && (
                 <div
                     className={`px-4 py-2 text-sm ${statusMessage.type === 'error'
-                            ? 'bg-red-100 text-red-800'
-                            : statusMessage.type === 'success'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-blue-100 text-blue-800'
+                        ? 'bg-red-100 text-red-800'
+                        : statusMessage.type === 'success'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-blue-100 text-blue-800'
                         }`}
                 >
                     <div className="flex items-center">
