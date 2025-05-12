@@ -1021,9 +1021,16 @@ Make the personas realistic, specific and detail-oriented.`;
       ],
       temperature: 0.7,
     });
+    if (completion.choices.length === 0) {
+      console.log("No choices returned from OpenAI");
+      return res.status(500).json({
+        error: 'No response from AI',
+        message: 'Failed to generate personas'
+      });
+    }
 
     const responseText = completion.choices[0].message?.content || '';
-    console.log("Got OpenAI response");
+    console.log("Received response from OpenAI for personas",completion);
 
     try {
       // Parse the JSON response
