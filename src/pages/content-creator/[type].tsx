@@ -347,6 +347,8 @@ const ContentCreatorPage = () => {
     }
   };
 
+  // Replace the handleGenerateContent function in [type].tsx with this version
+
   // Handle content generation with strategic data integration
   const handleGenerateContent = async () => {
     // Validate inputs
@@ -371,35 +373,27 @@ const ContentCreatorPage = () => {
         }
       };
 
-      // Enrich with strategic data - THIS IS THE KEY PART THAT ENSURES STRATEGIC DATA IS USED!
-      const enrichedRequest = await StrategicDataService.enrichContentRequest(baseRequest);
-      console.log('Enriched API request with strategic data:', enrichedRequest);
+      // Log the request details
+      console.log('Content generation request details:', {
+        contentType: contentType?.id,
+        promptLength: promptText.length,
+        selectedTone: advancedOptions.tone,
+        keywordCount: advancedOptions.keywords ? advancedOptions.keywords.split(',').length : 0,
+      });
 
-      // Log which strategic elements are being used
-      if (strategicData) {
-        console.log('Strategic elements used:', {
-          hasProduct: !!strategicData.product?.name,
-          hasAudience: strategicData.audiences?.length > 0,
-          hasMessaging: !!strategicData.messaging?.valueProposition,
-          hasBrandVoice: !!strategicData.brandVoice?.brandVoice?.tone,
-          hasWritingStyle: !!strategicData.writingStyle?.styleGuide?.primary,
-          hasKeywords: strategicData.seoKeywords?.primaryKeywords?.length > 0
-        });
-      }
-
-      // Send request to API
+      // Skip the enrichment step and make direct API call to ensure it works
       let apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
       let endpointName = 'generate-content';
 
       // Prepare the final API payload
       const payload = {
         endpoint: endpointName,
-        data: enrichedRequest  // Use the enriched request with strategic data included
+        data: baseRequest
       };
 
-      console.log('Sending API request with payload:', payload);
+      console.log('Sending API request with payload:', JSON.stringify(payload).substring(0, 500) + '...');
 
-      // Call API
+      // Call API with proper error handling
       const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
@@ -408,23 +402,32 @@ const ContentCreatorPage = () => {
         body: JSON.stringify(payload),
       });
 
+      // Check if the response is ok before proceeding
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `API responded with status ${response.status}`);
+        const errorText = await response.text();
+        console.error('API response not OK:', response.status, errorText);
+        throw new Error(`API responded with status ${response.status}: ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log('API Response:', data);
+      // Try to parse the response as JSON
+      let data;
+      try {
+        data = await response.json();
+        console.log('API Response received:', data ? 'success' : 'empty');
+      } catch (jsonError) {
+        console.error('Failed to parse JSON response:', jsonError);
+        throw new Error('Invalid response format from API');
+      }
 
       // Process the generated content
-      if (data.content) {
+      if (data && data.content) {
         setGeneratedContent(data.content);
 
         // Set the title
         if (data.title) {
           setGeneratedTitle(data.title);
         } else {
-          // Extract title from content or use placeholder
+          // Extract title from content or use default
           const firstLine = data.content.split('\n')[0].replace(/^#\s*/, '');
           setGeneratedTitle(firstLine || 'Generated Content');
         }
@@ -440,7 +443,7 @@ const ContentCreatorPage = () => {
 
           // Generate basic metadata
           setGeneratedMetadata({
-            title: data.title || generatedTitle || 'Generated Content',
+            title: data.title || firstLine || 'Generated Content',
             description: data.content.substring(0, 160),
             keywords: currentKeywords,
           });
@@ -451,86 +454,23 @@ const ContentCreatorPage = () => {
         // Automatically switch to edit tab
         setActiveTab('edit');
       } else {
-        throw new Error('No content returned from API');
+        // If we got a response but no content, throw an error
+        console.error('No content in API response:', data);
+        throw new Error('The API returned a response but no content was generated');
       }
     } catch (error) {
       console.error('Error generating content:', error);
-      showNotification('error', `Failed to generate content: ${error.message}`);
+      showNotification('error', `Failed to generate content: ${error.message || 'Unknown error'}`);
 
-      // Generate fallback content for demo purposes
-      const mockTitle = `Sample ${contentType?.title || 'Content'}`;
-      let mockContent = [
-        `# ${mockTitle}`,
-        '',
-        `This is a sample ${contentType?.title?.toLowerCase() || 'content'} ${promptText ? `about "${promptText}"` : ''}. `,
-        ''
-      ];
-
-      // Add strategic elements to the mock content if available
-      if (hasStrategicData) {
-        mockContent.push(`## About ${strategicData?.product?.name || 'Our Product'}`);
-
-        if (strategicData?.product?.valueProposition) {
-          mockContent.push(strategicData.product.valueProposition);
-        } else {
-          mockContent.push('Our product helps customers achieve their goals more effectively.');
-        }
-        mockContent.push('');
-
-        mockContent.push(`## For ${strategicData?.audiences?.[0]?.role || 'Our Target Audience'}`);
-        if (strategicData?.audiences?.[0]?.challenges?.length > 0) {
-          mockContent.push('We understand the challenges you face:');
-          strategicData.audiences[0].challenges.forEach(challenge => {
-            mockContent.push(`- ${challenge}`);
-          });
-        } else {
-          mockContent.push('We understand the challenges you face in your industry.');
-        }
-        mockContent.push('');
-
-        mockContent.push('## Key Benefits');
-        if (strategicData?.messaging?.keyDifferentiators?.length > 0) {
-          strategicData.messaging.keyDifferentiators.forEach(diff => {
-            mockContent.push(`- ${diff}`);
-          });
-        } else {
-          mockContent.push('- Improved efficiency');
-          mockContent.push('- Better results');
-          mockContent.push('- Long-term value');
-        }
-        mockContent.push('');
-      } else {
-        // Generic content if no strategic data
-        mockContent.push('## Introduction');
-        mockContent.push('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.');
-        mockContent.push('');
-        mockContent.push('## Main Point 1');
-        mockContent.push('Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.');
-        mockContent.push('');
-        mockContent.push('## Main Point 2');
-        mockContent.push('Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.');
-      }
-
-      mockContent.push('');
-      mockContent.push('## Conclusion');
-      mockContent.push('Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.');
-
-      const finalMockContent = mockContent.join('\n');
-
-      setGeneratedTitle(mockTitle);
-      setGeneratedContent(finalMockContent);
-      setGeneratedMetadata({
-        title: mockTitle,
-        description: 'This is a sample meta description for the generated content.',
-        keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k) || ['sample', 'content', 'marketing']
-      });
-
-      // Even with fallback, still switch to edit tab
-      setActiveTab('edit');
+      // Important: Do NOT add any fallback "sample" content here
+      // Instead, let the user know they need to try again
+      showNotification('error', 'Please try again or check your internet connection');
     } finally {
       setIsGenerating(false);
     }
   };
+
+
 
   // Handle content updates from the chat component
   const handleContentUpdate = (newContent, newTitle) => {
