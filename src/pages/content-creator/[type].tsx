@@ -382,7 +382,6 @@ const ContentCreatorPage = () => {
       });
 
       // Skip the enrichment step and make direct API call to ensure it works
-      let apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
       let endpointName = 'generate-content';
 
       // Prepare the final API payload
@@ -394,10 +393,11 @@ const ContentCreatorPage = () => {
       console.log('Sending API request with payload:', JSON.stringify(payload).substring(0, 500) + '...');
 
       // Call API with proper error handling
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch(`/api/api_endpoints`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(payload),
       });
@@ -429,7 +429,7 @@ const ContentCreatorPage = () => {
         } else {
           // Extract title from content or use default
           const firstLine = data.content.split('\n')[0].replace(/^#\s*/, '');
-          setGeneratedTitle(firstLine || 'Generated Content');
+          setGeneratedTitle('Generated Content');
         }
 
         // Set metadata

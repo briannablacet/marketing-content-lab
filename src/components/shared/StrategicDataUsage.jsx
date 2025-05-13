@@ -52,7 +52,7 @@ export const callApiWithStrategicData = async (endpoint, data) => {
     }
 
     // Make the API call with either enriched or original data
-    const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
+    const apiEndpoint = `${process.env.NEXT_PUBLIC_API_URL || '/api'}`;
 
     try {
         console.log(`Making API call to ${endpoint}${wasEnriched ? ' with enriched data' : ''}`);
@@ -65,6 +65,7 @@ export const callApiWithStrategicData = async (endpoint, data) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
             },
             body: JSON.stringify({
                 endpoint,
