@@ -356,9 +356,9 @@ const ContentCreatorPage = () => {
       showNotification('error', 'Please enter a prompt or upload content');
       return;
     }
-
+  
     setIsGenerating(true);
-
+  
     try {
       // Create base request
       const baseRequest = {
@@ -369,10 +369,10 @@ const ContentCreatorPage = () => {
           audience: advancedOptions.audience,
           tone: advancedOptions.tone,
           keywords: advancedOptions.keywords.split(',').map(k => k.trim()).filter(k => k),
-          additionalNotes: advancedOptions.additionalNotes
-        }
+          additionalNotes: advancedOptions.additionalNotes,
+        },
       };
-
+  
       // Log the request details
       console.log('Content generation request details:', {
         contentType: contentType?.id,
@@ -380,88 +380,85 @@ const ContentCreatorPage = () => {
         selectedTone: advancedOptions.tone,
         keywordCount: advancedOptions.keywords ? advancedOptions.keywords.split(',').length : 0,
       });
-
-      // Skip the enrichment step and make direct API call to ensure it works
-      let endpointName = 'generate-content';
-
+  
+      // Define the API endpoint
+      const endpointName = 'generate-content';
+  
       // Prepare the final API payload
       const payload = {
         endpoint: endpointName,
-        data: baseRequest
+        data: baseRequest,
       };
-
+  
       console.log('Sending API request with payload:', JSON.stringify(payload).substring(0, 500) + '...');
-
+  
       // Call API with proper error handling
-      const response = await fetch(`/api/api_endpoints`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(payload),
       });
-
+  
       // Check if the response is ok before proceeding
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API response not OK:', response.status, errorText);
-        throw new Error(`API responded with status ${response.status}: ${errorText}`);
+        const errorJson = await response.json();
+        console.error('API response not OK:', response.status, errorJson);
+        throw new Error(`API responded with status ${response.status}: ${JSON.stringify(errorJson)}`);
       }
-
-      // Try to parse the response as JSON
-      let data;
-      try {
-        data = await response.json();
-        console.log('API Response received:', data ? 'success' : 'empty');
-      } catch (jsonError) {
-        console.error('Failed to parse JSON response:', jsonError);
-        throw new Error('Invalid response format from API');
-      }
-
+  
+      // Parse the response as JSON
+      const jsonResponse = await response.json();
+      const data = jsonResponse.data;
+  
+      console.log('API Response received:', data ? 'success' : 'empty');
+  
       // Process the generated content
-      if (data && data.content) {
-        setGeneratedContent(data.content);
-
-        // Set the title
-        if (data.title) {
-          setGeneratedTitle(data.title);
+      if (data && data.document) {
+        const document = data.document;
+  
+        // Set the generated content
+        if (document.processedContent) {
+          setGeneratedContent(document.processedContent);
         } else {
-          // Extract title from content or use default
-          const firstLine = data.content.split('\n')[0].replace(/^#\s*/, '');
+          throw new Error('Processed content is missing in the response');
+        }
+  
+        // Set the title
+        if (document.metadata && document.metadata.parameters && document.metadata.parameters.title) {
+          setGeneratedTitle(document.metadata.parameters.title);
+        } else if (document.processedContent) {
+          const firstLine = document.processedContent.split('\n')[0].replace(/^#\s*/, '');
+          setGeneratedTitle(firstLine || 'Generated Content');
+        } else {
           setGeneratedTitle('Generated Content');
         }
-
+  
         // Set metadata
-        if (data.metadata) {
-          setGeneratedMetadata(data.metadata);
+        if (document.metadata) {
+          setGeneratedMetadata(document.metadata);
         } else {
           const currentKeywords = advancedOptions.keywords
             .split(',')
             .map(k => k.trim())
             .filter(k => k);
-
+  
           // Generate basic metadata
           setGeneratedMetadata({
-            title: data.title || firstLine || 'Generated Content',
-            description: data.content.substring(0, 160),
+            title: document.metadata?.parameters?.title || 'Generated Content',
+            description: document.processedContent?.substring(0, 160) || '',
             keywords: currentKeywords,
           });
         }
-
-        showNotification('success', 'Content generated successfully!');
-
-        // Automatically switch to edit tab
-        setActiveTab('edit');
       } else {
-        // If we got a response but no content, throw an error
-        console.error('No content in API response:', data);
-        throw new Error('The API returned a response but no content was generated');
+        throw new Error('Invalid response format from API');
       }
     } catch (error) {
       console.error('Error generating content:', error);
       showNotification('error', `Failed to generate content: ${error.message || 'Unknown error'}`);
-
+  
       // Important: Do NOT add any fallback "sample" content here
       // Instead, let the user know they need to try again
       showNotification('error', 'Please try again or check your internet connection');
