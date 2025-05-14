@@ -1,4 +1,4 @@
-// src/components/features/ContentEditChat.jsx
+// src/components/features/ContentEditChat/index.tsx
 // Enhanced ContentEditChat component that leverages strategic data
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -53,6 +53,7 @@ const ContentEditChat = ({
     const [suggestionIndex, setSuggestionIndex] = useState(0);
     const [statusMessage, setStatusMessage] = useState(null);
     const [loadedStrategicData, setLoadedStrategicData] = useState(null);
+    const [error, setError] = useState(null); // Added error state
 
     const messagesEndRef = useRef(null);
 
@@ -84,6 +85,13 @@ const ContentEditChat = ({
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Clear error when user types
+    useEffect(() => {
+        if (error && inputValue) {
+            setError(null);
+        }
+    }, [inputValue, error]);
+
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -96,9 +104,11 @@ const ContentEditChat = ({
         // Add user message to chat
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setInputValue('');
+        setSelectedSuggestion(null);
         setSuggestionIndex(0);
         setIsLoading(true);
         setStatusMessage({ type: 'info', text: 'Updating content...' });
+        setError(null); // Clear any previous errors
 
         try {
             // Prepare request with original content and conversation history
@@ -130,21 +140,46 @@ const ContentEditChat = ({
                 hasToneContext: !!stratContext.tone
             });
 
-            // Call the API with strategic data
-            const response = await callApiWithStrategicData('modify-content', requestData);
+            // Direct API call to the same endpoint that's working for content generation
+            // This ensures consistency with how other parts of the app call the API
+            console.log('Making direct API call to /api/api_endpoints for modify-content');
 
-            if (response) {
+            const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
+
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    endpoint: 'modify-content',
+                    data: requestData,
+                }),
+            });
+
+            // Check if response is ok
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Content edit API error:', response.status, errorText);
+                throw new Error(`API error: ${response.status} - ${response.statusText}`);
+            }
+
+            // Parse the response
+            const data = await response.json();
+            console.log('Content edit API response:', data);
+
+            if (data) {
                 // Add assistant response to chat
                 setMessages(prev => [...prev, {
                     role: 'assistant',
-                    content: response.message || 'Content updated successfully.'
+                    content: data.message || 'Content updated successfully.'
                 }]);
 
                 // Update the content in parent component
-                if (response.updatedContent && onContentUpdate) {
+                if (data.updatedContent && onContentUpdate) {
                     onContentUpdate(
-                        response.updatedContent,
-                        response.updatedTitle || originalTitle
+                        data.updatedContent,
+                        data.updatedTitle || originalTitle
                     );
 
                     setStatusMessage({
@@ -155,19 +190,26 @@ const ContentEditChat = ({
                     // Clear status after 3 seconds
                     setTimeout(() => setStatusMessage(null), 3000);
                 }
+            } else {
+                throw new Error('No response data received from API');
             }
         } catch (error) {
             console.error('Error updating content:', error);
 
+            // Add error message to chat
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: 'Sorry, I was unable to update the content. Please try again with a different request.'
             }]);
 
+            // Set status message
             setStatusMessage({
                 type: 'error',
                 text: 'Failed to update content. Please try again.'
             });
+
+            // Set error for display
+            setError(`Error: ${error.message || 'Failed to update content'}`);
         } finally {
             setIsLoading(false);
         }
@@ -183,6 +225,7 @@ const ContentEditChat = ({
 
     const handleSuggestionClick = (suggestion) => {
         setSelectedSuggestion(suggestion);
+        setInputValue(suggestion);
         handleSubmit({ preventDefault: () => { } });
     };
 
@@ -216,6 +259,16 @@ const ContentEditChat = ({
                     </div>
                 )}
             </div>
+
+            {/* Error Message */}
+            {error && (
+                <div className="px-4 py-2 bg-red-50 text-red-700 rounded-md text-sm mx-4 mb-2">
+                    <div className="flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {error}
+                    </div>
+                </div>
+            )}
 
             {/* Status Message */}
             {statusMessage && (
@@ -257,7 +310,10 @@ const ContentEditChat = ({
                         <button
                             key={index}
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm whitespace-nowrap hover:bg-gray-100"
+                            className={`px-3 py-1.5 border rounded-full text-sm whitespace-nowrap ${selectedSuggestion === suggestion
+                                ? 'bg-blue-100 border-blue-300 text-blue-800'
+                                : 'bg-white border-gray-300 hover:bg-gray-100'
+                                }`}
                         >
                             {suggestion}
                         </button>
@@ -278,7 +334,7 @@ const ContentEditChat = ({
                     />
                     <button
                         type="submit"
-                        className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
                         disabled={isLoading || (!inputValue.trim() && !selectedSuggestion)}
                     >
                         {isLoading ? (
