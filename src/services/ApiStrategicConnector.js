@@ -61,6 +61,9 @@ const callApiDirectly = async (endpoint, data) => {
 
     console.log(`Making API call to ${apiEndpoint} for endpoint: ${endpoint}`);
 
+    // Add this console log to debug the API URL
+    console.log(`Making API call to ${apiEndpoint} for endpoint: ${endpoint}`);
+
     try {
         const response = await fetch(apiEndpoint, {
             method: 'POST',

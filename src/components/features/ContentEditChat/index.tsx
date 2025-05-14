@@ -1,10 +1,10 @@
-// src/components/features/ContentEditChat.jsx
+// src/components/features/ContentEditChat/index.tsx
 // Enhanced ContentEditChat component that leverages strategic data
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, RefreshCw, ArrowUp, CheckCircle, AlertCircle } from 'lucide-react';
 import StrategicDataService from '../../../services/StrategicDataService';
-import { callApiWithStrategicData } from '../../../services/ApiStrategicConnector';
+import ApiStrategicConnector, { callApiWithStrategicData } from '../../../services/ApiStrategicConnector';
 
 // Sample prompt suggestions based on content type
 const PROMPT_SUGGESTIONS = {
@@ -53,6 +53,8 @@ const ContentEditChat = ({
     const [suggestionIndex, setSuggestionIndex] = useState(0);
     const [statusMessage, setStatusMessage] = useState(null);
     const [loadedStrategicData, setLoadedStrategicData] = useState(null);
+    const [error, setError] = useState(null); // Added error state
+    const [selectedSuggestion, setSelectedSuggestion] = useState(null);
 
     const messagesEndRef = useRef(null);
 
@@ -84,9 +86,18 @@ const ContentEditChat = ({
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Clear error when user types
+    useEffect(() => {
+        if (error && inputValue) {
+            setError(null);
+        }
+    }, [inputValue, error]);
+
     // Handle form submission
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) {
+            e.preventDefault();
+        }
 
         if (!inputValue.trim() && !selectedSuggestion) return;
 
@@ -96,9 +107,11 @@ const ContentEditChat = ({
         // Add user message to chat
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setInputValue('');
+        setSelectedSuggestion(null);
         setSuggestionIndex(0);
         setIsLoading(true);
         setStatusMessage({ type: 'info', text: 'Updating content...' });
+        setError(null); // Clear any previous errors
 
         try {
             // Prepare request with original content and conversation history
@@ -130,8 +143,11 @@ const ContentEditChat = ({
                 hasToneContext: !!stratContext.tone
             });
 
-            // Call the API with strategic data
+            // UPDATED: Use the ApiStrategicConnector that's working for other features
+            console.log('Submitting content edit request');
             const response = await callApiWithStrategicData('modify-content', requestData);
+
+            console.log('Content edit API response:', response);
 
             if (response) {
                 // Add assistant response to chat
@@ -155,19 +171,26 @@ const ContentEditChat = ({
                     // Clear status after 3 seconds
                     setTimeout(() => setStatusMessage(null), 3000);
                 }
+            } else {
+                throw new Error('No response data received from API');
             }
         } catch (error) {
             console.error('Error updating content:', error);
 
+            // Add error message to chat
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: 'Sorry, I was unable to update the content. Please try again with a different request.'
             }]);
 
+            // Set status message
             setStatusMessage({
                 type: 'error',
                 text: 'Failed to update content. Please try again.'
             });
+
+            // Set error for display
+            setError(`Error: ${error.message || 'Failed to update content'}`);
         } finally {
             setIsLoading(false);
         }
@@ -179,10 +202,9 @@ const ContentEditChat = ({
     };
 
     // Handle suggestion selection
-    const [selectedSuggestion, setSelectedSuggestion] = useState(null);
-
     const handleSuggestionClick = (suggestion) => {
         setSelectedSuggestion(suggestion);
+        setInputValue(suggestion);
         handleSubmit({ preventDefault: () => { } });
     };
 
@@ -216,6 +238,16 @@ const ContentEditChat = ({
                     </div>
                 )}
             </div>
+
+            {/* Error Message */}
+            {error && (
+                <div className="px-4 py-2 bg-red-50 text-red-700 rounded-md text-sm mx-4 mb-2">
+                    <div className="flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {error}
+                    </div>
+                </div>
+            )}
 
             {/* Status Message */}
             {statusMessage && (
@@ -257,7 +289,10 @@ const ContentEditChat = ({
                         <button
                             key={index}
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm whitespace-nowrap hover:bg-gray-100"
+                            className={`px-3 py-1.5 border rounded-full text-sm whitespace-nowrap ${selectedSuggestion === suggestion
+                                ? 'bg-blue-100 border-blue-300 text-blue-800'
+                                : 'bg-white border-gray-300 hover:bg-gray-100'
+                                }`}
                         >
                             {suggestion}
                         </button>
@@ -278,7 +313,7 @@ const ContentEditChat = ({
                     />
                     <button
                         type="submit"
-                        className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
                         disabled={isLoading || (!inputValue.trim() && !selectedSuggestion)}
                     >
                         {isLoading ? (

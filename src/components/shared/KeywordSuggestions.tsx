@@ -46,101 +46,102 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
         setError('');
 
         try {
-            // Call the API to generate keywords
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keywords`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-              body: JSON.stringify({
-                data: {
-                  context: {
-                    topic: contentTopic,
-                    contentType: contentType,
-                    messages: [contentTopic],
-                    personas: ['Content marketer']
-                  }
-                }
-              })
+            // FIXED: Use the correct local API endpoint
+            const response = await fetch('/api/api_endpoints', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    endpoint: 'generate-keywords',
+                    data: {
+                        context: {
+                            topic: contentTopic,
+                            contentType: contentType,
+                            messages: [contentTopic],
+                            personas: ['Content marketer']
+                        }
+                    }
+                })
             });
-          
+
             if (!response.ok) {
-              throw new Error(`API responded with status ${response.status}`);
+                throw new Error(`API responded with status ${response.status}`);
             }
-          
+
             const result = await response.json();
             console.log('Full API response:', result);
-          
+
             // Extract the keyword data from the response structure
-            const keywordData = result.document
-          
+            // FIXED: Use the correct response format
+            const keywordData = result; // No need for .document as our API doesn't wrap it that way
+
             console.log('Extracted keyword data:', keywordData);
-          
+
             // Extract keywords from the response
             let extractedKeywords: string[] = [];
-          
+
             // Get primary keywords
             if (keywordData.primaryKeywords && Array.isArray(keywordData.primaryKeywords)) {
-              extractedKeywords = extractedKeywords.concat(
-                keywordData.primaryKeywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
-              );
+                extractedKeywords = extractedKeywords.concat(
+                    keywordData.primaryKeywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
+                );
             }
-          
+
             // Add secondary keywords
             if (keywordData.secondaryKeywords && Array.isArray(keywordData.secondaryKeywords)) {
-              extractedKeywords = extractedKeywords.concat(
-                keywordData.secondaryKeywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
-              );
+                extractedKeywords = extractedKeywords.concat(
+                    keywordData.secondaryKeywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
+                );
             }
-          
+
             // Add keywords from groups
             if (keywordData.keywordGroups && Array.isArray(keywordData.keywordGroups)) {
-              keywordData.keywordGroups.forEach((group: any) => {
-                if (group.keywords && Array.isArray(group.keywords)) {
-                  extractedKeywords = extractedKeywords.concat(
-                    group.keywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
-                  );
-                }
-              });
+                keywordData.keywordGroups.forEach((group: any) => {
+                    if (group.keywords && Array.isArray(group.keywords)) {
+                        extractedKeywords = extractedKeywords.concat(
+                            group.keywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
+                        );
+                    }
+                });
             }
-          
+
             // Process the keywords
             const filteredKeywords = [...new Set(extractedKeywords)]
-              .filter(kw => kw.trim() && !selectedKeywords.includes(kw))
-              .sort((a, b) => a.localeCompare(b)); // Optional: sort alphabetically
-          
+                .filter(kw => kw.trim() && !selectedKeywords.includes(kw))
+                .sort((a, b) => a.localeCompare(b)); // Optional: sort alphabetically
+
             console.log('Final filtered keywords:', filteredKeywords);
             setSuggestedKeywords(filteredKeywords);
             showNotification('success', 'Keywords generated successfully');
-          
-          } catch (err) {
+
+        } catch (err) {
             console.error('Error generating keywords:', err);
             setError('Failed to generate keyword suggestions');
-          
+
             // Improved fallback keywords
             const topicWords = contentTopic.toLowerCase()
-              .split(/\s+/)
-              .filter(word => word.length > 3 && !['create', 'blog', 'post'].includes(word));
-          
+                .split(/\s+/)
+                .filter(word => word.length > 3 && !['create', 'blog', 'post'].includes(word));
+
             const fallbackKeywords = [
-              ...topicWords,
-              ...topicWords.map(word => `${word} tips`),
-              ...topicWords.map(word => `best ${word}`),
-              ...topicWords.map(word => `${word} strategy`),
-              `${contentType} guide`,
-              `${contentType} best practices`,
-              `how to ${contentTopic.toLowerCase().split('\n')[0]}`,
-              ...(contentType ? [`${contentType} examples`, `${contentType} ideas`] : [])
+                ...topicWords,
+                ...topicWords.map(word => `${word} tips`),
+                ...topicWords.map(word => `best ${word}`),
+                ...topicWords.map(word => `${word} strategy`),
+                `${contentType} guide`,
+                `${contentType} best practices`,
+                `how to ${contentTopic.toLowerCase().split('\n')[0]}`,
+                ...(contentType ? [`${contentType} examples`, `${contentType} ideas`] : [])
             ].filter(kw => kw.trim() && kw.length > 3);
-          
+
             const filteredFallbacks = [...new Set(fallbackKeywords)]
-              .filter(kw => !selectedKeywords.includes(kw));
-          
+                .filter(kw => !selectedKeywords.includes(kw));
+
             setSuggestedKeywords(filteredFallbacks.slice(0, 15)); // Limit fallback suggestions
-          } finally {
+        } finally {
             setIsLoading(false);
-          }
+        }
     };
 
     // Add a keyword to the selected list
