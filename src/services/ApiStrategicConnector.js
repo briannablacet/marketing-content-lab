@@ -55,7 +55,11 @@ export const callApiWithStrategicData = async (endpoint, data) => {
  * @returns {Promise<object>} - The API response
  */
 const callApiDirectly = async (endpoint, data) => {
-    const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
+    // IMPORTANT: Always use the relative path for API calls
+    // This ensures requests go to the correct endpoint regardless of environment
+    const apiEndpoint = '/api/api_endpoints';
+
+    console.log(`Making API call to ${apiEndpoint} for endpoint: ${endpoint}`);
 
     try {
         const response = await fetch(apiEndpoint, {
@@ -70,7 +74,8 @@ const callApiDirectly = async (endpoint, data) => {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
+            // Use a try/catch for parsing JSON in case the response isn't valid JSON
+            const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || `API responded with status ${response.status}`);
         }
 
