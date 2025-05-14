@@ -409,7 +409,7 @@ Return response as JSON with these fields:
 }
 
 // Implement generate keywords handler
-async function handleGenerateKeywords(data: any, res: NextApiResponse) {
+async function handleGenerateKeywords(data, res) {
   try {
     // Validate input
     if (!data.context) {
@@ -422,142 +422,41 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
     // Extract context data
     const { messages, personas, productInfo, topic, contentType } = data.context;
 
-    // Build topic text from available data
-    const topicText = topic ||
-      (Array.isArray(messages) ? messages.join(". ") : messages) ||
-      (productInfo?.valueProposition) ||
-      "content marketing";
+    console.log("Forwarding keyword generation request to backend");
 
-    console.log("Generating keywords for topic:", topicText);
+    // Forward the request to your backend
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+    const backendEndpoint = `${backendUrl}/api/documents/keywords`;
 
-    // Generate a prompt for keyword generation
-    const prompt = `Generate SEO keywords for: ${topicText}
-    Target audience: ${Array.isArray(personas) ? personas.join(", ") : personas || "marketing professionals"}
-    Content type: ${contentType || "blog post"}
-    
-    Please provide the following in your response:
-    1. Primary Keywords (5-7 most important keywords directly related to the topic)
-    2. Secondary Keywords (8-10 supporting keywords, related terms, and long-tail variations)
-    3. Keyword Groups (3-4 thematic groups of related keywords)
-    
-    Format your response as a JSON object with these exact fields:
-    {
-      "primaryKeywords": ["keyword1", "keyword2", ...],
-      "secondaryKeywords": ["keyword1", "keyword2", ...],
-      "keywordGroups": [
-        {
-          "category": "Group Name",
-          "keywords": ["keyword1", "keyword2", ...]
-        }
-      ]
-    }
-    
-    Ensure your response is valid JSON that can be parsed.`;
+    console.log(`Forwarding to: ${backendEndpoint}`);
 
-    try {
-      // Call OpenAI to generate keywords
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
-        messages: [
-          { role: 'system', content: 'You are an SEO expert specialized in keyword research.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
+    const response = await fetch(backendEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Make sure to pass the data in the format the backend expects
+      body: JSON.stringify(data.context),
+    });
+
+    // Check for and handle errors
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Backend API error: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({
+        error: `API error: ${response.status}`,
+        message: errorText
       });
-
-      // Get response text
-      const responseText = completion.choices[0].message?.content || '';
-      console.log("Got keyword response:", responseText.substring(0, 100) + "...");
-
-      try {
-        // Try to parse the JSON response
-        const parsedResponse = JSON.parse(responseText);
-        return res.status(200).json(parsedResponse);
-      } catch (parseError) {
-        console.error('Failed to parse keyword response:', parseError);
-
-        // If we can't parse the response, return the fallback
-        const fallbackResponse = {
-          primaryKeywords: [
-            "content marketing",
-            "blog post",
-            "marketing strategy",
-            "content creation",
-            "digital marketing"
-          ],
-          secondaryKeywords: [
-            "content strategy",
-            "marketing examples",
-            "content tips",
-            "blog ideas",
-            "SEO content",
-            "content optimization",
-            "marketing plan",
-            "content calendar"
-          ],
-          keywordGroups: [
-            {
-              category: "Content Types",
-              keywords: ["blog posts", "social media content", "email newsletters", "ebooks", "white papers"]
-            },
-            {
-              category: "Marketing Goals",
-              keywords: ["lead generation", "brand awareness", "customer engagement", "conversion rate"]
-            },
-            {
-              category: "Content Strategy",
-              keywords: ["content planning", "content distribution", "content audit", "editorial calendar"]
-            }
-          ]
-        };
-
-        return res.status(200).json(fallbackResponse);
-      }
-    } catch (apiError) {
-      console.error('OpenAI API error:', apiError);
-
-      // Return fallback keywords if the API call fails
-      const fallbackResponse = {
-        primaryKeywords: [
-          "content marketing",
-          "blog post",
-          "marketing strategy",
-          "content creation",
-          "digital marketing"
-        ],
-        secondaryKeywords: [
-          "content strategy",
-          "marketing examples",
-          "content tips",
-          "blog ideas",
-          "SEO content",
-          "content optimization",
-          "marketing plan",
-          "content calendar"
-        ],
-        keywordGroups: [
-          {
-            category: "Content Types",
-            keywords: ["blog posts", "social media content", "email newsletters", "ebooks", "white papers"]
-          },
-          {
-            category: "Marketing Goals",
-            keywords: ["lead generation", "brand awareness", "customer engagement", "conversion rate"]
-          },
-          {
-            category: "Content Strategy",
-            keywords: ["content planning", "content distribution", "content audit", "editorial calendar"]
-          }
-        ]
-      };
-
-      return res.status(200).json(fallbackResponse);
     }
+
+    // Parse and return the response
+    const responseData = await response.json();
+    return res.status(200).json(responseData);
   } catch (error) {
-    console.error('Error generating keywords:', error);
+    console.error('Error forwarding to backend:', error);
     return res.status(500).json({
       error: 'Server error',
-      message: 'Failed to generate keywords'
+      message: error.message || 'Failed to generate keywords'
     });
   }
 }

@@ -4,7 +4,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, RefreshCw, ArrowUp, CheckCircle, AlertCircle } from 'lucide-react';
 import StrategicDataService from '../../../services/StrategicDataService';
-import { callApiWithStrategicData } from '../../../services/ApiStrategicConnector';
+import ApiStrategicConnector, { callApiWithStrategicData } from '../../../services/ApiStrategicConnector';
 
 // Sample prompt suggestions based on content type
 const PROMPT_SUGGESTIONS = {
@@ -54,6 +54,7 @@ const ContentEditChat = ({
     const [statusMessage, setStatusMessage] = useState(null);
     const [loadedStrategicData, setLoadedStrategicData] = useState(null);
     const [error, setError] = useState(null); // Added error state
+    const [selectedSuggestion, setSelectedSuggestion] = useState(null);
 
     const messagesEndRef = useRef(null);
 
@@ -94,7 +95,9 @@ const ContentEditChat = ({
 
     // Handle form submission
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) {
+            e.preventDefault();
+        }
 
         if (!inputValue.trim() && !selectedSuggestion) return;
 
@@ -140,46 +143,24 @@ const ContentEditChat = ({
                 hasToneContext: !!stratContext.tone
             });
 
-            // Direct API call to the same endpoint that's working for content generation
-            // This ensures consistency with how other parts of the app call the API
-            console.log('Making direct API call to /api/api_endpoints for modify-content');
+            // UPDATED: Use the ApiStrategicConnector that's working for other features
+            console.log('Submitting content edit request');
+            const response = await callApiWithStrategicData('modify-content', requestData);
 
-            const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL || '/api'}/api_endpoints`;
+            console.log('Content edit API response:', response);
 
-            const response = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    endpoint: 'modify-content',
-                    data: requestData,
-                }),
-            });
-
-            // Check if response is ok
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Content edit API error:', response.status, errorText);
-                throw new Error(`API error: ${response.status} - ${response.statusText}`);
-            }
-
-            // Parse the response
-            const data = await response.json();
-            console.log('Content edit API response:', data);
-
-            if (data) {
+            if (response) {
                 // Add assistant response to chat
                 setMessages(prev => [...prev, {
                     role: 'assistant',
-                    content: data.message || 'Content updated successfully.'
+                    content: response.message || 'Content updated successfully.'
                 }]);
 
                 // Update the content in parent component
-                if (data.updatedContent && onContentUpdate) {
+                if (response.updatedContent && onContentUpdate) {
                     onContentUpdate(
-                        data.updatedContent,
-                        data.updatedTitle || originalTitle
+                        response.updatedContent,
+                        response.updatedTitle || originalTitle
                     );
 
                     setStatusMessage({
@@ -221,8 +202,6 @@ const ContentEditChat = ({
     };
 
     // Handle suggestion selection
-    const [selectedSuggestion, setSelectedSuggestion] = useState(null);
-
     const handleSuggestionClick = (suggestion) => {
         setSelectedSuggestion(suggestion);
         setInputValue(suggestion);
