@@ -1,5 +1,5 @@
 // src/components/features/ContentEditChat/index.tsx
-// Enhanced ContentEditChat component that leverages strategic data
+// Complete replacement with debug code
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, RefreshCw, ArrowUp, CheckCircle, AlertCircle } from 'lucide-react';
@@ -91,9 +91,10 @@ const ContentEditChat = ({
         }
     }, [inputValue, error]);
 
-    // Handle form submission
+    // THIS IS COMPLETELY NEW - COPY FROM handleGenerateContent
+    // We're copying the EXACT mechanism that works in content generation
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
 
         if (!inputValue.trim() && !selectedSuggestion) return;
 
@@ -110,8 +111,14 @@ const ContentEditChat = ({
         setError(null); // Clear any previous errors
 
         try {
-            // Prepare request with original content and conversation history
-            const requestData = {
+            // CRITICAL DEBUG: Print out all environment variables
+            console.log("DEBUG - ENV VARS:", {
+                apiBase: process.env.NEXT_PUBLIC_API_BASE_URL,
+                nodeEnv: process.env.NODE_ENV
+            });
+
+            // Create a request payload that matches the working content generation
+            const baseRequest = {
                 originalContent: originalContent,
                 originalTitle: originalTitle,
                 userRequest: userMessage,
@@ -119,76 +126,74 @@ const ContentEditChat = ({
                 contentType: contentType || 'content'
             };
 
-            // Gather strategic context - either from props or from loaded data
-            const stratContext = strategicContext || {
-                productName: loadedStrategicData?.product?.name,
-                valueProposition: loadedStrategicData?.product?.valueProposition,
-                audience: loadedStrategicData?.audiences?.[0]?.role,
-                industry: loadedStrategicData?.audiences?.[0]?.industry,
-                tone: loadedStrategicData?.brandVoice?.brandVoice?.tone,
-                styleGuide: loadedStrategicData?.writingStyle?.styleGuide?.primary
+            // Add strategic context if available
+            if (strategicContext || loadedStrategicData) {
+                const stratContext = strategicContext || {
+                    productName: loadedStrategicData?.product?.name,
+                    valueProposition: loadedStrategicData?.product?.valueProposition,
+                    audience: loadedStrategicData?.audiences?.[0]?.role,
+                    industry: loadedStrategicData?.audiences?.[0]?.industry,
+                    tone: loadedStrategicData?.brandVoice?.brandVoice?.tone,
+                    styleGuide: loadedStrategicData?.writingStyle?.styleGuide?.primary
+                };
+
+                baseRequest.strategicContext = stratContext;
+            }
+
+            console.log("DEBUG - Using direct API call with working approach");
+
+            // Define the API endpoint name
+            const endpointName = 'modify-content';
+
+            // Prepare the final API payload exactly like in content generation
+            const payload = {
+                endpoint: endpointName,
+                data: baseRequest,
             };
 
-            // Add strategic context to request
-            requestData.strategicContext = stratContext;
+            console.log('DEBUG - Making API call with payload:', JSON.stringify(payload).substring(0, 200));
 
-            console.log('Submitting content edit request with strategic context:', {
-                request: userMessage,
-                hasProductContext: !!stratContext.productName,
-                hasAudienceContext: !!stratContext.audience,
-                hasToneContext: !!stratContext.tone
-            });
-
-            // Force the API endpoint and bypass any potential interference
-            const absolutelyForcedEndpoint = '/api/api_endpoints';
-            console.log('FORCING API CALL TO:', absolutelyForcedEndpoint);
-
-            const response = await window.fetch(absolutelyForcedEndpoint, {
+            // Make API call exactly like in handleGenerateContent
+            const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    endpoint: 'modify-content',
-                    data: requestData,
-                }),
+                body: JSON.stringify(payload),
             });
 
-            // Check if response is ok
+            // Check if the response is ok before proceeding
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Content edit API error:', response.status, errorText);
-                throw new Error(`API error: ${response.status} - ${response.statusText}`);
+                console.error('API response not OK:', response.status, errorText);
+                throw new Error(`API responded with status ${response.status}`);
             }
 
-            // Parse the response
+            // Parse the response as JSON
             const data = await response.json();
-            console.log('Content edit API response:', data);
 
-            if (data) {
-                // Add assistant response to chat
-                setMessages(prev => [...prev, {
-                    role: 'assistant',
-                    content: data.message || 'Content updated successfully.'
-                }]);
+            console.log('API Response received:', data);
 
-                // Update the content in parent component
-                if (data.updatedContent && onContentUpdate) {
-                    onContentUpdate(
-                        data.updatedContent,
-                        data.updatedTitle || originalTitle
-                    );
+            // Add assistant response to chat
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: data.message || 'Content updated successfully.'
+            }]);
 
-                    setStatusMessage({
-                        type: 'success',
-                        text: 'Content updated successfully!'
-                    });
+            // Update the content in parent component
+            if (data.updatedContent && onContentUpdate) {
+                onContentUpdate(
+                    data.updatedContent,
+                    data.updatedTitle || originalTitle
+                );
 
-                    // Clear status after 3 seconds
-                    setTimeout(() => setStatusMessage(null), 3000);
-                }
-            } else {
-                throw new Error('No response data received from API');
+                setStatusMessage({
+                    type: 'success',
+                    text: 'Content updated successfully!'
+                });
+
+                // Clear status after 3 seconds
+                setTimeout(() => setStatusMessage(null), 3000);
             }
         } catch (error) {
             console.error('Error updating content:', error);
@@ -223,7 +228,7 @@ const ContentEditChat = ({
     const handleSuggestionClick = (suggestion) => {
         setSelectedSuggestion(suggestion);
         setInputValue(suggestion);
-        handleSubmit({ preventDefault: () => { } });
+        handleSubmit();
     };
 
     return (
