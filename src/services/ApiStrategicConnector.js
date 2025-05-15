@@ -63,18 +63,19 @@ const callApiDirectly = async (endpoint, data) => {
 
     // Add this console log to debug the API URL
     console.log(`Making API call to ${apiEndpoint} for endpoint: ${endpoint}`);
-
+    console.log("🧨 About to call API with URL:", apiEndpoint);
+    console.log("🔍 Full request payload:", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fullPayload)
+    });
     try {
-        const response = await fetch(apiEndpoint, {
+        const response = await fetch('/api/api_endpoints', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                endpoint,
-                data,
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fullPayload)
         });
+
 
         if (!response.ok) {
             // Use a try/catch for parsing JSON in case the response isn't valid JSON
