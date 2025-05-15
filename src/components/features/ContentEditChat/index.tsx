@@ -139,9 +139,11 @@ const ContentEditChat = ({
                 hasToneContext: !!stratContext.tone
             });
 
-            // IMPORTANT: Use the local API endpoint directly
-            // This is the key fix for the CORS issue
-            const response = await fetch('/api/api_endpoints', {
+            // Force the API endpoint and bypass any potential interference
+            const absolutelyForcedEndpoint = '/api/api_endpoints';
+            console.log('FORCING API CALL TO:', absolutelyForcedEndpoint);
+
+            const response = await window.fetch(absolutelyForcedEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
