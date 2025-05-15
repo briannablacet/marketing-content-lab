@@ -7,7 +7,7 @@ interface GenerateContentParams {
 
 export async function generateContent({ contentType, topic, keywords }: GenerateContentParams) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`, {
+    const response = await fetch('/api/documents/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
