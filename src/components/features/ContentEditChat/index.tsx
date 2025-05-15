@@ -81,9 +81,11 @@ const ContentEditChat = ({ originalContent, originalTitle, contentType, onConten
                 data: baseRequest
             };
 
-            console.log('🚀 SUBMITTING to /api/api_endpoints with payload:', JSON.stringify(payload).slice(0, 500));
+            const apiUrl = `${window.location.origin}/api/api_endpoints`;
+            console.log('🔒 Forcing local API call to:', apiUrl);
+            console.log('🚀 SUBMITTING with payload:', JSON.stringify(payload).slice(0, 500));
 
-            const response = await fetch('/api/api_endpoints', {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
