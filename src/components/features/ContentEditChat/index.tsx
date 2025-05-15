@@ -150,7 +150,7 @@ const ContentEditChat = ({
                 endpoint: endpointName,
                 data: baseRequest,
             };
-
+            console.log("🚨 API_BASE_URL is", API_BASE_URL);
             console.log('DEBUG - Making API call with payload:', JSON.stringify(payload).substring(0, 200));
 
             // Make API call exactly like in handleGenerateContent
