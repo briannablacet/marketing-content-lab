@@ -1308,7 +1308,7 @@ const ContentCreatorPage = () => {
                     <ContentEditChat
                       originalContent={generatedContent}
                       originalTitle={generatedTitle}
-                      contentType={contentType?.title || 'content'}
+                      contentType={contentType?.id || 'content'}
                       onContentUpdate={handleContentUpdate}
                       // Pass strategic context for better improvements
                       strategicContext={hasStrategicData ? {
