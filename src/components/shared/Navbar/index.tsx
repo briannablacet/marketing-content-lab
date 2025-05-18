@@ -198,7 +198,7 @@ const Navbar: React.FC = () => {
             {isInWalkthrough ? (
               <button onClick={handleExitWalkthrough} className="ml-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Exit Walkthrough</button>
             ) : (
-              <Link href="/walkthrough/1" className="ml-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Branding Wizaard</Link>
+              <Link href="/walkthrough/1" className="ml-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Branding Wizard</Link>
             )}
 
             {isAuthenticated ? (
