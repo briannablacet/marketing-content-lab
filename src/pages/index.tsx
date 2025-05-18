@@ -73,7 +73,7 @@ export default function Home({ initialMarketingState }: HomeProps) {
         <div className="flex flex-col md:flex-row justify-center gap-4 mb-8">
           <Link href="/walkthrough/1">
             <span className="inline-block bg-blue-600 text-white px-6 py-4 rounded-md hover:bg-blue-700 transition-colors text-lg font-semibold shadow-lg">
-              Use a Magical Branding Wizard
+              Try a Magical Branding Wizard
             </span>
           </Link>
           <Link href="/creation-hub">
