@@ -8,6 +8,9 @@ import {
 import { useNotification } from '../../../../../context/NotificationContext';
 import { useRouter } from 'next/router';
 
+// Define notification types
+type NotificationType = 'success' | 'error' | 'info' | 'warning';
+
 // Define the main data structure
 interface MessageFramework {
   valueProposition: string;
@@ -19,15 +22,17 @@ interface MessageFramework {
 
 interface MessageFrameworkProps {
   onSave?: (data: MessageFramework) => void;
+  formData?: any;
+  setFormData?: (data: any) => void;
 }
 
-const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
+const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, setFormData }) => {
   const { showNotification } = useNotification();
   const router = useRouter();
 
   // Main state for the message framework
   const [framework, setFramework] = useState<MessageFramework>({
-    valueProposition: '',
+    valueProposition: formData?.valueProp || '',
     pillar1: '',
     pillar2: '',
     pillar3: '',
@@ -56,27 +61,19 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
     index: number | null;
   }>({ type: null, index: null });
 
-  // Load existing data from localStorage on mount
+  // Update framework when formData changes
   useEffect(() => {
-    // First try to load from product step
-    try {
-      const savedProduct = localStorage.getItem('marketingProduct');
-      if (savedProduct) {
-        const productData = JSON.parse(savedProduct);
-        setProductData(productData);
-        console.log("Loaded product data:", productData);
-        if (productData.valueProposition) {
-          setFramework(prev => ({
-            ...prev,
-            valueProposition: productData.valueProposition
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Error loading product data:', error);
+    if (formData?.valueProp) {
+      setFramework(prev => ({
+        ...prev,
+        valueProposition: formData.valueProp
+      }));
+      console.log("Updated value prop from formData:", formData.valueProp);
     }
+  }, [formData]);
 
-    // Try to load target audience data
+  // Load target audience data
+  useEffect(() => {
     try {
       // First try multiple audiences
       const savedAudiences = localStorage.getItem('marketingTargetAudiences');
@@ -97,24 +94,6 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       }
     } catch (error) {
       console.error('Error loading target audience data:', error);
-    }
-
-    // Then try to load saved framework (will override product data if exists)
-    try {
-      const savedFramework = localStorage.getItem('messageFramework');
-      if (savedFramework) {
-        const parsedFramework = JSON.parse(savedFramework);
-        setFramework(prev => ({
-          ...prev,
-          valueProposition: parsedFramework.valueProposition || prev.valueProposition,
-          pillar1: parsedFramework.pillar1 || '',
-          pillar2: parsedFramework.pillar2 || '',
-          pillar3: parsedFramework.pillar3 || '',
-          keyBenefits: parsedFramework.keyBenefits || ['']
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading saved message framework:', error);
     }
   }, []);
 
@@ -228,10 +207,9 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       // Make the API call
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
-
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal
@@ -264,9 +242,10 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave }) => {
       });
 
       showNotification('success', 'AI enhancements generated successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error generating AI framework:', error);
-      setError(`API Error: ${error.message || 'Failed to generate AI enhancements. Please try again later.'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate AI enhancements. Please try again later.';
+      setError(`API Error: ${errorMessage}`);
       showNotification('error', 'Failed to generate AI enhancements');
     } finally {
       setIsGenerating(false);
@@ -601,7 +580,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Enhance with AI
+                Generate your message framework with AI
               </>
             )}
           </button>

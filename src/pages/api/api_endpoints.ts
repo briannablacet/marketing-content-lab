@@ -652,8 +652,8 @@ Only include information that would be publicly available or reasonably inferred
               temperature: 0.7,
             });
             break; // Exit loop if successful
-          } catch (apiError) {
-            console.error(`API attempt ${retryCount + 1} failed:`, apiError.message);
+          } catch (apiError: unknown) {
+            console.error(`API attempt ${retryCount + 1} failed:`, apiError instanceof Error ? apiError.message : 'Unknown error');
             retryCount++;
 
             if (retryCount > maxRetries) {
@@ -945,19 +945,18 @@ Make the content specific, substantive and actionable. Do not use generic market
           message: 'The AI returned an invalid response format. Please try again.'
         });
       }
-    } catch (apiError) {
+    } catch (apiError: unknown) {
       console.error('OpenAI API error:', apiError);
-
       return res.status(500).json({
         error: 'API error',
-        message: apiError.message || 'Failed to generate messaging framework'
+        message: apiError instanceof Error ? apiError.message : 'Failed to generate messaging framework'
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in value proposition generator:', error);
     return res.status(500).json({
       error: 'Server error',
-      message: error.message || 'Failed to generate messaging framework'
+      message: error instanceof Error ? error.message : 'Failed to generate messaging framework'
     });
   }
 }
@@ -1030,7 +1029,7 @@ Make the personas realistic, specific and detail-oriented.`;
     }
 
     const responseText = completion.choices[0].message?.content || '';
-    console.log("Received response from OpenAI for personas",completion);
+    console.log("Received response from OpenAI for personas", completion);
 
     try {
       // Parse the JSON response
@@ -1065,7 +1064,7 @@ Make the personas realistic, specific and detail-oriented.`;
     console.error('Error generating personas:', error);
     return res.status(500).json({
       error: 'Server error',
-      message: error.message || 'Failed to generate personas'
+      message: error instanceof Error ? error.message : 'Failed to generate personas'
     });
   }
 }
@@ -1098,7 +1097,7 @@ User request:
 ${userRequest}
 
 Previous conversation for context:
-${previousMessages ? previousMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n') : 'None'}
+${previousMessages ? previousMessages.map((msg: { role: string; content: string }) => `${msg.role}: ${msg.content}`).join('\n') : 'None'}
 
 Please edit the content according to the user's request. Provide the following:
 1. A brief message explaining what changes you've made
@@ -1275,7 +1274,7 @@ async function handleKeywordVolumeLookup(data: any, res: NextApiResponse) {
 
     // Use a hash-like function for consistent results per keyword
     const hashFactor = keyword.split('')
-      .reduce((sum, char, index) => sum + char.charCodeAt(0) * (index + 1), 0) % 100;
+      .reduce((sum: number, char: string, index: number) => sum + char.charCodeAt(0) * (index + 1), 0) % 100;
 
     const volume = Math.floor(volumeBase * lengthFactor + hashFactor * 10);
 
@@ -1433,6 +1432,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'keyword-volume-lookup':
         return handleKeywordVolumeLookup(data, res);
 
+      // Handle value-prop-generator endpoint
+      case 'value-prop-generator': {
+        const { productName, productType, productDescription, productBenefits } = data;
+
+        const prompt = `
+You are a senior brand strategist. Help the user build a strong value proposition using the following inputs.
+
+Product name: ${productName}
+Product type: ${productType}
+Description: ${productDescription}
+Benefits: ${productBenefits?.join(', ')}
+
+Structure your response as a JSON object with the following keys:
+- "target": Who is this for?
+- "solution": What is being provided?
+- "benefit": What outcome does it deliver?
+- "proof": Why should the customer believe this?
+
+Only return a valid JSON object. No commentary.
+    `.trim();
+
+        try {
+          const completion = await openai.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "gpt-4",
+            temperature: 0.7,
+          });
+
+          const raw = completion.choices?.[0]?.message?.content || '';
+          let valueProp;
+
+          try {
+            valueProp = JSON.parse(raw);
+          } catch (err) {
+            console.error("Failed to parse JSON from OpenAI:", raw);
+            return res.status(500).json({ error: "AI response was not valid JSON." });
+          }
+
+          return res.status(200).json({ valueProp });
+        } catch (error) {
+          console.error("Error generating value prop:", error);
+          return res.status(500).json({ error: "Failed to generate value proposition." });
+        }
+      }
+
       // Handle content-repurposer endpoint
       case 'content-repurposer':
         return handleContentRepurposer(data, res);
@@ -1443,13 +1487,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           message: `Endpoint '${endpoint}' not found`
         });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Server Error:', error);
     return res.status(500).json({
       error: 'Server error',
-      message: process.env.NODE_ENV === 'development'
-        ? error.message
-        : 'An unexpected error occurred'
+      message: error instanceof Error ? error.message : 'An unexpected error occurred'
     });
   }
 }
