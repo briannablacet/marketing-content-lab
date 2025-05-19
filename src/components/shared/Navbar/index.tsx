@@ -135,7 +135,7 @@ const Navbar: React.FC = () => {
                       <Link href="/brandscape/tagline-generator" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tagline Generator</Link>
                       <Link href="/brandscape/boilerplate-generator" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Boilerplate Generator</Link>
                       <Link href="/brand-voice" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Brand Personality</Link>
-                      <Link href="/writing-style" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Style Guide Builder</Link>
+                      <Link href="/writing-style" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Writing Style Configuration</Link>
                       <Link href="/competitive-analysis" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Competitive Analysis</Link>
                     </div>
                   </div>
@@ -196,7 +196,7 @@ const Navbar: React.FC = () => {
 
           <div className="flex items-center">
             {isInWalkthrough ? (
-              <button onClick={handleExitWalkthrough} className="ml-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Exit Walkthrough</button>
+              <button onClick={handleExitWalkthrough} className="ml-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Exit Branding Wizard</button>
             ) : (
               <Link href="/walkthrough/1" className="ml-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Branding Wizard</Link>
             )}

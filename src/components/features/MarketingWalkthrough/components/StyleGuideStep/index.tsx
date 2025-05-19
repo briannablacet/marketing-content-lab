@@ -9,7 +9,7 @@ const StyleGuideStep = ({ onNext, onBack }) => {
   return (
     <div className="space-y-6">
       {/* The WritingStyleModule with isWalkthrough=true will use the walkthrough navigation */}
-      <WritingStyleModule 
+      <WritingStyleModule
         isWalkthrough={true}
         onNext={onNext}
         onBack={onBack}

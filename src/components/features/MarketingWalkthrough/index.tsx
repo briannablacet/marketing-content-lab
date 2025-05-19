@@ -10,7 +10,6 @@ import CompetitiveStep from './components/CompetitiveStep';
 import StyleGuideStep from './components/StyleGuideStep';
 import BrandVoiceModule from '../BrandVoiceModule';
 import { ScreenTemplate } from '../../shared/UIComponents';
-import { AI_CUSTOMER_ENDPOINT } from 'src/pages/api/api_endpoints';
 
 const STEPS = [
   { id: '1', title: 'Welcome to the Branding Wizard! ✨', component: WelcomeStep },
