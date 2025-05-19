@@ -8,6 +8,8 @@ interface BrandVoiceData {
     style: string;
     audience: string;
     archetype: string;
+    personality: string[];
+    brandPersonality: string;
   };
   contentGuidelines: {
     preferred: string;
@@ -40,6 +42,8 @@ const defaultBrandVoice: BrandVoiceData = {
     style: '',
     audience: '',
     archetype: '',
+    personality: [],
+    brandPersonality: '',
   },
   contentGuidelines: {
     preferred: '',
@@ -57,6 +61,9 @@ const STORAGE_KEY = 'marketing-content-lab-brand-voice';
 
 // Helper function to safely parse JSON from localStorage
 const getSavedBrandVoiceData = (): BrandVoiceData | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     const savedData = localStorage.getItem(STORAGE_KEY);
     if (savedData) {
@@ -70,6 +77,9 @@ const getSavedBrandVoiceData = (): BrandVoiceData | null => {
 
 // Helper function to safely save data to localStorage
 const saveBrandVoiceData = (data: BrandVoiceData): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
@@ -106,10 +116,23 @@ export function BrandVoiceProvider({ children }: { children: ReactNode }) {
 
   // Update brand voice data
   const updateBrandVoice = (updates: Partial<BrandVoiceData>) => {
-    setBrandVoice(prev => ({
-      ...prev,
-      ...updates,
-    }));
+    console.log('Context received update:', JSON.stringify(updates, null, 2));
+    setBrandVoice(prev => {
+      const newState = {
+        ...prev,
+        brandVoice: {
+          ...prev.brandVoice,
+          ...(updates.brandVoice || {})
+        },
+        contentGuidelines: {
+          ...prev.contentGuidelines,
+          ...(updates.contentGuidelines || {})
+        },
+        uploadedGuides: updates.uploadedGuides || prev.uploadedGuides
+      };
+      console.log('New state:', JSON.stringify(newState, null, 2));
+      return newState;
+    });
   };
 
   // Add a new uploaded guide
@@ -151,11 +174,11 @@ export function BrandVoiceProvider({ children }: { children: ReactNode }) {
 
   // Return the provider with all values and functions
   return (
-    <BrandVoiceContext.Provider 
-      value={{ 
-        brandVoice, 
-        updateBrandVoice, 
-        addUploadedGuide, 
+    <BrandVoiceContext.Provider
+      value={{
+        brandVoice,
+        updateBrandVoice,
+        addUploadedGuide,
         removeUploadedGuide,
         exportBrandVoice,
         importBrandVoice,
