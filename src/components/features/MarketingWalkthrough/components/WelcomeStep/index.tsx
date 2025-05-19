@@ -8,68 +8,42 @@ interface WelcomeStepProps {
 
 const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, onBack }) => {
   return (
-    <div className="space-y-8 w-full">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Welcome to Your Content Marketing Journey! ✨
-        </h2>
-        <p className="mt-2 text-gray-600">
-          Let's create a content strategy that engages your audience and establishes your expertise. Here's what you'll get:
-        </p>
-      </div>
-
+    <div className="space-y-8 w-full pl-10">
       <div className="space-y-4">
-        <div className="flex items-start space-x-3">
-          <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <div className="w-2 h-2 rounded-full bg-blue-600" />
-          </div>
-          <div>
-            <p className="text-gray-800">Comprehensive Content Strategy</p>
-            <p className="text-sm text-gray-600">Tailored to your audience and business goals</p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-3">
-          <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <div className="w-2 h-2 rounded-full bg-blue-600" />
-          </div>
-          <div>
-            <p className="text-gray-800">Content Type Mix</p>
-            <p className="text-sm text-gray-600">Optimized selection of content formats for your audience</p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-3">
-          <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <div className="w-2 h-2 rounded-full bg-blue-600" />
-          </div>
-          <div>
-            <p className="text-gray-800">Competitive Content Analysis</p>
-            <p className="text-sm text-gray-600">Understanding your content positioning in the market</p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-3">
-          <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <div className="w-2 h-2 rounded-full bg-blue-600" />
-          </div>
-          <div>
-            <p className="text-gray-800">AI-Powered Content Creation</p>
-            <p className="text-sm text-gray-600">Tools to help you create and enhance your content</p>
-          </div>
-        </div>
+        <ul className="space-y-4">
+          <li className="flex items-start">
+            <div className="mt-1.5 mr-3 h-2 w-2 rounded-full bg-indigo-500" />
+            <span>Lock in your value proposition</span>
+          </li>
+          <li className="flex items-start">
+            <div className="mt-1.5 mr-3 h-2 w-2 rounded-full bg-indigo-500" />
+            <span>Identify your ideal customer</span>
+          </li>
+          <li className="flex items-start">
+            <div className="mt-1.5 mr-3 h-2 w-2 rounded-full bg-indigo-500" />
+            <span>Sharpen your messaging</span>
+          </li>
+          <li className="flex items-start">
+            <div className="mt-1.5 mr-3 h-2 w-2 rounded-full bg-indigo-500" />
+            <span>Define your brand voice</span>
+          </li>
+          <li className="flex items-start">
+            <div className="mt-1.5 mr-3 h-2 w-2 rounded-full bg-indigo-500" />
+            <span>Make every piece of content feel intentional</span>
+          </li>
+        </ul>
       </div>
 
-      <div className="bg-blue-50 p-6 rounded-lg">
+      <div className="bg-blue-50 p-6 rounded-lg -ml-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">
-          Ready to start creating content that resonates? 🎯
+          Ready to build something that actually sounds like <em>you</em>? 🎯
         </h3>
         <p className="text-gray-600">
-          We'll guide you through building a content strategy that helps you connect with your audience 
-          and achieve your goals. Click "Next" to begin!
+          We’ll guide you through it—step by step. Click “Next” to begin!
         </p>
       </div>
     </div>
+
   );
 };
 

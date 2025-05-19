@@ -1,27 +1,23 @@
-// src/components/features/MarketingWalkthrough/components/ProductStep/index.tsx
 import React, { useState, useEffect } from "react";
 import { Card } from '@/components/ui/card';
-import { Sparkles, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
 
-// A simple ProductStep component with NO navigation elements
 const ProductStep = () => {
   const { showNotification } = useNotification();
   const [productName, setProductName] = useState("");
+  const [tagline, setTagline] = useState("");
   const [productType, setProductType] = useState("");
-  const [valueProposition, setValueProposition] = useState("");
   const [keyBenefits, setKeyBenefits] = useState([""]);
-  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Load existing data if available
   useEffect(() => {
     try {
       const savedData = localStorage.getItem('marketingProduct');
       if (savedData) {
         const data = JSON.parse(savedData);
         if (data.name) setProductName(data.name);
+        if (data.tagline) setTagline(data.tagline);
         if (data.type) setProductType(data.type);
-        if (data.valueProposition) setValueProposition(data.valueProposition);
         if (data.keyBenefits && Array.isArray(data.keyBenefits) && data.keyBenefits.length > 0) {
           setKeyBenefits(data.keyBenefits);
         }
@@ -31,75 +27,24 @@ const ProductStep = () => {
     }
   }, []);
 
-  // Auto-save data whenever it changes
   useEffect(() => {
-    // Skip initial render
-    if (!productName && !productType && !valueProposition && keyBenefits.length === 1 && !keyBenefits[0]) {
+    if (!productName && !tagline && !productType && keyBenefits.length === 1 && !keyBenefits[0]) {
       return;
     }
 
-    // Save data to localStorage
     try {
       const productData = {
         name: productName,
+        tagline: tagline,
         type: productType,
-        valueProposition: valueProposition,
         keyBenefits: keyBenefits.filter(b => b.trim())
       };
 
       localStorage.setItem('marketingProduct', JSON.stringify(productData));
-      console.log("Auto-saved product data:", productData);
     } catch (error) {
       console.error("Error auto-saving:", error);
     }
-  }, [productName, productType, valueProposition, keyBenefits]);
-
-  const handleGenerateValueProp = async () => {
-    if (!productName || !productType || keyBenefits.filter(b => b.trim()).length === 0) {
-      showNotification('warning', 'Please provide your business name, what you offer, and at least one benefit');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          endpoint: 'value-proposition-generator',
-          data: {
-            productInfo: {
-              name: productName,
-              description: productType,
-              benefits: keyBenefits.filter(b => b.trim()),
-              targetAudience: ["Business customers"]
-            },
-            competitors: [],
-            industry: 'technology',
-            tone: 'professional'
-          }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate value proposition');
-      }
-
-      const data = await response.json();
-      if (data.valueProposition) {
-        setValueProposition(data.valueProposition);
-        showNotification('success', 'Generated value proposition based on your inputs');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      showNotification('error', 'Failed to generate value proposition');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  }, [productName, tagline, productType, keyBenefits]);
 
   const addBenefit = () => {
     setKeyBenefits([...keyBenefits, ""]);
@@ -109,7 +54,7 @@ const ProductStep = () => {
     <div className="space-y-6 w-full">
       <Card className="p-6">
         <div className="space-y-6">
-          {/* Business Name Input */}
+          {/* Business Name */}
           <div>
             <label className="block font-medium mb-2">What's the name of your business?</label>
             <input
@@ -121,15 +66,27 @@ const ProductStep = () => {
             />
           </div>
 
-          {/* Product Type Input */}
+          {/* Tagline (optional) */}
           <div>
-            <label className="block font-medium mb-2">What services or products do you offer?</label>
+            <label className="block font-medium mb-2">Do you already have a tagline? (Optional)</label>
             <input
               type="text"
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              placeholder="e.g., No more crappy content"
+              className="w-full p-2 border rounded-lg"
+            />
+          </div>
+
+          {/* Product Description */}
+          <div>
+            <label className="block font-medium mb-2">Share a description of your business. Don't worry if it's not perfect.</label>
+            <textarea
               value={productType}
               onChange={(e) => setProductType(e.target.value)}
-              placeholder="e.g., Massage Therapy, Hair Salon, Coaching, Retail Store"
+              placeholder="Describe the services or products you offer."
               className="w-full p-2 border rounded-lg"
+              rows={4}
             />
           </div>
 
@@ -146,11 +103,11 @@ const ProductStep = () => {
                     type="text"
                     value={benefit}
                     onChange={(e) => {
-                      const updatedBenefits = [...keyBenefits];
-                      updatedBenefits[index] = e.target.value;
-                      setKeyBenefits(updatedBenefits);
+                      const updated = [...keyBenefits];
+                      updated[index] = e.target.value;
+                      setKeyBenefits(updated);
                     }}
-                    placeholder={`e.g., Pain relief, Better sleep, Increased confidence`}
+                    placeholder="e.g., Pain relief, Better sleep, Increased confidence"
                     className="flex-1 p-2 border rounded-lg"
                   />
                   {keyBenefits.length > 1 && (
@@ -171,31 +128,6 @@ const ProductStep = () => {
                 Add Another Benefit
               </button>
             </div>
-          </div>
-
-          {/* Value Proposition */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block font-medium">Your Unique Value</label>
-              <button
-                onClick={handleGenerateValueProp}
-                disabled={isGenerating}
-                className="text-blue-600 hover:text-blue-700 flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Sparkles className="w-4 h-4" />
-                {isGenerating ? 'Generating...' : 'Get AI Help'}
-              </button>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">
-              What makes your business special? Why should customers choose you?
-            </p>
-            <textarea
-              value={valueProposition}
-              onChange={(e) => setValueProposition(e.target.value)}
-              placeholder="Describe what sets your business apart from others"
-              className="w-full p-2 border rounded-lg"
-              rows={4}
-            />
           </div>
         </div>
       </Card>
