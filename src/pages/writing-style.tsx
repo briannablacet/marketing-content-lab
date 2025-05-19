@@ -9,11 +9,11 @@ const WritingStylePage: React.FC = () => {
     <NotificationProvider>
       <WritingStyleProvider>
         <div className="container mx-auto py-8">
-          <h1 className="text-3xl font-bold mb-8 text-center">Writing Style Configuration</h1>
-          <p className="text-gray-600 text-center mb-8">
+          <h1 className="text-3xl font-bold mb-8 text-left">Writing Style Configuration</h1>
+          <p className="text-gray-600 text-left mb-8">
             Define your brand's writing style and content guidelines
           </p>
-          
+
           {/* Make sure to set isWalkthrough to false for standalone mode */}
           <WritingStyleModule isWalkthrough={false} />
         </div>

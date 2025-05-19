@@ -5,6 +5,9 @@ import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotification } from '../../../../../context/NotificationContext';
 
+// Define notification types
+type NotificationType = 'success' | 'error' | 'info' | 'warning';
+
 interface Competitor {
   name: string;
   description: string;
@@ -204,15 +207,15 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         } : comp
       ));
 
-      showNotification('success', `Analysis for ${name} completed`);
+      showNotification(`Analysis for ${name} completed`, 'success');
     } catch (err) {
       console.error('Error in handleAnalyzeCompetitor:', err);
-      setError(`Failed to analyze competitor: ${err.message || 'Unknown error'}. Please try again.`);
+      setError(`Failed to analyze competitor: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again.`);
 
       // Clear any previously generated analysis for this competitor
       clearCompetitorAnalysis(index);
 
-      showNotification('error', 'Failed to analyze competitor. Please try again.');
+      showNotification('Failed to analyze competitor. Please try again.', 'error');
     } finally {
       setCompetitors(prev => prev.map((comp, i) =>
         i === index ? { ...comp, isLoading: false } : comp
@@ -248,14 +251,14 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     if (hasValidCompetitors) {
       localStorage.setItem('marketingCompetitors',
         JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
-      showNotification('success', 'Competitor analysis saved');
+      showNotification('Competitor analysis saved', 'success');
 
       // Navigate to next step if in walkthrough
       if (onNext) {
         onNext();
       }
     } else {
-      showNotification('info', 'No competitors added. You can come back to this step later.');
+      showNotification('No competitors added. You can come back to this step later.', 'info');
       // Allow skipping this step
       if (onNext) {
         onNext();
@@ -399,78 +402,28 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       </button>
 
       {/* Error Display */}
-      {
-        error && (
-          <Card className="border-red-200 bg-red-50">
-            <div className="flex items-center gap-3 p-4">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <div className="flex-1">
-                <h4 className="font-medium text-red-900">Analysis Error</h4>
-                <p className="text-red-700 text-sm mt-1">{error}</p>
-                <button
-                  onClick={() => setError('')}
-                  className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </Card>
-        )
-      }
-
-      {/* Navigation buttons for walkthrough mode */}
-      {
-        isWalkthrough && (
-          <div className="flex justify-between mt-8">
-            {onBack && (
+      {error && (
+        <Card className="border-red-200 bg-red-50 mt-4">
+          <div className="flex items-center gap-3 p-4">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-medium text-red-900">Analysis Error</h4>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
               <button
-                onClick={onBack}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                onClick={() => setError('')}
+                className="text-red-700 text-sm mt-2 hover:text-red-800 underline"
               >
-                Back
+                Dismiss
               </button>
-            )}
-            <button
-              onClick={handleSaveAndContinue}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              {hasValidCompetitors ? 'Save and Continue' : 'Skip this step'}
-            </button>
+            </div>
           </div>
-        )
-      }
+        </Card>
+      )}
+      {/* Navigation buttons – only show in walkthrough mode */}
 
-      {/* Save button for standalone version - but not when used in the competitive-analysis page */}
-      {
-        !isWalkthrough && !isStandalone && (
-          <div className="flex justify-end mt-6 space-x-4">
-            <button
-              onClick={() => router.push('/')}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                if (hasValidCompetitors) {
-                  localStorage.setItem('marketingCompetitors',
-                    JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
-                }
-                showNotification('success', 'Competitor analysis saved successfully!');
-                setTimeout(() => router.push('/'), 1500);
-              }}
-              className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${!hasValidCompetitors ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              disabled={!hasValidCompetitors}
-            >
-              Save Analysis
-            </button>
-          </div>
-        )
-      }
-    </div >
+    </div>
   );
 };
 
 export default CompetitiveStep;
+

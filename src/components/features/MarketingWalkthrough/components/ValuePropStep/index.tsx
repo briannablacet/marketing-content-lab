@@ -141,7 +141,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
 
                 <div className="text-blue-600 hover:underline inline-flex items-center text-sm cursor-pointer" onClick={handleAIHelp}>
                     <Sparkles className="h-4 w-4 mr-1" />
-                    {isLoading ? '✨ Drafting your value prop...' : '✨ Let AI suggest your value proposition'}
+                    {isLoading ? 'Drafting your value prop...' : 'Let AI suggest your value proposition'}
                 </div>
 
                 <div className="bg-blue-50 p-4 rounded">
