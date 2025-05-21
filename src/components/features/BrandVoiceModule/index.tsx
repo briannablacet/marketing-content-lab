@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
-import { HelpCircle, Info } from 'lucide-react';
+import { HelpCircle, Info, X } from 'lucide-react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 
@@ -68,6 +68,7 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
 
   const [isSaving, setIsSaving] = useState(false);
   const [showExample, setShowExample] = useState<{ type: 'tone' | 'personality'; value: string } | null>(null);
+  const [showReview, setShowReview] = useState(false);
   const router = useRouter();
 
   const handleBrandVoiceUpdate = (field: string, value: any) => {
@@ -114,10 +115,18 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
   const saveAndContinue = async () => {
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save the current state
+      await updateBrandVoice({
+        brandVoice: {
+          ...brandVoice.brandVoice
+        }
+      });
 
-      if (isWalkthrough && onNext) {
-        onNext();
+      // Add a small delay to show the saving state
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (isWalkthrough) {
+        router.push('/walkthrough/complete');
       } else {
         router.push('/');
       }
@@ -130,164 +139,167 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
 
   return (
     <div className="w-full">
+      {!isWalkthrough && (
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={saveAndContinue}
+            disabled={isSaving}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      )}
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Set the vibe with voice and tone!</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Brand Archetype
-                  <span className="inline-block align-middle ml-1">
-                    <a
-                      href="https://iconicfox.com.au/brand-archetypes/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline text-xs"
-                    >
-                      Learn more
-                    </a>
-                  </span>
-                </label>
-                <select
-                  value={brandVoice.brandVoice.archetype}
-                  onChange={(e) => handleArchetypeChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  <option value="">Select a Brand Archetype</option>
-                  {BRAND_ARCHETYPES.map(a => (
-                    <option key={a.name} value={a.name}>{a.name}</option>
-                  ))}
-                </select>
-                {(() => {
-                  console.log('Rendering with archetype:', brandVoice.brandVoice.archetype);
-                  return null;
-                })()}
-                {brandVoice.brandVoice.archetype && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    {BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype)?.description}<br />
-                    <span className="text-gray-500">Examples: {BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype)?.example}</span>
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Dominant Tone</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {TONE_OPTIONS.map(tone => (
-                    <div key={tone} className="flex items-center">
-                      <input
-                        type="radio"
-                        id={`tone-${tone}`}
-                        name="tone"
-                        checked={brandVoice.brandVoice.tone === tone}
-                        onChange={() => handleBrandVoiceUpdate('tone', tone)}
-                        className="h-4 w-4 text-blue-600 rounded border-gray-300 mr-2"
-                      />
-                      <label htmlFor={`tone-${tone}`} className="text-sm text-gray-700">
-                        {tone}
-                      </label>
-                      <button
-                        onClick={() => setShowExample({ type: 'tone', value: tone })}
-                        className="ml-2 text-gray-400 hover:text-blue-600"
-                      >
-                        <Info className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {brandVoice.brandVoice.tone && (
-                  <div className="mt-4 bg-gray-50 p-4 rounded border text-sm text-gray-600">
-                    <strong>Example:</strong> {TONE_EXAMPLES[brandVoice.brandVoice.tone]}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Brand Personality</label>
-                <p className="text-xs text-gray-500 mb-2">Select up to 3 traits</p>
-                <div className="flex flex-wrap gap-2">
-                  {PERSONALITY_OPTIONS.map(trait => (
-                    <button
-                      key={trait}
-                      onClick={() => togglePersonality(trait)}
-                      className={`px-3 py-1.5 rounded-full text-sm ${brandVoice.brandVoice.personality?.includes(trait)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    >
-                      {trait}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  If your brand was a person, what would their personality be like?
-                  <HelpText text="Describe your brand's personality in your own words. This helps create a more nuanced understanding of your brand's character." />
-                </label>
-                <textarea
-                  value={brandVoice.brandVoice.brandPersonality}
-                  onChange={(e) => handleBrandVoiceUpdate('brandPersonality', e.target.value)}
-                  placeholder="e.g., Our brand is like a wise mentor who's also approachable and friendly. We're knowledgeable but never condescending, and we always take time to explain things clearly."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md min-h-[100px] resize-y"
-                />
-              </div>
-
-              {showExample && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                  <div className="bg-white p-6 rounded-lg shadow-md max-w-md">
-                    <h3 className="text-lg font-semibold mb-3">
-                      {showExample.type === 'tone' ? 'Tone Example' : 'Personality Example'}: {showExample.value}
-                    </h3>
-                    <p className="text-gray-700 mb-4">
-                      {TONE_EXAMPLES[showExample.value]}
-                    </p>
-                    <div className="text-right">
-                      <button
-                        onClick={() => setShowExample(null)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                </div>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Brand Archetype</h3>
+              <label className="block text-sm font-medium mb-1">
+                Select your brand's archetype
+                <span className="inline-block align-middle ml-1">
+                  <a
+                    href="https://iconicfox.com.au/brand-archetypes/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline text-xs"
+                  >
+                    Learn more
+                  </a>
+                </span>
+              </label>
+              <select
+                value={brandVoice.brandVoice.archetype}
+                onChange={(e) => handleArchetypeChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="">Select a Brand Archetype</option>
+                {BRAND_ARCHETYPES.map(a => (
+                  <option key={a.name} value={a.name}>{a.name}</option>
+                ))}
+              </select>
+              {brandVoice.brandVoice.archetype && (
+                <p className="text-sm text-gray-600 mt-2">
+                  {BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype)?.description}<br />
+                  <span className="text-gray-500">Examples: {BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype)?.example}</span>
+                </p>
               )}
             </div>
-          </CardContent>
-        </Card>
 
-        {!isWalkthrough && (
-          <div className="flex justify-between items-center pt-6">
-            <button
-              onClick={() => router.push('/')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
-            >
-              ← Back
-            </button>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Voice & Tone</h3>
+              <label className="block text-sm font-medium mb-1">Dominant Tone</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {TONE_OPTIONS.map(tone => (
+                  <div key={tone} className="flex items-center">
+                    <input
+                      type="radio"
+                      id={`tone-${tone}`}
+                      name="tone"
+                      checked={brandVoice.brandVoice.tone === tone}
+                      onChange={() => handleBrandVoiceUpdate('tone', tone)}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300 mr-2"
+                    />
+                    <label htmlFor={`tone-${tone}`} className="text-sm text-gray-700">
+                      {tone}
+                    </label>
+                    <button
+                      onClick={() => setShowExample({ type: 'tone', value: tone })}
+                      className="ml-2 text-gray-400 hover:text-blue-600"
+                    >
+                      <Info className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-            <div className="flex space-x-4">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Personality Traits</h3>
+              <label className="block text-sm font-medium mb-1">Select up to 3 traits that best describe your brand</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {PERSONALITY_OPTIONS.map(trait => (
+                  <div key={trait} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`trait-${trait}`}
+                      checked={brandVoice.brandVoice.personality?.includes(trait)}
+                      onChange={() => togglePersonality(trait)}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300 mr-2"
+                    />
+                    <label htmlFor={`trait-${trait}`} className="text-sm text-gray-700">
+                      {trait}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showExample && (
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-1">
+                  {showExample.type === 'tone' ? 'Tone Example' : 'Personality Example'}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {showExample.type === 'tone' ? TONE_EXAMPLES[showExample.value] : ''}
+                </p>
+              </div>
               <button
-                onClick={() => router.push('/')}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+                onClick={() => setShowExample(null)}
+                className="text-gray-400 hover:text-gray-600"
               >
-                Cancel
-              </button>
-
-              <button
-                onClick={saveAndContinue}
-                disabled={isSaving}
-                className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
         )}
       </div>
+
+      {showReview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4">Review Your Brand Personality</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Brand Archetype</h3>
+                <p className="text-lg font-medium">{brandVoice.brandVoice.archetype}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype)?.description}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Voice & Tone</h3>
+                <p className="text-lg font-medium">{brandVoice.brandVoice.tone}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {TONE_EXAMPLES[brandVoice.brandVoice.tone]}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Personality Traits</h3>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {brandVoice.brandVoice.personality?.map((trait: string) => (
+                    <span key={trait} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                      {trait}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowReview(false)}
+                className="px-4 py-2 text-gray-700 hover:text-gray-900"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

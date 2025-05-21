@@ -1,6 +1,8 @@
 // src/components/features/MarketingWalkthrough/components/ValuePropStep/index.tsx
 import React, { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Loader } from 'lucide-react';
+import { useNotification } from '../../../../../context/NotificationContext';
+import StrategicDataService from '../../../../../services/StrategicDataService';
 
 interface ValuePropStepProps {
     onNext: () => void;
@@ -10,6 +12,7 @@ interface ValuePropStepProps {
 }
 
 const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData, setFormData }) => {
+    const { showNotification } = useNotification();
     const [existingValueProp, setExistingValueProp] = useState('');
     const [target, setTarget] = useState('');
     const [solution, setSolution] = useState('');
@@ -17,6 +20,53 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
     const [proof, setProof] = useState('');
     const [paragraph, setParagraph] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [productName, setProductName] = useState('');
+    const [productDescription, setProductDescription] = useState('');
+
+    useEffect(() => {
+        const loadExistingData = async () => {
+            try {
+                // First try to get data from formData
+                if (formData.productName) {
+                    setProductName(formData.productName);
+                }
+                if (formData.productDescription) {
+                    setProductDescription(formData.productDescription);
+                }
+
+                // If not in formData, try localStorage
+                if (!formData.productName || !formData.productDescription) {
+                    const savedData = localStorage.getItem('marketingProduct');
+                    if (savedData) {
+                        const productData = JSON.parse(savedData);
+                        if (!formData.productName && productData.name) {
+                            setProductName(productData.name);
+                        }
+                        if (!formData.productDescription && productData.type) {
+                            setProductDescription(productData.type);
+                        }
+                    }
+                }
+
+                // If still not found, try StrategicDataService
+                if (!formData.productName || !formData.productDescription) {
+                    const productData = await StrategicDataService.getProductInfo();
+                    if (productData) {
+                        if (!formData.productName && productData.name) {
+                            setProductName(productData.name);
+                        }
+                        if (!formData.productDescription && productData.description) {
+                            setProductDescription(productData.description);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading product data:', error);
+            }
+        };
+
+        loadExistingData();
+    }, [formData]);
 
     useEffect(() => {
         const personas = formData.personas || [];
@@ -27,28 +77,35 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
 
     useEffect(() => {
         if (!existingValueProp) {
-            const vp = `We help ${target} by providing ${solution}, that ${benefit}. What sets us apart is ${proof}.`;
-            setParagraph(vp);
-            setFormData({ ...formData, valueProp: vp });
+            setParagraph('');
+            setFormData({ ...formData, valueProp: '' });
         }
     }, [target, solution, benefit, proof, existingValueProp]);
 
     const handleAIHelp = async () => {
-        const productData = localStorage.getItem('marketingProduct');
-        if (!productData) return;
+        if (!productName) {
+            showNotification('Please provide a product name', 'error');
+            return;
+        }
 
         setIsLoading(true);
         try {
-            const { name, type, description, benefits } = JSON.parse(productData);
             const requestBody = {
-                endpoint: 'value-prop-generator',
+                type: 'valueProposition',
                 data: {
-                    productName: name,
-                    productType: type,
-                    productDescription: description,
-                    productBenefits: benefits,
-                },
+                    productInfo: {
+                        name: productName,
+                        description: productDescription || '',
+                        targetAudience: target
+                    },
+                    competitors: [],
+                    industry: 'technology',
+                    focusAreas: [],
+                    tone: 'professional'
+                }
             };
+
+            console.log('Sending request:', requestBody);
 
             const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
@@ -59,102 +116,138 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                 body: JSON.stringify(requestBody),
             });
 
+            console.log('Response status:', response.status);
             const result = await response.json();
-            if (result.valueProp) {
-                const { target, solution, benefit, proof } = result.valueProp;
-                setTarget(target);
-                setSolution(solution);
-                setBenefit(benefit);
-                setProof(proof);
+            console.log('Response data:', result);
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to generate value proposition');
             }
-        } catch (err) {
-            console.error('Error generating value prop:', err);
+
+            if (result.valueProposition) {
+                setParagraph(result.valueProposition);
+                setFormData({ ...formData, valueProp: result.valueProposition });
+                showNotification('Generated value proposition successfully!', 'success');
+            } else {
+                showNotification('No value proposition was generated. Please try again.', 'error');
+            }
+        } catch (error: any) {
+            console.error('Error generating value prop:', error);
+            showNotification(error.message || 'Failed to generate value proposition. Please try again.', 'error');
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="space-y-6 relative">
-            <h2 className="text-xl font-semibold">Value Proposition</h2>
-            <p className="text-sm text-gray-600">
-                A value proposition communicates what you do, who it’s for, and why it matters—all in one powerful sentence. Don’t worry if it’s rough—we’ll help you polish it.
-            </p>
+        <div className="space-y-8">
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Build Your Value Proposition</h2>
+                <p className="text-sm text-gray-600 mb-6">
+                    A value proposition communicates what you do, who it's for, and why it matters—all in one powerful sentence. Don't worry if it's rough—we'll help you polish it.
+                </p>
+                <div className="grid gap-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-2">Product Name</label>
+                        <input
+                            type="text"
+                            value={productName}
+                            onChange={(e) => setProductName(e.target.value)}
+                            placeholder="Enter your product name..."
+                            className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                        />
+                    </div>
 
-            <div className="grid gap-4">
-                <div>
-                    <label className="block font-medium mb-1">Already have a value proposition? Paste it here:</label>
-                    <textarea
-                        value={existingValueProp}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setExistingValueProp(val);
-                            setParagraph(val);
-                            setFormData({ ...formData, valueProp: val });
-                        }}
-                        placeholder="Paste your value proposition here..."
-                        className="w-full p-2 border rounded"
-                        rows={2}
-                    />
-                </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2">Product Description</label>
+                        <textarea
+                            value={productDescription}
+                            onChange={(e) => setProductDescription(e.target.value)}
+                            placeholder="Describe your product..."
+                            className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                            rows={3}
+                        />
+                    </div>
 
-                {!existingValueProp && (
-                    <>
-                        <div>
-                            <label className="block font-medium mb-1">Who is your target audience?</label>
-                            <input
-                                type="text"
-                                value={target}
-                                onChange={(e) => setTarget(e.target.value)}
-                                className="w-full p-2 border rounded"
-                            />
-                        </div>
-                        <div>
-                            <label className="block font-medium mb-1">What do you provide?</label>
-                            <input
-                                type="text"
-                                value={solution}
-                                onChange={(e) => setSolution(e.target.value)}
-                                className="w-full p-2 border rounded"
-                            />
-                        </div>
-                        <div>
-                            <label className="block font-medium mb-1">What benefit does this bring?</label>
-                            <input
-                                type="text"
-                                value={benefit}
-                                onChange={(e) => setBenefit(e.target.value)}
-                                className="w-full p-2 border rounded"
-                            />
-                        </div>
-                        <div>
-                            <label className="block font-medium mb-1">Why should people believe you?</label>
-                            <input
-                                type="text"
-                                value={proof}
-                                onChange={(e) => setProof(e.target.value)}
-                                className="w-full p-2 border rounded"
-                            />
-                        </div>
-                    </>
-                )}
+                    <div>
+                        <label className="block text-sm font-medium mb-2">Enter your value proposition, if you've already created one. If not, fill in the other fields and we'll help you create one.</label>
+                        <textarea
+                            value={existingValueProp || paragraph}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (existingValueProp) {
+                                    setExistingValueProp(val);
+                                }
+                                setParagraph(val);
+                                setFormData({ ...formData, valueProp: val });
+                            }}
+                            placeholder="Enter or paste your value proposition here..."
+                            className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                            rows={4}
+                        />
+                    </div>
 
-                <div className="text-blue-600 hover:underline inline-flex items-center text-sm cursor-pointer" onClick={handleAIHelp}>
-                    <Sparkles className="h-4 w-4 mr-1" />
-                    {isLoading ? 'Drafting your value prop...' : 'Let AI suggest your value proposition'}
-                </div>
+                    {!existingValueProp && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Target Audience</label>
+                                <input
+                                    type="text"
+                                    value={target}
+                                    onChange={(e) => setTarget(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Solution</label>
+                                <input
+                                    type="text"
+                                    value={solution}
+                                    onChange={(e) => setSolution(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Key Benefit</label>
+                                <input
+                                    type="text"
+                                    value={benefit}
+                                    onChange={(e) => setBenefit(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Proof Point</label>
+                                <input
+                                    type="text"
+                                    value={proof}
+                                    onChange={(e) => setProof(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                                />
+                            </div>
+                        </>
+                    )}
 
-                <div className="bg-blue-50 p-4 rounded">
-                    <h3 className="font-semibold mb-2 text-gray-800">Edit Your Final Value Proposition</h3>
-                    <textarea
-                        value={paragraph}
-                        onChange={(e) => {
-                            setParagraph(e.target.value);
-                            setFormData({ ...formData, valueProp: e.target.value });
-                        }}
-                        className="w-full p-2 border rounded"
-                        rows={4}
-                    />
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleAIHelp}
+                            disabled={isLoading}
+                            className="bg-blue-500 text-white px-4 py-2 rounded inline-flex items-center"
+                        >
+                            {isLoading ? <Loader className="animate-spin mr-2" size={16} /> : <Sparkles className="mr-2" size={16} />}
+                            {isLoading ? 'Drafting your value prop...' : 'Help me draft a value proposition'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                const valueToSave = existingValueProp || paragraph;
+                                setFormData({ ...formData, valueProp: valueToSave });
+                                localStorage.setItem('marketingValueProp', valueToSave);
+                            }}
+                            className="bg-green-500 text-white px-4 py-2 rounded inline-flex items-center"
+                        >
+                            Save Value Proposition
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

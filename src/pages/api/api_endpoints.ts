@@ -1237,72 +1237,6 @@ async function handleProductInfo(data: any, res: NextApiResponse) {
   }
 }
 
-// Keyword volume lookup handler
-async function handleKeywordVolumeLookup(data: any, res: NextApiResponse) {
-  try {
-    // Validate input
-    if (!data.keyword || typeof data.keyword !== 'string') {
-      return res.status(400).json({
-        error: 'Invalid request',
-        message: 'Missing or invalid keyword'
-      });
-    }
-
-    const keyword = data.keyword.trim();
-
-    // In a production environment, you would call an actual SEO API here
-    // For example: Semrush, Ahrefs, Google Keyword Planner, etc.
-    // Since we don't have that integration yet, we'll create more realistic mock data
-
-    // Create consistent but pseudo-random volume based on keyword
-    let volumeBase = 0;
-    // Common marketing terms should have higher volume
-    const highVolumeTerms = ['marketing', 'content', 'seo', 'social media', 'email', 'campaign', 'strategy'];
-    const mediumVolumeTerms = ['roi', 'conversion', 'lead generation', 'analytics', 'branding'];
-
-    // Check if keyword contains any high volume terms
-    if (highVolumeTerms.some(term => keyword.toLowerCase().includes(term))) {
-      volumeBase = 5000;
-    } else if (mediumVolumeTerms.some(term => keyword.toLowerCase().includes(term))) {
-      volumeBase = 1000;
-    } else {
-      volumeBase = 100;
-    }
-
-    // Add some variability based on keyword length (shorter keywords tend to have higher volume)
-    const lengthFactor = Math.max(1, 10 - keyword.length * 0.5);
-
-    // Use a hash-like function for consistent results per keyword
-    const hashFactor = keyword.split('')
-      .reduce((sum: number, char: string, index: number) => sum + char.charCodeAt(0) * (index + 1), 0) % 100;
-
-    const volume = Math.floor(volumeBase * lengthFactor + hashFactor * 10);
-
-    // Determine competition level based on volume
-    let competition = 'low';
-    if (volume > 5000) {
-      competition = 'high';
-    } else if (volume > 1000) {
-      competition = 'medium';
-    }
-
-    return res.status(200).json({
-      keyword,
-      volume,
-      competition,
-      // Add more realistic SEO metrics if needed
-      cpc: (volume * 0.01).toFixed(2),
-      difficulty: Math.min(100, Math.floor(volume / 100))
-    });
-  } catch (error) {
-    console.error('Error looking up keyword volume:', error);
-    return res.status(500).json({
-      error: 'Server error',
-      message: 'Failed to lookup keyword volume'
-    });
-  }
-}
-
 // Handler for content repurposer endpoint
 async function handleContentRepurposer(data: any, res: NextApiResponse) {
   try {
@@ -1375,6 +1309,158 @@ Return your response as JSON with the following structure:
   }
 }
 
+// boilerplate generator
+export async function generateBoilerplates({
+  businessName,
+  description,
+  product,
+  audience,
+  promise,
+  tone,
+  style,
+  differentiator,
+  positioning,
+  archetype,
+  personality
+}: {
+  businessName: string;
+  description: string;
+  product: string;
+  audience: string;
+  promise: string;
+  tone: string;
+  style: string;
+  differentiator: string;
+  positioning: string;
+  archetype: string;
+  personality: string[];
+}) {
+  const prompt = `
+You're an expert brand copywriter. Based on the information below, generate three marketing boilerplates for this company. The first should be ~20 words, the second ~50 words, and the third ~100 words. All should reflect the brand's voice, tone, and personality.
+
+Business name: ${businessName}
+Description: ${description}
+Product or solution: ${product}
+Ideal customer or audience: ${audience}
+Value proposition: ${promise}
+Differentiator: ${differentiator}
+Positioning: ${positioning}
+Tone: ${tone}
+Style: ${style}
+Brand archetype: ${archetype}
+Brand personality traits: ${personality.join(', ')}
+
+Format your response as a JSON array of strings.
+`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert brand copywriter who specializes in creating compelling marketing boilerplates.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+    });
+
+    const responseText = completion.choices[0].message?.content || '';
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error('Error generating boilerplates:', error);
+    throw new Error('Failed to generate boilerplates');
+  }
+}
+
+export async function generateTaglines({
+  businessName,
+  description,
+  product,
+  audience,
+  promise,
+  tone,
+  style,
+  archetype,
+  personality
+}: {
+  businessName: string;
+  description: string;
+  product: string;
+  audience: string;
+  promise: string;
+  tone: string;
+  style: string;
+  archetype: string;
+  personality: string[];
+}) {
+  try {
+    const prompt = `As an expert copywriter, create three unique, compelling taglines for a business with the following details:
+
+Business Name: ${businessName}
+Description: ${description}
+Product/Solution: ${product}
+Target Audience: ${audience}
+Value Proposition: ${promise}
+Tone: ${tone}
+Writing Style: ${style}
+Brand Archetype: ${archetype}
+Brand Personality Traits: ${personality.join(', ')}
+
+Requirements for each tagline:
+1. Must be memorable and impactful
+2. Should reflect the brand's tone and personality
+3. Must be concise (ideally 2-7 words)
+4. Should communicate the core value proposition
+5. Must be unique and avoid clichés
+6. Should be adaptable across different marketing channels
+
+Return your response as a JSON array of three taglines, each with a brief explanation of why it works:
+[
+  {
+    "tagline": "first tagline",
+    "explanation": "brief explanation of why this tagline works"
+  },
+  {
+    "tagline": "second tagline",
+    "explanation": "brief explanation of why this tagline works"
+  },
+  {
+    "tagline": "third tagline",
+    "explanation": "brief explanation of why this tagline works"
+  }
+]`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert copywriter specializing in creating memorable, impactful taglines that capture brand essence.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7
+    });
+
+    const responseText = completion.choices[0].message?.content || '';
+    const parsedResponse = JSON.parse(responseText);
+
+    // Extract just the taglines from the response
+    return parsedResponse.map((item: any) => item.tagline);
+  } catch (error) {
+    console.error('Error generating taglines:', error);
+    throw error;
+  }
+}
+
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -1382,109 +1468,70 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { endpoint, data } = req.body;
+    const { type, data } = req.body;
 
-    console.log(`Processing API request for endpoint: ${endpoint}`);
+    console.log(`Processing API request for endpoint: ${type}`);
 
     // Handle different endpoints
-    switch (endpoint) {
+    switch (type) {
       // Handle content humanizer endpoint
-      case 'content-humanizer':
-        return handleContentHumanizer(data, res);
+      case 'contentHumanizer':
+        return await handleContentHumanizer(data, res);
 
       // Handle style checker endpoint
-      case 'style-checker':
-        return handleStyleChecker(data, res);
+      case 'styleChecker':
+        return await handleStyleChecker(data, res);
 
       // Handle prose perfector endpoint
-      case 'prose-perfector':
-        return handleProsePerfector(data, res);
+      case 'prosePerfector':
+        return await handleProsePerfector(data, res);
 
       // Handle generate content endpoint
-      case 'generate-content':
-        return handleGenerateContent(data, res);
+      case 'generateContent':
+        return await handleGenerateContent(data, res);
 
       // Handle analyze-competitors endpoint
-      case 'analyze-competitors':
-        return handleAnalyzeCompetitors(data, res);
+      case 'analyzeCompetitors':
+        return await handleAnalyzeCompetitors(data, res);
 
       // Handle value-proposition-generator endpoint
-      case 'value-proposition-generator':
-        return handleValuePropositionGenerator(data, res);
+      case 'valueProposition':
+        return await handleValuePropositionGenerator(data, res);
 
       // Handle persona-generator endpoint
-      case 'persona-generator':
-        return handlePersonaGenerator(data, res);
+      case 'personaGenerator':
+        return await handlePersonaGenerator(data, res);
 
       // Handle generate-keywords endpoint
-      case 'generate-keywords':
-        return handleGenerateKeywords(data, res);
+      case 'generateKeywords':
+        return await handleGenerateKeywords(data, res);
 
       // Handle modify-content endpoint
-      case 'modify-content':
-        return handleModifyContent(data, res);
+      case 'modifyContent':
+        return await handleModifyContent(data, res);
 
       // Handle product-info endpoint  
-      case 'product-info':
-        return handleProductInfo(data, res);
+      case 'productInfo':
+        return await handleProductInfo(data, res);
 
-      // Handle keyword-volume-lookup endpoint
-      case 'keyword-volume-lookup':
-        return handleKeywordVolumeLookup(data, res);
+      // Handle content repurposer endpoint
+      case 'contentRepurposer':
+        return await handleContentRepurposer(data, res);
 
-      // Handle value-prop-generator endpoint
-      case 'value-prop-generator': {
-        const { productName, productType, productDescription, productBenefits } = data;
+      // Handle generateBoilerplates endpoint
+      case 'generateBoilerplates':
+        const boilerplates = await generateBoilerplates(data);
+        return res.status(200).json(boilerplates);
 
-        const prompt = `
-You are a senior brand strategist. Help the user build a strong value proposition using the following inputs.
-
-Product name: ${productName}
-Product type: ${productType}
-Description: ${productDescription}
-Benefits: ${productBenefits?.join(', ')}
-
-Structure your response as a JSON object with the following keys:
-- "target": Who is this for?
-- "solution": What is being provided?
-- "benefit": What outcome does it deliver?
-- "proof": Why should the customer believe this?
-
-Only return a valid JSON object. No commentary.
-    `.trim();
-
-        try {
-          const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "gpt-4",
-            temperature: 0.7,
-          });
-
-          const raw = completion.choices?.[0]?.message?.content || '';
-          let valueProp;
-
-          try {
-            valueProp = JSON.parse(raw);
-          } catch (err) {
-            console.error("Failed to parse JSON from OpenAI:", raw);
-            return res.status(500).json({ error: "AI response was not valid JSON." });
-          }
-
-          return res.status(200).json({ valueProp });
-        } catch (error) {
-          console.error("Error generating value prop:", error);
-          return res.status(500).json({ error: "Failed to generate value proposition." });
-        }
-      }
-
-      // Handle content-repurposer endpoint
-      case 'content-repurposer':
-        return handleContentRepurposer(data, res);
+      // Handle generateTaglines endpoint
+      case 'generateTaglines':
+        const taglines = await generateTaglines(data);
+        return res.status(200).json(taglines);
 
       default:
         return res.status(400).json({
-          error: 'Invalid endpoint',
-          message: `Endpoint '${endpoint}' not found`
+          error: 'Invalid request type',
+          message: `Endpoint '${type}' not found`
         });
     }
   } catch (error: unknown) {

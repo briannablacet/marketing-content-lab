@@ -105,11 +105,8 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
     <div className="space-y-8">
       {/* Style Guide Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Your Style Guide</h2>
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-semibold">Writing Style Configuration</h2>
-            <HelpCircle className="h-5 w-5 text-gray-400" />
-          </div>
           <div className="mb-6">
             <select
               value={writingStyle.styleGuide.primary}
@@ -148,8 +145,8 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
 
       {/* Formatting Preferences Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Format Your Content</h2>
         <div className="mb-4">
-          <h2 className="text-xl font-semibold">Formatting Preferences</h2>
           <p className="text-sm text-gray-600 mt-2">
             {writingStyle.styleGuide.primary && writingStyle.styleGuide.primary !== 'Custom Style Guide'
               ? `Using ${writingStyle.styleGuide.primary} defaults. Override any specific rules below as needed.`
@@ -204,39 +201,18 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
 
       {/* Punctuation and Grammar Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold">Punctuation and Grammar</h2>
-          <p className="text-sm text-gray-600 mt-2">
-            {writingStyle.styleGuide.primary && writingStyle.styleGuide.primary !== 'Custom Style Guide'
-              ? `Using ${writingStyle.styleGuide.primary} defaults. Override any specific rules below as needed.`
-              : 'Set your custom punctuation preferences below. All fields are optional.'}
-          </p>
-        </div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Punctuation & Grammar Rules</h2>
         <div className="space-y-6">
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="oxford-comma"
-              checked={writingStyle.punctuation?.oxfordComma || false}
-              onChange={(e) => handlePunctuationUpdate('oxfordComma', e.target.checked)}
-              className="h-4 w-4 text-blue-600 rounded border-gray-300"
-            />
-            <label htmlFor="oxford-comma" className="ml-2 block text-sm text-gray-900">
-              Use Oxford Comma <span className="text-gray-500">(optional)</span>
-            </label>
-          </div>
-
           <div>
-            <label className="block text-sm font-medium mb-2">Bullet Point Style <span className="text-gray-500">(optional)</span></label>
+            <label className="block text-sm font-medium mb-2">Oxford Comma <span className="text-gray-500">(optional)</span></label>
             <select
-              value={writingStyle.punctuation?.bulletPoints || ''}
-              onChange={(e) => handlePunctuationUpdate('bulletPoints', e.target.value)}
+              value={writingStyle.punctuation?.oxfordComma ? 'true' : 'false'}
+              onChange={(e) => handlePunctuationUpdate('oxfordComma', e.target.value === 'true')}
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
               <option value="">Use style guide default</option>
-              <option value="Period if complete sentence">Period if complete sentence</option>
-              <option value="No punctuation">No punctuation</option>
-              <option value="Always use periods">Always use periods</option>
+              <option value="true">Always use Oxford comma</option>
+              <option value="false">Never use Oxford comma</option>
             </select>
           </div>
 
@@ -248,8 +224,8 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
               <option value="">Use style guide default</option>
-              <option value="Double quotes">Double quotes ("example")</option>
-              <option value="Single quotes">Single quotes ('example')</option>
+              <option value="double">Double quotes ("...")</option>
+              <option value="single">Single quotes ('...')</option>
             </select>
           </div>
         </div>
@@ -257,7 +233,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
 
       {/* Internal Style Conventions */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4">Internal Style Conventions</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Team's Style Rules</h2>
         <p className="text-sm text-gray-600 mb-3">
           Add any specific language, formatting, or grammar rules your team uses internally.
           Separate each convention with a new line.
