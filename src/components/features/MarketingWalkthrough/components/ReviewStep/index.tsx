@@ -1,9 +1,11 @@
 // src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Check, Edit2, ChevronRight, AlertCircle } from 'lucide-react';
+import { Check, Edit2, ChevronRight, AlertCircle, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useBrandVoice } from '@/context/BrandVoiceContext';
+import StrategicDataService from '../../../../services/StrategicDataService';
 
 // Define the complete step sequence based on your walkthrough
 const STEPS = {
@@ -20,12 +22,17 @@ const STEPS = {
 
 const ReviewStep = ({ onNext, onBack }) => {
   const router = useRouter();
+  const { brandVoice } = useBrandVoice();
   const [productData, setProductData] = useState(null);
   const [audienceData, setAudienceData] = useState([]);
   const [messagingData, setMessagingData] = useState(null);
   const [competitorsData, setCompetitorsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [storageInfo, setStorageInfo] = useState({});
+  const [productInfo, setProductInfo] = useState<any>(null);
+  const [targetAudiences, setTargetAudiences] = useState<string[]>([]);
+  const [competitiveAnalysis, setCompetitiveAnalysis] = useState<any>(null);
+  const [styleGuide, setStyleGuide] = useState<any>(null);
 
   // Load data from localStorage when component mounts
   useEffect(() => {
@@ -174,6 +181,25 @@ const ReviewStep = ({ onNext, onBack }) => {
       }
       setStorageInfo(allItems);
 
+      // Fetch additional data
+      const fetchData = async () => {
+        const [product, messaging, audiences, competitive, style] = await Promise.all([
+          StrategicDataService.getProductInfo(),
+          StrategicDataService.getMessagingFramework(),
+          StrategicDataService.getTargetAudiences(),
+          StrategicDataService.getCompetitiveAnalysis(),
+          StrategicDataService.getStyleGuide()
+        ]);
+
+        setProductInfo(product);
+        setMessagingData(messaging);
+        setTargetAudiences(audiences);
+        setCompetitiveAnalysis(competitive);
+        setStyleGuide(style);
+      };
+
+      fetchData();
+
     } catch (error) {
       console.error('Error loading marketing data:', error);
     } finally {
@@ -207,6 +233,44 @@ const ReviewStep = ({ onNext, onBack }) => {
     (audienceData?.length > 0) &&
     messagingData &&
     (competitorsData?.length > 0);
+
+  const handleComplete = () => {
+    router.push('/walkthrough/complete');
+  };
+
+  const handleEdit = (section: string) => {
+    const stepMap: { [key: string]: string } = {
+      'product': '/walkthrough/2',
+      'persona': '/walkthrough/3',
+      'value-prop': '/walkthrough/4',
+      'messaging': '/walkthrough/5',
+      'competitive': '/walkthrough/6',
+      'style': '/walkthrough/7',
+      'brand-voice': '/walkthrough/8'
+    };
+    router.push(stepMap[section]);
+  };
+
+  const downloadAll = () => {
+    const content = {
+      productInfo,
+      messagingFramework: messagingData,
+      targetAudiences,
+      competitiveAnalysis,
+      styleGuide,
+      brandVoice: brandVoice.brandVoice
+    };
+
+    const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'branding-walkthrough-content.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-8">
@@ -452,93 +516,19 @@ const ReviewStep = ({ onNext, onBack }) => {
         </div>
       </Card>
 
-      {/* Marketing Program Summary - Simple version without "generate" */}
-      <Card className="p-6 border-blue-200 bg-blue-50">
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold">Marketing Program Summary</h3>
-        </div>
-
-        <div className="mb-6">
-          <p className="text-gray-700 mb-4">
-            Based on your inputs, your marketing program is ready to move to the execution phase.
-            Here's what you've accomplished:
-          </p>
-
-          <ul className="space-y-2 mb-4">
-            <li className="flex items-start">
-              <span className="text-blue-500 mr-2">•</span> Defined your product: <strong>{productData?.name || "Not specified"}</strong>
-            </li>
-            <li className="flex items-start">
-              <span className="text-blue-500 mr-2">•</span> Identified {audienceData?.length || 0} target audience personas with challenges
-            </li>
-            <li className="flex items-start">
-              <span className="text-blue-500 mr-2">•</span> Created a messaging framework with {messagingData?.keyDifferentiators?.length || 0} key differentiators
-            </li>
-            <li className="flex items-start">
-              <span className="text-blue-500 mr-2">•</span> Analyzed {competitorsData?.length || 0} competitors to identify opportunities
-            </li>
-          </ul>
-
-          <p className="text-gray-700">
-            You're now ready to start creating content and building campaigns that align with your strategy.
-          </p>
-        </div>
-      </Card>
-
-      {/* Next Steps */}
-      <div className="mt-8">
-        <h3 className="text-xl font-bold mb-4">Next Steps</h3>
-
-        <div className="space-y-4 mb-6">
-          <div className="flex items-start">
-            <div className="bg-green-100 text-green-700 rounded-full p-1 mr-3 mt-0.5">
-              <Check className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-medium">Setup your marketing program foundations</p>
-            </div>
-          </div>
-
-          <div className="flex items-start">
-            <div className="bg-blue-100 text-blue-700 rounded-full p-1 mr-3 mt-0.5">
-              <span className="block text-center text-xs font-bold w-4 h-4">2</span>
-            </div>
-            <div>
-              <p className="font-medium">Create content aligned with your key messages</p>
-            </div>
-          </div>
-
-          <div className="flex items-start">
-            <div className="bg-blue-100 text-blue-700 rounded-full p-1 mr-3 mt-0.5">
-              <span className="block text-center text-xs font-bold w-4 h-4">3</span>
-            </div>
-            <div>
-              <p className="font-medium">Build campaigns that target your audience's challenges</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-4">
-          <Link href="/content-creator">
-            <button className="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
-              Go to Content Creator
-            </button>
-          </Link>
-
-          <Link href="/campaign-builder">
-            <button className="px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
-              Build a Campaign
-            </button>
-          </Link>
-
-          <button
-            onClick={onNext}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-          >
-            Finalize Marketing Program
-            <ChevronRight className="w-5 h-5 ml-1" />
-          </button>
-        </div>
+      <div className="flex justify-between items-center pt-6">
+        <button
+          onClick={onBack}
+          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+        >
+          Back
+        </button>
+        <button
+          onClick={handleComplete}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Complete Walkthrough
+        </button>
       </div>
     </div>
   );

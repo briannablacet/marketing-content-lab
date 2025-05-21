@@ -87,20 +87,25 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
 
   const handleAISuggestion = async () => {
     const productData = localStorage.getItem('marketingProduct');
-    if (!productData) return;
+    if (!productData) {
+      showNotification('Please fill in your product information first', 'error');
+      return;
+    }
     const { name, type } = JSON.parse(productData);
 
     setLoading(true);
+    console.log('Starting AI suggestion with product data:', { name, type });
 
     try {
       const requestBody = {
-        endpoint: 'persona-generator',
+        type: 'personaGenerator',
         data: {
           productName: name,
           productType: type,
           currentPersona: personas[0],
-        },
+        }
       };
+      console.log('Sending request:', requestBody);
 
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
@@ -111,12 +116,23 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
         body: JSON.stringify(requestBody),
       });
 
+      console.log('Response status:', response.status);
       const result = await response.json();
+      console.log('Response data:', result);
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to generate personas');
+      }
+
       if (result.personas?.length) {
         setSuggestions(result.personas);
+        showNotification('Generated customer profiles successfully!', 'success');
+      } else {
+        showNotification('No suggestions were generated. Please try again.', 'error');
       }
     } catch (err) {
       console.error('Error fetching ideal customer suggestions:', err);
+      showNotification('Failed to generate suggestions. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -126,10 +142,18 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
     const firstEmptyIndex = personas.findIndex(p => !p.role && !p.industry && p.challenges.every(c => !c));
     if (firstEmptyIndex >= 0) {
       const updated = [...personas];
-      updated[firstEmptyIndex] = suggestion;
+      updated[firstEmptyIndex] = {
+        role: suggestion.role,
+        industry: suggestion.industry,
+        challenges: [...suggestion.challenges]
+      };
       setPersonas(updated);
     } else {
-      setPersonas([...personas, suggestion]);
+      setPersonas([...personas, {
+        role: suggestion.role,
+        industry: suggestion.industry,
+        challenges: [...suggestion.challenges]
+      }]);
     }
     setSuggestions([]);
   };
