@@ -172,13 +172,7 @@ const Navbar: React.FC = () => {
                         href="/writing-style"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        Writing Style Configuration
-                      </Link>
-                      <Link
-                        href="/competitive-analysis"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Competitive Analysis
+                        Writing Style Guide
                       </Link>
                     </div>
                   </div>
@@ -193,8 +187,8 @@ const Navbar: React.FC = () => {
                     setEnhancementMenuOpen(false);
                   }}
                   className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${creationMenuOpen
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                     }`}
                 >
                   <Edit className="w-4 h-4 mr-1" />
@@ -244,8 +238,8 @@ const Navbar: React.FC = () => {
                     setCreationMenuOpen(false);
                   }}
                   className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${enhancementMenuOpen
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                     }`}
                 >
                   <Sparkles className="w-4 h-4 mr-1" />
@@ -284,8 +278,8 @@ const Navbar: React.FC = () => {
               <Link
                 href="/settings"
                 className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${router.pathname === "/settings"
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                  ? "bg-blue-100 text-blue-700"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                   }`}
               >
                 <Settings className="w-4 h-4 mr-1" />
@@ -355,4 +349,4 @@ const Navbar: React.FC = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

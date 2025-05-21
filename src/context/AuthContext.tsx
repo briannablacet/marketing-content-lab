@@ -1,80 +1,147 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 interface User {
-    name: string;
-    email: string;
+  id: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 interface AuthContextType {
-    isAuthenticated: boolean;
-    user: User | null;
-    login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, password: string) => Promise<void>;
-    logout: () => void;
+  user: User | null;
+  token: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => void;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
-    isAuthenticated: false,
-    user: null,
-    login: async () => { },
-    register: async () => { },
-    logout: () => { },
+  user: null,
+  token: null,
+  login: async () => { },
+  register: async () => { },
+  logout: () => { },
+  isAuthenticated: false,
 });
 
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check for existing session
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // Login method
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const { token, data } = await response.json();
+        const user = data.user;
+
+        // Save token and user data
+        setToken(token);
+        setUser({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        });
+
+        // Save token to localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+
+        // Redirect to dashboard or home
+        router.push('/');
+      } else {
+        throw new Error('Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  // Register method
+  const register = async (name: string, email: string, password: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      if (response.ok) {
+        const { token, data } = await response.json();
+        const user = data.user;
+
+        // Save token and user data
+        setToken(token);
+        setUser({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        });
+
+        // Save token to localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+
+        // Redirect to dashboard or home
+        router.push('/');
+      } else {
+        throw new Error('Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  // Logout method
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/');
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!token,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
 export const useAuth = () => useContext(AuthContext);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState<User | null>(null);
-
-    useEffect(() => {
-        // Check for existing session
-        const token = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-        if (token && savedUser) {
-            setIsAuthenticated(true);
-            setUser(JSON.parse(savedUser));
-        }
-    }, []);
-
-    const login = async (email: string, password: string) => {
-        try {
-            // Here you would typically make an API call to your backend
-            // For now, we'll just simulate a successful login
-            const mockUser = { name: 'Test User', email };
-            localStorage.setItem('token', 'mock-token');
-            localStorage.setItem('user', JSON.stringify(mockUser));
-            setIsAuthenticated(true);
-            setUser(mockUser);
-        } catch (error) {
-            throw new Error('Login failed');
-        }
-    };
-
-    const register = async (name: string, email: string, password: string) => {
-        try {
-            // Here you would typically make an API call to your backend
-            // For now, we'll just simulate a successful registration
-            const mockUser = { name, email };
-            localStorage.setItem('token', 'mock-token');
-            localStorage.setItem('user', JSON.stringify(mockUser));
-            setIsAuthenticated(true);
-            setUser(mockUser);
-        } catch (error) {
-            throw new Error('Registration failed');
-        }
-    };
-
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setIsAuthenticated(false);
-        setUser(null);
-    };
-
-    return (
-        <AuthContext.Provider value={{ isAuthenticated, user, login, register, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
-}; 

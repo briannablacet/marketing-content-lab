@@ -1,0 +1,4 @@
+# .vercelignore - Exclude development and test pages from Vercel builds
+src/pages/dev/
+src/pages/test/
+src/pages/NotificationContext.tsx
