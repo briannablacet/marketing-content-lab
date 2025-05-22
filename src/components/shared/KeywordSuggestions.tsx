@@ -47,13 +47,13 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
 
         try {
             // FIXED: Use the correct local API endpoint
-            const response = await fetch('/api/api_endpoints', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keywords`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
-                    endpoint: 'generate-keywords',
                     data: {
                         context: {
                             topic: contentTopic,
@@ -74,7 +74,7 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
 
             // Extract the keyword data from the response structure
             // FIXED: Use the correct response format
-            const keywordData = result; // No need for .document as our API doesn't wrap it that way
+            const keywordData = result.document; // No need for .document as our API doesn't wrap it that way
 
             console.log('Extracted keyword data:', keywordData);
 
