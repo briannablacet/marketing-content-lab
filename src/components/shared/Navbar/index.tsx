@@ -122,14 +122,16 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              <Image
-                src="/images/mcl-logo-new.png"
-                alt="Marketing Content Lab"
-                width={300}
-                height={84}
-                className="h-8 w-auto"
-              />
+          <Link href="/" className="flex-shrink-0 flex items-center">
+              <div className="hover:opacity-80 transition-opacity">
+                <Image
+                  src="/images/navbar-beaker2.png"
+                  alt="Marketing Content Lab"
+                  width={50}
+                  height={50}
+                  className="cursor-pointer"
+                />
+              </div>
             </Link>
 
             {/* Main navigation links */}
