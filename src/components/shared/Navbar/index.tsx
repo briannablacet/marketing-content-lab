@@ -122,7 +122,7 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
-          <Link href="/" className="flex-shrink-0 flex items-center">
+            <Link href="/" className="flex-shrink-0 flex items-center">
               <div className="hover:opacity-80 transition-opacity">
                 <Image
                   src="/images/navbar-beaker2.png"
@@ -181,7 +181,7 @@ const Navbar: React.FC = () => {
                       </Link>
                       {/* FIXED: Changed from /key-messages to /walkthrough/4 for Value Proposition */}
                       <Link
-                        href="/walkthrough/4"
+                        href="/value-proposition"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
