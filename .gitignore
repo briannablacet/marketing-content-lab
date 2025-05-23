@@ -64,9 +64,9 @@ yarn.lock
 .netlify/
 .cache/
 
-#APIs
+# APIs
 
-#Derided features
+# Deprecated features
 /src/pages/seo-keywords.txt
 /src/components/features/MarketingWalkthrough/components/SeoKeywordsStep
 (3) Liza Adams _ LinkedIn.pdf

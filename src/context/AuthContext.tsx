@@ -20,9 +20,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
-  login: async () => {},
-  register: async () => {},
-  logout: () => {},
+  login: async () => { },
+  register: async () => { },
+  logout: () => { },
   isAuthenticated: false,
 });
 
@@ -30,6 +30,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    // Check for existing session
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
 
   // Login method
   const login = async (email: string, password: string) => {
@@ -59,7 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
 
-        // Redirect to  or home
+        // Redirect to dashboard or home
         router.push('/');
       } else {
         throw new Error('Login failed');
@@ -118,42 +128,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.push('/');
   };
 
-  // Check authentication on page load
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    if (token) {
-      // Fetch user data using the token
-      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.user) {
-            setUser({
-              id: data.user.id,
-              name: data.user.name,
-              email: data.user.email,
-              role: data.user.role,
-            });
-            setToken(token);
-          }
-        })
-        .catch((error) => {
-          console.error('Error fetching user data:', error);
-          logout();
-        });
-    }
-    if (user) {
-      setUser(JSON.parse(user));
-    }
-    if (token) {
-      setToken(token);
-    }
-  }, []);
-
   return (
     <AuthContext.Provider
       value={{
@@ -162,7 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         register,
         logout,
-        isAuthenticated: !!user,
+        isAuthenticated: !!token,
       }}
     >
       {children}

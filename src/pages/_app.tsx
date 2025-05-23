@@ -5,17 +5,17 @@
  */
 
 import { AppProps } from 'next/app';
-import '../styles/globals.css';
-import { MarketingProvider } from '../context/MarketingContext';
-import { WalkthroughProvider } from '../context/WalkthroughContext';
-import { NotificationProvider } from '../context/NotificationContext';
-import { ContentProvider } from '../context/ContentContext';
-import { DemoModeProvider } from '../context/DemoModeContext';
-import { MessagingProvider } from '../context/MessagingContext';
-import { WritingStyleProvider } from '../context/WritingStyleContext';
-import { BrandVoiceProvider } from '../context/BrandVoiceContext';
-import { AuthProvider } from '../context/AuthContext';
-import Navbar from '../components/shared/Navbar';
+import '@/styles/globals.css';
+import { MarketingProvider } from '@/context/MarketingContext';
+import { WalkthroughProvider } from '@/context/WalkthroughContext';
+import { NotificationProvider } from '@/context/NotificationContext';
+import { ContentProvider } from '@/context/ContentContext';
+import { DemoModeProvider } from '@/context/DemoModeContext';
+import { MessagingProvider } from '@/context/MessagingContext';
+import { WritingStyleProvider } from '@/context/WritingStyleContext';
+import { BrandVoiceProvider } from '@/context/BrandVoiceContext';
+import { AuthProvider } from '@/context/AuthContext';
+import Navbar from '@/components/shared/Navbar';
 import { Toaster } from 'react-hot-toast';
 
 function MyApp({ Component, pageProps }: AppProps) {

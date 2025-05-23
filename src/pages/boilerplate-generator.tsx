@@ -1,9 +1,8 @@
 // src/pages/boilerplate-generator.tsx
-
 import React from 'react';
-import BoilerplateGenerator from '../components/features/BoilerplateGenerator';
+import BoilerplateGenerator from '@/components/features/BoilerplateGenerator';
 
-const BoilerplateGeneratorPage = () => {
+const BoilerplateGeneratorPage: React.FC = () => {
     return (
         <main className="p-6">
             <BoilerplateGenerator />

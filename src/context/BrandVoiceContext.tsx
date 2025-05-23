@@ -159,20 +159,15 @@ export function BrandVoiceProvider({ children }: { children: ReactNode }) {
   // Import settings from JSON string
   const importBrandVoice = (jsonData: string): boolean => {
     try {
-      const parsedData = JSON.parse(jsonData) as BrandVoiceData;
-      // Basic validation
-      if (!parsedData.brandVoice || !parsedData.contentGuidelines) {
-        throw new Error('Invalid brand voice data format');
-      }
+      const parsedData = JSON.parse(jsonData);
       setBrandVoice(parsedData);
       return true;
-    } catch (err) {
-      setError(`Failed to import settings: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } catch (error) {
+      console.error('Error importing brand voice data:', error);
       return false;
     }
   };
 
-  // Return the provider with all values and functions
   return (
     <BrandVoiceContext.Provider
       value={{
@@ -183,7 +178,7 @@ export function BrandVoiceProvider({ children }: { children: ReactNode }) {
         exportBrandVoice,
         importBrandVoice,
         loading,
-        error
+        error,
       }}
     >
       {children}
@@ -191,7 +186,7 @@ export function BrandVoiceProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook for using the brand voice context
+// Hook to use the brand voice context
 export function useBrandVoice() {
   const context = useContext(BrandVoiceContext);
   if (context === undefined) {

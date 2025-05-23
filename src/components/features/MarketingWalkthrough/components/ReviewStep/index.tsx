@@ -1,4 +1,3 @@
-// src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Check, Edit2, ChevronRight, AlertCircle, Download } from 'lucide-react';
@@ -193,32 +192,57 @@ const ReviewStep = ({ onNext, onBack }) => {
         ]);
 
         setProductInfo(product);
-        setMessagingData(messaging);
         setTargetAudiences(audiences);
         setCompetitiveAnalysis(competitive);
         setStyleGuide(style);
       };
 
       fetchData();
-
     } catch (error) {
-      console.error('Error loading marketing data:', error);
+      console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Function to navigate to specific step
   const goToStep = (stepNumber) => {
-    console.log(`Navigating to step ${stepNumber}`);
+    router.push(`/walkthrough/${stepNumber}`);
+  };
 
-    if (onBack) {
-      // If onBack accepts a step parameter
-      onBack(stepNumber);
-    } else {
-      // Direct URL navigation as fallback
-      router.push(`/walkthrough?step=${stepNumber}`);
+  const handleComplete = () => {
+    router.push('/walkthrough/complete');
+  };
+
+  const handleEdit = (section: string) => {
+    switch (section) {
+      case 'product':
+        goToStep(STEPS.PRODUCT);
+        break;
+      case 'audience':
+        goToStep(STEPS.AUDIENCE);
+        break;
+      case 'messaging':
+        goToStep(STEPS.MESSAGING);
+        break;
+      case 'competitors':
+        goToStep(STEPS.COMPETITOR);
+        break;
+      case 'content-strategy':
+        goToStep(STEPS.CONTENT_STRATEGY);
+        break;
+      case 'writing-style':
+        goToStep(STEPS.WRITING_STYLE);
+        break;
+      case 'brand-voice':
+        goToStep(STEPS.BRAND_VOICE);
+        break;
+      default:
+        console.warn('Unknown section:', section);
     }
+  };
+
+  const downloadAll = () => {
+    // Implementation for downloading all data
   };
 
   if (isLoading) {
@@ -234,44 +258,6 @@ const ReviewStep = ({ onNext, onBack }) => {
     (audienceData?.length > 0) &&
     messagingData &&
     (competitorsData?.length > 0);
-
-  const handleComplete = () => {
-    router.push('/walkthrough/complete');
-  };
-
-  const handleEdit = (section: string) => {
-    const stepMap: { [key: string]: string } = {
-      'product': '/walkthrough/2',
-      'persona': '/walkthrough/3',
-      'value-prop': '/walkthrough/4',
-      'messaging': '/walkthrough/5',
-      'competitive': '/walkthrough/6',
-      'style': '/walkthrough/7',
-      'brand-voice': '/walkthrough/8'
-    };
-    router.push(stepMap[section]);
-  };
-
-  const downloadAll = () => {
-    const content = {
-      productInfo,
-      messagingFramework: messagingData,
-      targetAudiences,
-      competitiveAnalysis,
-      styleGuide,
-      brandVoice: brandVoice.brandVoice
-    };
-
-    const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'branding-walkthrough-content.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="space-y-8">
