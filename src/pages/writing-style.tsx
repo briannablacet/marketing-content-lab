@@ -10,12 +10,12 @@ const WritingStylePage: React.FC = () => {
     <NotificationProvider>
       <WritingStyleProvider>
         <PageLayout
-          title="Writing Style Configuration"
+          title="Style Guide Settings"
           description="Define your brand's writing style and content guidelines to ensure consistent messaging across all channels."
           showHelpPrompt={true}
           helpPromptText="Need help defining your writing style? Let AI analyze your content and suggest a style that matches your brand voice."
           helpPromptLink="/brand-voice"
-          helpPromptLinkText="brand voice settings"
+          helpPromptLinkText="Brand Personality Settings"
         >
           <WritingStyleModule isWalkthrough={false} />
         </PageLayout>

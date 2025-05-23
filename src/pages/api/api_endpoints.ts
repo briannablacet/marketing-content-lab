@@ -300,7 +300,133 @@ Return the analysis as a JSON object with these fields:
     });
   }
 }
+// Handler for mission and vision generation
+async function handleMissionVision(data: any, res: NextApiResponse) {
+  try {
+    console.log("Mission Vision generator received data:", data);
 
+    // Validate input - we need at least some information
+    if (!data.companyName && !data.audience && !data.differentiator && !data.additionalContext) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Please provide at least some company information to generate mission and vision'
+      });
+    }
+
+    // Extract data with defaults
+    const {
+      companyName = '',
+      audience = '',
+      differentiator = '',
+      valueProp = '',
+      tagline = '',
+      boilerplate = '',
+      additionalContext = ''
+    } = data;
+
+    console.log(`Generating mission and vision for: ${companyName}`);
+
+    // Create a comprehensive prompt for mission and vision generation
+    const prompt = `You are an expert brand strategist specializing in creating compelling mission and vision statements.
+
+Please create a mission statement and vision statement for a company with the following details:
+
+Company Name: ${companyName || 'This company'}
+Target Audience: ${audience || 'Not specified'}
+Key Differentiator: ${differentiator || 'Not specified'}
+Value Proposition: ${valueProp || 'Not specified'}
+Current Tagline: ${tagline || 'Not specified'}
+Company Description: ${boilerplate || 'Not specified'}
+Additional Context: ${additionalContext || 'None provided'}
+
+Mission Statement Guidelines:
+- Should describe what the company does TODAY
+- Should explain WHY the company exists
+- Should be inspiring but grounded in reality
+- Should be 1-3 sentences long
+- Should connect with the target audience
+
+Vision Statement Guidelines:
+- Should describe the company's aspirational future
+- Should paint a picture of the world the company wants to create
+- Should be inspirational and forward-looking
+- Should be 1-2 sentences long
+- Should be memorable and motivating
+
+Format your response as a JSON object with these exact fields:
+{
+  "mission": "The mission statement here",
+  "vision": "The vision statement here"
+}
+
+Make the statements specific to this company, avoid generic corporate speak, and ensure they reflect the company's unique value and purpose.`;
+
+    console.log("Sending prompt to OpenAI for mission and vision");
+
+    try {
+      // Call OpenAI API
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert brand strategist who specializes in creating powerful mission and vision statements that capture a company\'s essence and inspire action.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+      });
+
+      const responseText = completion.choices[0].message?.content || '';
+      console.log("Got OpenAI response for mission and vision");
+
+      try {
+        // Parse the JSON response
+        console.log("Parsing AI response for mission and vision");
+        const parsedResponse = JSON.parse(responseText);
+
+        // Validate response format
+        if (!parsedResponse.mission && !parsedResponse.vision) {
+          console.log("No mission or vision in response");
+          return res.status(500).json({
+            error: 'Invalid AI response',
+            message: 'AI did not generate mission or vision statements'
+          });
+        }
+
+        console.log("Successfully generated mission and vision");
+
+        return res.status(200).json({
+          mission: parsedResponse.mission || '',
+          vision: parsedResponse.vision || ''
+        });
+      } catch (parseError) {
+        console.error('Failed to parse mission/vision response:', parseError);
+        console.log("Response text sample:", responseText.substring(0, 200));
+
+        return res.status(500).json({
+          error: 'Parse error',
+          message: 'Failed to parse AI response for mission and vision'
+        });
+      }
+    } catch (apiError) {
+      console.error('OpenAI API error:', apiError);
+      return res.status(500).json({
+        error: 'API error',
+        message: 'Failed to connect to AI service for mission and vision generation'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating mission and vision:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      message: error instanceof Error ? error.message : 'Failed to generate mission and vision'
+    });
+  }
+}
 // Handler for prose perfector endpoint
 async function handleProsePerfector(data: any, res: NextApiResponse) {
   try {
@@ -1547,6 +1673,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'generateTaglines':
         const taglines = await generateTaglines(data);
         return res.status(200).json(taglines);
+
+      // Handle mission-vision endpoint
+      case 'missionVision':
+        return await handleMissionVision(data, res);
 
       default:
         return res.status(400).json({
