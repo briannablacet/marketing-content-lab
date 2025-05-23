@@ -46,16 +46,16 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   // Timer for debounce
   const [analyzeTimer, setAnalyzeTimer] = useState<NodeJS.Timeout | null>(null);
 
-  // NEW: Add ref for the newly added competitor input
+  // Add ref for the newly added competitor input
   const newCompetitorRef = useRef<HTMLInputElement>(null);
 
-  // NEW: Track which competitor should be focused
+  // Track which competitor should be focused
   const [focusCompetitorIndex, setFocusCompetitorIndex] = useState<number | null>(null);
 
-  // NEW: Add state for current competitor being analyzed
+  // Add state for current competitor being analyzed
   const [currentCompetitor, setCurrentCompetitor] = useState('');
 
-  // NEW: Add state for competitor insights
+  // Add state for competitor insights
   const [competitorInsights, setCompetitorInsights] = useState<{ name: string; uniquePositioning: string[]; keyThemes: string[]; gaps: string[] }[]>([]);
 
   // Load competitors from localStorage when component mounts
@@ -97,7 +97,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     };
   }, [competitorToAnalyze]);
 
-  // NEW: Effect to focus on newly added competitor input
+  // Effect to focus on newly added competitor input
   useEffect(() => {
     if (focusCompetitorIndex !== null && newCompetitorRef.current) {
       newCompetitorRef.current.focus();
@@ -118,7 +118,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     }
   }, [competitors, onDataChange]);
 
-  // UPDATED: Add competitor with focus handling
+  // Add competitor with focus handling
   const addCompetitor = () => {
     setCompetitors([
       ...competitors,
@@ -145,36 +145,65 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     ));
   };
 
-  const handleAnalyzeCompetitor = async (competitor: string) => {
-    if (!competitor.trim()) {
-      showNotification('error', 'Please enter a competitor name');
+  // FIXED: Proper API call using the same pattern as other components
+  const handleAnalyzeCompetitor = async (competitorName: string) => {
+    if (!competitorName.trim()) {
+      showNotification('Please enter a competitor name', 'error');
       return;
     }
 
     setIsAnalyzing(true);
-    setCurrentCompetitor(competitor);
+    setCurrentCompetitor(competitorName);
 
     try {
-      const response = await callApiWithStrategicData('analyze-competitors', {
-        competitors: [competitor],
-        industry: 'food' // Default to food industry
+      console.log(`Starting analysis for competitor: ${competitorName}`);
+
+      // FIXED: Use the correct API structure that matches your API endpoints
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'analyzeCompetitors', // This matches your API endpoint
+          data: {
+            competitors: [{ name: competitorName }], // Structure expected by your API
+            industry: 'food' // Default industry
+          }
+        }),
       });
 
-      if (response.competitorInsights && response.competitorInsights.length > 0) {
-        const insight = response.competitorInsights[0];
-        setCompetitorInsights(prev => [...prev, {
-          name: competitor,
-          uniquePositioning: insight.uniquePositioning || [],
-          keyThemes: insight.keyThemes || [],
-          gaps: insight.gaps || []
-        }]);
-        showNotification('success', `Analysis complete for ${competitor}`);
+      console.log(`API response status: ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('API response:', result);
+
+      if (result.competitorInsights && result.competitorInsights.length > 0) {
+        const insight = result.competitorInsights[0];
+
+        // Update the competitor in the state with the analysis
+        setCompetitors(prev => prev.map(comp =>
+          comp.name === competitorName ? {
+            ...comp,
+            description: insight.uniquePositioning.join('. '),
+            knownMessages: insight.keyThemes || [],
+            strengths: insight.uniquePositioning || [],
+            weaknesses: insight.gaps || []
+          } : comp
+        ));
+
+        showNotification(`Analysis complete for ${competitorName}`, 'success');
       } else {
-        throw new Error('Invalid response format');
+        throw new Error('No insights returned from analysis');
       }
     } catch (error) {
       console.error('Error analyzing competitor:', error);
-      showNotification('error', `Failed to analyze ${competitor}: ${error.message}`);
+      showNotification(`Failed to analyze ${competitorName}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+      setError(`Failed to analyze ${competitorName}. Please try again.`);
     } finally {
       setIsAnalyzing(false);
       setCurrentCompetitor('');
@@ -245,6 +274,16 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         </div>
       </Card>
 
+      {/* Current Analysis Status */}
+      {isAnalyzing && currentCompetitor && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <div className="flex items-center gap-3">
+            <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
+            <span className="text-blue-800">Analyzing {currentCompetitor}...</span>
+          </div>
+        </Card>
+      )}
+
       {/* Competitor Cards */}
       {competitors.map((competitor, index) => (
         <Card key={index} className="p-6">
@@ -253,7 +292,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <input
-                  // NEW: Add ref to the most recently added competitor
+                  // Add ref to the most recently added competitor
                   ref={index === competitors.length - 1 ? newCompetitorRef : null}
                   type="text"
                   value={competitor.name}
@@ -269,10 +308,10 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
               </div>
               <button
                 onClick={() => handleSubmitCompetitor(index)}
-                disabled={competitor.isLoading || competitor.name.trim().length < 2}
+                disabled={isAnalyzing || competitor.name.trim().length < 2}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                Analyze
+                {isAnalyzing && currentCompetitor === competitor.name ? 'Analyzing...' : 'Analyze'}
               </button>
               {competitors.length > 1 && (
                 <button
@@ -346,8 +385,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             )}
           </div>
         </Card>
-      ))
-      }
+      ))}
 
       {/* Add Competitor Button */}
       <button
@@ -376,11 +414,8 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
           </div>
         </Card>
       )}
-      {/* Navigation buttons – only show in walkthrough mode */}
-
     </div>
   );
 };
 
 export default CompetitiveStep;
-

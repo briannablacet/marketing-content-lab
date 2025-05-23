@@ -55,25 +55,13 @@ const ProductStep = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Same as other pages */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Package className="w-8 h-8 text-blue-600" />
-              Product Information
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Tell us about your business, product, or service
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content area - Wide like other pages */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main content area */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-2 py-8">
         <div className="space-y-6 w-full">
           <Card className="p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Business Details</h2>
+            </div>
             <div className="space-y-6">
               {/* Business Name */}
               <div>
@@ -86,7 +74,6 @@ const ProductStep = () => {
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-
               {/* Tagline (optional) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Do you already have a tagline? (Optional)</label>
@@ -98,7 +85,6 @@ const ProductStep = () => {
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-
               {/* Product Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Share a description of your business. Don't worry if it's not perfect.</label>
@@ -110,7 +96,6 @@ const ProductStep = () => {
                   rows={4}
                 />
               </div>
-
               {/* Key Benefits */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">What are the main benefits for your clients?</label>

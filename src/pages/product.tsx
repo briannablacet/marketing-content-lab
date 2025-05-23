@@ -1,29 +1,33 @@
 // src/pages/product.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
 import ProductStep from '../components/features/MarketingWalkthrough/components/ProductStep';
 import { ScreenTemplate } from '../components/shared/UIComponents';
 import { NotificationProvider } from '../context/NotificationContext';
 import { MarketingProvider } from '../context/MarketingContext';
+import { Package } from 'lucide-react';
 
 const ProductPage = () => {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
 
   return (
     <NotificationProvider>
       <MarketingProvider>
         <ScreenTemplate
-          title="Define Your Product or Service"
-          subtitle="Tell us about your offering so we can help you create the perfect content strategy."
-          aiInsights={[
-            "Clear product definition improves content relevance by up to 40%",
-            "Value propositions that focus on customer outcomes get better engagement",
-            "Quantified benefits in your messaging increase conversion rates"
-          ]}
           hideNavigation={true}
+          title={
+            <div className="text-center">
+              <Package className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Product Information
+              </h1>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Tell us about your business, product, or service
+              </p>
+            </div>
+          }
         >
-          <ProductStep 
+          <ProductStep
             isWalkthrough={false}
           />
         </ScreenTemplate>

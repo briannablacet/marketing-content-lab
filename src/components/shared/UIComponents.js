@@ -16,22 +16,29 @@ export const ScreenTemplate = ({
   isWalkthrough = false,
   nextButtonText = 'Next →',
   hideExitButton = false,
-  aiInsights = []
+  aiInsights = [],
+  hideNavigation = false
 }) => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header section */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">{title}</h1>
-        {subtitle && <p className="text-gray-600">{subtitle}</p>}
-        
+        {typeof title === 'string' ? (
+          <>
+            <h1 className="text-3xl font-bold mb-2">{title}</h1>
+            {subtitle && <p className="text-gray-600">{subtitle}</p>}
+          </>
+        ) : (
+          title
+        )}
+
         {/* Walkthrough progress bar */}
         {isWalkthrough && currentStep && totalSteps && (
           <div className="mt-4">
             <div className="flex justify-between items-center mb-2">
               <div className="text-sm text-gray-500">Step {currentStep} of {totalSteps}</div>
               {!hideExitButton && onExit && (
-                <button 
+                <button
                   onClick={onExit}
                   className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
                 >
@@ -41,7 +48,7 @@ export const ScreenTemplate = ({
               )}
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(currentStep / totalSteps) * 100}%` }}
               ></div>
@@ -49,7 +56,7 @@ export const ScreenTemplate = ({
           </div>
         )}
       </div>
-      
+
       {/* AI Insights Box */}
       {aiInsights && aiInsights.length > 0 && (
         <div className="mb-8 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
@@ -67,14 +74,14 @@ export const ScreenTemplate = ({
           </ul>
         </div>
       )}
-      
+
       {/* Main content */}
       <div className="mb-8">
         {children}
       </div>
-      
+
       {/* Navigation buttons - Only show in walkthrough mode */}
-      {isWalkthrough && (
+      {isWalkthrough && !hideNavigation && (
         <div className="flex justify-between items-center">
           <button
             onClick={onBack}
@@ -83,7 +90,7 @@ export const ScreenTemplate = ({
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </button>
-          
+
           <div className="flex gap-4">
             {showSkip && onSkip && (
               <button
@@ -93,7 +100,7 @@ export const ScreenTemplate = ({
                 Skip this step
               </button>
             )}
-            
+
             {onNext && (
               <button
                 onClick={onNext}

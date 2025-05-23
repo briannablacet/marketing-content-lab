@@ -1,8 +1,12 @@
 // src/components/features/MarketingWalkthrough/components/ValuePropStep/index.tsx
+// FIXED VERSION - Proper headers like WelcomeStep
+
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader, CheckCircle } from 'lucide-react';
+import { Sparkles, Loader, CheckCircle, Target } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
 import StrategicDataService from '../../../../../services/StrategicDataService';
+import { Card } from '@/components/ui/card';
+import { Plus, X } from 'lucide-react';
 
 interface ValuePropStepProps {
     onNext?: () => void;
@@ -23,6 +27,9 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
     const [isLoading, setIsLoading] = useState(false);
     const [isAccepted, setIsAccepted] = useState(false);
     const { showNotification } = useNotification();
+    const [tagline, setTagline] = useState('');
+    const [productType, setProductType] = useState('');
+    const [keyBenefits, setKeyBenefits] = useState(['']);
 
     // Load existing data from StrategicDataService and localStorage
     useEffect(() => {
@@ -203,128 +210,90 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
         }
     };
 
-    return (
-        <div className="space-y-6">
-            <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-wrap justify-between items-center gap-3">
-                <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold">Value Proposition</h2>
-                </div>
-            </div>
+    const addBenefit = () => {
+        setKeyBenefits([...keyBenefits, '']);
+    };
 
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-6">
-                    A value proposition communicates what you do, who it's for, and why it matters—all in one powerful sentence. Don't worry if it's rough—we'll help you polish it.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        return (
+            <div className="w-full max-w-none space-y-6">  
+                <Card className="p-6">
+                {/* SMALLER HEADLINE ON WHITE CARD BACKGROUND */}
+                <div className="mb-6">
+                    <h2 className="text-2xl font-semibold text-gray-900">Tell us about your business</h2>
+                    <p className="text-gray-600 mt-2">We'll use this information to create your value proposition</p>
+                </div>
+                <div className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium mb-2">Product Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">What's the name of your business?</label>
                         <input
                             type="text"
                             value={productName}
                             onChange={(e) => setProductName(e.target.value)}
-                            placeholder="Enter your product name..."
-                            className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                            placeholder="Enter your business or brand name"
+                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
-
                     <div>
-                        <label className="block text-sm font-medium mb-2">Product Description</label>
-                        <textarea
-                            value={productDescription}
-                            onChange={(e) => setProductDescription(e.target.value)}
-                            placeholder="Describe your product..."
-                            className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
-                            rows={3}
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Do you already have a tagline? (Optional)</label>
+                        <input
+                            type="text"
+                            value={tagline}
+                            onChange={(e) => setTagline(e.target.value)}
+                            placeholder="e.g., No more crappy content"
+                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
-
                     <div>
-                        <label className="block text-sm font-medium mb-2">Enter your value proposition, if you've already created one. If not, fill in the other fields and we'll help you create one.</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Share a description of your business. Don't worry if it's not perfect.</label>
                         <textarea
-                            value={existingValueProp || paragraph}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (existingValueProp) {
-                                    setExistingValueProp(val);
-                                }
-                                setParagraph(val);
-                            }}
-                            placeholder="Enter or paste your value proposition here..."
-                            className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
+                            value={productType}
+                            onChange={(e) => setProductType(e.target.value)}
+                            placeholder="Describe the services or products you offer."
+                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             rows={4}
                         />
                     </div>
-
-                    {!existingValueProp && (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Target Audience</label>
-                                <input
-                                    type="text"
-                                    value={target}
-                                    onChange={(e) => setTarget(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Solution</label>
-                                <input
-                                    type="text"
-                                    value={solution}
-                                    onChange={(e) => setSolution(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Key Benefit</label>
-                                <input
-                                    type="text"
-                                    value={benefit}
-                                    onChange={(e) => setBenefit(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Proof</label>
-                                <input
-                                    type="text"
-                                    value={proof}
-                                    onChange={(e) => setProof(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
-                                />
-                            </div>
-                        </>
-                    )}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">What are the main benefits for your clients?</label>
+                        <p className="text-sm text-gray-600 mb-4">
+                            List the top benefits your clients or customers receive
+                        </p>
+                        <div className="space-y-3">
+                            {keyBenefits.map((benefit, index) => (
+                                <div key={index} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={benefit}
+                                        onChange={(e) => {
+                                            const updated = [...keyBenefits];
+                                            updated[index] = e.target.value;
+                                            setKeyBenefits(updated);
+                                        }}
+                                        placeholder="e.g., Pain relief, Better sleep, Increased confidence"
+                                        className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    {keyBenefits.length > 1 && (
+                                        <button
+                                            onClick={() => setKeyBenefits(keyBenefits.filter((_, i) => i !== index))}
+                                            className="text-red-500 hover:text-red-700 p-2"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button
+                                onClick={addBenefit}
+                                className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add Another Benefit
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <div className="flex justify-end space-x-4 mt-6">
-                <button
-                    onClick={handleAIHelp}
-                    disabled={isLoading}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                >
-                    {isLoading ? (
-                        <>
-                            <Loader className="w-4 h-4 mr-2 animate-spin" />
-                            Generating...
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles className="w-4 h-4 mr-2" />
-                            Generate with AI
-                        </>
-                    )}
-                </button>
-                <button
-                    onClick={handleSave}
-                    disabled={!paragraph && !existingValueProp}
-                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Save
-                </button>
-            </div>
+            </Card>
         </div>
     );
 };

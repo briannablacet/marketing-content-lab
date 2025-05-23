@@ -261,6 +261,107 @@ Return the analysis as a JSON object with these fields:
   }
 }
 
+// Handler for style fixing endpoint
+async function handleStyleFixer(data: any, res: NextApiResponse) {
+  try {
+    // Validate input
+    if (!data.content || typeof data.content !== 'string') {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Missing or invalid content field'
+      });
+    }
+
+    // Get the style guide parameters
+    const styleGuide = data.styleGuide || {
+      guide: 'Chicago Manual of Style',
+      formatting: {},
+      punctuation: {},
+      prohibited: [],
+      required: []
+    };
+
+    try {
+      const prompt = `As an expert editor, fix the following text to comply with style guidelines and address the identified issues:
+
+Text to fix:
+${data.content}
+
+Style Guide: ${styleGuide.guide || 'Chicago Manual of Style'}
+
+Identified Issues:
+${JSON.stringify(data.issues || [], null, 2)}
+
+Formatting Guidelines:
+${JSON.stringify(styleGuide.formatting || {}, null, 2)}
+
+Punctuation Rules:
+${JSON.stringify(styleGuide.punctuation || {}, null, 2)}
+
+Prohibited Terms/Phrases:
+${JSON.stringify(styleGuide.prohibited || [], null, 2)}
+
+Required Conventions:
+${JSON.stringify(styleGuide.required || [], null, 2)}
+
+Please fix all identified issues while maintaining the original meaning and intent of the text. Make the text fully compliant with the style guide.
+
+Return your response as a JSON string with these fields:
+{
+  "fixedContent": "the corrected text",
+  "changes": [
+    {
+      "original": "original text segment",
+      "fixed": "corrected text segment",
+      "reason": "explanation of the fix"
+    }
+  ]
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert editor who specializes in style guide compliance and fixing writing issues.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3
+      });
+
+      const responseText = completion.choices[0].message?.content || '';
+
+      try {
+        // Parse the JSON response
+        const parsedResponse = JSON.parse(responseText);
+
+        // Create a stable response structure
+        const formattedResponse = {
+          fixedContent: parsedResponse.fixedContent || '',
+          changes: parsedResponse.changes || []
+        };
+
+        return res.status(200).json(formattedResponse);
+      } catch (error) {
+        console.error('Failed to parse OpenAI response:', responseText);
+        throw new Error('Failed to parse AI response');
+      }
+    } catch (error) {
+      console.error('OpenAI API Error:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in style fixer:', error);
+    return res.status(500).json({
+      error: { message: 'Failed to fix style issues' }
+    });
+  }
+}
+
 // Handler for mission and vision generation
 async function handleMissionVision(data: any, res: NextApiResponse) {
   try {
@@ -1589,6 +1690,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Handle style checker endpoint
       case 'styleChecker':
         return await handleStyleChecker(data, res);
+
+      // Handle style fixer endpoint
+      case 'styleFixer':
+        return await handleStyleFixer(data, res);
 
       // Handle prose perfector endpoint
       case 'prosePerfector':

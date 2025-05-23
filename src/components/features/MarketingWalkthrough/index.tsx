@@ -9,18 +9,66 @@ import MessagingStep from './components/MessagingStep';
 import CompetitiveStep from './components/CompetitiveStep';
 import StyleGuideStep from './components/StyleGuideStep';
 import BrandVoiceModule from '../BrandVoiceModule';
-import PageLayout from '../../shared/PageLayout';
 import { useRouter } from 'next/router';
+import { Target, User, Package, MessageSquare, Users, Palette, Heart } from 'lucide-react';
 
 const STEPS = [
-  { id: '1', title: 'Welcome to the Branding Wizard! ✨', component: WelcomeStep },
-  { id: '2', title: 'Product Information', component: ProductStep },
-  { id: '3', title: 'Ideal Customer', component: PersonaStep },
-  { id: '4', title: 'Value Proposition', component: ValuePropStep },
-  { id: '5', title: 'Messaging Framework', component: MessagingStep },
-  { id: '6', title: 'Competitive Analysis', component: CompetitiveStep },
-  { id: '7', title: 'Style Guide Builder', component: StyleGuideStep },
-  { id: '8', title: 'Brand Personality', component: BrandVoiceModule },
+  {
+    id: '1',
+    title: 'Welcome to the Branding Wizard! ✨',
+    subtitle: 'Lay the foundation for a content engine based on your messaging and brand style.',
+    component: WelcomeStep,
+    icon: Heart
+  },
+  {
+    id: '2',
+    title: 'Product Information',
+    subtitle: 'Tell us about your business and what makes it special',
+    component: ProductStep,
+    icon: Package
+  },
+  {
+    id: '3',
+    title: 'Ideal Customer',
+    subtitle: 'Define who you\'re trying to reach with your marketing',
+    component: PersonaStep,
+    icon: User
+  },
+  {
+    id: '4',
+    title: 'Value Proposition Builder',
+    subtitle: 'Craft compelling value propositions that resonate with your audience',
+    component: ValuePropStep,
+    icon: Target
+  },
+  {
+    id: '5',
+    title: 'Messaging Framework',
+    subtitle: 'Develop your key messages and positioning',
+    component: MessagingStep,
+    icon: MessageSquare
+  },
+  {
+    id: '6',
+    title: 'Competitive Analysis',
+    subtitle: 'Understand your competitive landscape',
+    component: CompetitiveStep,
+    icon: Users
+  },
+  {
+    id: '7',
+    title: 'Style Guide Builder',
+    subtitle: 'Define your brand\'s visual and written style',
+    component: StyleGuideStep,
+    icon: Palette
+  },
+  {
+    id: '8',
+    title: 'Brand Personality',
+    subtitle: 'Establish your brand\'s voice and tone',
+    component: BrandVoiceModule,
+    icon: Heart
+  },
 ];
 
 const MarketingWalkthrough: React.FC = () => {
@@ -84,50 +132,65 @@ const MarketingWalkthrough: React.FC = () => {
     }
   }, [router.query.step]);
 
+  const StepIcon = currentStep.icon;
+
   return (
-    <PageLayout
-      title={currentStep.title}
-      description={
-        currentStep.id === '1'
-          ? 'Lay the foundation for a content engine based on your messaging and brand style.'
-          : ''
-      }
-      showHelpPrompt={currentStep.id === '1'}
-      helpPromptText="Based on successful content strategies, we'll guide you through each essential step."
-    >
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            Step {currentStepIndex + 1} of {STEPS.length}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* BIG BEAUTIFUL HEADER AT THE TOP */}
+        <div className="flex items-center gap-3 mb-2">
+          <StepIcon className="w-8 h-8 text-blue-600" />
+          <h1 className="text-3xl font-bold text-gray-900">{currentStep.title}</h1>
+        </div>
+        <p className="text-gray-600 mb-8">{currentStep.subtitle}</p>
+
+        {/* STEP INDICATOR AND NAVIGATION */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="flex justify-between items-center p-4">
+            <div className="text-sm text-gray-500">
+              Step {currentStepIndex + 1} of {STEPS.length}
+            </div>
+            <div className="flex gap-2">
+              {isSkippable && (
+                <button
+                  onClick={handleSkip}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Skip
+                </button>
+              )}
+              {currentStepIndex > 0 && (
+                <button
+                  onClick={handleBack}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Back
+                </button>
+              )}
+              <button
+                onClick={handleNext}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {buttonText}
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            {isSkippable && (
-              <button
-                onClick={handleSkip}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-              >
-                Skip
-              </button>
-            )}
-            {currentStepIndex > 0 && (
-              <button
-                onClick={handleBack}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-              >
-                Back
-              </button>
-            )}
-            <button
-              onClick={handleNext}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              {buttonText}
-            </button>
+
+          {/* Progress bar */}
+          <div className="w-full bg-gray-200 h-2">
+            <div
+              className="bg-blue-600 h-2 transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / STEPS.length) * 100}%` }}
+            />
           </div>
         </div>
-        {renderComponent()}
+
+        {/* STEP CONTENT */}
+        <div className="space-y-6">
+          {renderComponent()}
+        </div>
       </div>
-    </PageLayout>
+    </div>
   );
 };
 

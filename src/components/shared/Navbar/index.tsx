@@ -1,5 +1,5 @@
 // src/components/shared/Navbar/index.tsx
-// Fixed navbar with proper hub links and removed standalone Brand Compass button
+// Fixed navbar with proper hub links and corrected all navigation paths
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -34,7 +34,6 @@ const Navbar: React.FC = () => {
   // Simplified auth for now - you can add back proper auth later
   const [setUser] = useState<any>(null);
   const { isAuthenticated, user, login, register, logout } = useAuth();
-
 
   const [strategicMenuOpen, setStrategicMenuOpen] = useState(false);
   const [creationMenuOpen, setCreationMenuOpen] = useState(false);
@@ -125,7 +124,7 @@ const Navbar: React.FC = () => {
           <div className="flex">
             <Link href="/" className="flex-shrink-0 flex items-center">
               <Image
-                src="/images/mcl-logo3.png"
+                src="/images/mcl-logo-new.png"
                 alt="Marketing Content Lab"
                 width={300}
                 height={84}
@@ -135,7 +134,7 @@ const Navbar: React.FC = () => {
 
             {/* Main navigation links */}
             <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-              {/* Strategic Tools Dropdown */}
+              {/* Strategic Tools Dropdown - FIXED: Now using /brandscape */}
               <div className="relative" ref={strategicMenuRef}>
                 <button
                   onClick={() => {
@@ -143,18 +142,16 @@ const Navbar: React.FC = () => {
                     setCreationMenuOpen(false);
                     setEnhancementMenuOpen(false);
                   }}
-                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                    strategicMenuOpen
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                  }`}
+                  className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${strategicMenuOpen
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                    }`}
                 >
                   <BarChart2 className="w-4 h-4 mr-1" />
                   Brandscape
                   <ChevronDown
-                    className={`ml-1 w-4 h-4 transition-transform ${
-                      strategicMenuOpen ? "transform rotate-180" : ""
-                    }`}
+                    className={`ml-1 w-4 h-4 transition-transform ${strategicMenuOpen ? "transform rotate-180" : ""
+                      }`}
                   />
                 </button>
 
@@ -165,41 +162,58 @@ const Navbar: React.FC = () => {
                       role="menu"
                       aria-orientation="vertical"
                     >
+                      {/* FIXED: Changed from /product to /walkthrough/3 for Ideal Customer */}
                       <Link
-                        href="/product"
+                        href="/brand-compass"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
+                      >
+                        🧭 Brand Compass
+                      </Link>
+                      <Link
+                        href="/walkthrough/3"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
                         👥 Ideal Customer
                       </Link>
+                      {/* FIXED: Changed from /key-messages to /walkthrough/4 for Value Proposition */}
                       <Link
-                        href="/key-messages"
+                        href="/walkthrough/4"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
                         💎 Value Proposition
                       </Link>
+                      {/* FIXED: Changed from duplicate /key-messages to /walkthrough/5 for Messaging Framework */}
                       <Link
-                        href="/key-messages"
+                        href="/walkthrough/5"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
                       >
                         💬 Messaging Framework
                       </Link>
+                      {/* FIXED: Changed from /competitive-analysis to /walkthrough/6 for Competitive Analysis */}
                       <Link
-                        href="/competitive-analysis"
+                        href="/walkthrough/6"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
                       >
                         🏆 Competitive Analysis
                       </Link>
+                      {/* FIXED: Changed from /writing-style to /walkthrough/7 for Style Guide Builder */}
                       <Link
-                        href="/writing-style"
+                        href="/walkthrough/7"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
                       >
                         ✍️ Style Guide Builder
                       </Link>
+                      {/* FIXED: Changed from /brand-voice to /walkthrough/8 for Brand Personality */}
                       <Link
-                        href="/brand-voice"
+                        href="/walkthrough/8"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
                       >
                         🎭 Brand Personality
                       </Link>
@@ -209,22 +223,25 @@ const Navbar: React.FC = () => {
                         Standalone Tools
                       </div>
 
-                      {/* Standalone brand tools */}
+                      {/* Standalone brand tools - FIXED: All paths now match your file structure */}
                       <Link
                         href="/mission-vision-generator"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
                       >
                         🎯 Mission + Vision Generator
                       </Link>
                       <Link
                         href="/tagline-generator"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
                       >
                         ✨ Tagline Generator
                       </Link>
                       <Link
                         href="/boilerplate-generator"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setStrategicMenuOpen(false)}
                       >
                         📝 Boilerplate Generator
                       </Link>
@@ -233,7 +250,7 @@ const Navbar: React.FC = () => {
                 )}
               </div>
 
-              {/* Creation Hub Menu - FIXED: Now links to /creation-hub when clicked */}
+              {/* Creation Hub Menu - ALREADY CORRECT */}
               <div className="relative" ref={creationMenuRef}>
                 <Link href="/creation-hub">
                   <button
@@ -286,6 +303,7 @@ const Navbar: React.FC = () => {
                       <Link
                         href="/ab-testing"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setCreationMenuOpen(false)}
                       >
                         🧪 A/B Test Generator
                       </Link>
@@ -294,7 +312,7 @@ const Navbar: React.FC = () => {
                 )}
               </div>
 
-              {/* Enhancement Studio Menu - FIXED: Now links to /content-enhancer-tools when clicked */}
+              {/* Enhancement Studio Menu - ALREADY CORRECT */}
               <div className="relative" ref={enhancementMenuRef}>
                 <Link href="/content-enhancer-tools">
                   <button
@@ -349,14 +367,13 @@ const Navbar: React.FC = () => {
                 )}
               </div>
 
-              {/* Settings Link */}
+              {/* Settings Link - ALREADY CORRECT */}
               <Link
                 href="/settings"
-                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                  router.pathname === "/settings"
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                }`}
+                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${router.pathname === "/settings"
+                  ? "bg-blue-100 text-blue-700"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                  }`}
               >
                 <Settings className="w-4 h-4 mr-1" />
                 Settings
@@ -366,8 +383,6 @@ const Navbar: React.FC = () => {
 
           {/* Right side - CTA and Auth */}
           <div className="flex items-center space-x-4">
-            {/* REMOVED: Standalone Brand Compass button as requested */}
-
             {/* Main CTA */}
             {isInWalkthrough ? (
               <button
@@ -384,10 +399,9 @@ const Navbar: React.FC = () => {
                 ✨ Branding Wizard
               </Link>
             )}
-            </div>
-            {/*  */}
-            <div className="flex items-right">
+          </div>
 
+          <div className="flex items-right">
             {/* Login/Register */}
             {isAuthenticated ? (
               <div className="relative ml-6 flex items-center space-x-4">
@@ -412,19 +426,19 @@ const Navbar: React.FC = () => {
               </div>
             ) : (
               <div className="auth-links ml-6 flex items-center space-x-3">
-              <button
-                onClick={() => setIsLoginOpen(true)}
-                className="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md shadow hover:bg-blue-700 transition"
-              >
-                Login
-              </button>
-              <button
-                onClick={() => setIsRegisterOpen(true)}
-                className="px-4 py-1.5 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition"
-              >
-                Register
-              </button>
-            </div>
+                <button
+                  onClick={() => setIsLoginOpen(true)}
+                  className="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md shadow hover:bg-blue-700 transition"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => setIsRegisterOpen(true)}
+                  className="px-4 py-1.5 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition"
+                >
+                  Register
+                </button>
+              </div>
             )}
           </div>
         </div>
