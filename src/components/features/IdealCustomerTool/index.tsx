@@ -343,7 +343,7 @@ const IdealCustomerTool: React.FC = () => {
                                 Ideal Customer Builder
                             </h1>
                             <p className="text-gray-600 mt-1">
-                                Define and manage your target audience personas
+                                Define and manage your target audience profiles
                             </p>
                         </div>
                         <div className="flex gap-3">
@@ -481,7 +481,7 @@ const IdealCustomerTool: React.FC = () => {
                             <div className="bg-white rounded-lg shadow">
                                 <div className="p-6 border-b">
                                     <h2 className="text-xl font-semibold">
-                                        {currentPersona.role || 'New Persona'} Details
+                                        {currentPersona.role || 'New Customer'} Details
                                     </h2>
                                 </div>
 
