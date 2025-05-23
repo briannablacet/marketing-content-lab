@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ScreenTemplate } from '../../shared/UIComponents';
 import { AutosaveIndicator } from '../../shared/AutosaveIndicator';
+import ScreenTemplate from "@/components/shared/UIComponents"
 
 // Smart defaults for B2B tech companies
 const CHANNEL_BENCHMARKS = {

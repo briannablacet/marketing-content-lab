@@ -1,7 +1,7 @@
 // src/components/features/CreationHub/index.tsx
 import React from 'react';
 import { useRouter } from 'next/router';
-import { ScreenTemplate } from '../../shared/UIComponents';
+import ScreenTemplate from "@/components/shared/UIComponents"
 import {
   PenTool,
   Sparkles,

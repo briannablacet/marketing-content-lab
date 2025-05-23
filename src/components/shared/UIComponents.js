@@ -2,7 +2,7 @@
 import React from 'react';
 import { ArrowLeft, ArrowRight, XCircle, HelpCircle } from 'lucide-react';
 
-export const ScreenTemplate = ({
+const ScreenTemplate = ({
   title,
   subtitle,
   children,
@@ -116,3 +116,4 @@ export const ScreenTemplate = ({
     </div>
   );
 };
+export default ScreenTemplate;

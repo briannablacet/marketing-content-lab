@@ -1,7 +1,7 @@
 // src/components/features/CompetitorAnalysisDashboard/index.tsx
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ScreenTemplate } from '../../shared/UIComponents';
+import ScreenTemplate from "@/components/shared/UIComponents"
 import { AutosaveIndicator } from '../../shared/AutosaveIndicator';
 
 interface Competitor {

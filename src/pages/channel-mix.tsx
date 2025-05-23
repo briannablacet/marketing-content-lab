@@ -1,7 +1,7 @@
 // src/pages/channel-mix.tsx
 import React from 'react';
-import ChannelSelectionStep from '../components/features/MarketingWalkthrough/components/ChannelSelectionStep';
-import { ScreenTemplate } from '../components/shared/UIComponents';
+import ChannelSelectionStep from '@/components/features/MarketingWalkthrough/components/ChannelSelectionStep';
+import ScreenTemplate from '@/components/shared/UIComponents';
 
 const ChannelMixPage = () => (
   <ScreenTemplate

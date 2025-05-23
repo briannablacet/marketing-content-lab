@@ -3,12 +3,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ScreenTemplate } from '../components/shared/UIComponents';
+import ScreenTemplate from '@/components/shared/UIComponents';
 import { PlusCircle, CheckCircle, ChevronRight, Calendar, Target, MessageCircle, Sparkles, RefreshCw } from 'lucide-react';
-import { CONTENT_TYPES } from '../data/contentTypesData';
-import { useContent } from '../context/ContentContext';
-import ContentPreview from '../components/features/ContentEngine/screens/ContentPreview';
-import StyleGuideNotificationBanner from '../components/features/StyleGuideNotificationBanner';
+import { CONTENT_TYPES } from '@/data/contentTypesData';
+import { useContent } from '@/context/ContentContext';
+import ContentPreview from '@/components/features/ContentEngine/screens/ContentPreview';
+import StyleGuideNotificationBanner from '@/components/features/StyleGuideNotificationBanner';
 
 // Goal recommendations mapping
 const GOAL_RECOMMENDATIONS = {

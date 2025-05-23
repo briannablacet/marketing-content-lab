@@ -1,12 +1,12 @@
 // src/pages/settings.tsx
 import React from 'react';
-import { ScreenTemplate } from '../components/shared/UIComponents';
-import ConfigImportExport from '../components/features/ConfigImportExport';
-import { NotificationProvider } from '../context/NotificationContext';
-import { WritingStyleProvider } from '../context/WritingStyleContext';
-import { BrandVoiceProvider } from '../context/BrandVoiceContext';
-import { MessagingProvider } from '../context/MessagingContext';
-import { ContentProvider } from '../context/ContentContext';
+import ScreenTemplate from '@/components/shared/UIComponents';
+import ConfigImportExport from '@/components/features/ConfigImportExport';
+import { NotificationProvider } from '@/context/NotificationContext';
+import { WritingStyleProvider } from '@/context/WritingStyleContext';
+import { BrandVoiceProvider } from '@/context/BrandVoiceContext';
+import { MessagingProvider } from '@/context/MessagingContext';
+import { ContentProvider } from '@/context/ContentContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Type, MessageSquare, FileText, Save, Trash } from 'lucide-react';
 import { useRouter } from 'next/router';

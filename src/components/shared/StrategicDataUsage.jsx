@@ -1,7 +1,8 @@
 // src/services/ApiStrategicConnector.js
 // Enhanced version with robust error handling and no fallbacks
 
-import { enrichContentRequest, getAllStrategicData } from './StrategicDataService';
+import  enrichContentRequest  from './StrategicDataService';
+import  getAllStrategicData  from './StrategicDataService';
 
 /**
  * Strategic API endpoints that should use the strategic data

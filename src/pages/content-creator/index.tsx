@@ -1,12 +1,12 @@
 // src/pages/content-creator/index.tsx
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { ScreenTemplate } from '../../components/shared/UIComponents';
-import { NotificationProvider } from '../../context/NotificationContext';
-import { WritingStyleProvider } from '../../context/WritingStyleContext';
-import { MessagingProvider } from '../../context/MessagingContext';
+import ScreenTemplate from "@/components/shared/UIComponents"
+import { NotificationProvider } from '@/context/NotificationContext';
+import { WritingStyleProvider } from '@/context/WritingStyleContext';
+import { MessagingProvider } from '@/context/MessagingContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import StyleGuideNotificationBanner from '../../components/features/StyleGuideNotificationBanner';
+import StyleGuideNotificationBanner from '@/components/features/StyleGuideNotificationBanner';
 import Link from 'next/link';
 import {
   FileText,
