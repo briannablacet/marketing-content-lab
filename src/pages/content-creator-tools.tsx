@@ -1,9 +1,9 @@
 // src/pages/content-creator-tools.tsx
 import React from 'react';
 import { useRouter } from 'next/router';
-import { ScreenTemplate } from '../components/shared/UIComponents';
-import { NotificationProvider } from '../context/NotificationContext';
-import { WritingStyleProvider } from '../context/WritingStyleContext';
+import { ScreenTemplate } from '@/components/shared/UIComponents';
+import { NotificationProvider } from '@/context/NotificationContext';
+import { WritingStyleProvider } from '@/context/WritingStyleContext';
 import Link from 'next/link';
 import { 
   PenTool, 

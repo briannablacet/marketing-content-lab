@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Sparkles } from 'lucide-react';
-import ScreenTemplate from '../components/shared/UIComponents';
-import ValuePropStep from '../components/features/MarketingWalkthrough/components/ValuePropStep';
+import ScreenTemplate from '@/components/shared/UIComponents';
+import ValuePropStep from '@/components/features/MarketingWalkthrough/components/ValuePropStep';
 
 const ValuePropPage = () => {
     const router = useRouter();

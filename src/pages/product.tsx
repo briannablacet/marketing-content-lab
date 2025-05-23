@@ -1,10 +1,10 @@
 // src/pages/product.tsx
 import React from 'react';
 import { useRouter } from 'next/router';
-import ProductStep from '../components/features/MarketingWalkthrough/components/ProductStep';
-import { ScreenTemplate } from '../components/shared/UIComponents';
-import { NotificationProvider } from '../context/NotificationContext';
-import { MarketingProvider } from '../context/MarketingContext';
+import ProductStep from '@/components/features/MarketingWalkthrough/components/ProductStep';
+import { ScreenTemplate } from '@/components/shared/UIComponents';
+import { NotificationProvider } from '@/context/NotificationContext';
+import { MarketingProvider } from '@/context/MarketingContext';
 import { Package } from 'lucide-react';
 
 const ProductPage = () => {

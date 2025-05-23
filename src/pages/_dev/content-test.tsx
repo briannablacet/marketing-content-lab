@@ -1,8 +1,6 @@
-// pages/dev/content-test.tsx
 import React, { useState } from 'react';
-import { ScreenTemplate } from '../../components/shared/UIComponents';
-import { ContentProvider } from '../../context/ContentContext';
-
+import { ContentProvider } from '@/context/ContentContext';
+import ScreenTemplate from "@/components/shared/UIComponents";
 export default function ContentTestPage() {
   const [testResult, setTestResult] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

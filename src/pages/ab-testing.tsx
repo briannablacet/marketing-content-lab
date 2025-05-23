@@ -1,8 +1,8 @@
 // src/pages/ab-testing.tsx
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ScreenTemplate } from '../components/shared/UIComponents';
-import { NotificationProvider } from '../context/NotificationContext';
+import { ScreenTemplate } from '@/components/shared/UIComponents';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { Copy, CheckCircle } from 'lucide-react';
 
 // Content types that can be A/B tested

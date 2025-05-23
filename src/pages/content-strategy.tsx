@@ -1,9 +1,9 @@
 // src/pages/content-strategy.tsx
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { ContentProvider } from '../context/ContentContext';
-import ContentStrategyModule from '../components/features/ContentStrategyModule';
-import { ScreenTemplate } from '../components/shared/UIComponents';
+import { ContentProvider } from '@/context/ContentContext';
+import ContentStrategyModule from '@/components/features/ContentStrategyModule';
+import { ScreenTemplate } from '@/components/shared/UIComponents';
 
 const ContentStrategyPage = () => {
   const router = useRouter();
