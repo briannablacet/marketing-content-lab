@@ -629,7 +629,7 @@ const ContentHumanizer: React.FC = () => {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div>
       <h1 className="text-3xl font-bold mb-6">Content Humanizer</h1>
       <p className="text-gray-600 mb-8">Transform AI-generated content into natural, human-like writing that engages readers and maintains your brand voice.</p>
 

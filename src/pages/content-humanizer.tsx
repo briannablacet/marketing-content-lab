@@ -19,7 +19,7 @@ const ContentHumanizerPage: React.FC = () => {
     <NotificationProvider>
       <WritingStyleProvider>
         <MessagingProvider>
-          <div className="container mx-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <ContentHumanizer />
           </div>
         </MessagingProvider>
