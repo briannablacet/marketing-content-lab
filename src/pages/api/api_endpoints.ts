@@ -235,71 +235,32 @@ Return the analysis as a JSON object with these fields:
         // Parse the JSON response
         const parsedResponse = JSON.parse(responseText);
 
+        // Validate the response structure
+        if (!parsedResponse.compliance || !Array.isArray(parsedResponse.issues) || !Array.isArray(parsedResponse.strengths)) {
+          throw new Error('Invalid response structure from OpenAI');
+        }
+
         return res.status(200).json(parsedResponse);
       } catch (error) {
         console.error('Failed to parse OpenAI response:', responseText);
-
-        // Return a fallback response for style checking
-        return res.status(200).json({
-          compliance: 65,
-          issues: [
-            {
-              type: 'CAPITALIZATION',
-              text: 'Sample capitalization issue',
-              suggestion: 'Proper capitalization suggestion',
-              severity: 'medium'
-            },
-            {
-              type: 'PUNCTUATION',
-              text: 'Sample punctuation issue',
-              suggestion: 'Proper punctuation suggestion',
-              severity: 'low'
-            }
-          ],
-          strengths: [
-            'Appropriate paragraph length',
-            'Clear benefit statements',
-            'Product name used consistently'
-          ]
+        return res.status(500).json({
+          error: { message: 'Failed to parse style analysis response' }
         });
       }
     } catch (error) {
       console.error('OpenAI API Error:', error);
-
-      // Return a fallback response for style checking
-      return res.status(200).json({
-        compliance: 70,
-        issues: [
-          {
-            type: 'FORMATTING',
-            text: 'Sample issue text',
-            suggestion: 'Sample improvement suggestion',
-            severity: 'medium'
-          }
-        ],
-        strengths: [
-          'Appropriate paragraph length',
-          'Clear benefit statements',
-          'Product name used consistently'
-        ]
+      return res.status(500).json({
+        error: { message: 'Failed to analyze content with OpenAI' }
       });
     }
   } catch (error) {
     console.error('Error in style checker:', error);
     return res.status(500).json({
-      error: { message: 'Failed to check style compliance' },
-      compliance: 0,
-      issues: [
-        {
-          type: 'SERVER_ERROR',
-          text: 'An error occurred during processing',
-          suggestion: 'Please try again',
-          severity: 'high'
-        }
-      ]
+      error: { message: 'Failed to check style compliance' }
     });
   }
 }
+
 // Handler for mission and vision generation
 async function handleMissionVision(data: any, res: NextApiResponse) {
   try {
@@ -427,6 +388,7 @@ Make the statements specific to this company, avoid generic corporate speak, and
     });
   }
 }
+
 // Handler for prose perfector endpoint
 async function handleProsePerfector(data: any, res: NextApiResponse) {
   try {

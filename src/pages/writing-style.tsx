@@ -10,7 +10,7 @@ const WritingStylePage: React.FC = () => {
     <NotificationProvider>
       <WritingStyleProvider>
         <PageLayout
-          title="Style Guide Settings"
+          title="Style Guide Compliance Checker"
           description="Define your brand's writing style and content guidelines to ensure consistent messaging across all channels."
           showHelpPrompt={true}
           helpPromptText="Need help defining your writing style? Let AI analyze your content and suggest a style that matches your brand voice."
