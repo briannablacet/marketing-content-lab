@@ -1,7 +1,7 @@
 // src/components/features/ContentEngine/index.tsx
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { ScreenTemplate } from '../../shared/UIComponents';
+import ScreenTemplate from "@/components/shared/UIComponents"
 import { AutosaveIndicator } from '../../shared/AutosaveIndicator';
 import SuccessModal from '../../shared/SuccessModal';
 import UploadScreen from './screens/UploadScreen';
