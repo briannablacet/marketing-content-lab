@@ -44,12 +44,24 @@ const StrategicDataService = {
     setBrandVoice: (data) => strategicData.brandVoice = data,
 
     // Vision
-    getVision: () => strategicData.vision || '',
-    setVision: (value) => strategicData.vision = value,
+    getVision: () => {
+        const storedVision = localStorage.getItem('brandVision');
+        return storedVision || strategicData.vision || '';
+    },
+    setVision: (value) => {
+        strategicData.vision = value;
+        localStorage.setItem('brandVision', value);
+    },
 
     // Mission
-    getMission: () => strategicData.mission || '',
-    setMission: (value) => strategicData.mission = value,
+    getMission: () => {
+        const storedMission = localStorage.getItem('brandMission');
+        return storedMission || strategicData.mission || '';
+    },
+    setMission: (value) => {
+        strategicData.mission = value;
+        localStorage.setItem('brandMission', value);
+    },
 
     // Value Proposition - NEWLY ADDED
     getValueProposition: () => strategicData.valueProposition || '',

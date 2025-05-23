@@ -40,6 +40,18 @@ const MissionVisionGenerator: React.FC = () => {
                     }
                 }
 
+                // Load value proposition
+                const valueProposition = StrategicDataService.getValueProposition();
+                if (valueProposition) {
+                    setValueProp(valueProposition);
+                } else {
+                    const messageFramework = JSON.parse(localStorage.getItem('messageFramework') || '{}');
+                    if (messageFramework.valueProposition) {
+                        setValueProp(messageFramework.valueProposition);
+                    }
+                }
+
+                // Load target audience
                 const audiences = StrategicDataService.getTargetAudiences();
                 if (audiences && audiences.length > 0) {
                     const audienceWithRole = audiences.find(a => a.role && a.role.trim() !== '');
@@ -50,7 +62,7 @@ const MissionVisionGenerator: React.FC = () => {
 
                 const existingMission = StrategicDataService.getMission();
                 const existingVision = StrategicDataService.getVision();
-                
+
                 if (existingMission) {
                     setMission(existingMission);
                     setHasGenerated(true);
@@ -150,7 +162,7 @@ const MissionVisionGenerator: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                
+
                 <div className="mb-8">
                     <div className="flex items-center justify-between">
                         <div>
@@ -181,7 +193,7 @@ const MissionVisionGenerator: React.FC = () => {
                         </div>
                     )}
                 </div>
-                
+
                 <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Company Information</h2>
                     <p className="text-gray-600 mb-6">

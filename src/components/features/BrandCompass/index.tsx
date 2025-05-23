@@ -49,8 +49,8 @@ const BrandCompass: React.FC = () => {
             const productInfo = JSON.parse(localStorage.getItem('marketingProduct') || '{}');
             const messageFramework = JSON.parse(localStorage.getItem('messageFramework') || '{}');
             const tagline = localStorage.getItem('brandTagline') || '';
-            const mission = localStorage.getItem('brandMission') || '';
-            const vision = localStorage.getItem('brandVision') || '';
+            const mission = StrategicDataService.getMission() || '';
+            const vision = StrategicDataService.getVision() || '';
             const boilerplates = JSON.parse(localStorage.getItem('brandBoilerplates') || '[]');
 
             // Combine all sources
