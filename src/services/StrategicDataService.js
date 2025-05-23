@@ -12,6 +12,8 @@ const strategicData = {
     tagline: '',
     boilerplates: {},
     brandArchetype: '',
+    competitiveAnalysis: [],  // Added for competitor data
+    styleGuide: {},           // Added for style guide data
 };
 
 const getStrategicData = () => strategicData;
@@ -67,6 +69,50 @@ const StrategicDataService = {
     // Brand Archetype
     getBrandArchetype: () => strategicData.brandArchetype || '',
     setBrandArchetype: (value) => strategicData.brandArchetype = value,
+
+    // Competitive Analysis - NEWLY ADDED
+    getCompetitiveAnalysis: () => strategicData.competitiveAnalysis || [],
+    setCompetitiveAnalysis: (data) => strategicData.competitiveAnalysis = data,
+
+    // Style Guide - NEWLY ADDED
+    getStyleGuide: () => strategicData.styleGuide || {},
+    setStyleGuide: (data) => strategicData.styleGuide = data,
+
+    // Helper method to get all strategic data at once
+    getAllStrategicData: () => {
+        return {
+            product: strategicData.productInfo,
+            audiences: strategicData.audiences,
+            messaging: strategicData.messaging,
+            brandVoice: strategicData.brandVoice,
+            vision: strategicData.vision,
+            mission: strategicData.mission,
+            differentiators: strategicData.differentiators,
+            persona: strategicData.persona,
+            tagline: strategicData.tagline,
+            boilerplates: strategicData.boilerplates,
+            brandArchetype: strategicData.brandArchetype,
+            competitiveAnalysis: strategicData.competitiveAnalysis,
+            styleGuide: strategicData.styleGuide
+        };
+    },
+
+    // Helper method to clear all data
+    clearAllData: () => {
+        strategicData.productInfo = {};
+        strategicData.audiences = [];
+        strategicData.messaging = {};
+        strategicData.brandVoice = {};
+        strategicData.vision = '';
+        strategicData.mission = '';
+        strategicData.differentiators = [];
+        strategicData.persona = {};
+        strategicData.tagline = '';
+        strategicData.boilerplates = {};
+        strategicData.brandArchetype = '';
+        strategicData.competitiveAnalysis = [];
+        strategicData.styleGuide = {};
+    }
 };
 
 export default StrategicDataService;

@@ -150,7 +150,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
     try {
       const requestData = {
-        endpoint: 'analyze-competitors',
+        type: 'analyzeCompetitors',  // This matches your API switch case!
         data: {
           competitors: [{
             name,
@@ -163,7 +163,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
           userMessages: ['']
         }
       };
-
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {

@@ -4,8 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Check, Edit2, ChevronRight, AlertCircle, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useBrandVoice } from '@/context/BrandVoiceContext';
-import StrategicDataService from '../../../../services/StrategicDataService';
+import { useBrandVoice } from '../../../../../context/BrandVoiceContext';
+import StrategicDataService from '../../../../../services/StrategicDataService';
 
 // Define the complete step sequence based on your walkthrough
 const STEPS = {
@@ -57,6 +57,7 @@ const ReviewStep = ({ onNext, onBack }) => {
       const savedAudience1 = localStorage.getItem('marketingAudiences');
       const savedAudience2 = localStorage.getItem('marketingTargetAudience');
       const savedAudience3 = localStorage.getItem('marketingTargetAudiences');
+      const savedAudience4 = localStorage.getItem('marketingTargetAudiences');
 
       let allAudiences = [];
 

@@ -1,4 +1,5 @@
 // src/pages/api/api_endpoints.ts
+// FIXED VERSION: Consistent parameter handling throughout
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
@@ -199,13 +200,13 @@ Look for these common style guide violations:
 
 Return the analysis as a JSON object with these fields:
 {
-  "compliance": 75, // Overall compliance score (0-100)
+  "compliance": 75,
   "issues": [
     {
-      "type": "CAPITALIZATION", // Category of issue (CAPITALIZATION, PUNCTUATION, FORMATTING, GRAMMAR, TERMINOLOGY)
+      "type": "CAPITALIZATION",
       "text": "the exact text with the issue",
       "suggestion": "specific correction that would fix the issue",
-      "severity": "high" // high, medium, or low
+      "severity": "high"
     }
   ],
   "strengths": [
@@ -340,9 +341,22 @@ Additional editing principles:
 - Replace vague terms with specific, concrete language
 
 Return response as JSON with these fields:
-1. enhancedText: the professionally edited version
-2. suggestions: array of improvement objects with {original, suggestion, reason, type}  
-3. stats: object with readabilityScore, passiveVoiceCount, averageSentenceLength, etc.`;
+{
+  "enhancedText": "the professionally edited version",
+  "suggestions": [
+    {
+      "original": "string",
+      "suggestion": "string",
+      "reason": "string",
+      "type": "string"
+    }
+  ],
+  "stats": {
+    "readabilityScore": 85,
+    "passiveVoiceCount": 0,
+    "averageSentenceLength": 20
+  }
+}`;
 
       const completion = await openai.chat.completions.create({
         model: 'gpt-4',
@@ -487,30 +501,29 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
           ],
           secondaryKeywords: [
             "content strategy",
-            "marketing examples",
-            "content tips",
-            "blog ideas",
-            "SEO content",
+            "content planning",
+            "content calendar",
             "content optimization",
-            "marketing plan",
-            "content calendar"
+            "content distribution",
+            "content analytics",
+            "content ROI",
+            "content performance"
           ],
           keywordGroups: [
             {
-              category: "Content Types",
-              keywords: ["blog posts", "social media content", "email newsletters", "ebooks", "white papers"]
+              "category": "Content Strategy",
+              "keywords": ["content strategy", "content planning", "content calendar"]
             },
             {
-              category: "Marketing Goals",
-              keywords: ["lead generation", "brand awareness", "customer engagement", "conversion rate"]
+              "category": "Content Optimization",
+              "keywords": ["content optimization", "content analytics", "content performance"]
             },
             {
-              category: "Content Strategy",
-              keywords: ["content planning", "content distribution", "content audit", "editorial calendar"]
+              "category": "Content Distribution",
+              "keywords": ["content distribution", "content ROI", "content marketing"]
             }
           ]
         };
-
         return res.status(200).json(fallbackResponse);
       }
     } catch (apiError) {
@@ -527,26 +540,26 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
         ],
         secondaryKeywords: [
           "content strategy",
-          "marketing examples",
-          "content tips",
-          "blog ideas",
-          "SEO content",
+          "content planning",
+          "content calendar",
           "content optimization",
-          "marketing plan",
-          "content calendar"
+          "content distribution",
+          "content analytics",
+          "content ROI",
+          "content performance"
         ],
         keywordGroups: [
           {
-            category: "Content Types",
-            keywords: ["blog posts", "social media content", "email newsletters", "ebooks", "white papers"]
+            "category": "Content Strategy",
+            "keywords": ["content strategy", "content planning", "content calendar"]
           },
           {
-            category: "Marketing Goals",
-            keywords: ["lead generation", "brand awareness", "customer engagement", "conversion rate"]
+            "category": "Content Optimization",
+            "keywords": ["content optimization", "content analytics", "content performance"]
           },
           {
-            category: "Content Strategy",
-            keywords: ["content planning", "content distribution", "content audit", "editorial calendar"]
+            "category": "Content Distribution",
+            "keywords": ["content distribution", "content ROI", "content marketing"]
           }
         ]
       };
@@ -562,7 +575,6 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
   }
 }
 
-// Handler for analyzing competitors
 // Handler for analyzing competitors
 async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   try {
@@ -612,7 +624,7 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
 
 Company: ${competitor.name}
 
-Context: We are analyzing competitors for a cheese company, so please focus on food industry companies, particularly those related to cheese production, dairy products, specialty foods, or food retail.
+Context: We are analyzing competitors for a food company, so please focus on food industry companies, particularly those related to food production, restaurants, food retail, or food service.
 
 Please provide a comprehensive analysis of this competitor, including:
 
@@ -623,9 +635,9 @@ Please provide a comprehensive analysis of this competitor, including:
 
 Format your response as a JSON object with these fields:
 {
-  "uniquePositioning": ["point 1", "point 2", ...],
-  "keyThemes": ["theme 1", "theme 2", ...],
-  "gaps": ["gap 1", "gap 2", ...]
+  "uniquePositioning": ["point 1", "point 2", "point 3"],
+  "keyThemes": ["theme 1", "theme 2", "theme 3"],
+  "gaps": ["gap 1", "gap 2", "gap 3"]
 }
 
 Only include information that would be publicly available or reasonably inferred from their market presence.`;
@@ -751,7 +763,6 @@ async function handleGenerateContent(data: any, res: NextApiResponse) {
       hasPrompt: !!data.prompt,
       hasSourceContent: !!data.sourceContent
     });
-
 
     // Validate input
     if (!data.contentType) {
@@ -1020,6 +1031,7 @@ Make the personas realistic, specific and detail-oriented.`;
       ],
       temperature: 0.7,
     });
+
     if (completion.choices.length === 0) {
       console.log("No choices returned from OpenAI");
       return res.status(500).json({
@@ -1029,7 +1041,7 @@ Make the personas realistic, specific and detail-oriented.`;
     }
 
     const responseText = completion.choices[0].message?.content || '';
-    console.log("Received response from OpenAI for personas", completion);
+    console.log("Received response from OpenAI for personas");
 
     try {
       // Parse the JSON response
@@ -1126,7 +1138,6 @@ IMPORTANT: Make sure your response is valid JSON that can be parsed. Don't inclu
             content: prompt
           }
         ],
-        // Removed response_format parameter
         temperature: 0.7,
       });
 
@@ -1461,18 +1472,27 @@ Return your response as a JSON array of three taglines, each with a brief explan
   }
 }
 
-// MAIN HANDLER FUNCTION
+// MAIN HANDLER FUNCTION - FIXED TO USE CONSISTENT PARAMETER PATTERN
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    // FIXED: Now consistently looking for 'type' parameter throughout
     const { type, data } = req.body;
 
-    console.log(`Processing API request for endpoint: ${type}`);
+    // Check if we have the required parameters
+    if (!type) {
+      return res.status(400).json({
+        error: 'Missing endpoint parameter',
+        message: 'Request must include a type parameter'
+      });
+    }
 
-    // Handle different endpoints
+    console.log(`Processing API request for type: ${type}`);
+
+    // Handle different endpoints using 'type' consistently
     switch (type) {
       // Handle content humanizer endpoint
       case 'contentHumanizer':
@@ -1498,7 +1518,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'valueProposition':
         return await handleValuePropositionGenerator(data, res);
 
-      // Handle persona-generator endpoint
+      // Handle persona-generator endpoint - THIS IS THE KEY FIX!
       case 'personaGenerator':
         return await handlePersonaGenerator(data, res);
 

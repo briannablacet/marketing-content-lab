@@ -18,14 +18,11 @@ const MissionVisionGenerator: React.FC = () => {
     const [vision, setVision] = useState('');
 
     useEffect(() => {
-        const strategicData = StrategicDataService.get();
-        if (strategicData) {
-            setCompanyName(strategicData.companyName || '');
-            setAudience(strategicData.idealCustomer || '');
-            setTagline(strategicData.tagline || '');
-            setBoilerplate(strategicData.boilerplate || '');
-            setValueProp(strategicData.valueProp || '');
-        }
+        setCompanyName(StrategicDataService.getProductInfo().name || '');
+        setAudience(StrategicDataService.getPersona().idealCustomer || '');
+        setTagline(StrategicDataService.getTagline());
+        setBoilerplate(StrategicDataService.getBoilerplates().short || '');
+        setValueProp(StrategicDataService.getMessagingFramework().valueProp || '');
     }, []);
 
     const handleGenerate = async () => {
@@ -33,15 +30,7 @@ const MissionVisionGenerator: React.FC = () => {
         setIsLoading(true);
         try {
             const context = `Company: ${companyName}\nAudience: ${audience}\nDifferentiator: ${differentiator}\nValue Proposition: ${valueProp}\nTagline: ${tagline}\nBoilerplate: ${boilerplate}\nNotes: ${input}`;
-            const response = await fetch('/api/api_endpoints', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ prompt: `Generate a mission and vision based on:\n${context}` }),
-            });
-
-            const result = await response.json();
+            const result = await generateMissionVision(context);
             setMission(result.mission || '');
             setVision(result.vision || '');
             StrategicDataService.setMission(result.mission);

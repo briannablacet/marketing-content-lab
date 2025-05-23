@@ -176,7 +176,6 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       // Get product name and type if available
       const productName = productData?.name || "Product";
       const productDescription = productData?.type || "Marketing tool";
-
       // Gather benefits from either framework or product data
       const benefits = framework.keyBenefits.filter(b => b.trim()).length > 0
         ? framework.keyBenefits.filter(b => b.trim())
@@ -184,7 +183,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
 
       // Prepare the request data with all required fields
       const requestBody = {
-        endpoint: "value-proposition-generator",
+        type: "valueProposition",  // This matches your API switch case!
         data: {
           productInfo: {
             name: productName,
@@ -199,7 +198,6 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           currentFramework: framework
         }
       };
-
       // Set up abort controller for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // Extend timeout to 30 seconds
