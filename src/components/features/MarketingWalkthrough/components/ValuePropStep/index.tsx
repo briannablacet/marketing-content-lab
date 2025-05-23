@@ -204,13 +204,18 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
+            <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-wrap justify-between items-center gap-3">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold">Value Proposition</h2>
+                </div>
+            </div>
+
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Build Your Value Proposition</h2>
                 <p className="text-sm text-gray-600 mb-6">
                     A value proposition communicates what you do, who it's for, and why it matters—all in one powerful sentence. Don't worry if it's rough—we'll help you polish it.
                 </p>
-                <div className="grid gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium mb-2">Product Name</label>
                         <input
@@ -290,35 +295,35 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                             </div>
                         </>
                     )}
-
-                    <div className="flex justify-end space-x-4">
-                        <button
-                            onClick={handleAIHelp}
-                            disabled={isLoading}
-                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader className="w-4 h-4 mr-2 animate-spin" />
-                                    Generating...
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="w-4 h-4 mr-2" />
-                                    Generate with AI
-                                </>
-                            )}
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={!paragraph && !existingValueProp}
-                            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                        >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Save
-                        </button>
-                    </div>
                 </div>
+            </div>
+
+            <div className="flex justify-end space-x-4 mt-6">
+                <button
+                    onClick={handleAIHelp}
+                    disabled={isLoading}
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                    {isLoading ? (
+                        <>
+                            <Loader className="w-4 h-4 mr-2 animate-spin" />
+                            Generating...
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Generate with AI
+                        </>
+                    )}
+                </button>
+                <button
+                    onClick={handleSave}
+                    disabled={!paragraph && !existingValueProp}
+                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Save
+                </button>
             </div>
         </div>
     );
