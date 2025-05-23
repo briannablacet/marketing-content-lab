@@ -112,79 +112,85 @@ const CompetitiveAnalysisPage = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Competitive Analysis
-        </h1>
-        <p className="text-gray-600">
-          Analyze your competitors and identify market opportunities
-        </p>
-      </div>
-
-      {/* Pass data change handler to CompetitiveStep */}
-      <CompetitiveStep
-        isWalkthrough={false}
-        isStandalone={true}
-        onDataChange={handleCompetitorDataChange}
-      />
-
-      {/* Analysis Note - Only shown when using fallback data */}
-      {showAnalysisNote && (
-        <div className="bg-white rounded-lg border border-red-200 p-4 mt-6 mb-6">
-          <div className="flex items-start">
-            <svg
-              className="w-5 h-5 text-red-500 mr-3 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="12" cy="12" r="10" strokeWidth="2"></circle>
-              <path strokeLinecap="round" strokeWidth="2" d="M12 8v4m0 4h.01"></path>
-            </svg>
-            <div className="flex-1">
-              <h3 className="font-medium text-lg">Analysis Note</h3>
-              <p className="text-red-700">Analysis is currently having issues. Using fallback data instead.</p>
-            </div>
-            <button
-              onClick={dismissAnalysisNote}
-              className="text-gray-500 hover:text-red-500"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Custom Bottom Navigation */}
-      <div className="flex justify-between items-center mt-8">
-        <button
-          ref={dashboardButtonRef}
-          onClick={forceDashboardNavigation}
-          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <ScreenTemplate
+          title="Competitive Analysis"
+          subtitle="Analyze your competitors and identify market opportunities"
+          isWalkthrough={false}
+          hideNavigation={true}
+          currentStep={1}
+          totalSteps={1}
+          onNext={() => { }}
+          onBack={() => { }}
+          onSkip={() => { }}
+          onExit={() => { }}
         >
-          Back to Dashboard
-        </button>
+          {/* Pass data change handler to CompetitiveStep */}
+          <CompetitiveStep
+            isWalkthrough={false}
+            isStandalone={true}
+            onDataChange={handleCompetitorDataChange}
+          />
 
-        <div className="flex space-x-4">
-          <button
-            ref={competitorDashboardButtonRef}
-            onClick={forceCompetitorDashboardNavigation}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            View Competitor Dashboard
-          </button>
+          {/* Analysis Note - Only shown when using fallback data */}
+          {showAnalysisNote && (
+            <div className="bg-white rounded-lg border border-red-200 p-4 mt-6 mb-6">
+              <div className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-red-500 mr-3 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle cx="12" cy="12" r="10" strokeWidth="2"></circle>
+                  <path strokeLinecap="round" strokeWidth="2" d="M12 8v4m0 4h.01"></path>
+                </svg>
+                <div className="flex-1">
+                  <h3 className="font-medium text-lg">Analysis Note</h3>
+                  <p className="text-red-700">Analysis is currently having issues. Using fallback data instead.</p>
+                </div>
+                <button
+                  onClick={dismissAnalysisNote}
+                  className="text-gray-500 hover:text-red-500"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
 
-          <button
-            onClick={handleSave}
-            disabled={isSaving || !hasValidData}
-            className={`px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 ${!hasValidData ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-          >
-            {isSaving ? 'Saving...' : 'Save Analysis'}
-          </button>
-        </div>
+          {/* Custom Bottom Navigation */}
+          <div className="flex justify-between items-center mt-8">
+            <button
+              ref={dashboardButtonRef}
+              onClick={forceDashboardNavigation}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Back to Dashboard
+            </button>
+
+            <div className="flex space-x-4">
+              <button
+                ref={competitorDashboardButtonRef}
+                onClick={forceCompetitorDashboardNavigation}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                View Competitor Dashboard
+              </button>
+
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !hasValidData}
+                className={`px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 ${!hasValidData ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+              >
+                {isSaving ? 'Saving...' : 'Save Analysis'}
+              </button>
+            </div>
+          </div>
+        </ScreenTemplate>
       </div>
     </div>
   );

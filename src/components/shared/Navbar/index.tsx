@@ -173,7 +173,7 @@ const Navbar: React.FC = () => {
                         🧭 Brand Compass
                       </Link>
                       <Link
-                        href="/walkthrough/3"
+                        href="/ideal-customer"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
@@ -189,7 +189,7 @@ const Navbar: React.FC = () => {
                       </Link>
                       {/* FIXED: Changed from duplicate /key-messages to /walkthrough/5 for Messaging Framework */}
                       <Link
-                        href="/walkthrough/5"
+                        href="/key-messages"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
@@ -197,7 +197,7 @@ const Navbar: React.FC = () => {
                       </Link>
                       {/* FIXED: Changed from /competitive-analysis to /walkthrough/6 for Competitive Analysis */}
                       <Link
-                        href="/walkthrough/6"
+                        href="/competitive-analysis"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
@@ -205,7 +205,7 @@ const Navbar: React.FC = () => {
                       </Link>
                       {/* FIXED: Changed from /writing-style to /walkthrough/7 for Style Guide Builder */}
                       <Link
-                        href="/walkthrough/7"
+                        href="/writing-style"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
@@ -213,7 +213,7 @@ const Navbar: React.FC = () => {
                       </Link>
                       {/* FIXED: Changed from /brand-voice to /walkthrough/8 for Brand Personality */}
                       <Link
-                        href="/walkthrough/8"
+                        href="/brand-voice"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setStrategicMenuOpen(false)}
                       >
