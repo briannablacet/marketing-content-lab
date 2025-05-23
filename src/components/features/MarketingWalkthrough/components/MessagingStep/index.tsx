@@ -176,6 +176,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       // Get product name and type if available
       const productName = productData?.name || "Product";
       const productDescription = productData?.type || "Marketing tool";
+
       // Gather benefits from either framework or product data
       const benefits = framework.keyBenefits.filter(b => b.trim()).length > 0
         ? framework.keyBenefits.filter(b => b.trim())
@@ -183,7 +184,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
 
       // Prepare the request data with all required fields
       const requestBody = {
-        type: "valueProposition",  // This matches your API switch case!
+        type: "valueProposition",
         data: {
           productInfo: {
             name: productName,
@@ -198,9 +199,10 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           currentFramework: framework
         }
       };
+
       // Set up abort controller for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // Extend timeout to 30 seconds
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       // Make the API call
       const response = await fetch('/api/api_endpoints', {
@@ -734,6 +736,15 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                   <h4 className="font-medium mb-2 text-blue-800">Enhanced Value Proposition</h4>
                   <div className="p-3 bg-white rounded-lg border border-blue-100">
                     {aiSuggestions.valueProposition}
+                    <button
+                      onClick={() => {
+                        updateField('valueProposition', aiSuggestions.valueProposition);
+                        showNotification('success', 'Value proposition updated');
+                      }}
+                      className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                    >
+                      Accept
+                    </button>
                   </div>
                 </div>
               )}
@@ -746,18 +757,45 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 1</div>
                       {aiSuggestions.pillar1}
+                      <button
+                        onClick={() => {
+                          updateField('pillar1', aiSuggestions.pillar1);
+                          showNotification('success', 'Pillar 1 updated');
+                        }}
+                        className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                      >
+                        Accept
+                      </button>
                     </div>
                   )}
                   {aiSuggestions.pillar2 && (
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 2</div>
                       {aiSuggestions.pillar2}
+                      <button
+                        onClick={() => {
+                          updateField('pillar2', aiSuggestions.pillar2);
+                          showNotification('success', 'Pillar 2 updated');
+                        }}
+                        className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                      >
+                        Accept
+                      </button>
                     </div>
                   )}
                   {aiSuggestions.pillar3 && (
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 3</div>
                       {aiSuggestions.pillar3}
+                      <button
+                        onClick={() => {
+                          updateField('pillar3', aiSuggestions.pillar3);
+                          showNotification('success', 'Pillar 3 updated');
+                        }}
+                        className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                      >
+                        Accept
+                      </button>
                     </div>
                   )}
                 </div>
@@ -770,19 +808,29 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                     {aiSuggestions.keyBenefits.map((benefit, index) => (
                       <li key={index} className="p-3 bg-white rounded-lg border border-blue-100">
                         {benefit}
+                        <button
+                          onClick={() => {
+                            const newBenefits = [...framework.keyBenefits];
+                            newBenefits[index] = benefit;
+                            updateField('keyBenefits', newBenefits);
+                            showNotification('success', 'Benefit updated');
+                          }}
+                          className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                        >
+                          Accept
+                        </button>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              <div className="flex justify-end mt-2">
+              <div className="flex justify-end mt-4">
                 <button
-                  onClick={applyAISuggestions}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                  onClick={() => setAiSuggestions(null)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Apply All Suggestions
+                  Close
                 </button>
               </div>
             </div>

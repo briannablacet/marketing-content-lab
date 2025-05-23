@@ -52,6 +52,12 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   // NEW: Track which competitor should be focused
   const [focusCompetitorIndex, setFocusCompetitorIndex] = useState<number | null>(null);
 
+  // NEW: Add state for current competitor being analyzed
+  const [currentCompetitor, setCurrentCompetitor] = useState('');
+
+  // NEW: Add state for competitor insights
+  const [competitorInsights, setCompetitorInsights] = useState<{ name: string; uniquePositioning: string[]; keyThemes: string[]; gaps: string[] }[]>([]);
+
   // Load competitors from localStorage when component mounts
   useEffect(() => {
     try {
@@ -77,7 +83,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
       // Set a new timer for 800ms debounce
       const timer = setTimeout(() => {
-        handleAnalyzeCompetitor(competitorToAnalyze.index, competitorToAnalyze.name);
+        handleAnalyzeCompetitor(competitorToAnalyze.name);
         setCompetitorToAnalyze(null);
       }, 800);
 
@@ -139,87 +145,39 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     ));
   };
 
-  const handleAnalyzeCompetitor = async (index: number, name: string) => {
-    if (!name.trim()) return;
+  const handleAnalyzeCompetitor = async (competitor: string) => {
+    if (!competitor.trim()) {
+      showNotification('error', 'Please enter a competitor name');
+      return;
+    }
 
-    setCompetitors(prev => prev.map((comp, i) =>
-      i === index ? { ...comp, isLoading: true } : comp
-    ));
-    setError('');
     setIsAnalyzing(true);
+    setCurrentCompetitor(competitor);
 
     try {
-      const requestData = {
-        type: 'analyzeCompetitors',  // This matches your API switch case!
-        data: {
-          competitors: [{
-            name,
-            description: '',
-            knownMessages: [],
-            strengths: [],
-            weaknesses: []
-          }],
-          industry: 'technology',
-          userMessages: ['']
-        }
-      };
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(requestData)
+      const response = await callApiWithStrategicData('analyze-competitors', {
+        competitors: [competitor],
+        industry: 'food' // Default to food industry
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Unable to analyze competitor. Please try again.');
+      if (response.competitorInsights && response.competitorInsights.length > 0) {
+        const insight = response.competitorInsights[0];
+        setCompetitorInsights(prev => [...prev, {
+          name: competitor,
+          uniquePositioning: insight.uniquePositioning || [],
+          keyThemes: insight.keyThemes || [],
+          gaps: insight.gaps || []
+        }]);
+        showNotification('success', `Analysis complete for ${competitor}`);
+      } else {
+        throw new Error('Invalid response format');
       }
-
-      const data = await response.json();
-
-      if (!data.competitorInsights?.[0]) {
-        throw new Error('No competitor insights returned from API');
-      }
-
-      const competitorInsight = data.competitorInsights[0];
-
-      // Check if we have meaningful data
-      const hasContent = competitorInsight.uniquePositioning?.length > 0 ||
-        competitorInsight.keyThemes?.length > 0 ||
-        competitorInsight.gaps?.length > 0;
-
-      if (!hasContent) {
-        throw new Error('Limited information available for this competitor');
-      }
-
-      setCompetitors(prev => prev.map((comp, i) =>
-        i === index ? {
-          ...comp,
-          isLoading: false,
-          description: competitorInsight.uniquePositioning.join(' '),
-          knownMessages: competitorInsight.keyThemes || [],
-          strengths: competitorInsight.uniquePositioning || [],
-          weaknesses: competitorInsight.gaps || []
-        } : comp
-      ));
-
-      showNotification(`Analysis for ${name} completed`, 'success');
-    } catch (err) {
-      console.error('Error in handleAnalyzeCompetitor:', err);
-      setError(`Failed to analyze competitor: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again.`);
-
-      // Clear any previously generated analysis for this competitor
-      clearCompetitorAnalysis(index);
-
-      showNotification('Failed to analyze competitor. Please try again.', 'error');
+    } catch (error) {
+      console.error('Error analyzing competitor:', error);
+      showNotification('error', `Failed to analyze ${competitor}: ${error.message}`);
     } finally {
-      setCompetitors(prev => prev.map((comp, i) =>
-        i === index ? { ...comp, isLoading: false } : comp
-      ));
       setIsAnalyzing(false);
+      setCurrentCompetitor('');
     }
   };
 
@@ -237,7 +195,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   const handleSubmitCompetitor = (index: number) => {
     const competitor = competitors[index];
     if (competitor.name.trim().length > 0) {
-      handleAnalyzeCompetitor(index, competitor.name);
+      handleAnalyzeCompetitor(competitor.name);
     }
   };
 

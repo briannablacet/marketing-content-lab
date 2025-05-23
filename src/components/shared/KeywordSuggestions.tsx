@@ -53,7 +53,7 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    endpoint: 'generate-keywords',
+                    endpoint: 'KeywordSuggestions',
                     data: {
                         context: {
                             topic: contentTopic,
