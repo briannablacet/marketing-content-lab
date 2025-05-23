@@ -14,6 +14,7 @@ const strategicData = {
     brandArchetype: '',
     competitiveAnalysis: [],  // Added for competitor data
     styleGuide: {},           // Added for style guide data
+    valueProposition: '',     // Added for value proposition
 };
 
 const getStrategicData = () => strategicData;
@@ -50,6 +51,10 @@ const StrategicDataService = {
     getMission: () => strategicData.mission || '',
     setMission: (value) => strategicData.mission = value,
 
+    // Value Proposition - NEWLY ADDED
+    getValueProposition: () => strategicData.valueProposition || '',
+    setValueProposition: (value) => strategicData.valueProposition = value,
+
     // Differentiators
     getDifferentiators: () => strategicData.differentiators || [],
     setDifferentiators: (data) => strategicData.differentiators = data,
@@ -70,11 +75,11 @@ const StrategicDataService = {
     getBrandArchetype: () => strategicData.brandArchetype || '',
     setBrandArchetype: (value) => strategicData.brandArchetype = value,
 
-    // Competitive Analysis - NEWLY ADDED
+    // Competitive Analysis
     getCompetitiveAnalysis: () => strategicData.competitiveAnalysis || [],
     setCompetitiveAnalysis: (data) => strategicData.competitiveAnalysis = data,
 
-    // Style Guide - NEWLY ADDED
+    // Style Guide
     getStyleGuide: () => strategicData.styleGuide || {},
     setStyleGuide: (data) => strategicData.styleGuide = data,
 
@@ -87,6 +92,7 @@ const StrategicDataService = {
             brandVoice: strategicData.brandVoice,
             vision: strategicData.vision,
             mission: strategicData.mission,
+            valueProposition: strategicData.valueProposition,
             differentiators: strategicData.differentiators,
             persona: strategicData.persona,
             tagline: strategicData.tagline,
@@ -105,6 +111,7 @@ const StrategicDataService = {
         strategicData.brandVoice = {};
         strategicData.vision = '';
         strategicData.mission = '';
+        strategicData.valueProposition = '';
         strategicData.differentiators = [];
         strategicData.persona = {};
         strategicData.tagline = '';
