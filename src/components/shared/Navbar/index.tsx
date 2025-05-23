@@ -151,45 +151,45 @@ const Navbar: React.FC = () => {
                         Individual Steps
                       </div>
 
-                      {/* Walkthrough steps in order */}
+                      {/* Walkthrough steps in order - FIXED: Now point to standalone pages */}
                       <Link
-                        href="/walkthrough/2"
+                        href="/product"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         📦 Product Information
                       </Link>
                       <Link
-                        href="/walkthrough/3"
+                        href="/ideal-customer"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         👥 Ideal Customer
                       </Link>
                       <Link
-                        href="/walkthrough/4"
+                        href="/value-proposition"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         💎 Value Proposition
                       </Link>
                       <Link
-                        href="/walkthrough/5"
+                        href="/key-messages"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         💬 Messaging Framework
                       </Link>
                       <Link
-                        href="/walkthrough/6"
+                        href="/competitive-analysis"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         🏆 Competitive Analysis
                       </Link>
                       <Link
-                        href="/walkthrough/7"
+                        href="/writing-style"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         ✍️ Style Guide Builder
                       </Link>
                       <Link
-                        href="/walkthrough/8"
+                        href="/brand-voice"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         🎭 Brand Personality
