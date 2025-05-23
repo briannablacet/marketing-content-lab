@@ -4,8 +4,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../../../shared/ui/card';
 import {
-    Users, Target, MessageSquare, TrendingUp, Eye, CheckCircle, FileText
+    Users, Target, MessageSquare, TrendingUp, Eye, CheckCircle, FileText, Compass
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface ProductInfo {
     name?: string;
@@ -123,9 +124,30 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ onNext, onBack }) => {
                 </p>
             </div>
 
+            {/* Brand Compass CTA */}
+            <Card className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-100 rounded-full">
+                            <Compass className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-900">Visualize Your Brand Compass</h3>
+                            <p className="text-gray-600 text-sm">See your complete brand strategy in a beautiful, interactive compass format</p>
+                        </div>
+                    </div>
+                    <Link
+                        href="/brand-compass"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                    >
+                        <Compass className="w-5 h-5" />
+                        View Brand Compass
+                    </Link>
+                </div>
+            </Card>
+
             {/* Strategy Summary Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-
                 {/* Business Info */}
                 <Card className="p-6">
                     <div className="flex items-center gap-3 mb-4">
