@@ -214,10 +214,9 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
         setKeyBenefits([...keyBenefits, '']);
     };
 
-
-        return (
-            <div className="w-full max-w-none space-y-6">  
-                <Card className="p-6">
+    return (
+        <div className="w-full max-w-none space-y-6">
+            <Card className="p-6">
                 {/* SMALLER HEADLINE ON WHITE CARD BACKGROUND */}
                 <div className="mb-6">
                     <h2 className="text-2xl font-semibold text-gray-900">Tell us about your business</h2>
@@ -291,6 +290,45 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                                 Add Another Benefit
                             </button>
                         </div>
+                    </div>
+                </div>
+            </Card>
+
+            {/* AI Help Section */}
+            <Card className="p-6">
+                <div className="mb-6">
+                    <h2 className="text-2xl font-semibold text-gray-900">Generate Your Value Proposition</h2>
+                    <p className="text-gray-600 mt-2">Let AI help you craft a compelling value proposition</p>
+                </div>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Your Value Proposition</label>
+                        <textarea
+                            value={paragraph}
+                            onChange={(e) => setParagraph(e.target.value)}
+                            placeholder="Your value proposition will appear here..."
+                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            rows={4}
+                        />
+                    </div>
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleAIHelp}
+                            disabled={isLoading}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader className="w-4 h-4 animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles className="w-4 h-4" />
+                                    Generate with AI
+                                </>
+                            )}
+                        </button>
                     </div>
                 </div>
             </Card>
