@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { WritingStyleProvider } from '@/context/WritingStyleContext';
 import { MessagingProvider } from '@/context/MessagingContext';
-import { ScreenTemplate } from '@/components/shared/UIComponents';
+import ScreenTemplate from '@/components/shared/UIComponents';
 
 // Use dynamic import with SSR disabled to prevent SSR-related issues
 const ContentRepurposer = dynamic(() => import('../components/features/ContentRepurposer'), {

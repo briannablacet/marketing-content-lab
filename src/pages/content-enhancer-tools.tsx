@@ -1,7 +1,7 @@
 // src/pages/content-enhancer-tools.tsx
 import React from 'react';
 import { useRouter } from 'next/router';
-import { ScreenTemplate } from '@/components/shared/UIComponents';
+import ScreenTemplate from '@/components/shared/UIComponents';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { WritingStyleProvider } from '@/context/WritingStyleContext';
 import StyleGuideNotificationBanner from '@/components/features/StyleGuideNotificationBanner';

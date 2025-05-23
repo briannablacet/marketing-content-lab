@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { WritingStyleProvider } from '@/context/WritingStyleContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ScreenTemplate } from '@/components/shared/UIComponents';
+import ScreenTemplate from '@/components/shared/UIComponents';
 import { Check, Settings } from 'lucide-react';
 
 // Dynamic imports with SSR disabled to prevent issues with file handling

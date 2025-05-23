@@ -1,7 +1,7 @@
 // src/pages/competitive-analysis.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import CompetitiveStep from '@/components/features/MarketingWalkthrough/components/CompetitiveStep';
-import { ScreenTemplate } from '@/components/shared/UIComponents';
+import ScreenTemplate from '@/components/shared/UIComponents';
 import { WritingStyleProvider } from '@/context/WritingStyleContext';
 import { ContentProvider } from '@/context/ContentContext';
 import { NotificationProvider, useNotification } from '@/context/NotificationContext';

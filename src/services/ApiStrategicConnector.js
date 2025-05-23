@@ -1,8 +1,8 @@
 // src/services/ApiStrategicConnector.js
 
 
-import { enrichContentRequest, getAllStrategicData } from './StrategicDataService';
-
+import  enrichContentRequest  from './StrategicDataService';
+import  getAllStrategicData  from './StrategicDataService';
 /**
  * Strategic API endpoints that should use the strategic data
  * Add any new endpoints here to ensure they use strategic data

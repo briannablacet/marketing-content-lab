@@ -4,7 +4,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import ReviewStep from '@/components/features/MarketingWalkthrough/components/ReviewStep';
-import { ScreenTemplate } from '@/components/shared/UIComponents';
+import ScreenTemplate from '@/components/shared/UIComponents';
 import { ContentProvider } from '@/context/ContentContext';
 import { MarketingProvider } from '@/context/MarketingContext';
 import { NotificationProvider } from '@/context/NotificationContext';

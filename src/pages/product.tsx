@@ -2,7 +2,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import ProductStep from '@/components/features/MarketingWalkthrough/components/ProductStep';
-import { ScreenTemplate } from '@/components/shared/UIComponents';
+import ScreenTemplate from '@/components/shared/UIComponents';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { MarketingProvider } from '@/context/MarketingContext';
 import { Package } from 'lucide-react';

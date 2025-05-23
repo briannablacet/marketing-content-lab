@@ -1,6 +1,6 @@
 // src/pages/settings.tsx
 import React from 'react';
-import { ScreenTemplate } from '@/components/shared/UIComponents';
+import ScreenTemplate from '@/components/shared/UIComponents';
 import ConfigImportExport from '@/components/features/ConfigImportExport';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { WritingStyleProvider } from '@/context/WritingStyleContext';
