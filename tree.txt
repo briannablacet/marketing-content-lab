@@ -1,0 +1,228 @@
+
+│   ├── components
+│   │   ├── AnimatedHeader.tsx
+│   │   ├── Debug
+│   │   │   └── LocalStorageViewer.jsx
+│   │   ├── features
+│   │   │   ├── ABTestResultsTracker
+│   │   │   │   ├── a-b-testing-guide-README.md
+│   │   │   │   └── index.tsx
+│   │   │   ├── auth
+│   │   │   │   ├── login.tsx
+│   │   │   │   └── register.tsx
+│   │   │   ├── BoilerplateGenerator
+│   │   │   │   └── index.tsx
+│   │   │   ├── BrandCompass
+│   │   │   │   └── index.tsx
+│   │   │   ├── Brandscape
+│   │   │   │   └── index.tsx
+│   │   │   ├── BrandVoiceModule
+│   │   │   │   └── index.tsx
+│   │   │   ├── BudgetModule
+│   │   │   │   └── index.tsx
+│   │   │   ├── CompetitorAnalysisDashboard
+│   │   │   │   └── index.tsx
+│   │   │   ├── ConfigImportExport
+│   │   │   │   └── index.tsx
+│   │   │   ├── ContentCreator
+│   │   │   │   └── index.tsx
+│   │   │   ├── ContentEditChat
+│   │   │   │   └── index.tsx
+│   │   │   ├── ContentEngine
+│   │   │   │   ├── index.tsx
+│   │   │   │   └── screens
+│   │   │   │       ├── CompetitorInput.tsx
+│   │   │   │       ├── ContentPreview.tsx
+│   │   │   │       ├── KeyMessages.tsx
+│   │   │   │       └── UploadScreen.tsx
+│   │   │   ├── ContentEnhancer
+│   │   │   │   ├── contentGuidelines.tsx
+│   │   │   │   ├── index-broken.tsx
+│   │   │   │   └── index.tsx
+│   │   │   ├── ContentHumanizer
+│   │   │   │   ├── index.tsx
+│   │   │   │   └── new content humanizer component truncated.ts
+│   │   │   ├── ContentRepurposer
+│   │   │   │   └── index.tsx
+│   │   │   ├── ContentStrategyModule
+│   │   │   │   └── index.tsx
+│   │   │   ├── CreationHub
+│   │   │   │   └── index.tsx
+│   │   │   ├── MarketingWalkthrough
+│   │   │   │   ├── components
+│   │   │   │   │   ├── BudgetStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── ChannelSelectionStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── CompetitiveStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── ContentStrategyStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── IdealCustomerStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── MessagingStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── PersonaStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── ProductStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── SeoKeywordsStep-old
+│   │   │   │   │   │   └── index-old.tsx
+│   │   │   │   │   ├── StyleGuideStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── TimelinePlanningStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   ├── ValuePropStep
+│   │   │   │   │   │   └── index.tsx
+│   │   │   │   │   └── WelcomeStep
+│   │   │   │   │       └── index.tsx
+│   │   │   │   └── index.tsx
+│   │   │   ├── MissionVisionGenerator
+│   │   │   │   └── index.tsx
+│   │   │   ├── ProductInformationForm
+│   │   │   │   ├── _tests_
+│   │   │   │   │   ├── index.test.tsx
+│   │   │   │   │   └── Untitled-1.ts
+│   │   │   │   ├── index.tsx
+│   │   │   │   └── README.md
+│   │   │   ├── ProsePerfector
+│   │   │   │   └── index.tsx
+│   │   │   ├── StyleCompliance
+│   │   │   │   └── index.tsx
+│   │   │   ├── StyleGuideNotificationBanner
+│   │   │   │   └── index.tsx
+│   │   │   ├── TaglineGenerator
+│   │   │   │   └── index.tsx
+│   │   │   └── WritingStyleModule
+│   │   │       └── index.tsx
+│   │   ├── shared
+│   │   │   ├── AIAssistance
+│   │   │   │   └── index.tsx
+│   │   │   ├── AutosaveIndicator.tsx
+│   │   │   ├── DemoModeToggle.tsx
+│   │   │   ├── FileHandler
+│   │   │   │   └── index.tsx
+│   │   │   ├── KeywordSuggestions.tsx
+│   │   │   ├── Navbar
+│   │   │   │   └── index.tsx
+│   │   │   ├── NotificationComponent.tsx
+│   │   │   ├── PageLayout
+│   │   │   │   └── index.tsx
+│   │   │   ├── RelevantTemplates.tsx
+│   │   │   ├── StrategicDataUsage.jsx
+│   │   │   ├── SuccessModal.tsx
+│   │   │   ├── TemplateCard.tsx
+│   │   │   ├── ui
+│   │   │   │   └── card.tsx
+│   │   │   └── UIComponents.js
+│   │   └── ui
+│   │       ├── alert.tsx
+│   │       └── card.tsx
+│   ├── context
+│   │   ├── AppContext.tsx
+│   │   ├── AuthContext.tsx
+│   │   ├── BrandVoiceContext.tsx
+│   │   ├── ContentContext.tsx
+│   │   ├── DemoModeContext.tsx
+│   │   ├── MarketingContext.tsx
+│   │   ├── MarketingProgramContext.js
+│   │   ├── MessagingContext.tsx
+│   │   ├── NotificationContext.tsx
+│   │   ├── ProtectedRoute.tsx
+│   │   ├── SDRContext.tsx
+│   │   ├── StyleGuideContext.tsx
+│   │   ├── TimelineContext.tsx
+│   │   ├── WalkthroughContext.tsx
+│   │   └── WritingStyleContext.tsx
+│   ├── data
+│   │   ├── contentTypesData.js
+│   │   └── templates.ts
+│   ├── exportUtils.ts
+│   ├── lib
+│   │   └── utils.ts
+│   ├── pages
+│   │   ├── _app.tsx
+│   │   ├── _dev
+│   │   │   └── content-test.tsx
+│   │   ├── _document.tsx
+│   │   ├── ab-testing.tsx
+│   │   ├── api
+│   │   │   ├── api_endpoints.ts
+│   │   │   ├── api-readme.md
+│   │   │   ├── extract-pdf.js
+│   │   │   └── walkthrough
+│   │   ├── boilerplate-generator.tsx
+│   │   ├── brand-compass.tsx
+│   │   ├── brand-voice.tsx
+│   │   ├── brandscape.tsx
+│   │   ├── budget.js
+│   │   ├── campaign-builder.tsx
+│   │   ├── channel-mix.tsx
+│   │   ├── competitive-analysis.tsx
+│   │   ├── competitor-dashboard.tsx
+│   │   ├── content-creator
+│   │   │   ├── [type].tsx
+│   │   │   └── index.tsx
+│   │   ├── content-creator-tools.tsx
+│   │   ├── content-engine.tsx
+│   │   ├── content-enhancer-tools.tsx
+│   │   ├── content-enhancer.tsx
+│   │   ├── content-humanizer.tsx
+│   │   ├── content-repurposer.tsx
+│   │   ├── content-strategy.tsx
+│   │   ├── creation-hub.tsx
+│   │   ├── index.tsx
+│   │   ├── key-messages.tsx
+│   │   ├── login.tsx
+│   │   ├── logout.tsx
+│   │   ├── mission-vision-generator.tsx
+│   │   ├── product.tsx
+│   │   ├── prose-perfector.tsx
+│   │   ├── register.tsx
+│   │   ├── reset.html
+│   │   ├── review-program.tsx
+│   │   ├── seo-keywords-old.tsx
+│   │   ├── settings.tsx
+│   │   ├── style-checker.tsx
+│   │   ├── tagline-generator.tsx
+│   │   ├── templates
+│   │   │   └── [id].tsx
+│   │   ├── templates.tsx
+│   │   ├── walkthrough
+│   │   │   ├── [step].tsx
+│   │   │   ├── complete.tsx
+│   │   │   └── index.tsx
+│   │   └── writing-style.tsx
+│   ├── services
+│   │   ├── ApiStrategicConnector.js
+│   │   ├── contentService.tsx
+│   │   ├── StrategicDataService.js
+│   │   └── StrategicDataService.ts
+│   ├── styles
+│   │   └── globals.css
+│   ├── templates.ts
+│   ├── types
+│   │   └── writingStyle.tsx
+│   ├── utils
+│   │   ├── dataManager.js
+│   │   ├── exportUtils.ts
+│   │   ├── fileUtils.ts
+│   │   ├── logger.ts
+│   │   ├── serverSideProps.js
+│   │   ├── StyleGuides.tsx
+│   │   ├── validation.ts
+│   │   ├── withSSR.tsx
+│   │   └── WritingStyleValidation.tsx
+│   └── utils.ts
+├── strategic-features.rtf
+├── tailwind.config.js
+├── tailwind.config.ts
+├── Tech Specs.md
+├── test-file.txt
+├── tsconfig.json
+└── Untitled
+    └── marketing-content-lab
+        └── src
+            └── pages
+                └── content-creator
+                    └── [type].tsx

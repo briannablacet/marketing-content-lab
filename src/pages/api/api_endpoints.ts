@@ -1,4 +1,5 @@
 // src/pages/api/api_endpoints.ts
+// FIXED VERSION: Consistent parameter handling throughout
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
@@ -199,13 +200,13 @@ Look for these common style guide violations:
 
 Return the analysis as a JSON object with these fields:
 {
-  "compliance": 75, // Overall compliance score (0-100)
+  "compliance": 75,
   "issues": [
     {
-      "type": "CAPITALIZATION", // Category of issue (CAPITALIZATION, PUNCTUATION, FORMATTING, GRAMMAR, TERMINOLOGY)
+      "type": "CAPITALIZATION",
       "text": "the exact text with the issue",
       "suggestion": "specific correction that would fix the issue",
-      "severity": "high" // high, medium, or low
+      "severity": "high"
     }
   ],
   "strengths": [
@@ -234,68 +235,156 @@ Return the analysis as a JSON object with these fields:
         // Parse the JSON response
         const parsedResponse = JSON.parse(responseText);
 
+        // Validate the response structure
+        if (!parsedResponse.compliance || !Array.isArray(parsedResponse.issues) || !Array.isArray(parsedResponse.strengths)) {
+          throw new Error('Invalid response structure from OpenAI');
+        }
+
         return res.status(200).json(parsedResponse);
       } catch (error) {
         console.error('Failed to parse OpenAI response:', responseText);
-
-        // Return a fallback response for style checking
-        return res.status(200).json({
-          compliance: 65,
-          issues: [
-            {
-              type: 'CAPITALIZATION',
-              text: 'Sample capitalization issue',
-              suggestion: 'Proper capitalization suggestion',
-              severity: 'medium'
-            },
-            {
-              type: 'PUNCTUATION',
-              text: 'Sample punctuation issue',
-              suggestion: 'Proper punctuation suggestion',
-              severity: 'low'
-            }
-          ],
-          strengths: [
-            'Appropriate paragraph length',
-            'Clear benefit statements',
-            'Product name used consistently'
-          ]
+        return res.status(500).json({
+          error: { message: 'Failed to parse style analysis response' }
         });
       }
     } catch (error) {
       console.error('OpenAI API Error:', error);
-
-      // Return a fallback response for style checking
-      return res.status(200).json({
-        compliance: 70,
-        issues: [
-          {
-            type: 'FORMATTING',
-            text: 'Sample issue text',
-            suggestion: 'Sample improvement suggestion',
-            severity: 'medium'
-          }
-        ],
-        strengths: [
-          'Appropriate paragraph length',
-          'Clear benefit statements',
-          'Product name used consistently'
-        ]
+      return res.status(500).json({
+        error: { message: 'Failed to analyze content with OpenAI' }
       });
     }
   } catch (error) {
     console.error('Error in style checker:', error);
     return res.status(500).json({
-      error: { message: 'Failed to check style compliance' },
-      compliance: 0,
-      issues: [
-        {
-          type: 'SERVER_ERROR',
-          text: 'An error occurred during processing',
-          suggestion: 'Please try again',
-          severity: 'high'
+      error: { message: 'Failed to check style compliance' }
+    });
+  }
+}
+
+// Handler for mission and vision generation
+async function handleMissionVision(data: any, res: NextApiResponse) {
+  try {
+    console.log("Mission Vision generator received data:", data);
+
+    // Validate input - we need at least some information
+    if (!data.companyName && !data.audience && !data.differentiator && !data.additionalContext) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Please provide at least some company information to generate mission and vision'
+      });
+    }
+
+    // Extract data with defaults
+    const {
+      companyName = '',
+      audience = '',
+      differentiator = '',
+      valueProp = '',
+      tagline = '',
+      boilerplate = '',
+      additionalContext = ''
+    } = data;
+
+    console.log(`Generating mission and vision for: ${companyName}`);
+
+    // Create a comprehensive prompt for mission and vision generation
+    const prompt = `You are an expert brand strategist specializing in creating compelling mission and vision statements.
+
+Please create a mission statement and vision statement for a company with the following details:
+
+Company Name: ${companyName || 'This company'}
+Target Audience: ${audience || 'Not specified'}
+Key Differentiator: ${differentiator || 'Not specified'}
+Value Proposition: ${valueProp || 'Not specified'}
+Current Tagline: ${tagline || 'Not specified'}
+Company Description: ${boilerplate || 'Not specified'}
+Additional Context: ${additionalContext || 'None provided'}
+
+Mission Statement Guidelines:
+- Should describe what the company does TODAY
+- Should explain WHY the company exists
+- Should be inspiring but grounded in reality
+- Should be 1-3 sentences long
+- Should connect with the target audience
+
+Vision Statement Guidelines:
+- Should describe the company's aspirational future
+- Should paint a picture of the world the company wants to create
+- Should be inspirational and forward-looking
+- Should be 1-2 sentences long
+- Should be memorable and motivating
+
+Format your response as a JSON object with these exact fields:
+{
+  "mission": "The mission statement here",
+  "vision": "The vision statement here"
+}
+
+Make the statements specific to this company, avoid generic corporate speak, and ensure they reflect the company's unique value and purpose.`;
+
+    console.log("Sending prompt to OpenAI for mission and vision");
+
+    try {
+      // Call OpenAI API
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert brand strategist who specializes in creating powerful mission and vision statements that capture a company\'s essence and inspire action.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+      });
+
+      const responseText = completion.choices[0].message?.content || '';
+      console.log("Got OpenAI response for mission and vision");
+
+      try {
+        // Parse the JSON response
+        console.log("Parsing AI response for mission and vision");
+        const parsedResponse = JSON.parse(responseText);
+
+        // Validate response format
+        if (!parsedResponse.mission && !parsedResponse.vision) {
+          console.log("No mission or vision in response");
+          return res.status(500).json({
+            error: 'Invalid AI response',
+            message: 'AI did not generate mission or vision statements'
+          });
         }
-      ]
+
+        console.log("Successfully generated mission and vision");
+
+        return res.status(200).json({
+          mission: parsedResponse.mission || '',
+          vision: parsedResponse.vision || ''
+        });
+      } catch (parseError) {
+        console.error('Failed to parse mission/vision response:', parseError);
+        console.log("Response text sample:", responseText.substring(0, 200));
+
+        return res.status(500).json({
+          error: 'Parse error',
+          message: 'Failed to parse AI response for mission and vision'
+        });
+      }
+    } catch (apiError) {
+      console.error('OpenAI API error:', apiError);
+      return res.status(500).json({
+        error: 'API error',
+        message: 'Failed to connect to AI service for mission and vision generation'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating mission and vision:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      message: error instanceof Error ? error.message : 'Failed to generate mission and vision'
     });
   }
 }
@@ -340,9 +429,22 @@ Additional editing principles:
 - Replace vague terms with specific, concrete language
 
 Return response as JSON with these fields:
-1. enhancedText: the professionally edited version
-2. suggestions: array of improvement objects with {original, suggestion, reason, type}  
-3. stats: object with readabilityScore, passiveVoiceCount, averageSentenceLength, etc.`;
+{
+  "enhancedText": "the professionally edited version",
+  "suggestions": [
+    {
+      "original": "string",
+      "suggestion": "string",
+      "reason": "string",
+      "type": "string"
+    }
+  ],
+  "stats": {
+    "readabilityScore": 85,
+    "passiveVoiceCount": 0,
+    "averageSentenceLength": 20
+  }
+}`;
 
       const completion = await openai.chat.completions.create({
         model: 'gpt-4',
@@ -487,30 +589,29 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
           ],
           secondaryKeywords: [
             "content strategy",
-            "marketing examples",
-            "content tips",
-            "blog ideas",
-            "SEO content",
+            "content planning",
+            "content calendar",
             "content optimization",
-            "marketing plan",
-            "content calendar"
+            "content distribution",
+            "content analytics",
+            "content ROI",
+            "content performance"
           ],
           keywordGroups: [
             {
-              category: "Content Types",
-              keywords: ["blog posts", "social media content", "email newsletters", "ebooks", "white papers"]
+              "category": "Content Strategy",
+              "keywords": ["content strategy", "content planning", "content calendar"]
             },
             {
-              category: "Marketing Goals",
-              keywords: ["lead generation", "brand awareness", "customer engagement", "conversion rate"]
+              "category": "Content Optimization",
+              "keywords": ["content optimization", "content analytics", "content performance"]
             },
             {
-              category: "Content Strategy",
-              keywords: ["content planning", "content distribution", "content audit", "editorial calendar"]
+              "category": "Content Distribution",
+              "keywords": ["content distribution", "content ROI", "content marketing"]
             }
           ]
         };
-
         return res.status(200).json(fallbackResponse);
       }
     } catch (apiError) {
@@ -527,26 +628,26 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
         ],
         secondaryKeywords: [
           "content strategy",
-          "marketing examples",
-          "content tips",
-          "blog ideas",
-          "SEO content",
+          "content planning",
+          "content calendar",
           "content optimization",
-          "marketing plan",
-          "content calendar"
+          "content distribution",
+          "content analytics",
+          "content ROI",
+          "content performance"
         ],
         keywordGroups: [
           {
-            category: "Content Types",
-            keywords: ["blog posts", "social media content", "email newsletters", "ebooks", "white papers"]
+            "category": "Content Strategy",
+            "keywords": ["content strategy", "content planning", "content calendar"]
           },
           {
-            category: "Marketing Goals",
-            keywords: ["lead generation", "brand awareness", "customer engagement", "conversion rate"]
+            "category": "Content Optimization",
+            "keywords": ["content optimization", "content analytics", "content performance"]
           },
           {
-            category: "Content Strategy",
-            keywords: ["content planning", "content distribution", "content audit", "editorial calendar"]
+            "category": "Content Distribution",
+            "keywords": ["content distribution", "content ROI", "content marketing"]
           }
         ]
       };
@@ -562,7 +663,6 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
   }
 }
 
-// Handler for analyzing competitors
 // Handler for analyzing competitors
 async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   try {
@@ -612,7 +712,7 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
 
 Company: ${competitor.name}
 
-Context: We are analyzing competitors for a cheese company, so please focus on food industry companies, particularly those related to cheese production, dairy products, specialty foods, or food retail.
+Context: We are analyzing competitors for a food company, so please focus on food industry companies, particularly those related to food production, restaurants, food retail, or food service.
 
 Please provide a comprehensive analysis of this competitor, including:
 
@@ -623,9 +723,9 @@ Please provide a comprehensive analysis of this competitor, including:
 
 Format your response as a JSON object with these fields:
 {
-  "uniquePositioning": ["point 1", "point 2", ...],
-  "keyThemes": ["theme 1", "theme 2", ...],
-  "gaps": ["gap 1", "gap 2", ...]
+  "uniquePositioning": ["point 1", "point 2", "point 3"],
+  "keyThemes": ["theme 1", "theme 2", "theme 3"],
+  "gaps": ["gap 1", "gap 2", "gap 3"]
 }
 
 Only include information that would be publicly available or reasonably inferred from their market presence.`;
@@ -751,7 +851,6 @@ async function handleGenerateContent(data: any, res: NextApiResponse) {
       hasPrompt: !!data.prompt,
       hasSourceContent: !!data.sourceContent
     });
-
 
     // Validate input
     if (!data.contentType) {
@@ -1020,6 +1119,7 @@ Make the personas realistic, specific and detail-oriented.`;
       ],
       temperature: 0.7,
     });
+
     if (completion.choices.length === 0) {
       console.log("No choices returned from OpenAI");
       return res.status(500).json({
@@ -1029,7 +1129,7 @@ Make the personas realistic, specific and detail-oriented.`;
     }
 
     const responseText = completion.choices[0].message?.content || '';
-    console.log("Received response from OpenAI for personas", completion);
+    console.log("Received response from OpenAI for personas");
 
     try {
       // Parse the JSON response
@@ -1126,7 +1226,6 @@ IMPORTANT: Make sure your response is valid JSON that can be parsed. Don't inclu
             content: prompt
           }
         ],
-        // Removed response_format parameter
         temperature: 0.7,
       });
 
@@ -1461,18 +1560,27 @@ Return your response as a JSON array of three taglines, each with a brief explan
   }
 }
 
-// MAIN HANDLER FUNCTION
+// MAIN HANDLER FUNCTION - FIXED TO USE CONSISTENT PARAMETER PATTERN
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    // FIXED: Now consistently looking for 'type' parameter throughout
     const { type, data } = req.body;
 
-    console.log(`Processing API request for endpoint: ${type}`);
+    // Check if we have the required parameters
+    if (!type) {
+      return res.status(400).json({
+        error: 'Missing endpoint parameter',
+        message: 'Request must include a type parameter'
+      });
+    }
 
-    // Handle different endpoints
+    console.log(`Processing API request for type: ${type}`);
+
+    // Handle different endpoints using 'type' consistently
     switch (type) {
       // Handle content humanizer endpoint
       case 'contentHumanizer':
@@ -1498,7 +1606,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'valueProposition':
         return await handleValuePropositionGenerator(data, res);
 
-      // Handle persona-generator endpoint
+      // Handle persona-generator endpoint - THIS IS THE KEY FIX!
       case 'personaGenerator':
         return await handlePersonaGenerator(data, res);
 
@@ -1527,6 +1635,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'generateTaglines':
         const taglines = await generateTaglines(data);
         return res.status(200).json(taglines);
+
+      // Handle mission-vision endpoint
+      case 'missionVision':
+        return await handleMissionVision(data, res);
 
       default:
         return res.status(400).json({

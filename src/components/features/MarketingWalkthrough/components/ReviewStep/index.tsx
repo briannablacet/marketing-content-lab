@@ -1,523 +1,320 @@
-import React, { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Check, Edit2, ChevronRight, AlertCircle, Download } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { useBrandVoice } from '@/context/BrandVoiceContext';
-import StrategicDataService from '@/services/StrategicDataService';
+// src/components/features/MarketingWalkthrough/components/ReviewStep/index.tsx
+// Review component that displays all collected strategy data (like complete page but cleaner)
 
-// Define the complete step sequence based on your walkthrough
-const STEPS = {
-  WELCOME: 1,
-  PRODUCT: 2,
-  AUDIENCE: 3,
-  MESSAGING: 4,
-  COMPETITOR: 5,
-  CONTENT_STRATEGY: 6,
-  WRITING_STYLE: 7,
-  BRAND_VOICE: 8,
-  REVIEW: 9
-};
+import React, { useState, useEffect } from 'react';
+import { Card } from '../../../../shared/ui/card';
+import {
+    Users, Target, MessageSquare, TrendingUp, Eye, CheckCircle, FileText
+} from 'lucide-react';
 
-const ReviewStep = ({ onNext, onBack }) => {
-  const router = useRouter();
-  const { brandVoice } = useBrandVoice();
-  const [productData, setProductData] = useState(null);
-  const [audienceData, setAudienceData] = useState([]);
-  const [messagingData, setMessagingData] = useState(null);
-  const [competitorsData, setCompetitorsData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [storageInfo, setStorageInfo] = useState({});
-  const [productInfo, setProductInfo] = useState<any>(null);
-  const [targetAudiences, setTargetAudiences] = useState<string[]>([]);
-  const [competitiveAnalysis, setCompetitiveAnalysis] = useState<any>(null);
-  const [styleGuide, setStyleGuide] = useState<any>(null);
+interface ProductInfo {
+    name?: string;
+    type?: string;
+    valueProposition?: string;
+    keyBenefits?: string[];
+}
 
-  // Load data from localStorage when component mounts
-  useEffect(() => {
-    try {
-      setIsLoading(true);
+interface TargetAudience {
+    role?: string;
+    industry?: string;
+    challenges?: string[];
+}
 
-      // Debug all localStorage keys
-      console.log("All localStorage keys:", Object.keys(localStorage));
+interface MessageFramework {
+    valueProposition?: string;
+    pillar1?: string;
+    pillar2?: string;
+    pillar3?: string;
+    keyBenefits?: string[];
+}
 
-      // Load product data
-      const savedProduct = localStorage.getItem('marketingProduct');
-      if (savedProduct) {
-        const parsed = JSON.parse(savedProduct);
-        console.log("Loaded product data:", parsed);
-        setProductData(parsed);
-      } else {
-        console.warn("No product data found in localStorage");
-      }
+interface Competitor {
+    name?: string;
+    description?: string;
+    knownMessages?: string[];
+    strengths?: string[];
+    weaknesses?: string[];
+}
 
-      // Load audience data
-      // Load audience data from all possible keys
-      const savedAudience1 = localStorage.getItem('marketingAudiences');
-      const savedAudience2 = localStorage.getItem('marketingTargetAudience');
-      const savedAudience3 = localStorage.getItem('marketingTargetAudiences');
+interface BrandVoice {
+    archetype?: string;
+    tone?: string;
+    personality?: string[];
+    voiceCharacteristics?: string[];
+}
 
-      let allAudiences = [];
+interface ReviewStepProps {
+    onNext?: () => void;
+    onBack?: () => void;
+}
 
-      // Process marketingAudiences
-      if (savedAudience1) {
+const ReviewStep: React.FC<ReviewStepProps> = ({ onNext, onBack }) => {
+    // State for all the strategy data
+    const [productInfo, setProductInfo] = useState<ProductInfo>({});
+    const [targetAudiences, setTargetAudiences] = useState<TargetAudience[]>([]);
+    const [messageFramework, setMessageFramework] = useState<MessageFramework>({});
+    const [competitors, setCompetitors] = useState<Competitor[]>([]);
+    const [brandVoice, setBrandVoice] = useState<BrandVoice>({});
+    const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Load all strategy data from localStorage (same as complete page)
+    useEffect(() => {
         try {
-          const parsed = JSON.parse(savedAudience1);
-          console.log("Loaded audience data from marketingAudiences:", parsed);
-          if (Array.isArray(parsed)) {
-            allAudiences = [...allAudiences, ...parsed];
-          } else {
-            allAudiences.push(parsed);
-          }
+            // Product Info
+            const savedProduct = localStorage.getItem('marketingProduct');
+            if (savedProduct) {
+                setProductInfo(JSON.parse(savedProduct));
+            }
+
+            // Target Audiences
+            const savedAudiences = localStorage.getItem('marketingTargetAudiences');
+            if (savedAudiences) {
+                setTargetAudiences(JSON.parse(savedAudiences));
+            }
+
+            // Message Framework
+            const savedFramework = localStorage.getItem('messageFramework');
+            if (savedFramework) {
+                setMessageFramework(JSON.parse(savedFramework));
+            }
+
+            // Competitors
+            const savedCompetitors = localStorage.getItem('marketingCompetitors');
+            if (savedCompetitors) {
+                setCompetitors(JSON.parse(savedCompetitors));
+            }
+
+            // Brand Voice
+            const savedBrandVoice = localStorage.getItem('brandVoice');
+            if (savedBrandVoice) {
+                setBrandVoice(JSON.parse(savedBrandVoice));
+            }
+
+            // Content Types
+            const savedContentTypes = localStorage.getItem('selectedContentTypes');
+            if (savedContentTypes) {
+                setSelectedContentTypes(JSON.parse(savedContentTypes));
+            }
+
         } catch (error) {
-          console.error("Error parsing marketingAudiences:", error);
+            console.error('Error loading strategy data:', error);
+        } finally {
+            setIsLoading(false);
         }
-      }
+    }, []);
 
-      // Process marketingTargetAudience
-      if (savedAudience2) {
-        try {
-          const parsed = JSON.parse(savedAudience2);
-          console.log("Loaded audience data from marketingTargetAudience:", parsed);
-          allAudiences.push(parsed);
-        } catch (error) {
-          console.error("Error parsing marketingTargetAudience:", error);
-        }
-      }
-
-      // Process marketingTargetAudiences
-      if (savedAudience3) {
-        try {
-          const parsed = JSON.parse(savedAudience3);
-          console.log("Loaded audience data from marketingTargetAudiences:", parsed);
-          if (Array.isArray(parsed)) {
-            allAudiences = [...allAudiences, ...parsed];
-          } else {
-            allAudiences.push(parsed);
-          }
-        } catch (error) {
-          console.error("Error parsing marketingTargetAudiences:", error);
-        }
-      }
-
-      // Filter out duplicate audiences (based on role and industry combination)
-      const uniqueAudiences = [];
-      const seen = new Set();
-
-      allAudiences.forEach(audience => {
-        if (audience && audience.role) {
-          const key = `${audience.role}-${audience.industry || ''}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            uniqueAudiences.push(audience);
-          }
-        }
-      });
-
-      setAudienceData(uniqueAudiences);
-      // Load messaging data
-
-      const savedMessaging1 = localStorage.getItem('marketingMessaging');
-      const savedMessaging2 = localStorage.getItem('marketing-content-lab-messaging');
-
-      let allMessagingData = null;
-
-      // Process first messaging key
-      if (savedMessaging1) {
-        try {
-          const parsed = JSON.parse(savedMessaging1);
-          console.log("Loaded messaging data from marketingMessaging:", parsed);
-          allMessagingData = parsed;
-        } catch (error) {
-          console.error("Error parsing marketingMessaging:", error);
-        }
-      }
-
-      // If we don't have messaging data yet or it's incomplete, try the alternative key
-      if ((!allMessagingData || !allMessagingData.valueProposition) && savedMessaging2) {
-        try {
-          const parsed = JSON.parse(savedMessaging2);
-          console.log("Loaded messaging data from marketing-content-lab-messaging:", parsed);
-
-          // If we have no messaging data yet, use this one
-          if (!allMessagingData) {
-            allMessagingData = parsed;
-          } else {
-            // Otherwise, merge the data
-            allMessagingData = {
-              ...allMessagingData,
-              valueProposition: allMessagingData.valueProposition || parsed.valueProposition,
-              keyDifferentiators: allMessagingData.keyDifferentiators || parsed.keyDifferentiators || parsed.differentiators,
-              targetedMessages: allMessagingData.targetedMessages || parsed.targetedMessages || parsed.keyMessages
-            };
-          }
-        } catch (error) {
-          console.error("Error parsing marketing-content-lab-messaging:", error);
-        }
-      }
-
-      setMessagingData(allMessagingData);
-
-      // Load competitors data
-      const savedCompetitors = localStorage.getItem('marketingCompetitors');
-      if (savedCompetitors) {
-        const parsed = JSON.parse(savedCompetitors);
-        console.log("Loaded competitors data:", parsed);
-        setCompetitorsData(Array.isArray(parsed) ? parsed : [parsed]);
-      } else {
-        console.warn("No competitors data found in localStorage");
-      }
-
-      // Save all localStorage keys to state for debugging
-      const allItems = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        try {
-          allItems[key] = JSON.parse(localStorage.getItem(key));
-        } catch (e) {
-          allItems[key] = localStorage.getItem(key);
-        }
-      }
-      setStorageInfo(allItems);
-
-      // Fetch additional data
-      const fetchData = async () => {
-        const [product, messaging, audiences, competitive, style] = await Promise.all([
-          StrategicDataService.getProductInfo(),
-          StrategicDataService.getMessagingFramework(),
-          StrategicDataService.getTargetAudiences(),
-          StrategicDataService.getCompetitiveAnalysis(),
-          StrategicDataService.getStyleGuide()
-        ]);
-
-        setProductInfo(product);
-        setTargetAudiences(audiences);
-        setCompetitiveAnalysis(competitive);
-        setStyleGuide(style);
-      };
-
-      fetchData();
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setIsLoading(false);
+    if (isLoading) {
+        return (
+            <div className="text-center p-8">
+                <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p>Loading your marketing strategy...</p>
+            </div>
+        );
     }
-  }, []);
 
-  const goToStep = (stepNumber) => {
-    router.push(`/walkthrough/${stepNumber}`);
-  };
-
-  const handleComplete = () => {
-    router.push('/walkthrough/complete');
-  };
-
-  const handleEdit = (section: string) => {
-    switch (section) {
-      case 'product':
-        goToStep(STEPS.PRODUCT);
-        break;
-      case 'audience':
-        goToStep(STEPS.AUDIENCE);
-        break;
-      case 'messaging':
-        goToStep(STEPS.MESSAGING);
-        break;
-      case 'competitors':
-        goToStep(STEPS.COMPETITOR);
-        break;
-      case 'content-strategy':
-        goToStep(STEPS.CONTENT_STRATEGY);
-        break;
-      case 'writing-style':
-        goToStep(STEPS.WRITING_STYLE);
-        break;
-      case 'brand-voice':
-        goToStep(STEPS.BRAND_VOICE);
-        break;
-      default:
-        console.warn('Unknown section:', section);
-    }
-  };
-
-  const downloadAll = () => {
-    // Implementation for downloading all data
-  };
-
-  if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // If we don't have key data, show a debug panel
-  const hasKeyData = productData &&
-    (audienceData?.length > 0) &&
-    messagingData &&
-    (competitorsData?.length > 0);
-
-  return (
-    <div className="space-y-8">
-      <h2 className="text-2xl font-bold">Marketing Program Review</h2>
-      <p className="text-gray-600">
-        Here's a summary of your marketing program information. Click the edit button on any section to make changes.
-      </p>
-
-      {/* Debug Panel - Only shown when data is missing */}
-      {!hasKeyData && (
-        <Card className="p-4 border-yellow-300 bg-yellow-50 mb-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="font-medium text-yellow-800">Some data appears to be missing</h4>
-              <p className="text-sm text-yellow-700 mt-1">
-                We couldn't find all the expected data in your browser storage.
-                You may need to go back and complete previous steps.
-              </p>
-              <div className="mt-2 text-sm">
-                <ul className="list-disc pl-5 space-y-1">
-                  <li className={productData ? "text-green-600" : "text-red-600"}>
-                    {productData ? "✓ Product data found" : "✗ Product data missing"}
-                  </li>
-                  <li className={audienceData?.length > 0 ? "text-green-600" : "text-red-600"}>
-                    {audienceData?.length > 0 ? `✓ ${audienceData.length} audience personas found` : "✗ Audience data missing"}
-                  </li>
-                  <li className={messagingData ? "text-green-600" : "text-red-600"}>
-                    {messagingData ? "✓ Messaging framework found" : "✗ Messaging framework missing"}
-                  </li>
-                  <li className={competitorsData?.length > 0 ? "text-green-600" : "text-red-600"}>
-                    {competitorsData?.length > 0 ? `✓ ${competitorsData.length} competitors found` : "✗ Competitor analysis missing"}
-                  </li>
-                </ul>
-              </div>
-              {/* Storage keys found - helpful for debugging */}
-              <div className="mt-2 text-xs text-gray-600">
-                <p>Storage keys found: {Object.keys(storageInfo).join(', ')}</p>
-              </div>
-              <div className="mt-3">
-                <button
-                  onClick={() => goToStep(STEPS.PRODUCT)}
-                  className="text-yellow-800 text-sm underline hover:text-yellow-900"
-                >
-                  Go to Product Info
-                </button>
-              </div>
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold mb-2">Your Marketing Strategy Overview</h2>
+                <p className="text-gray-600">
+                    Review your complete strategic foundation and make any needed adjustments.
+                </p>
             </div>
-          </div>
-        </Card>
-      )}
 
-      {/* Product Information */}
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold flex items-center">
-            <Check className="w-5 h-5 text-green-500 mr-2" />
-            Product Information
-          </h3>
-          <Link
-            href={`/walkthrough?step=${STEPS.PRODUCT}`}
-            className="text-blue-600 flex items-center hover:text-blue-800"
-          >
-            <Edit2 className="w-4 h-4 mr-1" /> Edit
-          </Link>
-        </div>
+            {/* Strategy Summary Grid */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-gray-500 text-sm">Product Name</p>
-            <p className="font-medium">{productData?.name || "Not specified"}</p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-sm">Product Type</p>
-            <p className="font-medium">{productData?.type || "Not specified"}</p>
-          </div>
+                {/* Business Info */}
+                <Card className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                            <Target className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <h3 className="font-semibold">Business Information</h3>
+                    </div>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-sm font-medium text-gray-700">Product/Service</p>
+                            <p className="text-gray-600">{productInfo.name || 'Not specified'}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-700">Description</p>
+                            <p className="text-gray-600 text-sm">{productInfo.type || 'Not specified'}</p>
+                        </div>
+                    </div>
+                </Card>
 
-          {productData?.valueProposition && (
-            <div className="col-span-2 mt-2">
-              <p className="text-gray-500 text-sm">Value Proposition</p>
-              <p className="font-medium">{productData.valueProposition}</p>
-            </div>
-          )}
-        </div>
-      </Card>
+                {/* Value Proposition */}
+                <Card className="p-6 md:col-span-2">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                            <MessageSquare className="w-5 h-5 text-green-600" />
+                        </div>
+                        <h3 className="font-semibold">Value Proposition</h3>
+                    </div>
+                    <p className="text-gray-700 leading-relaxed">
+                        {messageFramework.valueProposition || productInfo.valueProposition || 'Not yet defined'}
+                    </p>
+                </Card>
 
-      {/* Target Audience */}
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold flex items-center">
-            <Check className="w-5 h-5 text-green-500 mr-2" />
-            Target Audience
-          </h3>
-          <Link
-            href={`/walkthrough?step=${STEPS.AUDIENCE}`}
-            className="text-blue-600 flex items-center hover:text-blue-800"
-          >
-            <Edit2 className="w-4 h-4 mr-1" /> Edit
-          </Link>
-        </div>
+                {/* Target Audiences */}
+                <Card className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                            <Users className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <h3 className="font-semibold">Target Audiences</h3>
+                    </div>
+                    <div className="space-y-4">
+                        {targetAudiences.length > 0 ? (
+                            targetAudiences.map((audience, index) => (
+                                <div key={index} className="border-l-4 border-purple-200 pl-3">
+                                    <p className="font-medium text-sm">{audience.role}</p>
+                                    <p className="text-gray-600 text-sm">{audience.industry}</p>
+                                    {audience.challenges && audience.challenges.length > 0 && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {audience.challenges[0]}
+                                        </p>
+                                    )}
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-gray-500 text-sm">No target audiences defined</p>
+                        )}
+                    </div>
+                </Card>
 
-        {audienceData && audienceData.length > 0 ? (
-          <div className="space-y-4">
-            {audienceData.map((audience, index) => (
-              <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-500 text-sm">Role</p>
-                    <p className="font-medium">{audience.role || "Not specified"}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">Industry</p>
-                    <p className="font-medium">{audience.industry || "Not specified"}</p>
-                  </div>
-                </div>
+                {/* Message Pillars */}
+                <Card className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                            <TrendingUp className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <h3 className="font-semibold">Message Pillars</h3>
+                    </div>
+                    <div className="space-y-3">
+                        {messageFramework.pillar1 && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm font-medium text-gray-700">Pillar 1</p>
+                                <p className="text-gray-600 text-sm">{messageFramework.pillar1}</p>
+                            </div>
+                        )}
+                        {messageFramework.pillar2 && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm font-medium text-gray-700">Pillar 2</p>
+                                <p className="text-gray-600 text-sm">{messageFramework.pillar2}</p>
+                            </div>
+                        )}
+                        {messageFramework.pillar3 && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm font-medium text-gray-700">Pillar 3</p>
+                                <p className="text-gray-600 text-sm">{messageFramework.pillar3}</p>
+                            </div>
+                        )}
+                        {!messageFramework.pillar1 && !messageFramework.pillar2 && !messageFramework.pillar3 && (
+                            <p className="text-gray-500 text-sm">No message pillars defined</p>
+                        )}
+                    </div>
+                </Card>
 
-                {audience.challenges && audience.challenges.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-gray-500 text-sm mb-1">Challenges</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {audience.challenges.map((challenge, i) => (
-                        <li key={i}>{challenge}</li>
-                      ))}
-                    </ul>
-                  </div>
+                {/* Brand Voice */}
+                <Card className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-pink-100 rounded-lg">
+                            <Eye className="w-5 h-5 text-pink-600" />
+                        </div>
+                        <h3 className="font-semibold">Brand Voice</h3>
+                    </div>
+                    <div className="space-y-3">
+                        {brandVoice.archetype && (
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Archetype</p>
+                                <p className="text-gray-600">{brandVoice.archetype}</p>
+                            </div>
+                        )}
+                        {brandVoice.tone && (
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Tone</p>
+                                <p className="text-gray-600">{brandVoice.tone}</p>
+                            </div>
+                        )}
+                        {!brandVoice.archetype && !brandVoice.tone && (
+                            <p className="text-gray-500 text-sm">Brand voice not yet defined</p>
+                        )}
+                    </div>
+                </Card>
+
+                {/* Key Benefits */}
+                {messageFramework.keyBenefits && messageFramework.keyBenefits.length > 0 && (
+                    <Card className="p-6 md:col-span-2">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-green-100 rounded-lg">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                            </div>
+                            <h3 className="font-semibold">Key Benefits</h3>
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-2">
+                            {messageFramework.keyBenefits.map((benefit, index) => (
+                                <div key={index} className="flex items-start gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <p className="text-gray-700 text-sm">{benefit}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
                 )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 italic">No target audience defined</p>
-        )}
-      </Card>
 
-      {/* Messaging Framework */}
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold flex items-center">
-            <Check className="w-5 h-5 text-green-500 mr-2" />
-            Messaging Framework
-          </h3>
-          <Link
-            href={`/walkthrough?step=${STEPS.MESSAGING}`}
-            className="text-blue-600 flex items-center hover:text-blue-800"
-          >
-            <Edit2 className="w-4 h-4 mr-1" /> Edit
-          </Link>
-        </div>
+                {/* Competitors */}
+                {competitors.length > 0 && (
+                    <Card className="p-6 md:col-span-3">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-red-100 rounded-lg">
+                                <TrendingUp className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h3 className="font-semibold">Competitive Analysis</h3>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {competitors.map((competitor, index) => (
+                                <div key={index} className="p-4 border rounded-lg bg-gray-50">
+                                    <h4 className="font-medium mb-2">{competitor.name}</h4>
+                                    {competitor.description && (
+                                        <p className="text-gray-600 text-sm mb-2">{competitor.description}</p>
+                                    )}
+                                    {competitor.knownMessages && competitor.knownMessages.length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-700 mb-1">Key Messages:</p>
+                                            <p className="text-xs text-gray-600">{competitor.knownMessages[0]}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                )}
 
-        {messagingData ? (
-          <div className="space-y-4">
-            {messagingData.valueProposition && (
-              <div>
-                <p className="text-gray-500 text-sm">Value Proposition</p>
-                <p className="font-medium">{messagingData.valueProposition}</p>
-              </div>
-            )}
-
-            {messagingData.keyDifferentiators && messagingData.keyDifferentiators.length > 0 && (
-              <div>
-                <p className="text-gray-500 text-sm">Key Differentiators</p>
-                <ul className="list-disc pl-5 space-y-1 mt-1">
-                  {messagingData.keyDifferentiators.map((differentiator, i) => (
-                    <li key={i}>{differentiator}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {messagingData.targetedMessages && messagingData.targetedMessages.length > 0 && (
-              <div>
-                <p className="text-gray-500 text-sm">Targeted Messages</p>
-                <ul className="list-disc pl-5 space-y-1 mt-1">
-                  {messagingData.targetedMessages.map((message, i) => (
-                    <li key={i}>{message}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-gray-500 italic">No messaging framework defined</p>
-        )}
-      </Card>
-
-      {/* Competitors Analysis */}
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold flex items-center">
-            <Check className="w-5 h-5 text-green-500 mr-2" />
-            Competitors Analysis
-          </h3>
-          <Link
-            href={`/walkthrough?step=${STEPS.COMPETITOR}`}
-            className="text-blue-600 flex items-center hover:text-blue-800"
-          >
-            <Edit2 className="w-4 h-4 mr-1" /> Edit
-          </Link>
-        </div>
-
-        <div>
-          <p className="font-medium mb-2">Analyzed Competitors</p>
-          {competitorsData && competitorsData.length > 0 ? (
-            <div className="space-y-4">
-              {competitorsData.map((competitor, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                  <p className="font-medium">{competitor.name}</p>
-
-                  {competitor.description && (
-                    <div className="mt-2">
-                      <p className="text-gray-500 text-sm">Key Positioning</p>
-                      <p>{competitor.description}</p>
-                    </div>
-                  )}
-
-                  {competitor.strengths && competitor.strengths.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-gray-500 text-sm">Strengths</p>
-                      <ul className="list-disc pl-5 space-y-1 mt-1">
-                        {competitor.strengths.slice(0, 3).map((strength, i) => (
-                          <li key={i}>{strength}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {competitor.weaknesses && competitor.weaknesses.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-gray-500 text-sm">Gaps</p>
-                      <ul className="list-disc pl-5 space-y-1 mt-1">
-                        {competitor.weaknesses.slice(0, 3).map((weakness, i) => (
-                          <li key={i}>{weakness}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
+                {/* Content Types */}
+                {selectedContentTypes.length > 0 && (
+                    <Card className="p-6 md:col-span-3">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                                <FileText className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <h3 className="font-semibold">Selected Content Types</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {selectedContentTypes.map(type => (
+                                <span key={type} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                                    {type}
+                                </span>
+                            ))}
+                        </div>
+                    </Card>
+                )}
             </div>
-          ) : (
-            <p className="text-gray-500 italic">No competitors analyzed</p>
-          )}
         </div>
-      </Card>
-
-      <div className="flex justify-between items-center pt-6">
-        <button
-          onClick={onBack}
-          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-        >
-          Back
-        </button>
-        <button
-          onClick={handleComplete}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Complete Walkthrough
-        </button>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ReviewStep;

@@ -1,4 +1,6 @@
 // src/pages/review-program.tsx
+// Fixed review program page with proper ReviewStep component import
+
 import React from 'react';
 import { useRouter } from 'next/router';
 import ReviewStep from '../components/features/MarketingWalkthrough/components/ReviewStep';
@@ -26,11 +28,11 @@ const ReviewProgramPage = () => {
               ]}
               hideNavigation={true}
             >
-              <ReviewStep 
+              <ReviewStep
                 onNext={() => router.push('/creation-hub')}
                 onBack={() => router.push('/')}
               />
-              
+
               <div className="flex justify-between items-center mt-8">
                 <button
                   onClick={() => router.push('/')}
@@ -38,7 +40,7 @@ const ReviewProgramPage = () => {
                 >
                   Back to Dashboard
                 </button>
-                
+
                 <div className="flex gap-4">
                   <button
                     onClick={() => router.push('/walkthrough/1')}

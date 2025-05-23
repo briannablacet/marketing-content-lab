@@ -5,7 +5,7 @@ import MissionVisionGenerator from '../components/features/MissionVisionGenerato
 
 const MissionVisionGeneratorPage: React.FC = () => {
     return (
-        <main className="max-w-3xl mx-auto px-4 py-10">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <MissionVisionGenerator />
         </main>
     );

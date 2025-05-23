@@ -11,7 +11,7 @@ import { Check, Settings } from 'lucide-react';
 // Dynamic imports with SSR disabled to prevent issues with file handling
 const StyleComplianceChecker = dynamic(() => import('../components/features/StyleCompliance'), {
   ssr: false,
-  loading: () => <div className="p-4 text-center">Loading Style Compliance Checker...</div>
+  loading: () => <div className="p-4 text-center">Loading Style Guide Compliance Checker...</div>
 });
 
 const WritingStyleModule = dynamic(() => import('../components/features/WritingStyleModule'), {
@@ -48,7 +48,7 @@ const StyleCheckerPage: React.FC = () => {
     <NotificationProvider>
       <WritingStyleProvider>
         <ScreenTemplate
-          title="Style Guardian"
+          title="Style Guide Compliance Checker"
           subtitle="Check your content against style guidelines and improve consistency"
           aiInsights={[
             "Consistent brand style increases content recognition by up to 23%",
@@ -63,22 +63,20 @@ const StyleCheckerPage: React.FC = () => {
             <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
               <button
                 onClick={() => handleTabChange('check')}
-                className={`px-6 py-2 text-sm font-medium flex items-center ${
-                  activeView === 'check'
+                className={`px-6 py-2 text-sm font-medium flex items-center ${activeView === 'check'
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <Check className="w-4 h-4 mr-2" />
                 Style Checker
               </button>
               <button
                 onClick={() => handleTabChange('settings')}
-                className={`px-6 py-2 text-sm font-medium flex items-center ${
-                  activeView === 'settings'
+                className={`px-6 py-2 text-sm font-medium flex items-center ${activeView === 'settings'
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <Settings className="w-4 h-4 mr-2" />
                 Style Settings
@@ -129,9 +127,9 @@ const StyleCheckerPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {/* Explicitly set isWalkthrough to false and provide returnTo prop */}
-                <WritingStyleModule 
-                  isWalkthrough={false} 
-                  returnTo="/style-checker" 
+                <WritingStyleModule
+                  isWalkthrough={false}
+                  returnTo="/style-checker"
                 />
               </CardContent>
             </Card>

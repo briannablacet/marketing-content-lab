@@ -61,6 +61,12 @@ const callApiDirectly = async (endpoint, data) => {
 
     console.log(`Making API call to ${apiEndpoint} for endpoint: ${endpoint}`);
 
+    // Construct the full payload with type and data
+    const fullPayload = {
+        type: endpoint,
+        data: data
+    };
+
     // Add this console log to debug the API URL
     console.log(`Making API call to ${apiEndpoint} for endpoint: ${endpoint}`);
     console.log("🧨 About to call API with URL:", apiEndpoint);
@@ -69,6 +75,7 @@ const callApiDirectly = async (endpoint, data) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fullPayload)
     });
+
     try {
         const response = await fetch('/api/api_endpoints', {
             method: 'POST',

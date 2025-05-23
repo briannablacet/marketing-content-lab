@@ -1,86 +1,122 @@
 // src/components/features/MarketingWalkthrough/components/ValuePropStep/index.tsx
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader } from 'lucide-react';
+import { Sparkles, Loader, CheckCircle } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
 import StrategicDataService from '../../../../../services/StrategicDataService';
 
 interface ValuePropStepProps {
-    onNext: () => void;
-    onBack: () => void;
-    formData: any;
-    setFormData: (data: any) => void;
+    onNext?: () => void;
+    onBack?: () => void;
+    formData?: any;
+    setFormData?: (data: any) => void;
 }
 
-const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData, setFormData }) => {
-    const { showNotification } = useNotification();
-    const [existingValueProp, setExistingValueProp] = useState('');
+const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData = {}, setFormData = () => { } }) => {
+    const [productName, setProductName] = useState('');
+    const [productDescription, setProductDescription] = useState('');
     const [target, setTarget] = useState('');
     const [solution, setSolution] = useState('');
     const [benefit, setBenefit] = useState('');
     const [proof, setProof] = useState('');
     const [paragraph, setParagraph] = useState('');
+    const [existingValueProp, setExistingValueProp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [productName, setProductName] = useState('');
-    const [productDescription, setProductDescription] = useState('');
+    const [isAccepted, setIsAccepted] = useState(false);
+    const { showNotification } = useNotification();
 
+    // Load existing data from StrategicDataService and localStorage
     useEffect(() => {
         const loadExistingData = async () => {
             try {
-                // First try to get data from formData
-                if (formData.productName) {
-                    setProductName(formData.productName);
-                }
-                if (formData.productDescription) {
-                    setProductDescription(formData.productDescription);
-                }
-
-                // If not in formData, try localStorage
-                if (!formData.productName || !formData.productDescription) {
-                    const savedData = localStorage.getItem('marketingProduct');
-                    if (savedData) {
-                        const productData = JSON.parse(savedData);
-                        if (!formData.productName && productData.name) {
-                            setProductName(productData.name);
+                // First try to get data from StrategicDataService
+                const productData = await StrategicDataService.getProductInfo();
+                if (productData && (productData.name || productData.description)) {
+                    if (productData.name) {
+                        setProductName(productData.name);
+                        setFormData(prev => ({ ...prev, productName: productData.name }));
+                    }
+                    if (productData.description) {
+                        setProductDescription(productData.description);
+                        setFormData(prev => ({ ...prev, productDescription: productData.description }));
+                    }
+                } else {
+                    // Fallback to localStorage
+                    const savedProduct = localStorage.getItem('marketingProduct');
+                    if (savedProduct) {
+                        const parsedProduct = JSON.parse(savedProduct);
+                        if (parsedProduct.name) {
+                            setProductName(parsedProduct.name);
+                            setFormData(prev => ({ ...prev, productName: parsedProduct.name }));
                         }
-                        if (!formData.productDescription && productData.type) {
-                            setProductDescription(productData.type);
+                        if (parsedProduct.description || parsedProduct.type) {
+                            setProductDescription(parsedProduct.description || parsedProduct.type);
+                            setFormData(prev => ({ ...prev, productDescription: parsedProduct.description || parsedProduct.type }));
                         }
                     }
                 }
 
-                // If still not found, try StrategicDataService
-                if (!formData.productName || !formData.productDescription) {
-                    const productData = await StrategicDataService.getProductInfo();
-                    if (productData) {
-                        if (!formData.productName && productData.name) {
-                            setProductName(productData.name);
-                        }
-                        if (!formData.productDescription && productData.description) {
-                            setProductDescription(productData.description);
-                        }
+                // Then try to get value prop from localStorage
+                const marketingValueProp = localStorage.getItem('marketingValueProp');
+                if (marketingValueProp) {
+                    setExistingValueProp(marketingValueProp);
+                    setParagraph(marketingValueProp);
+                    setFormData(prev => ({ ...prev, valueProp: marketingValueProp }));
+                }
+
+                // Load target audience from personas if available
+                const personas = formData.personas || [];
+                if (personas.length > 0) {
+                    const targetAudience = personas[0].role || '';
+                    setTarget(targetAudience);
+                    setFormData(prev => ({ ...prev, targetAudience }));
+                }
+
+                // Load solution and benefit if available
+                const messagingFramework = await StrategicDataService.getMessagingFramework();
+                if (messagingFramework) {
+                    if (messagingFramework.solution) {
+                        setSolution(messagingFramework.solution);
+                        setFormData(prev => ({ ...prev, solution: messagingFramework.solution }));
                     }
+                    if (messagingFramework.benefit) {
+                        setBenefit(messagingFramework.benefit);
+                        setFormData(prev => ({ ...prev, benefit: messagingFramework.benefit }));
+                    }
+                }
+
+                // Load value proposition from StrategicDataService
+                try {
+                    const valueProp = await StrategicDataService.getValueProposition();
+                    if (valueProp) {
+                        setExistingValueProp(valueProp);
+                        setParagraph(valueProp);
+                        setFormData(prev => ({ ...prev, valueProp }));
+                    }
+                } catch (error) {
+                    console.log('No value proposition found in StrategicDataService');
                 }
             } catch (error) {
-                console.error('Error loading product data:', error);
+                console.error('Error loading existing data:', error);
+                showNotification('Error loading existing data. Please try again.', 'error');
             }
         };
 
         loadExistingData();
-    }, [formData]);
+    }, []);
 
+    // Update formData when local state changes
     useEffect(() => {
-        const personas = formData.personas || [];
-        if (personas.length) {
-            setTarget(personas[0].role || '');
-        }
-    }, [formData]);
-
-    useEffect(() => {
-        if (!existingValueProp) {
-            setParagraph('');
-            setFormData({ ...formData, valueProp: '' });
-        }
-    }, [target, solution, benefit, proof, existingValueProp]);
+        setFormData(prev => ({
+            ...prev,
+            productName,
+            productDescription,
+            targetAudience: target,
+            solution,
+            benefit,
+            proof,
+            valueProp: existingValueProp || paragraph
+        }));
+    }, [productName, productDescription, target, solution, benefit, proof, existingValueProp, paragraph]);
 
     const handleAIHelp = async () => {
         if (!productName) {
@@ -96,16 +132,22 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                     productInfo: {
                         name: productName,
                         description: productDescription || '',
-                        targetAudience: target
+                        targetAudience: target || '',
+                        benefits: [solution, benefit].filter(Boolean),
+                        proof: proof || ''
                     },
                     competitors: [],
                     industry: 'technology',
-                    focusAreas: [],
-                    tone: 'professional'
+                    focusAreas: ['user', 'business'],
+                    tone: 'professional',
+                    currentFramework: {
+                        valueProposition: existingValueProp || paragraph,
+                        solution: solution,
+                        benefit: benefit,
+                        proof: proof
+                    }
                 }
             };
-
-            console.log('Sending request:', requestBody);
 
             const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
@@ -116,9 +158,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                 body: JSON.stringify(requestBody),
             });
 
-            console.log('Response status:', response.status);
             const result = await response.json();
-            console.log('Response data:', result);
 
             if (!response.ok) {
                 throw new Error(result.message || 'Failed to generate value proposition');
@@ -126,12 +166,12 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
 
             if (result.valueProposition) {
                 setParagraph(result.valueProposition);
-                setFormData({ ...formData, valueProp: result.valueProposition });
-                showNotification('Generated value proposition successfully!', 'success');
+                setFormData(prev => ({ ...prev, valueProp: result.valueProposition }));
+                showNotification('Value proposition generated successfully!', 'success');
             } else {
                 showNotification('No value proposition was generated. Please try again.', 'error');
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error generating value prop:', error);
             showNotification(error.message || 'Failed to generate value proposition. Please try again.', 'error');
         } finally {
@@ -139,14 +179,43 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
         }
     };
 
+    const handleSave = async () => {
+        const valueToSave = existingValueProp || paragraph;
+        setFormData(prev => ({ ...prev, valueProp: valueToSave }));
+
+        // Save to localStorage
+        localStorage.setItem('marketingValueProp', valueToSave);
+
+        // Try to save to StrategicDataService if the method exists
+        try {
+            if (StrategicDataService.setValueProposition && typeof StrategicDataService.setValueProposition === 'function') {
+                await StrategicDataService.setValueProposition(valueToSave);
+            } else {
+                console.log('StrategicDataService.setValueProposition method not available');
+            }
+            setIsAccepted(true);
+            showNotification('Value proposition saved successfully!', 'success');
+        } catch (error) {
+            console.error('Error saving value proposition to StrategicDataService:', error);
+            // Still show success since localStorage save worked
+            setIsAccepted(true);
+            showNotification('Value proposition saved successfully!', 'success');
+        }
+    };
+
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
+            <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-wrap justify-between items-center gap-3">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold">Value Proposition</h2>
+                </div>
+            </div>
+
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Build Your Value Proposition</h2>
                 <p className="text-sm text-gray-600 mb-6">
                     A value proposition communicates what you do, who it's for, and why it matters—all in one powerful sentence. Don't worry if it's rough—we'll help you polish it.
                 </p>
-                <div className="grid gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium mb-2">Product Name</label>
                         <input
@@ -179,7 +248,6 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                                     setExistingValueProp(val);
                                 }
                                 setParagraph(val);
-                                setFormData({ ...formData, valueProp: val });
                             }}
                             placeholder="Enter or paste your value proposition here..."
                             className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
@@ -217,7 +285,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-2">Proof Point</label>
+                                <label className="block text-sm font-medium mb-2">Proof</label>
                                 <input
                                     type="text"
                                     value={proof}
@@ -227,28 +295,35 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                             </div>
                         </>
                     )}
-
-                    <div className="flex gap-3">
-                        <button
-                            onClick={handleAIHelp}
-                            disabled={isLoading}
-                            className="bg-blue-500 text-white px-4 py-2 rounded inline-flex items-center"
-                        >
-                            {isLoading ? <Loader className="animate-spin mr-2" size={16} /> : <Sparkles className="mr-2" size={16} />}
-                            {isLoading ? 'Drafting your value prop...' : 'Help me draft a value proposition'}
-                        </button>
-                        <button
-                            onClick={() => {
-                                const valueToSave = existingValueProp || paragraph;
-                                setFormData({ ...formData, valueProp: valueToSave });
-                                localStorage.setItem('marketingValueProp', valueToSave);
-                            }}
-                            className="bg-green-500 text-white px-4 py-2 rounded inline-flex items-center"
-                        >
-                            Save Value Proposition
-                        </button>
-                    </div>
                 </div>
+            </div>
+
+            <div className="flex justify-end space-x-4 mt-6">
+                <button
+                    onClick={handleAIHelp}
+                    disabled={isLoading}
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                    {isLoading ? (
+                        <>
+                            <Loader className="w-4 h-4 mr-2 animate-spin" />
+                            Generating...
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Generate with AI
+                        </>
+                    )}
+                </button>
+                <button
+                    onClick={handleSave}
+                    disabled={!paragraph && !existingValueProp}
+                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Save
+                </button>
             </div>
         </div>
     );

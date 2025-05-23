@@ -14,7 +14,7 @@ interface ContentCreatorProps {
   insights?: string[];
 }
 
-const ContentCreator: React.FC<ContentCreatorProps> = ({ 
+const ContentCreator: React.FC<ContentCreatorProps> = ({
   contentType,
   description,
   steps,
@@ -23,14 +23,14 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
   const router = useRouter();
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
   const [step, setStep] = useState(1);
-  const [contentParams, setContentParams] = useState<{[key: string]: any}>({});
-  const [generatedContent, setGeneratedContent] = useState<{[key: string]: any}>({});
-  const [isGenerating, setIsGenerating] = useState<{[key: string]: boolean}>({});
+  const [contentParams, setContentParams] = useState<{ [key: string]: any }>({});
+  const [generatedContent, setGeneratedContent] = useState<{ [key: string]: any }>({});
+  const [isGenerating, setIsGenerating] = useState<{ [key: string]: boolean }>({});
 
   // Initialize content parameters for each content type
   useEffect(() => {
     if (selectedContentTypes.length > 0) {
-      const initialParams: {[key: string]: any} = {};
+      const initialParams: { [key: string]: any } = {};
       selectedContentTypes.forEach(type => {
         initialParams[type] = {
           topic: '',
@@ -63,11 +63,11 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
 
   const handleGenerateContent = async (type: string) => {
     setIsGenerating(prev => ({ ...prev, [type]: true }));
-    
+
     try {
       // In a real implementation, you would call your API here
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-      
+
       // Simulate generated content
       const content = `This is generated ${type} content about "${contentParams[type]?.topic || 'your topic'}".\n\n`;
       const paragraphs = [
@@ -77,7 +77,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
         `Main Point 3: Providing valuable insights for your audience.`,
         `Conclusion: Summarizing the important takeaways and next steps.`
       ];
-      
+
       setGeneratedContent(prev => ({
         ...prev,
         [type]: content + paragraphs.join('\n\n')
@@ -105,11 +105,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
         {Object.entries(CONTENT_TYPES).map(([type, details]) => (
           <Card
             key={type}
-            className={`p-6 cursor-pointer transition-all ${
-              selectedContentTypes.includes(type)
+            className={`p-6 cursor-pointer transition-all ${selectedContentTypes.includes(type)
                 ? 'border-2 border-blue-500 bg-blue-50 shadow-md'
                 : 'border border-gray-200 hover:border-blue-300'
-            }`}
+              }`}
             onClick={() => {
               const newTypes = selectedContentTypes.includes(type)
                 ? selectedContentTypes.filter(t => t !== type)
@@ -119,11 +118,10 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
           >
             <div className="flex justify-between items-start">
               <h3 className="font-semibold mb-2">{type}</h3>
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                selectedContentTypes.includes(type)
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedContentTypes.includes(type)
                   ? 'border-blue-600 bg-blue-600'
                   : 'border-gray-300'
-              }`}>
+                }`}>
                 {selectedContentTypes.includes(type) && (
                   <span className="text-white">✓</span>
                 )}
@@ -282,7 +280,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
   // If a specific contentType was passed in (like from a subpage)
   if (contentType) {
     return (
-      <div className="max-w-6xl mx-auto p-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{contentType}</h1>
@@ -382,7 +380,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Content Creator</h1>

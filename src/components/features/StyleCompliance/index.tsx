@@ -4,22 +4,23 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { callApiWithStrategicData } from '../../../services/ApiStrategicConnector';
 
 const StyleComplianceChecker: React.FC = () => {
   const { writingStyle } = useWritingStyle();
   const { showNotification } = useNotification();
-  
+
   const [content, setContent] = useState(
     "ACME SOFTWARE INTRODUCES NEW FEATURE\n\nAcme Software, the leading provider of AI solutions announced today a groundbreaking feature. The new capability combines machine learning artificial intelligence and automation to deliver results.\n\nKey benefits include\n• Increased efficiency\n• Better results\n• Enhanced productivity"
   );
-  
+
   const [results, setResults] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
 
   // Check if style guide has been configured
   const hasStyleGuide = Boolean(
-    writingStyle.styleGuide?.primary || 
+    writingStyle.styleGuide?.primary ||
     (writingStyle.formatting && Object.keys(writingStyle.formatting).length > 0) ||
     (writingStyle.punctuation && Object.keys(writingStyle.punctuation).length > 0)
   );
@@ -35,40 +36,23 @@ const StyleComplianceChecker: React.FC = () => {
     setResults(null);
 
     try {
-      // Prepare the payload - IMPORTANT CHANGE: Now explicitly using style-checker endpoint
+      // Prepare the payload
       const payload = {
-        data: {
-          content: content,
-          styleGuide: {
-            guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
-            formatting: writingStyle.formatting || {},
-            punctuation: writingStyle.punctuation || {},
-            prohibited: writingStyle.prohibited || [],
-            required: writingStyle.required || []
-          }
+        content: content,
+        styleGuide: {
+          guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
+          formatting: writingStyle.formatting || {},
+          punctuation: writingStyle.punctuation || {},
+          prohibited: writingStyle.prohibited || [],
+          required: writingStyle.required || []
         }
       };
 
       console.log('Sending request to API:', payload);
 
-      // Call the API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/check-style`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(payload)
-      });
+      // Call the API using callApiWithStrategicData
+      const data = await callApiWithStrategicData('styleChecker', payload);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to analyze content');
-      }
-
-      const data = await response.json();
-      console.log('API response:', data);
-      
       if (data && data.compliance !== undefined) {
         setResults(data);
         showNotification('success', 'Content analyzed successfully');
@@ -79,36 +63,7 @@ const StyleComplianceChecker: React.FC = () => {
       console.error('Error analyzing content:', err);
       setError(err.message || 'Failed to analyze content');
       showNotification('error', 'Failed to analyze content');
-      
-      // Fallback mock results for development testing
-      setResults({
-        compliance: 65,
-        issues: [
-          {
-            type: 'CAPITALIZATION',
-            text: 'ACME SOFTWARE INTRODUCES NEW FEATURE',
-            suggestion: 'Use title case for headings: Acme Software Introduces New Feature',
-            severity: 'medium'
-          },
-          {
-            type: 'PUNCTUATION',
-            text: 'solutions announced today',
-            suggestion: 'Missing comma: solutions, announced today',
-            severity: 'low'
-          },
-          {
-            type: 'FORMATTING',
-            text: 'Key benefits include•',
-            suggestion: 'Use a colon: Key benefits include:',
-            severity: 'low'
-          }
-        ],
-        strengths: [
-          'Appropriate paragraph length',
-          'Clear benefit statements',
-          'Product name used consistently'
-        ]
-      });
+      setResults(null);
     } finally {
       setIsAnalyzing(false);
     }
@@ -127,13 +82,12 @@ const StyleComplianceChecker: React.FC = () => {
         <CardTitle className="flex items-center gap-2">
           Style Compliance Checker
           {results && (
-            <span className={`ml-2 text-sm px-2 py-1 rounded-full ${
-              results.compliance >= 80 
-                ? 'bg-green-100 text-green-800'
-                : results.compliance >= 60
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-red-100 text-red-800'
-            }`}>
+            <span className={`ml-2 text-sm px-2 py-1 rounded-full ${results.compliance >= 80
+              ? 'bg-green-100 text-green-800'
+              : results.compliance >= 60
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-red-100 text-red-800'
+              }`}>
               {results.compliance}% Compliant
             </span>
           )}
@@ -163,7 +117,7 @@ const StyleComplianceChecker: React.FC = () => {
                 placeholder="Enter content to check against your style guide..."
               />
             </div>
-            
+
             <div className="flex justify-end">
               <button
                 onClick={analyzeContent}
@@ -180,13 +134,13 @@ const StyleComplianceChecker: React.FC = () => {
                 )}
               </button>
             </div>
-            
+
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-700">{error}</p>
               </div>
             )}
-            
+
             {results && (
               <div className="space-y-6">
                 <div>
@@ -194,20 +148,19 @@ const StyleComplianceChecker: React.FC = () => {
                   <div className="bg-slate-50 p-4 rounded-lg">
                     <div className="flex items-center mb-4">
                       <div className="w-full bg-slate-200 rounded-full h-2.5">
-                        <div 
-                          className={`h-2.5 rounded-full ${
-                            results.compliance >= 80 
-                              ? 'bg-green-500'
-                              : results.compliance >= 60
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
-                          }`}
+                        <div
+                          className={`h-2.5 rounded-full ${results.compliance >= 80
+                            ? 'bg-green-500'
+                            : results.compliance >= 60
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
+                            }`}
                           style={{ width: `${results.compliance}%` }}
                         ></div>
                       </div>
                       <span className="ml-4 font-semibold">{results.compliance}%</span>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <h4 className="font-medium text-red-600 mb-2">Issues Found</h4>
@@ -216,13 +169,12 @@ const StyleComplianceChecker: React.FC = () => {
                             {results.issues.map((issue, index) => (
                               <li key={index} className="p-3 bg-white rounded border border-slate-200">
                                 <div className="flex items-start">
-                                  <span className={`px-2 py-1 text-xs rounded-full mr-2 ${
-                                    issue.severity === 'high' 
-                                      ? 'bg-red-100 text-red-800'
-                                      : issue.severity === 'medium'
-                                        ? 'bg-yellow-100 text-yellow-800'
-                                        : 'bg-blue-100 text-blue-800'
-                                  }`}>
+                                  <span className={`px-2 py-1 text-xs rounded-full mr-2 ${issue.severity === 'high'
+                                    ? 'bg-red-100 text-red-800'
+                                    : issue.severity === 'medium'
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-blue-100 text-blue-800'
+                                    }`}>
                                     {issue.type}
                                   </span>
                                 </div>
@@ -242,7 +194,7 @@ const StyleComplianceChecker: React.FC = () => {
                           </p>
                         )}
                       </div>
-                      
+
                       <div>
                         <h4 className="font-medium text-green-600 mb-2">Strengths</h4>
                         {results.strengths && results.strengths.length > 0 ? (
