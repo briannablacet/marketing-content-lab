@@ -378,15 +378,15 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
 
             {/* AI GENERATED PREVIEW BOX */}
             {showPreview && generatedValueProp && (
-                <Card className="p-6 bg-yellow-50 border-yellow-200">
+                <Card className="p-6 bg-blue-50 border-blue-200">
                     <div className="flex items-center gap-3 mb-4">
-                        <Sparkles className="w-6 h-6 text-yellow-600" />
-                        <h3 className="text-xl font-semibold text-yellow-900">AI Generated Value Proposition</h3>
+                        <Sparkles className="w-6 h-6 text-blue-600" />
+                        <h3 className="text-xl font-semibold text-blue-900">AI Generated Value Proposition</h3>
                     </div>
                     <textarea
                         value={generatedValueProp}
                         onChange={(e) => setGeneratedValueProp(e.target.value)}
-                        className="w-full p-4 border border-yellow-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-yellow-800 bg-white"
+                        className="w-full p-4 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-blue-800 bg-white"
                         rows={4}
                     />
                     <div className="mt-4 flex gap-2">
