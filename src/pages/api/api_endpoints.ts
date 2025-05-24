@@ -1,5 +1,5 @@
 // src/pages/api/api_endpoints.ts
-// FIXED VERSION: Consistent parameter handling throughout
+// Merged version: GitHub base + local improvements
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
@@ -18,16 +18,52 @@ async function handleContentHumanizer(data: any, res: NextApiResponse) {
     if (!data.content || typeof data.content !== 'string') {
       return res.status(400).json({
         error: 'Invalid request',
-        message: 'Missing or invalid content field'
+        message: 'Please provide content to humanize'
       });
     }
 
-    // Get the humanization parameters
+    // Validate content length
+    if (data.content.length > 10000) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Content length exceeds maximum limit of 10,000 characters'
+      });
+    }
+
+    // Validate parameters
+    const validTones = ['professional', 'casual', 'friendly', 'formal', 'conversational'];
+    const validFormality = ['formal', 'neutral', 'casual'];
+    const validCreativity = ['low', 'medium', 'high'];
+
     const parameters = data.parameters || {
       clicheRemoval: true,
       formality: 'neutral',
       styleGuide: 'Chicago Manual of Style'
     };
+
+    // Validate tone
+    if (parameters.tone && !validTones.includes(parameters.tone)) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: `Invalid tone. Must be one of: ${validTones.join(', ')}`
+      });
+    }
+
+    // Validate formality
+    if (parameters.formality && !validFormality.includes(parameters.formality)) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: `Invalid formality. Must be one of: ${validFormality.join(', ')}`
+      });
+    }
+
+    // Validate creativity
+    if (parameters.creativity && !validCreativity.includes(parameters.creativity)) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: `Invalid creativity level. Must be one of: ${validCreativity.join(', ')}`
+      });
+    }
 
     // Use strategic data if available (without changing the expected structure)
     const strategicData = data.strategicData || {};
@@ -42,6 +78,7 @@ ${parameters.clicheRemoval ? '- Remove AI clichés and robotic phrasing\n' : ''}
 ${parameters.addContractions ? '- Add natural contractions where appropriate\n' : ''}
 ${parameters.addPersonality ? '- Incorporate a warmer, more personable tone\n' : ''}
 ${parameters.formality ? `- Adjust formality level to be ${parameters.formality}\n` : ''}
+${parameters.creativity ? `- Apply ${parameters.creativity} level of creative variation\n` : ''}
 
 Additional humanization principles:
 - Replace robotic transitions ("it is important to note," "as mentioned earlier")
@@ -128,18 +165,16 @@ Additional humanization principles:
       }
     } catch (error) {
       console.error('OpenAI API Error:', error);
-
-      // Return a fallback response
-      return res.status(200).json({
-        content: data.content,
-        humanityScore: 85,
-        readabilityScore: 85
+      return res.status(500).json({
+        error: 'Service temporarily unavailable',
+        message: 'Whoops! There\'s a problem. Please try again a little later.'
       });
     }
   } catch (error) {
     console.error('Error in content humanizer:', error);
     return res.status(500).json({
-      error: { message: 'Failed to humanize content' }
+      error: 'Service temporarily unavailable',
+      message: 'Whoops! There\'s a problem. Please try again a little later.'
     });
   }
 }
@@ -618,7 +653,7 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
     if (!data.context) {
       return res.status(400).json({
         error: 'Invalid request',
-        message: 'Missing context for keyword generation'
+        message: 'Please provide context for keyword generation'
       });
     }
 
@@ -717,49 +752,16 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
       }
     } catch (apiError) {
       console.error('OpenAI API error:', apiError);
-
-      // Return fallback keywords if the API call fails
-      const fallbackResponse = {
-        primaryKeywords: [
-          "content marketing",
-          "blog post",
-          "marketing strategy",
-          "content creation",
-          "digital marketing"
-        ],
-        secondaryKeywords: [
-          "content strategy",
-          "content planning",
-          "content calendar",
-          "content optimization",
-          "content distribution",
-          "content analytics",
-          "content ROI",
-          "content performance"
-        ],
-        keywordGroups: [
-          {
-            "category": "Content Strategy",
-            "keywords": ["content strategy", "content planning", "content calendar"]
-          },
-          {
-            "category": "Content Optimization",
-            "keywords": ["content optimization", "content analytics", "content performance"]
-          },
-          {
-            "category": "Content Distribution",
-            "keywords": ["content distribution", "content ROI", "content marketing"]
-          }
-        ]
-      };
-
-      return res.status(200).json(fallbackResponse);
+      return res.status(500).json({
+        error: 'Service temporarily unavailable',
+        message: 'Whoops! There\'s a problem. Please try again a little later.'
+      });
     }
   } catch (error) {
     console.error('Error generating keywords:', error);
     return res.status(500).json({
-      error: 'Server error',
-      message: 'Failed to generate keywords'
+      error: 'Service temporarily unavailable',
+      message: 'Whoops! There\'s a problem. Please try again a little later.'
     });
   }
 }
@@ -769,20 +771,14 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   try {
     // Validate input
     if (!data.competitors || !Array.isArray(data.competitors) || data.competitors.length === 0) {
-      console.log("Invalid competitors data received:", data);
-      return res.status(200).json({
-        competitorInsights: [{
-          name: "Invalid data",
-          uniquePositioning: ["Please provide a valid competitor name"],
-          keyThemes: [],
-          gaps: []
-        }]
+      return res.status(400).json({
+        error: 'Invalid request',
+        message: 'Please provide at least one competitor to analyze'
       });
     }
 
     const competitors = data.competitors;
-    // Use industry from request data, defaulting to 'food' instead of 'technology'
-    const industry = data.industry || 'food';
+    const industry = data.industry || ''; // Remove default industry
 
     console.log(`Analyzing ${competitors.length} competitors in the ${industry} industry`);
 
@@ -905,13 +901,9 @@ Only include information that would be publicly available or reasonably inferred
         }
       } catch (competitorError) {
         console.error(`Error processing competitor ${competitor.name}:`, competitorError);
-
-        // Add fallback data for this competitor
-        processedCompetitors.push({
-          name: competitor.name,
-          uniquePositioning: ["Error analyzing this competitor. Please try again later."],
-          keyThemes: [],
-          gaps: []
+        return res.status(500).json({
+          error: 'Service temporarily unavailable',
+          message: 'Whoops! There\'s a problem. Please try again a little later.'
         });
       }
     }
@@ -1064,8 +1056,11 @@ Format everything clearly with appropriate headers and sections.`;
 // Handler for value proposition generator endpoint
 async function handleValuePropositionGenerator(data: any, res: NextApiResponse) {
   try {
+    console.log("Value proposition generator received data:", data);
+
     // Validate input
     if (!data.productInfo) {
+      console.log("Missing product information");
       return res.status(400).json({
         error: 'Invalid request',
         message: 'Missing product information'
@@ -1073,6 +1068,7 @@ async function handleValuePropositionGenerator(data: any, res: NextApiResponse) 
     }
 
     const { productInfo, competitors = [], industry = 'technology', focusAreas = [], tone = 'professional' } = data;
+    console.log(`Generating value proposition for: ${productInfo.name || 'Marketing Platform'}`);
 
     // Build a prompt for the AI
     const prompt = `Create a messaging framework for the following product:
@@ -1101,6 +1097,7 @@ Format your response as a valid JSON object with these fields:
 Make the content specific, substantive and actionable. Do not use generic marketing language.`;
 
     try {
+      console.log("Sending prompt to OpenAI");
       // Call OpenAI API
       const completion = await openai.chat.completions.create({
         model: 'gpt-4',
@@ -1118,6 +1115,7 @@ Make the content specific, substantive and actionable. Do not use generic market
       });
 
       const responseText = completion.choices[0].message?.content || '';
+      console.log("Received response from OpenAI");
 
       try {
         // Parse the JSON response
@@ -1131,6 +1129,7 @@ Make the content specific, substantive and actionable. Do not use generic market
           throw new Error('Invalid response format from API');
         }
 
+        console.log("Successfully generated messaging framework");
         return res.status(200).json({
           valueProposition: parsedResponse.valueProposition,
           keyDifferentiators: parsedResponse.keyDifferentiators,
@@ -1393,46 +1392,32 @@ async function handleProductInfo(data: any, res: NextApiResponse) {
 
     // Validate input
     if (!data || !data.userId) {
-      console.log("Missing userId in request data");
       return res.status(400).json({
         error: 'Invalid request',
-        message: 'Missing required userId field'
+        message: 'Please provide a user ID'
       });
     }
 
     const userId = data.userId;
 
-    // If we're saving data (POST-like behavior)
+    // If we're saving data
     if (data.name !== undefined || data.type !== undefined) {
-      console.log(`Saving product info for user ${userId}:`, data);
-
-      // Return the exact data that was sent, to confirm it was saved
       return res.status(200).json({
         success: true,
         data: data
       });
     }
 
-    // If we're retrieving data (GET-like behavior)
-    console.log(`Retrieving product info for user ${userId}`);
-
-    // Try to get data from localStorage (if this is browser-side)
-    // Or return minimal data structure that won't break the UI
-    return res.status(200).json({
-      success: true,
-      data: {
-        // Return minimal valid data that won't break the UI
-        name: '',
-        type: '',
-        valueProposition: '',
-        keyBenefits: []
-      }
+    // If we're retrieving data
+    return res.status(404).json({
+      error: 'Not found',
+      message: 'No product information found. Please add your product details.'
     });
   } catch (error) {
     console.error('Error in product info handler:', error);
     return res.status(500).json({
-      error: 'Server error',
-      message: 'Failed to process product information'
+      error: 'Service temporarily unavailable',
+      message: 'Whoops! There\'s a problem. Please try again a little later.'
     });
   }
 }
@@ -1661,94 +1646,83 @@ Return your response as a JSON array of three taglines, each with a brief explan
   }
 }
 
-// MAIN HANDLER FUNCTION - FIXED TO USE CONSISTENT PARAMETER PATTERN
+// MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // FIXED: Now consistently looking for 'type' parameter throughout
-    const { type, data } = req.body;
+    // Support both 'endpoint' and 'type' for backward compatibility
+    const endpoint = req.body.endpoint || req.body.type;
+    const data = req.body.data;
 
     // Check if we have the required parameters
-    if (!type) {
+    if (!endpoint) {
       return res.status(400).json({
         error: 'Missing endpoint parameter',
-        message: 'Request must include a type parameter'
+        message: 'Request must include an endpoint or type parameter'
       });
     }
 
-    console.log(`Processing API request for type: ${type}`);
+    // Defensive check for missing or invalid data
+    if (typeof data !== 'object' || data === null) {
+      return res.status(400).json({
+        error: 'Missing data parameter',
+        message: 'Request must include a data object'
+      });
+    }
 
-    // Handle different endpoints using 'type' consistently
-    switch (type) {
-      // Handle content humanizer endpoint
+    console.log(`Processing API request for endpoint: ${endpoint}`);
+
+    // Handle different endpoints using 'endpoint' consistently
+    switch (endpoint) {
+      case 'content-humanizer':
       case 'contentHumanizer':
         return await handleContentHumanizer(data, res);
-
-      // Handle style checker endpoint
+      case 'style-checker':
       case 'styleChecker':
         return await handleStyleChecker(data, res);
-
-      // Handle style fixer endpoint
+      case 'style-fixer':
       case 'styleFixer':
         return await handleStyleFixer(data, res);
-
-      // Handle prose perfector endpoint
+      case 'prose-perfector':
       case 'prosePerfector':
         return await handleProsePerfector(data, res);
-
-      // Handle generate content endpoint
+      case 'generate-content':
       case 'generateContent':
         return await handleGenerateContent(data, res);
-
-      // Handle analyze-competitors endpoint
+      case 'analyze-competitors':
       case 'analyzeCompetitors':
         return await handleAnalyzeCompetitors(data, res);
-
-      // Handle value-proposition-generator endpoint
+      case 'value-proposition':
       case 'valueProposition':
         return await handleValuePropositionGenerator(data, res);
-
-      // Handle persona-generator endpoint - THIS IS THE KEY FIX!
+      case 'persona-generator':
       case 'personaGenerator':
         return await handlePersonaGenerator(data, res);
-
-      // Handle generate-keywords endpoint
+      case 'generate-keywords':
       case 'generateKeywords':
         return await handleGenerateKeywords(data, res);
-
-      // Handle modify-content endpoint
+      case 'modify-content':
       case 'modifyContent':
         return await handleModifyContent(data, res);
-
-      // Handle product-info endpoint  
       case 'productInfo':
         return await handleProductInfo(data, res);
-
-      // Handle content repurposer endpoint
       case 'contentRepurposer':
         return await handleContentRepurposer(data, res);
-
-      // Handle generateBoilerplates endpoint
       case 'generateBoilerplates':
         const boilerplates = await generateBoilerplates(data);
         return res.status(200).json(boilerplates);
-
-      // Handle generateTaglines endpoint
       case 'generateTaglines':
         const taglines = await generateTaglines(data);
         return res.status(200).json(taglines);
-
-      // Handle mission-vision endpoint
       case 'missionVision':
         return await handleMissionVision(data, res);
-
       default:
         return res.status(400).json({
-          error: 'Invalid request type',
-          message: `Endpoint '${type}' not found`
+          error: 'Invalid endpoint',
+          message: `Endpoint '${endpoint}' not found`
         });
     }
   } catch (error: unknown) {
