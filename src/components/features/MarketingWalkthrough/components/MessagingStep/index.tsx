@@ -72,6 +72,20 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     }
   }, [formData]);
 
+  // Load saved message framework from localStorage
+  useEffect(() => {
+    try {
+      const savedFramework = localStorage.getItem('messageFramework');
+      if (savedFramework) {
+        const parsedFramework = JSON.parse(savedFramework);
+        setFramework(parsedFramework);
+        console.log("Loaded saved message framework:", parsedFramework);
+      }
+    } catch (error) {
+      console.error('Error loading saved message framework:', error);
+    }
+  }, []);
+
   // Load target audience data
   useEffect(() => {
     try {
@@ -162,6 +176,27 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     setAiSuggestions(null);
 
     try {
+      // Check for product data
+      const savedProduct = localStorage.getItem('marketingProduct');
+      if (!savedProduct) {
+        throw new Error('Please enter your product information before generating AI enhancements');
+      }
+
+      let productInfo;
+      try {
+        const parsedProduct = JSON.parse(savedProduct);
+        if (!parsedProduct.name) {
+          throw new Error('Please enter your product information before generating AI enhancements');
+        }
+        productInfo = {
+          name: parsedProduct.name,
+          description: parsedProduct.type || parsedProduct.description,
+          benefits: parsedProduct.keyBenefits || []
+        };
+      } catch (e) {
+        throw new Error('Please enter your product information before generating AI enhancements');
+      }
+
       // Extract audience information for the API call
       let audienceInfo = ["Marketing professionals"]; // Default
 
@@ -173,22 +208,18 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
         }
       }
 
-      // Get product name and type if available
-      const productName = productData?.name || "Product";
-      const productDescription = productData?.type || "Marketing tool";
-
       // Gather benefits from either framework or product data
       const benefits = framework.keyBenefits.filter(b => b.trim()).length > 0
         ? framework.keyBenefits.filter(b => b.trim())
-        : (productData?.keyBenefits || ["Improved content creation"]);
+        : productInfo.benefits;
 
       // Prepare the request data with all required fields
       const requestBody = {
         type: "valueProposition",
         data: {
           productInfo: {
-            name: productName,
-            description: productDescription,
+            name: productInfo.name,
+            description: productInfo.description,
             benefits: benefits,
             targetAudience: audienceInfo
           },
@@ -211,7 +242,11 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          endpoint: 'valueProposition',
+          type: 'valueProposition',
+          data: requestBody.data
+        }),
         signal: controller.signal
       });
 
@@ -570,19 +605,10 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
           <button
             onClick={generateAIFramework}
             disabled={isGenerating}
-            className="text-blue-600 hover:text-blue-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 border border-blue-300 rounded-lg hover:bg-blue-50"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {isGenerating ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Generate your message framework with AI
-              </>
-            )}
+            <Sparkles className="w-4 h-4" />
+            {isGenerating ? 'Generating...' : 'Generate with AI'}
           </button>
         </div>
 
@@ -736,15 +762,17 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                   <h4 className="font-medium mb-2 text-blue-800">Enhanced Value Proposition</h4>
                   <div className="p-3 bg-white rounded-lg border border-blue-100">
                     {aiSuggestions.valueProposition}
-                    <button
-                      onClick={() => {
-                        updateField('valueProposition', aiSuggestions.valueProposition);
-                        showNotification('success', 'Value proposition updated');
-                      }}
-                      className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-                    >
-                      Accept
-                    </button>
+                    <div className="mt-4">
+                      <button
+                        onClick={() => {
+                          updateField('valueProposition', aiSuggestions.valueProposition);
+                          showNotification('success', 'Value proposition updated');
+                        }}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                      >
+                        Accept
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -757,45 +785,51 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 1</div>
                       {aiSuggestions.pillar1}
-                      <button
-                        onClick={() => {
-                          updateField('pillar1', aiSuggestions.pillar1);
-                          showNotification('success', 'Pillar 1 updated');
-                        }}
-                        className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-                      >
-                        Accept
-                      </button>
+                      <div className="mt-4">
+                        <button
+                          onClick={() => {
+                            updateField('pillar1', aiSuggestions.pillar1);
+                            showNotification('success', 'Pillar 1 updated');
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                        >
+                          Accept
+                        </button>
+                      </div>
                     </div>
                   )}
                   {aiSuggestions.pillar2 && (
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 2</div>
                       {aiSuggestions.pillar2}
-                      <button
-                        onClick={() => {
-                          updateField('pillar2', aiSuggestions.pillar2);
-                          showNotification('success', 'Pillar 2 updated');
-                        }}
-                        className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-                      >
-                        Accept
-                      </button>
+                      <div className="mt-4">
+                        <button
+                          onClick={() => {
+                            updateField('pillar2', aiSuggestions.pillar2);
+                            showNotification('success', 'Pillar 2 updated');
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                        >
+                          Accept
+                        </button>
+                      </div>
                     </div>
                   )}
                   {aiSuggestions.pillar3 && (
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 3</div>
                       {aiSuggestions.pillar3}
-                      <button
-                        onClick={() => {
-                          updateField('pillar3', aiSuggestions.pillar3);
-                          showNotification('success', 'Pillar 3 updated');
-                        }}
-                        className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-                      >
-                        Accept
-                      </button>
+                      <div className="mt-4">
+                        <button
+                          onClick={() => {
+                            updateField('pillar3', aiSuggestions.pillar3);
+                            showNotification('success', 'Pillar 3 updated');
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                        >
+                          Accept
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -808,17 +842,19 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                     {aiSuggestions.keyBenefits.map((benefit, index) => (
                       <li key={index} className="p-3 bg-white rounded-lg border border-blue-100">
                         {benefit}
-                        <button
-                          onClick={() => {
-                            const newBenefits = [...framework.keyBenefits];
-                            newBenefits[index] = benefit;
-                            updateField('keyBenefits', newBenefits);
-                            showNotification('success', 'Benefit updated');
-                          }}
-                          className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-                        >
-                          Accept
-                        </button>
+                        <div className="mt-4">
+                          <button
+                            onClick={() => {
+                              const newBenefits = [...framework.keyBenefits];
+                              newBenefits[index] = benefit;
+                              updateField('keyBenefits', newBenefits);
+                              showNotification('success', 'Benefit updated');
+                            }}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                          >
+                            Accept
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
