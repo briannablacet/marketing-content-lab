@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '../../ui/alert';
 import { Check, AlertTriangle, X, Copy, Eye, EyeOff, Upload, FileText, Sparkles, FileCheck } from 'lucide-react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
-// Add this import
+import { WritingStyleData } from '../../../context/WritingStyleContext';
 import StrategicDataService from '../../../services/StrategicDataService';
 
 // Enhanced TypeScript interfaces
@@ -20,25 +20,10 @@ interface HumanizerOptions {
   clicheRemoval: boolean;
   styleGuideId?: string;
   industryContext?: string;
-}
-
-interface ContentState {
-  original: string;
-  enhanced: string | null;
-  processing: boolean;
-  error: string | null;
-  progress: number;
-  changes: Array<{
-    original: string;
-    modified: string;
-    reason: string;
-  }>;
-  statistics: {
-    originalLength: number;
-    enhancedLength: number;
-    readabilityScore?: number;
-    styleCompliance?: number;
-    humanityScore?: number;
+  strategicData?: {
+    product: Record<string, any>;
+    brandVoice: Record<string, any>;
+    writingStyle: Record<string, any>;
   };
 }
 
@@ -48,15 +33,82 @@ interface StyleViolation {
   suggestion: string;
 }
 
+interface StyleRule {
+  name: string;
+  pattern: string;
+  suggestion?: string;
+}
+
+interface WritingStyleContextType {
+  writingStyle: {
+    styleGuide: {
+      primary: string;
+      overrides?: boolean;
+      uploadedGuide?: string;
+      customRules?: string[];
+    };
+    formatting: {
+      headings?: string;
+      headingCustom?: string;
+      numbers?: string;
+      dates?: string;
+      lists?: string[];
+    };
+    punctuation: {
+      oxfordComma?: boolean;
+      bulletPoints?: string;
+      quotes?: string;
+      ellipsis?: string;
+    };
+    terminology?: {
+      preferredTerms?: Record<string, string>;
+      avoidedTerms?: string[];
+    };
+  };
+  updateWritingStyle: (updates: Partial<WritingStyleData>) => void;
+  applyStyleGuideRules: (styleName: string) => void;
+  resetToDefaultStyle: () => void;
+  isStyleConfigured: boolean;
+  saveStyleToStorage: () => void;
+}
+
+interface NotificationType {
+  type: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+}
+
+interface ContentState {
+  original: string;
+  enhanced: string;
+  processing: boolean;
+  error: string | null;
+  progress: number;
+  changes: Array<{ original: string; modified: string; reason: string }>;
+  statistics: {
+    originalLength: number;
+    enhancedLength: number;
+    readabilityScore: number;
+    styleCompliance: number;
+    humanityScore: number;
+  };
+}
+
+interface StrategicData {
+  product: Record<string, any>;
+  brandVoice: Record<string, any>;
+  writingStyle: Record<string, any>;
+  isComplete: boolean;
+}
+
 const ContentHumanizer: React.FC = () => {
   // Context and state management
-  const { styleGuide, styleRules } = useWritingStyle();
+  const { writingStyle } = useWritingStyle();
   const { showNotification } = useNotification();
   const router = useRouter();
 
   const [content, setContent] = useState<ContentState>({
     original: '',
-    enhanced: null,
+    enhanced: '',
     processing: false,
     error: null,
     progress: 0,
@@ -64,23 +116,23 @@ const ContentHumanizer: React.FC = () => {
     statistics: {
       originalLength: 0,
       enhancedLength: 0,
+      readabilityScore: 0,
+      styleCompliance: 100,
       humanityScore: 0
     }
   });
 
   const [options, setOptions] = useState<HumanizerOptions>({
-    tone: 'conversational',
+    tone: 'professional',
     formality: 'neutral',
-    simplify: false,
+    simplify: true,
     creativity: 'medium',
     structuralVariation: true,
-    clicheRemoval: true,
-    styleGuideId: styleGuide?.id,
-    industryContext: ''
+    clicheRemoval: true
   });
 
   // Add strategic data state
-  const [strategicData, setStrategicData] = useState<any>(null);
+  const [strategicData, setStrategicData] = useState<StrategicData | null>(null);
   const [hasStrategicData, setHasStrategicData] = useState<boolean>(false);
 
   const [showComparison, setShowComparison] = useState(false);
@@ -90,27 +142,25 @@ const ContentHumanizer: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [aiInsights, setAiInsights] = useState<string[]>([]);
 
-  // Add effect to load strategic data
+  // Load strategic data on mount
   useEffect(() => {
     const loadStrategicData = async () => {
       try {
         const data = await StrategicDataService.getAllStrategicData();
-        console.log('Loaded strategic data for humanizer:', data);
-        setStrategicData(data);
-
-        // Check if we have meaningful strategic data
-        const hasData = data.isComplete;
-        setHasStrategicData(hasData);
-
-        // Set tone from brand voice if available
-        if (hasData && data.brandVoice?.brandVoice?.tone) {
-          setOptions(prev => ({
-            ...prev,
-            tone: data.brandVoice.brandVoice.tone
-          }));
-        }
+        const hasName = data.product && typeof data.product === 'object' && 'name' in data.product;
+        const hasValueProp = data.messaging && typeof data.messaging === 'object' && 'valueProposition' in data.messaging;
+        const hasAudiences = data.audiences && Array.isArray(data.audiences) && data.audiences.length > 0;
+        const strategicData: StrategicData = {
+          product: data.product || {},
+          brandVoice: data.brandVoice || {},
+          writingStyle: data.styleGuide || {},
+          isComplete: !!(hasName && hasAudiences && hasValueProp)
+        };
+        setStrategicData(strategicData);
+        setHasStrategicData(strategicData.isComplete);
       } catch (error) {
         console.error('Error loading strategic data:', error);
+        showNotification('Could not load strategic data. Some features may be limited.', 'warning');
       }
     };
 
@@ -124,7 +174,7 @@ const ContentHumanizer: React.FC = () => {
       statistics: {
         ...prev.statistics,
         originalLength: prev.original.length,
-        enhancedLength: prev.enhanced?.length || 0
+        enhancedLength: prev.enhanced.length
       }
     }));
 
@@ -201,70 +251,59 @@ const ContentHumanizer: React.FC = () => {
     setKeywords(e.target.value);
   };
 
-  // Enhanced file upload handler
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        showNotification('error', 'File size must be less than 5MB');
-        return;
-      }
+  // Handle file upload
+  const handleFileUpload = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      showNotification('File size must be less than 5MB', 'error');
+      return;
+    }
 
-      // Validate file type
-      const allowedTypes = [
-        'text/plain',
-        'text/markdown',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/html',
-        'application/rtf'
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        showNotification('error', 'Only text, markdown, doc, docx, html, and rtf files are supported');
-        return;
-      }
+    const allowedTypes = [
+      'text/plain',
+      'text/markdown',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/html',
+      'application/rtf'
+    ];
 
+    if (!allowedTypes.includes(file.type)) {
+      showNotification('Only text, markdown, doc, docx, html, and rtf files are supported', 'error');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      setContent(prev => ({
+        ...prev,
+        original: text,
+        enhanced: '',
+        statistics: {
+          ...prev.statistics,
+          originalLength: text.length,
+          enhancedLength: 0
+        }
+      }));
       setUploadedFile(file);
-
-      try {
-        // Read file content
-        const text = await file.text();
-        setContent(prev => ({
-          ...prev,
-          original: text,
-          enhanced: null,
-          statistics: {
-            ...prev.statistics,
-            originalLength: text.length,
-            enhancedLength: 0
-          }
-        }));
-        showNotification('success', 'Document uploaded successfully');
-      } catch (err) {
-        showNotification('error', 'Error reading file');
-        setContent(prev => ({
-          ...prev,
-          error: 'Failed to read file content'
-        }));
-      }
+      showNotification('Document uploaded successfully', 'success');
+    } catch (error) {
+      console.error('Error reading file:', error);
+      showNotification('Error reading file', 'error');
     }
   };
 
   // Style compliance checker
   const checkStyleCompliance = (text: string): StyleViolation[] => {
     const violations: StyleViolation[] = [];
-    if (styleRules) {
-
+    if (writingStyle.styleGuide?.customRules) {
       // Check each style rule against the text
-      styleRules.forEach(rule => {
-
+      writingStyle.styleGuide.customRules.forEach((rule) => {
         // This is a simplified example - expand based on your style rules
-        if (rule.pattern && new RegExp(rule.pattern, 'gi').test(text)) {
+        if (typeof rule === 'string' && new RegExp(rule, 'gi').test(text)) {
           violations.push({
-            text: text.match(new RegExp(rule.pattern, 'gi'))?.[0] || '',
-            rule: rule.name,
-            suggestion: rule.suggestion || 'Consider revising'
+            text: text.match(new RegExp(rule, 'gi'))?.[0] || '',
+            rule: rule,
+            suggestion: 'Consider revising'
           });
         }
       });
@@ -275,7 +314,13 @@ const ContentHumanizer: React.FC = () => {
   // Enhanced humanization process
   const humanizeContent = async () => {
     if (!content.original.trim()) {
-      showNotification('warning', 'Please enter content to humanize');
+      showNotification('Please enter content to humanize', 'warning');
+      return;
+    }
+
+    // Validate content length
+    if (content.original.length > 10000) {
+      showNotification('Content length exceeds maximum limit of 10,000 characters', 'error');
       return;
     }
 
@@ -300,15 +345,16 @@ const ContentHumanizer: React.FC = () => {
         content: content.original,
         parameters: {
           ...options,
-          styleGuideParameters: styleGuide ? {
-            prohibited: styleGuide.prohibited || [],
-            required: styleGuide.required || []
+          styleGuideParameters: writingStyle.styleGuide ? {
+            primary: writingStyle.styleGuide.primary,
+            overrides: writingStyle.styleGuide.overrides,
+            customRules: writingStyle.styleGuide.customRules
           } : undefined
         }
       };
 
       // Add strategic data if available
-      if (hasStrategicData) {
+      if (hasStrategicData && strategicData?.isComplete) {
         requestData.parameters.strategicData = {
           product: strategicData.product,
           brandVoice: strategicData.brandVoice,
@@ -326,7 +372,7 @@ const ContentHumanizer: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          endpoint: 'content-humanizer',
+          type: 'contentHumanizer',
           data: requestData
         })
       });
@@ -335,7 +381,9 @@ const ContentHumanizer: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to humanize content');
+        const errorMessage = errorData.message || 'Failed to humanize content';
+        showNotification(errorMessage, 'error');
+        throw new Error(errorMessage);
       }
 
       const responseData = await response.json();
@@ -346,7 +394,7 @@ const ContentHumanizer: React.FC = () => {
       setViolations(styleViolations);
 
       // If the API doesn't provide changes, generate some samples
-      const changes = responseData.changes || generateSampleChanges(content.original, responseData.content);
+      const changes: Array<{ original: string; modified: string; reason: string }> = responseData.changes || generateSampleChanges(content.original, responseData.content);
 
       setContent(prev => ({
         ...prev,
@@ -364,14 +412,15 @@ const ContentHumanizer: React.FC = () => {
         }
       }));
 
-      showNotification('success', 'Content humanized successfully');
+      showNotification('Content humanized successfully', 'success');
       setShowComparison(true);
     } catch (err) {
-      showNotification('error', 'Failed to humanize content. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to humanize content. Please try again.';
+      showNotification(errorMessage, 'error');
       setContent(prev => ({
         ...prev,
         processing: false,
-        error: 'Failed to humanize content. Please try again.',
+        error: errorMessage,
         progress: 0
       }));
 
@@ -402,8 +451,8 @@ const ContentHumanizer: React.FC = () => {
   };
 
   // Generate sample changes for demonstration
-  const generateSampleChanges = (original: string, enhanced: string): Array<{ original: string, modified: string, reason: string }> => {
-    const changes = [];
+  const generateSampleChanges = (original: string, enhanced: string): Array<{ original: string; modified: string; reason: string }> => {
+    const changes: Array<{ original: string; modified: string; reason: string }> = [];
 
     // Find repeated sentence structures
     const sentences = original.split(/[.!?]\s+/);
@@ -498,7 +547,7 @@ const ContentHumanizer: React.FC = () => {
     });
 
     // Track the changes we made
-    const changes = [];
+    const changes: Array<{ original: string; modified: string; reason: string }> = [];
     replacements.forEach(({ pattern, replacement }) => {
       const matches = originalContent.match(pattern);
       if (matches) {
@@ -534,7 +583,7 @@ const ContentHumanizer: React.FC = () => {
     setContent(prev => ({
       ...prev,
       original: '',
-      enhanced: null,
+      enhanced: '',
       statistics: {
         ...prev.statistics,
         originalLength: 0,
@@ -610,7 +659,12 @@ const ContentHumanizer: React.FC = () => {
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
           <input
             type="file"
-            onChange={handleFileUpload}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                handleFileUpload(file);
+              }
+            }}
             className="hidden"
             accept=".txt,.doc,.docx,.md,.rtf,.html"
             id="file-upload"
@@ -813,7 +867,7 @@ const ContentHumanizer: React.FC = () => {
             onChange={(e) => setContent(prev => ({
               ...prev,
               original: e.target.value,
-              enhanced: null
+              enhanced: ''
             }))}
             placeholder="Upload or paste your content here..."
             className="w-full h-64 p-4 border rounded"
@@ -855,9 +909,7 @@ const ContentHumanizer: React.FC = () => {
             <div className="font-medium">Style Guide Violations:</div>
             <ul className="list-disc pl-4">
               {violations.map((v, i) => (
-                <li key={i} className="text-sm">
-                  {v.text}: {v.suggestion}
-                </li>
+                <li key={i} className="text-sm"><strong>{v.rule}:</strong> {v.text} — {v.suggestion}</li>
               ))}
             </ul>
           </AlertDescription>
