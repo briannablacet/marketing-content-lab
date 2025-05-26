@@ -50,8 +50,8 @@ const STEPS = [
   },
   {
     id: '6',
-    title: 'Competitive Analysis',
-    subtitle: 'Understand your competitive landscape',
+    title: 'Competitive Messaging Analysis',
+    subtitle: 'Analyze your competitors\' messaging and identify gaps and opportunities',
     component: CompetitiveStep,
     icon: Users
   },
