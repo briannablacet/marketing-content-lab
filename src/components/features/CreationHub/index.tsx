@@ -4,10 +4,11 @@ import { useRouter } from 'next/router';
 import ScreenTemplate from "@/components/shared/UIComponents"
 import {
   PenTool,
-  Sparkles,
+  Layout,
   RefreshCcw,
+  Beaker,
   ArrowRight,
-  Layout, // New icon for Content Creator module
+  ArrowLeft,
 } from 'lucide-react';
 
 const CreationHub: React.FC = () => {
@@ -16,25 +17,28 @@ const CreationHub: React.FC = () => {
   // Define the main modules
   const modules = [
     {
-      title: "Content Creator",
-      description: "Create standalone content pieces, multi-channel campaigns, and A/B test variations",
-      icon: <Layout className="w-16 h-16 text-blue-600" />, // Changed icon to Layout
-      path: '/content-creator-tools',
-      tools: ["Standalone Content Creator", "Campaign Builder", "A/B Test Creator"]
+      title: "Standalone Content Creator",
+      description: "Create standalone content pieces with AI assistance",
+      icon: <PenTool className="w-16 h-16 text-blue-600" />,
+      path: '/content-creator'
     },
     {
-      title: "Content Enhancer",
-      description: "Improve your content with AI-powered tools for style, readability, and brand voice consistency",
-      icon: <Sparkles className="w-16 h-16 text-purple-600" />,
-      path: '/content-enhancer-tools',
-      tools: ["Prose Perfector", "Style Compliance Check", "Content Humanizer", "Brand Voice"]
+      title: "Campaign Builder",
+      description: "Build multi-channel marketing campaigns",
+      icon: <Layout className="w-16 h-16 text-purple-600" />,
+      path: '/campaign-builder'
     },
     {
       title: "Content Repurposer",
-      description: "Transform your existing content for different formats and channels while preserving key messages",
+      description: "Transform your content for different formats and channels",
       icon: <RefreshCcw className="w-16 h-16 text-green-600" />,
-      path: '/content-repurposer',
-      tools: ["Format Transformer", "Channel Adapter"]
+      path: '/content-repurposer'
+    },
+    {
+      title: "A/B Test Generator",
+      description: "Create and manage A/B tests for your content",
+      icon: <Beaker className="w-16 h-16 text-orange-600" />,
+      path: '/ab-test-generator'
     }
   ];
 
@@ -47,9 +51,15 @@ const CreationHub: React.FC = () => {
       title="Content Creation Hub"
       subtitle="Choose a content creation module to get started"
       hideNavigation={true}
+      currentStep={1}
+      totalSteps={1}
+      onNext={() => { }}
+      onBack={() => { }}
+      onSkip={() => { }}
+      onExit={() => { }}
     >
       <div className="py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {modules.map((module, index) => (
             <div
               key={index}
@@ -69,18 +79,6 @@ const CreationHub: React.FC = () => {
                   {module.description}
                 </p>
 
-                <div className="mb-6 flex-grow">
-                  <h4 className="text-sm font-medium text-gray-600 mb-2 text-center">Includes</h4>
-                  <ul className="space-y-1">
-                    {module.tools.map((tool, i) => (
-                      <li key={i} className="text-sm text-gray-700 flex items-center justify-center">
-                        <span className="text-blue-500 mr-2">•</span>
-                        {tool}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -97,11 +95,12 @@ const CreationHub: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="flex justify-between items-center mt-8">
         <button
           onClick={() => router.push('/')}
-          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
         >
+          <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
         </button>
       </div>

@@ -1,4 +1,6 @@
 // src/components/features/BoilerplateGenerator/index.tsx
+//this page needs to be fixed by adding the yellow modal and pulling in strategic data
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
@@ -7,16 +9,24 @@ import { useRouter } from 'next/router';
 import { Loader2, FileText } from 'lucide-react';
 import PageLayout from '../../shared/PageLayout';
 
-// Add type definitions
+// Update type definitions
 interface ProductInfo {
     name?: string;
     product?: string;
-    // add other fields as needed
+    valueProposition?: string;
+    description?: string;
 }
 
 interface MessagingFramework {
     valueProposition?: string;
-    // add other fields as needed
+    keyDifferentiators?: string[];
+    positioning?: string;
+}
+
+interface Audience {
+    role?: string;
+    industry?: string;
+    description?: string;
 }
 
 const BoilerplateGenerator: React.FC = () => {
@@ -96,69 +106,87 @@ ${text.trim()}`;
 
     useEffect(() => {
         const fetchData = async () => {
-            const [productDataRaw, audiences, messagingRaw] = await Promise.all([
-                StrategicDataService.getProductInfo(),
-                StrategicDataService.getTargetAudiences(),
-                StrategicDataService.getMessagingFramework()
-            ]);
+            try {
+                const [productDataRaw, audiences, messagingRaw] = await Promise.all([
+                    StrategicDataService.getProductInfo(),
+                    StrategicDataService.getTargetAudiences(),
+                    StrategicDataService.getMessagingFramework()
+                ]);
 
-            // Type assertion to help TypeScript
-            const productData = productDataRaw as ProductInfo;
-            const messaging = messagingRaw as MessagingFramework;
+                // Type assertion to help TypeScript
+                const productData = productDataRaw as ProductInfo;
+                const messaging = messagingRaw as MessagingFramework;
+                const audienceData = audiences as Audience[];
 
-            if (!tone && brandVoice?.brandVoice?.tone) {
-                setTone(brandVoice.brandVoice.tone);
-            }
+                // Set tone from brand voice if available
+                if (!tone && brandVoice?.brandVoice?.tone) {
+                    setTone(brandVoice.brandVoice.tone);
+                }
 
-            if (!audience && audiences.length > 0) {
-                setAudience(brandVoice?.brandVoice?.audience || audiences[0]);
-            }
+                // Set audience from first available audience
+                if (!audience && audienceData.length > 0) {
+                    const primaryAudience = audienceData[0];
+                    setAudience(primaryAudience.role || '');
+                }
 
-            if (!product && productData?.product) {
-                setProduct(productData.product);
-            }
+                // Set product info
+                if (!product && productData?.product) {
+                    setProduct(productData.product);
+                }
 
-            if (!businessName && productData?.name) {
-                setBusinessName(productData.name);
-            }
+                // Set business name
+                if (!businessName && productData?.name) {
+                    setBusinessName(productData.name);
+                }
 
-            if (!promise && messaging?.valueProposition) {
-                setPromise(messaging.valueProposition);
-            }
+                // Set description
+                if (!description && productData?.description) {
+                    setDescription(productData.description);
+                }
 
-            const missingCoreData =
-                !brandVoice?.brandVoice?.tone ||
-                !brandVoice?.brandVoice?.archetype ||
-                !audiences.length ||
-                !productData?.name ||
-                !messaging?.valueProposition;
+                // Set promise/value proposition
+                if (!promise) {
+                    if (messaging?.valueProposition) {
+                        setPromise(messaging.valueProposition);
+                    } else if (productData?.valueProposition) {
+                        setPromise(productData.valueProposition);
+                    }
+                }
 
-            if (missingCoreData) {
+                // Check for missing core data
+                const hasCoreData =
+                    (productData?.name || businessName) &&
+                    (productData?.product || product) &&
+                    (audienceData.length > 0 || audience) &&
+                    (messaging?.valueProposition || promise);
+
+                setShowWalkthroughPrompt(!hasCoreData);
+            } catch (error) {
+                console.error('Error fetching strategic data:', error);
                 setShowWalkthroughPrompt(true);
             }
         };
 
         fetchData();
-    }, [brandVoice]);
+    }, [brandVoice, businessName, product, audience, promise]);
 
     return (
         <PageLayout
-        showHelpPrompt={showWalkthroughPrompt}
-        helpPromptText="Need help? Let AI suggest a boilerplate based on your"
-        helpPromptLink="/brand-personality"
-        helpPromptLinkText="brand voice and strategic data"
-    >
+            showHelpPrompt={showWalkthroughPrompt}
+            helpPromptText="Need help? Let AI suggest a boilerplate based on your"
+            helpPromptLink="/brand-personality"
+            helpPromptLinkText="brand voice and strategic data"
+        >
 
-        
-<div className="space-y-8 w-full">
-    {/* BIG HEADER WITH ICON */}
-    <div className="flex items-center gap-3 mb-2">
-        <FileText className="w-8 h-8 text-blue-600" />
-        <h1 className="text-3xl font-bold text-gray-900">Boilerplate Generator</h1>
-    </div>
-    <p className="text-gray-600 -mt-6">Generate three boilerplates shaped by your tone, positioning, and personality</p>
+
+            <div className="space-y-8 w-full">
+                {/* BIG HEADER WITH ICON */}
+                <div className="flex items-center gap-3 mb-2">
+                    <FileText className="w-8 h-8 text-blue-600" />
+                    <h1 className="text-3xl font-bold text-gray-900">Boilerplate Generator</h1>
+                </div>
                 <p className="text-gray-600 -mt-6">Generate three boilerplates shaped by your tone, positioning, and personality</p>
-
+               
                 {/* CONTENT */}
                 <div className="grid gap-4">
                     <div className="bg-white p-6 rounded-lg border border-gray-200">

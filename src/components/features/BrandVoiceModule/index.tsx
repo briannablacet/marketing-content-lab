@@ -116,14 +116,23 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
     setIsSaving(true);
     try {
       // Save the current state
-      await updateBrandVoice({
+      const updatedBrandVoice = {
         brandVoice: {
-          ...brandVoice.brandVoice
+          ...brandVoice.brandVoice,
+          // Ensure all required fields are present
+          tone: brandVoice.brandVoice.tone || '',
+          style: brandVoice.brandVoice.style || '',
+          audience: brandVoice.brandVoice.audience || '',
+          archetype: brandVoice.brandVoice.archetype || '',
+          personality: brandVoice.brandVoice.personality || [],
+          brandPersonality: brandVoice.brandVoice.brandPersonality || ''
         }
-      });
+      };
 
-      // Add a small delay to show the saving state
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await updateBrandVoice(updatedBrandVoice);
+
+      // Add a small delay to ensure the data is saved
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       if (isWalkthrough) {
         router.push('/walkthrough/complete');

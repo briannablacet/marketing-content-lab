@@ -9,35 +9,55 @@ import { Card } from '@/components/ui/card';
 import { Plus, X } from 'lucide-react';
 
 interface ValuePropStepProps {
-    onNext?: () => void;
-    onBack?: () => void;
-    formData?: any;
-    setFormData?: (data: any) => void;
+    onNext: () => void;
+    onBack: () => void;
+    formData: FormData;
+    setFormData: (data: FormData) => void;
 }
 
-const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData = {}, setFormData = () => { } }) => {
-    const [productName, setProductName] = useState('');
-    const [productDescription, setProductDescription] = useState('');
-    const [target, setTarget] = useState('');
-    const [solution, setSolution] = useState('');
-    const [benefit, setBenefit] = useState('');
-    const [proof, setProof] = useState('');
-    const [paragraph, setParagraph] = useState('');
-    const [existingValueProp, setExistingValueProp] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [isAccepted, setIsAccepted] = useState(false);
+interface ProductData {
+    name?: string;
+    description?: string;
+    tagline?: string;
+    type?: string;
+}
+
+interface FormData {
+    productName?: string;
+    productDescription?: string;
+    valueProp?: string;
+    personas?: Array<{ role?: string }>;
+    tagline?: string;
+    solution?: string;
+    benefit?: string;
+    proof?: string;
+}
+
+const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData, setFormData }) => {
+    const [productName, setProductName] = useState<string>('');
+    const [productDescription, setProductDescription] = useState<string>('');
+    const [target, setTarget] = useState<string>('');
+    const [solution, setSolution] = useState<string>('');
+    const [benefit, setBenefit] = useState<string>('');
+    const [proof, setProof] = useState<string>('');
+    const [paragraph, setParagraph] = useState<string>('');
+    const [existingValueProp, setExistingValueProp] = useState<string>('');
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isAccepted, setIsAccepted] = useState<boolean>(false);
     const { showNotification } = useNotification();
-    const [tagline, setTagline] = useState('');
-    const [productType, setProductType] = useState('');
-    const [keyBenefits, setKeyBenefits] = useState(['']);
+    const [tagline, setTagline] = useState<string>('');
+    const [productType, setProductType] = useState<string>('');
+    const [keyBenefits, setKeyBenefits] = useState<string[]>(['']);
 
     // NEW: AI generation preview state
     const [generatedValueProp, setGeneratedValueProp] = useState('');
     const [showPreview, setShowPreview] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // Load existing data from StrategicDataService, localStorage, AND walkthrough formData
     useEffect(() => {
         const loadExistingData = async () => {
+            setIsLoading(true);
             try {
                 // 1. First, try to load from walkthrough formData
                 if (formData.productName) {
@@ -45,6 +65,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                 }
                 if (formData.productDescription) {
                     setProductDescription(formData.productDescription);
+                    setProductType(formData.productDescription);
                 }
                 if (formData.valueProp) {
                     setExistingValueProp(formData.valueProp);
@@ -53,17 +74,31 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                 if (formData.personas && formData.personas.length > 0) {
                     setTarget(formData.personas[0].role || '');
                 }
+                if (formData.solution) {
+                    setSolution(formData.solution);
+                }
+                if (formData.benefit) {
+                    setBenefit(formData.benefit);
+                }
+                if (formData.proof) {
+                    setProof(formData.proof);
+                }
 
                 // 2. Then try StrategicDataService
-                const productData = await StrategicDataService.getProductInfo();
+                const productData = await StrategicDataService.getProductInfo() as ProductData;
                 if (productData && (productData.name || productData.description)) {
                     if (productData.name && !productName) {
                         setProductName(productData.name);
-                        setFormData(prev => ({ ...prev, productName: productData.name }));
+                        setFormData({ ...formData, productName: productData.name });
                     }
                     if (productData.description && !productDescription) {
                         setProductDescription(productData.description);
-                        setFormData(prev => ({ ...prev, productDescription: productData.description }));
+                        setProductType(productData.description);
+                        setFormData({ ...formData, productDescription: productData.description });
+                    }
+                    if (productData.tagline) {
+                        setTagline(productData.tagline);
+                        setFormData({ ...formData, tagline: productData.tagline });
                     }
                 }
 
@@ -71,14 +106,20 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                 if (!productName || !productDescription) {
                     const savedProduct = localStorage.getItem('marketingProduct');
                     if (savedProduct) {
-                        const parsedProduct = JSON.parse(savedProduct);
+                        const parsedProduct = JSON.parse(savedProduct) as ProductData;
                         if (parsedProduct.name && !productName) {
                             setProductName(parsedProduct.name);
-                            setFormData(prev => ({ ...prev, productName: parsedProduct.name }));
+                            setFormData({ ...formData, productName: parsedProduct.name });
                         }
                         if ((parsedProduct.description || parsedProduct.type) && !productDescription) {
-                            setProductDescription(parsedProduct.description || parsedProduct.type);
-                            setFormData(prev => ({ ...prev, productDescription: parsedProduct.description || parsedProduct.type }));
+                            const description = parsedProduct.description || parsedProduct.type || '';
+                            setProductDescription(description);
+                            setProductType(description);
+                            setFormData({ ...formData, productDescription: description });
+                        }
+                        if (parsedProduct.tagline) {
+                            setTagline(parsedProduct.tagline);
+                            setFormData({ ...formData, tagline: parsedProduct.tagline });
                         }
                     }
                 }
@@ -120,6 +161,8 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
             } catch (error) {
                 console.error('Error loading existing data:', error);
                 showNotification('Error loading existing data. Please try again.', 'error');
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -147,9 +190,15 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
             return;
         }
 
-        setIsLoading(true);
+        setIsGenerating(true);
         try {
             console.log('Calling AI for value proposition generation...');
+            console.log('Request data:', {
+                productName,
+                productDescription: productDescription || productType,
+                target,
+                benefits: keyBenefits.filter(Boolean)
+            });
 
             const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
@@ -176,7 +225,9 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
             console.log('API response status:', response.status);
 
             if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
+                const errorData = await response.json();
+                console.error('API error response:', errorData);
+                throw new Error(errorData.message || `API error: ${response.status}`);
             }
 
             const result = await response.json();
@@ -187,13 +238,14 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                 setShowPreview(true);
                 showNotification('Value proposition generated successfully!', 'success');
             } else {
+                console.error('No value proposition in response:', result);
                 throw new Error('No value proposition in response');
             }
         } catch (error) {
             console.error('Error generating value prop:', error);
-            showNotification(error.message || 'Failed to generate value proposition. Please try again.', 'error');
+            showNotification(error instanceof Error ? error.message : 'Failed to generate value proposition. Please try again.', 'error');
         } finally {
-            setIsLoading(false);
+            setIsGenerating(false);
         }
     };
 
@@ -249,9 +301,14 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                     </div>
                     <textarea
                         value={paragraph || existingValueProp}
-                        onChange={(e) => setParagraph(e.target.value)}
+                        onChange={(e) => {
+                            setParagraph(e.target.value);
+                            setExistingValueProp(e.target.value);
+                            setFormData(prev => ({ ...prev, valueProp: e.target.value }));
+                        }}
                         className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                         rows={4}
+                        placeholder="Edit your value proposition here..."
                     />
                     <div className="mt-4 flex gap-2">
                         <button
@@ -274,7 +331,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
             {/* MAIN INPUT CARD */}
             <Card className="p-6">
                 <div className="mb-6">
-                    <h2 className="text-2xl font-semibold text-gray-900">Tell us about your business</h2>
+                    <h2 className="text-2xl font-semibold text-gray-900">Let's go deeper</h2>
                     <p className="text-gray-600 mt-2">We'll use this information to create your value proposition</p>
                 </div>
                 <div className="space-y-6">
@@ -309,7 +366,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">What are the main benefits for your clients?</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Any more benefits of your solution you'd like to add? (Optional)</label>
                         <p className="text-sm text-gray-600 mb-4">
                             List the top benefits your clients or customers receive
                         </p>
@@ -357,10 +414,10 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                         </div>
                         <button
                             onClick={handleAIHelp}
-                            disabled={isLoading || !productName}
+                            disabled={isGenerating || !productName}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
-                            {isLoading ? (
+                            {isGenerating ? (
                                 <>
                                     <Loader className="w-4 h-4 animate-spin" />
                                     Generating...
@@ -388,6 +445,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData 
                         onChange={(e) => setGeneratedValueProp(e.target.value)}
                         className="w-full p-4 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-blue-800 bg-white"
                         rows={4}
+                        placeholder="Edit the generated value proposition..."
                     />
                     <div className="mt-4 flex gap-2">
                         <button

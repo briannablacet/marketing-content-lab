@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { NotificationProvider } from '../context/NotificationContext';
 import { WritingStyleProvider } from '../context/WritingStyleContext';
 import StyleGuideNotificationBanner from '../components/features/StyleGuideNotificationBanner';
+import ScreenTemplate from '../components/shared/UIComponents';
 
 // Use dynamic import with SSR disabled to prevent SSR-related issues with file handling
 const ProsePerfector = dynamic(() => import('../components/features/ProsePerfector'), {
@@ -15,11 +16,18 @@ const ProsePerfectorPage: React.FC = () => {
   return (
     <NotificationProvider>
       <WritingStyleProvider>
-        {/* Add the notification banner here, right after the providers */}
         <StyleGuideNotificationBanner />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <ScreenTemplate
+          title="Prose Perfector"
+          subtitle="Enhance your writing with AI-powered suggestions for clarity, conciseness, and engagement"
+          aiInsights={[
+            "Clear, concise content improves engagement by 58%",
+            "Enhanced content gets 27% more social shares",
+            "Professional editing can increase conversion rates by 30%"
+          ]}
+        >
           <ProsePerfector />
-        </div>
+        </ScreenTemplate>
       </WritingStyleProvider>
     </NotificationProvider>
   );

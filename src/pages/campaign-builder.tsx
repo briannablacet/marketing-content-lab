@@ -9,6 +9,9 @@ import { CONTENT_TYPES } from '@/data/contentTypesData';
 import { useContent } from '@/context/ContentContext';
 import ContentPreview from '@/components/features/ContentEngine/screens/ContentPreview';
 import StyleGuideNotificationBanner from '@/components/features/StyleGuideNotificationBanner';
+import { WritingStyleProvider, useWritingStyle } from '@/context/WritingStyleContext';
+import { NotificationProvider } from '@/context/NotificationContext';
+import { MessagingProvider } from '@/context/MessagingContext';
 
 // Goal recommendations mapping
 const GOAL_RECOMMENDATIONS = {
@@ -150,6 +153,9 @@ const CampaignBuilder: React.FC = () => {
 
   // Content type selection state
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
+
+  // Writing style state
+  const { writingStyle, isStyleConfigured } = useWritingStyle();
 
   // Load any existing campaign data on mount
   useEffect(() => {
@@ -376,29 +382,22 @@ const CampaignBuilder: React.FC = () => {
     return found ? found.name : "Unknown Type";
   };
 
-  // Save campaign data to localStorage before navigating to preview
-  // Fix for the saveCampaignData function
+  // Save campaign data with writing style info
   const saveCampaignData = () => {
     const campaignData = {
-      name: campaignName,
       type: campaignType,
-      typeName: getCampaignTypeName(), // Save the display name too for easier access
+      name: campaignName,
       goal: campaignGoal,
-      targetAudience: targetAudience,
-      keyMessages: keyMessages.filter(msg => msg.trim() !== ''),
+      targetAudience,
+      keyMessages,
       channels: campaignChannels,
       contentTypes: selectedContentTypes,
-      timestamp: new Date().toISOString() // Add timestamp to prevent stale data
+      writingStyle: writingStyle // Include writing style data
     };
 
     localStorage.setItem('currentCampaign', JSON.stringify(campaignData));
     setHasSavedCampaign(true);
-    console.log("Campaign data saved:", campaignData);
-
-    // Change this line to fix the issue
-    setTimeout(() => {
-      setStep(3);
-    }, 100);
+    console.log("Saved campaign data:", campaignData);
   };
 
   // Step 1: Campaign Type and Content Type Selection
@@ -425,7 +424,11 @@ const CampaignBuilder: React.FC = () => {
       <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
         <div className="bg-blue-900 h-2"></div>
         <div className="p-4">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-bold">1</span>
           <h2 className="text-lg font-bold text-blue-700">Campaign Type</h2>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">First, select your campaign type to determine the best content strategy for your goals.</p>
         </div>
       </div>
 
@@ -441,6 +444,15 @@ const CampaignBuilder: React.FC = () => {
             onClick={() => handleSelectCampaignType(type.id)}
           >
             <div className="flex items-start gap-4">
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  name="campaignType"
+                  checked={campaignType === type.id}
+                  onChange={() => handleSelectCampaignType(type.id)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+              </div>
               <div className={campaignType === type.id ? 'text-blue-500' : ''}>
                 {type.icon}
               </div>
@@ -455,59 +467,15 @@ const CampaignBuilder: React.FC = () => {
         ))}
       </div>
 
-      {/* Campaign type-specific recommendations */}
-      {campaignType && (
-        <div className="mb-8 bg-blue-50 border border-blue-100 rounded-lg p-4">
-          <div className="flex items-center mb-3">
-            <Sparkles className="text-blue-600 w-5 h-5 mr-2" />
-            <h3 className="text-lg font-medium text-blue-800">AI Campaign Recommendations</h3>
-          </div>
-
-          <p className="text-blue-800 mb-3">
-            {CAMPAIGN_TYPE_RECOMMENDATIONS[campaignType]?.description}
-          </p>
-
-          <div className="mb-4">
-            <h4 className="text-base font-medium text-blue-700 mb-2">Recommended Content Types:</h4>
-            <div className="flex flex-wrap gap-2">
-              {CAMPAIGN_TYPE_RECOMMENDATIONS[campaignType]?.contentTypes.map(type => (
-                <button
-                  key={type}
-                  className={`px-3 py-1.5 rounded-full text-sm ${selectedContentTypes.includes(type)
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                    }`}
-                  onClick={() => {
-                    if (!selectedContentTypes.includes(type)) {
-                      setSelectedContentTypes(prev => [...prev, type]);
-                    }
-                  }}
-                >
-                  {type} {selectedContentTypes.includes(type) ? '✓' : '+'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-base font-medium text-blue-700 mb-2">Campaign Insights:</h4>
-            <ul className="space-y-1">
-              {CAMPAIGN_TYPE_RECOMMENDATIONS[campaignType]?.insights.map((insight, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
-                  <span className="text-blue-800 text-sm">{insight}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
       {/* Content Types Section */}
       <div className="mb-6 border-2 border-blue-200 rounded-lg overflow-hidden shadow-sm">
         <div className="bg-blue-900 h-2"></div>
         <div className="p-4">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-bold">2</span>
           <h2 className="text-lg font-bold text-blue-700">Content Types</h2>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">Next, select the content types you want to create for this campaign.</p>
         </div>
       </div>
 
@@ -664,11 +632,14 @@ const CampaignBuilder: React.FC = () => {
           Back
         </button>
         <button
-          onClick={saveCampaignData}
+          onClick={() => {
+            saveCampaignData();
+            setStep(3);
+          }}
           disabled={!campaignName || keyMessages[0].trim() === ''}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
         >
-          Generate Content <ChevronRight className="ml-2 w-4 h-4" />
+          Continue to Content Generation <ChevronRight className="ml-2 w-4 h-4" />
         </button>
       </div>
     </div>
@@ -699,7 +670,9 @@ const CampaignBuilder: React.FC = () => {
   };
 
   return (
-    <>
+    <NotificationProvider>
+      <WritingStyleProvider>
+        <MessagingProvider>
       {/* Place the StyleGuideNotificationBanner before ScreenTemplate */}
       <StyleGuideNotificationBanner />
 
@@ -710,7 +683,9 @@ const CampaignBuilder: React.FC = () => {
       >
         {renderCurrentStep()}
       </ScreenTemplate>
-    </>
+        </MessagingProvider>
+      </WritingStyleProvider>
+    </NotificationProvider>
   );
 };
 

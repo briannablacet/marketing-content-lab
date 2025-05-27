@@ -6,7 +6,6 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { WritingStyleProvider } from '@/context/WritingStyleContext';
 import { MessagingProvider } from '@/context/MessagingContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import StyleGuideNotificationBanner from '@/components/features/StyleGuideNotificationBanner';
 import Link from 'next/link';
 import {
   FileText,
@@ -83,7 +82,7 @@ const ContentCreatorPage: React.FC = () => {
       ]
     },
     {
-      id: 'email',
+      id: 'email-campaign',
       title: 'Email Campaign',
       description: 'Create multi-email sequences designed to nurture leads and drive conversions.',
       icon: <Mail className="w-8 h-8 text-emerald-600" />,
@@ -94,7 +93,7 @@ const ContentCreatorPage: React.FC = () => {
       ]
     },
     {
-      id: 'internal-comms',
+      id: 'internal-email',
       title: 'Internal Email',
       description: 'Create an email to send to your team.',
       icon: <Mail className="w-8 h-8 text-blue-600" />,
@@ -102,17 +101,6 @@ const ContentCreatorPage: React.FC = () => {
         "Think about voice, especially if you're writing on behalf of an executive",
         "Shorter is always better",
         "Be clear about any actions you need your readers to take"
-      ]
-    },
-    {
-      id: 'web-page',
-      title: 'Web Page',
-      description: 'Create a professional, engaging page for your website.',
-      icon: <Mail className="w-8 h-8 text-blue-600" />,
-      tips: [
-        "Use simple, declarative language",
-        "Keep paragraphs short for readability",
-        "Subheads let readers skim for key points"
       ]
     },
     {
@@ -158,41 +146,7 @@ const ContentCreatorPage: React.FC = () => {
         "Aim for 6-8 pages of in-depth content",
         "Add an executive summary for busy readers"
       ]
-    },
-    {
-      id: 'ebook',
-      title: 'eBook',
-      description: 'Create valuable eBooks that generate leads and showcase your expertise.',
-      icon: <BookOpen className="w-8 h-8 text-indigo-600" />,
-      tips: [
-        "Break content into scannable chapters",
-        "Include visual elements every 1-2 pages",
-        "Add interactive worksheets or checklists"
-      ]
-    },
-    {
-      id: 'web-page',
-      title: 'Web Page',
-      description: 'Create optimized web page content that engages visitors and improves conversion rates.',
-      icon: <Layout className="w-8 h-8 text-blue-600" />,
-      tips: [
-        "Keep important content above the fold",
-        "Use clear, benefit-focused headlines",
-        "Include strong calls-to-action throughout"
-      ]
-    },
-    {
-      id: 'internal-email',
-      title: 'Internal Email Comms',
-      description: 'Create effective internal communications to keep your team informed and aligned.',
-      icon: <Mail className="w-8 h-8 text-cyan-600" />,
-      tips: [
-        "Use clear, action-oriented subject lines",
-        "Keep content concise and scannable",
-        "Clearly highlight any required actions"
-      ]
     }
-
   ];
 
   // Get the selected content type details
@@ -244,7 +198,6 @@ const ContentCreatorPage: React.FC = () => {
     <NotificationProvider>
       <WritingStyleProvider>
         <MessagingProvider>
-          <StyleGuideNotificationBanner />
           <ScreenTemplate
             title="Standalone Content Creator"
             subtitle="Create a single piece of high-quality content optimized for your goals"

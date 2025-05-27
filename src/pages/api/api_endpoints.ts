@@ -936,120 +936,110 @@ Only include information that would be publicly available or reasonably inferred
 }
 
 // Handler for generate content endpoint
-async function handleGenerateContent(data: any, res: NextApiResponse) {
+export async function handleGenerateContent(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Log the incoming request for debugging
-    console.log("Generate content request received:", {
-      contentType: data.contentType,
-      hasPrompt: !!data.prompt,
-      hasSourceContent: !!data.sourceContent
-    });
+    // Extract data from either req.body.data or req.body
+    const { campaignData, contentTypes, writingStyle } = req.body;
 
-    // Validate input
-    if (!data.contentType) {
-      return res.status(400).json({
-        error: 'Invalid request',
-        message: 'Missing required contentType field for content generation'
-      });
+    if (!campaignData || !contentTypes) {
+      console.error('Missing required data:', { campaignData, contentTypes });
+      return res.status(400).json({ error: 'Missing required data' });
     }
 
-    // Parse source content if it's a string (from campaign data)
-    let parsedSourceContent = data.sourceContent;
-    if (typeof data.sourceContent === 'string') {
-      try {
-        parsedSourceContent = JSON.parse(data.sourceContent);
-        console.log("Successfully parsed source content");
-      } catch (err) {
-        console.log("Could not parse source content as JSON, using as-is");
-      }
-    }
+    console.log('Generating content for campaign:', campaignData.name);
+    console.log('Content types:', contentTypes);
 
-    // Create a more detailed prompt based on the content type
-    let detailedPrompt = `Create high-quality ${data.contentType} content`;
+    // Construct the prompt based on campaign data and writing style
+    const prompt = `Generate content for a ${campaignData.type} campaign with the following details:
+      Campaign Name: ${campaignData.name}
+      Goal: ${campaignData.goal}
+      Target Audience: ${campaignData.targetAudience}
+      Key Messages: ${campaignData.keyMessages.join(', ')}
+      
+      Writing Style Guidelines:
+      ${writingStyle ? `
+      - Primary Style: ${writingStyle.styleGuide.primary}
+      - Custom Rules: ${writingStyle.styleGuide.customRules?.join(', ') || 'None'}
+      - Formatting: ${Object.entries(writingStyle.formatting).map(([k, v]) => `${k}: ${v}`).join(', ')}
+      - Punctuation: ${Object.entries(writingStyle.punctuation).map(([k, v]) => `${k}: ${v}`).join(', ')}
+      ` : 'Use a professional and engaging tone.'}
+      
+      Generate the following content types: ${contentTypes.join(', ')}`;
 
-    if (data.contentType === "campaign") {
-      detailedPrompt = `
-Generate a comprehensive content package for a marketing campaign with the following information:
-${data.prompt ? `Campaign Name: ${data.prompt}` : ''}
-
-${parsedSourceContent?.targetAudience ? `Target Audience: ${parsedSourceContent.targetAudience}` : ''}
-
-${parsedSourceContent?.keyMessages ? `Key Messages:
-${parsedSourceContent.keyMessages.map((msg: string, i: number) => `${i + 1}. ${msg}`).join('\n')}` : ''}
-
-${parsedSourceContent?.contentTypes ? `Content Types: ${parsedSourceContent.contentTypes.join(', ')}` : ''}
-
-Include the following in your response:
-1. An eBook outline with title and 4-6 chapter headings
-2. 3-5 social media posts for LinkedIn
-3. 3-5 social media posts for Twitter
-4. 3 nurture emails (subject lines and preview text)
-5. 3 SDR follow-up emails (subject lines and email body)
-
-Format everything clearly with appropriate headers and sections.`;
-    }
-
-    // Generate a prompt for content creation
-    const contentPrompt = `You are an expert content creator specializing in creating high-quality ${data.contentType} content.
-
-    ${detailedPrompt}
-    
-    ${data.prompt && data.contentType !== "campaign" ? `Topic/Prompt: ${data.prompt}` : ''}
-    ${data.parameters?.audience ? `Target Audience: ${data.parameters.audience}` : ''}
-    ${data.parameters?.keywords ? `Keywords: ${Array.isArray(data.parameters.keywords) ? data.parameters.keywords.join(', ') : data.parameters.keywords}` : ''}
-    ${data.parameters?.tone ? `Tone: ${data.parameters.tone}` : 'Tone: professional'}
-    ${data.parameters?.additionalNotes ? `Additional Notes: ${data.parameters.additionalNotes}` : ''}
-    
-    Please create comprehensive, engaging content that follows best practices.
-    Format the content with appropriate headings, paragraphs, and formatting.
-    Ensure the content is original, valuable, and tailored to the target audience.`;
-
-    console.log("Sending prompt to OpenAI:", contentPrompt.substring(0, 200) + "...");
+    console.log('Sending prompt to OpenAI');
 
     // Call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo-preview",
       messages: [
         {
-          role: 'system',
-          content: `You are an expert content creator specializing in ${data.contentType}.`,
+          role: "system",
+          content: "You are a professional content creator specializing in marketing campaigns. Generate high-quality, engaging content that aligns with the campaign goals and writing style guidelines."
         },
         {
-          role: 'user',
-          content: contentPrompt,
-        },
+          role: "user",
+          content: prompt
+        }
       ],
       temperature: 0.7,
+      max_tokens: 4000
     });
 
-    const content = completion.choices[0].message?.content || '';
+    console.log('Received response from OpenAI');
 
-    // Create a title from the first line or first sentence
-    let title = '';
-    if (content.startsWith('# ')) {
-      // Extract title from markdown heading
-      title = content.split('\n')[0].replace(/^#\s+/, '');
-    } else {
-      // Extract first sentence as title
-      title = content.split('.')[0].trim();
-    }
+    // Process the response
+    const generatedContent = response.choices[0].message.content || '';
 
-    return res.status(200).json({
-      content: content,
-      title: title,
-      metadata: {
-        contentType: data.contentType,
-        description: content.substring(0, 160).replace(/[#*_]/g, ''),
-        keywords: data.parameters?.keywords || ['content', 'marketing'],
-        createdAt: new Date().toISOString(),
-      },
+    // Parse and structure the content for each type
+    const content: Record<string, any> = {};
+
+    contentTypes.forEach((type: string) => {
+      switch (type) {
+        case 'Blog Posts':
+          content[type] = {
+            title: "Campaign Blog Post",
+            content: `# ${campaignData.name}\n\n${generatedContent}\n\n## Key Takeaways\n${campaignData.keyMessages.map((msg: string) => `- ${msg}`).join('\n')}`,
+            metaDescription: "A compelling blog post for your campaign",
+            keywords: campaignData.keyMessages
+          };
+          break;
+        case 'Social Posts':
+          content[type] = {
+            platform: "LinkedIn",
+            posts: [
+              {
+                content: `${generatedContent}\n\n${campaignData.keyMessages.map((msg: string) => `#${msg.replace(/\s+/g, '')}`).join(' ')}`,
+                hashtags: campaignData.keyMessages.map((msg: string) => `#${msg.replace(/\s+/g, '')}`)
+              }
+            ]
+          };
+          break;
+        case 'Email Campaigns':
+          content[type] = {
+            subject: campaignData.name,
+            preview: generatedContent.substring(0, 100),
+            body: `Dear ${campaignData.targetAudience},\n\n${generatedContent}\n\nBest regards,\nYour Team`,
+            cta: "Learn More"
+          };
+          break;
+        case 'Landing Pages':
+          content[type] = {
+            headline: campaignData.name,
+            subheadline: campaignData.keyMessages[0],
+            content: `# ${campaignData.name}\n\n${generatedContent}\n\n## Key Benefits\n${campaignData.keyMessages.map((msg: string) => `- ${msg}`).join('\n')}`,
+            cta: "Get Started"
+          };
+          break;
+        default:
+          content[type] = `# ${campaignData.name}\n\n${generatedContent}`;
+      }
     });
+
+    console.log('Returning generated content');
+    return res.status(200).json(content);
   } catch (error) {
     console.error('Error generating content:', error);
-    return res.status(500).json({
-      error: 'Server error',
-      message: 'Failed to generate content',
-    });
+    return res.status(500).json({ error: 'Failed to generate content' });
   }
 }
 
@@ -1691,7 +1681,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return await handleProsePerfector(data, res);
       case 'generate-content':
       case 'generateContent':
-        return await handleGenerateContent(data, res);
+        return await handleGenerateContent(req, res);
       case 'analyze-competitors':
       case 'analyzeCompetitors':
         return await handleAnalyzeCompetitors(data, res);

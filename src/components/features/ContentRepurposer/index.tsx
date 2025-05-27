@@ -4,14 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useNotification } from '../../../context/NotificationContext';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
+import { useBrandVoice } from '../../../context/BrandVoiceContext';
 import { useMessaging } from '../../../context/MessagingContext';
 import { ArrowRight, FileText, Copy, AlertCircle, Upload, X, Sparkles } from 'lucide-react';
 
 const ContentRepurposer: React.FC = () => {
   const { showNotification } = useNotification();
   const { writingStyle } = useWritingStyle();
+  const { brandVoice } = useBrandVoice();
   const { messaging } = useMessaging();
-  
+
   const [content, setContent] = useState('');
   const [sourceFormat, setSourceFormat] = useState('Blog Post');
   const [targetFormat, setTargetFormat] = useState('Social Media');
@@ -38,22 +40,29 @@ const ContentRepurposer: React.FC = () => {
 
   // Check if writing style and messaging are configured
   useEffect(() => {
-    const hasWritingStyle = writingStyle?.styleGuide?.primary || 
-                           (writingStyle?.formatting && Object.keys(writingStyle.formatting).length > 0);
-    
-    const hasMessaging = messaging?.valueProposition || 
-                        (messaging?.keyMessages && messaging.keyMessages.length > 0);
-    
-    if (!hasWritingStyle && !hasMessaging) {
-      setStyleWarning('No Writing Style or Messaging configured. Content will use generic styling.');
+    const hasWritingStyle = writingStyle?.styleGuide?.primary ||
+      (writingStyle?.formatting && Object.keys(writingStyle.formatting).length > 0);
+
+    const hasBrandVoice = brandVoice?.brandVoice?.tone ||
+      (brandVoice?.brandVoice?.personality && brandVoice.brandVoice.personality.length > 0);
+
+    const hasMessaging = messaging?.valueProposition ||
+      (messaging?.keyMessages && messaging.keyMessages.length > 0);
+
+    if (!hasWritingStyle && !hasBrandVoice && !hasMessaging) {
+      setStyleWarning('No Writing Style, Brand Voice, or Messaging configured. Content will use generic styling.');
+    } else if (!hasWritingStyle && !hasBrandVoice) {
+      setStyleWarning('No Writing Style or Brand Voice configured. Content will use generic styling.');
     } else if (!hasWritingStyle) {
       setStyleWarning('No Writing Style configured. Content will use generic styling.');
+    } else if (!hasBrandVoice) {
+      setStyleWarning('No Brand Voice configured. Content may not match your brand personality.');
     } else if (!hasMessaging) {
       setStyleWarning('No Messaging configured. Content may not align with your key messages.');
     } else {
       setStyleWarning(null);
     }
-  }, [writingStyle, messaging]);
+  }, [writingStyle, brandVoice, messaging]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,16 +91,18 @@ const ContentRepurposer: React.FC = () => {
     }
 
     setIsProcessing(true);
-    
+
     try {
       // Prepare writing style and messaging parameters
       const styleParameters = {
         styleGuide: writingStyle?.styleGuide?.primary || 'Default',
-        tone: writingStyle?.brandVoice?.tone || 'Professional',
+        tone: brandVoice?.brandVoice?.tone || 'Professional',
+        personality: brandVoice?.brandVoice?.personality || [],
+        archetype: brandVoice?.brandVoice?.archetype || '',
         formatting: writingStyle?.formatting || {},
         punctuation: writingStyle?.punctuation || {}
       };
-      
+
       const messagingParameters = {
         valueProposition: messaging?.valueProposition || '',
         keyMessages: messaging?.keyMessages || [],
@@ -99,13 +110,14 @@ const ContentRepurposer: React.FC = () => {
         targetAudience: messaging?.targetAudience || ''
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/repurpose`, {
+      const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
+          endpoint: 'contentRepurposer',
           data: {
             content,
             sourceFormat,
@@ -113,20 +125,57 @@ const ContentRepurposer: React.FC = () => {
             styleGuide: styleParameters,
             messaging: messagingParameters
           }
-        }),
+        })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to repurpose content');
+      }
 
       const data = await response.json();
 
       if (data.repurposedContent) {
-        setRepurposedContent(data.repurposedContent);
+        // Format the content in markdown style
+        let formattedContent = `# ${targetFormat}\n\n`;
+
+        // Add metadata section
+        formattedContent += `## Content Details\n\n`;
+        formattedContent += `**Source Format:** ${sourceFormat}\n`;
+        formattedContent += `**Target Format:** ${targetFormat}\n`;
+        formattedContent += `**Style Guide:** ${styleParameters.styleGuide}\n`;
+        formattedContent += `**Tone:** ${styleParameters.tone}\n\n`;
+
+        // Add the main content
+        formattedContent += `## Content\n\n${data.repurposedContent}\n\n`;
+
+        // Add key messages if available
+        if (messagingParameters.keyMessages.length > 0) {
+          formattedContent += `## Key Messages\n\n`;
+          messagingParameters.keyMessages.forEach((message, index) => {
+            formattedContent += `${index + 1}. ${message}\n`;
+          });
+          formattedContent += `\n`;
+        }
+
+        // Add benefits if available
+        if (messagingParameters.keyBenefits.length > 0) {
+          formattedContent += `## Key Benefits\n\n`;
+          messagingParameters.keyBenefits.forEach((benefit, index) => {
+            formattedContent += `${index + 1}. ${benefit}\n`;
+          });
+          formattedContent += `\n`;
+        }
+
+        setRepurposedContent(formattedContent);
+
         if (data.contentStats) {
           setContentStats(data.contentStats);
         } else {
           // If the API doesn't return stats, calculate basic ones
           setContentStats({
             originalLength: content.length,
-            newLength: data.repurposedContent.length,
+            newLength: formattedContent.length,
           });
         }
         showNotification('Content repurposed successfully', 'success');
@@ -135,7 +184,7 @@ const ContentRepurposer: React.FC = () => {
       }
     } catch (error) {
       console.error('Error:', error);
-      showNotification('Failed to repurpose content', 'error');
+      showNotification(error instanceof Error ? error.message : 'Failed to repurpose content', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -152,42 +201,7 @@ const ContentRepurposer: React.FC = () => {
   };
 
   return (
-    <div className="w-full">        
-      {/* Style Warning Alert */}
-      {styleWarning && (
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
-          <AlertCircle className="w-5 h-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-yellow-700">{styleWarning}</p>
-            <p className="text-sm text-yellow-600 mt-1">
-              Consider setting up your <a href="/writing-style" className="underline">Writing Style</a> and <a href="/messaging" className="underline">Messaging</a> first.
-            </p>
-          </div>
-        </div>
-      )}
-      
-      {/* AI Insights */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-        <h3 className="font-medium mb-2 flex items-center">
-          <span className="text-2xl mr-2">✨</span>
-          AI Insights
-        </h3>
-        <ul className="space-y-2">
-          {[
-            "Repurposing existing content can save up to 60% of content creation time",
-            "Each format has unique requirements the AI will automatically adapt to",
-            writingStyle?.styleGuide?.primary 
-              ? `Using your "${writingStyle.styleGuide.primary}" style guide for consistent brand voice` 
-              : "Your brand voice will be preserved across all content versions"
-          ].map((insight, index) => (
-            <li key={index} className="text-sm text-slate-700 flex items-start">
-              <span className="text-blue-600 mr-2">•</span>
-              {insight}
-            </li>
-          ))}
-        </ul>
-      </div>
-      
+    <div className="w-full">
       {/* Input Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 mt-8">
         <Card>
@@ -230,7 +244,7 @@ const ContentRepurposer: React.FC = () => {
                     <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md">
                       <FileText className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-600">{selectedFile.name}</span>
-                      <button 
+                      <button
                         onClick={clearFile}
                         className="ml-2 text-gray-400 hover:text-red-600"
                       >
@@ -362,8 +376,8 @@ const ContentRepurposer: React.FC = () => {
                 <div className="p-4 bg-gray-50 rounded">
                   <p className="text-sm text-slate-600">Size Change</p>
                   <p className={`text-2xl font-semibold ${contentStats.newLength > contentStats.originalLength ? 'text-green-600' : 'text-blue-600'}`}>
-                    {contentStats.newLength > contentStats.originalLength 
-                      ? `+${Math.round((contentStats.newLength / contentStats.originalLength - 1) * 100)}%` 
+                    {contentStats.newLength > contentStats.originalLength
+                      ? `+${Math.round((contentStats.newLength / contentStats.originalLength - 1) * 100)}%`
                       : `-${Math.round((1 - contentStats.newLength / contentStats.originalLength) * 100)}%`}
                   </p>
                 </div>
@@ -376,7 +390,7 @@ const ContentRepurposer: React.FC = () => {
                 <div className="p-4 bg-white border rounded-lg whitespace-pre-wrap">
                   {repurposedContent}
                 </div>
-                <button 
+                <button
                   onClick={() => copyToClipboard(repurposedContent)}
                   className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 bg-white rounded-full shadow-sm"
                   title="Copy to clipboard"

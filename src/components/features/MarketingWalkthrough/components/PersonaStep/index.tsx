@@ -155,7 +155,11 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
         challenges: [...suggestion.challenges]
       }]);
     }
-    setSuggestions([]);
+    setSuggestions(prev => prev.filter(s =>
+      s.role !== suggestion.role ||
+      s.industry !== suggestion.industry ||
+      JSON.stringify(s.challenges) !== JSON.stringify(suggestion.challenges)
+    ));
   };
 
   return (

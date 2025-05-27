@@ -115,8 +115,8 @@ const CompetitiveAnalysisPage = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <ScreenTemplate
-          title="Competitive Analysis"
-          subtitle="Analyze your competitors and identify market opportunities"
+          title="Competitive Messaging Analysis"
+          subtitle="Analyze your competitors' messaging and identify gaps and opportunities"
           isWalkthrough={false}
           hideNavigation={true}
           currentStep={1}

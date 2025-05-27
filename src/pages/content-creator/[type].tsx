@@ -8,7 +8,6 @@ import { useNotification } from "../../context/NotificationContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import FileHandler from "@/components/shared/FileHandler";
 import KeywordSuggestions from "../../components/shared/KeywordSuggestions";
-import StyleGuideNotificationBanner from "../../components/features/StyleGuideNotificationBanner";
 import ContentEditChat from "../../components/features/ContentEditChat";
 import StrategicDataService from "../../services/StrategicDataService";
 
@@ -32,6 +31,63 @@ import {
   X,
   Check,
 } from "lucide-react";
+
+// Add interfaces at the top of the file after imports
+interface ContentType {
+  id: string;
+  title: string;
+  description: string;
+}
+
+interface Audience {
+  role: string;
+  industry?: string;
+  name?: string;
+}
+
+interface BrandVoice {
+  tone?: string;
+  archetype?: string;
+}
+
+interface SEOKeywords {
+  primaryKeywords?: (string | { term: string })[];
+}
+
+interface StrategicData {
+  isComplete?: boolean;
+  product?: {
+    name?: string;
+  };
+  audiences?: Audience[];
+  messaging?: {
+    valueProposition?: string;
+  };
+  writingStyle?: {
+    styleGuide?: {
+      primary?: string;
+    };
+  };
+  brandVoice?: {
+    brandVoice?: BrandVoice;
+  };
+  seoKeywords?: SEOKeywords;
+}
+
+interface GeneratedMetadata {
+  title: string;
+  description: string;
+  keywords?: string[];
+}
+
+// Update NotificationType and add NotificationMessage type
+type NotificationType = 'success' | 'error' | 'warning' | 'info';
+type NotificationMessage = string;
+
+// Update the useNotification hook type
+interface NotificationContextType {
+  showNotification: (type: NotificationType, message: NotificationMessage) => void;
+}
 
 // A more reliable function to reset style and walkthrough
 function resetStyleAndWalkthrough() {
@@ -80,65 +136,50 @@ function resetStyleAndWalkthrough() {
 // Define content types directly in this file to ensure proper format
 const CONTENT_TYPES = [
   {
-    id: "web-page",
-    title: "Web Page",
-    description:
-      "Create optimized web page content that engages visitors and improves conversion rates.",
+    id: 'blog-post',
+    title: 'Blog Post',
+    description: 'Create engaging blog content to establish your expertise and attract organic traffic.'
   },
   {
-    id: "blog-post",
-    title: "Blog Post",
-    description:
-      "Create engaging blog content to establish your expertise and attract organic traffic.",
+    id: 'social',
+    title: 'Social Media Posts',
+    description: 'Create engaging social media content that drives engagement and builds your audience.'
   },
   {
-    id: "social",
-    title: "Social Media Posts",
-    description:
-      "Create engaging social media content that drives engagement and builds your audience.",
+    id: 'email',
+    title: 'Email',
+    description: 'Create individual email content that drives opens, clicks, and conversions for your business.'
   },
   {
-    id: "email",
-    title: "Email",
-    description:
-      "Create individual email content that drives opens, clicks, and conversions for your business.",
+    id: 'internal-email',
+    title: 'Internal or Exec Email Comms',
+    description: 'Create effective internal communications or executive communications to keep your team informed and aligned.'
   },
   {
-    id: "internal-email",
-    title: "Internal or Exec Email Comms",
-    description:
-      "Create effective internal communications or executive communications to keep your team informed and aligned.",
+    id: 'email-campaign',
+    title: 'Email Campaign',
+    description: 'Create multi-email sequences designed to nurture leads and drive conversions.'
   },
   {
-    id: "email-campaign",
-    title: "Email Campaign",
-    description:
-      "Create multi-email sequences designed to nurture leads and drive conversions.",
+    id: 'case-study',
+    title: 'Case Study',
+    description: 'Create compelling case studies that showcase your success stories and build credibility.'
   },
   {
-    id: "case-study",
-    title: "Case Study",
-    description:
-      "Create compelling case studies that showcase your success stories and build credibility.",
+    id: 'landing-page',
+    title: 'Landing Page',
+    description: 'Create high-converting landing pages that turn visitors into leads and customers.'
   },
   {
-    id: "landing-page",
-    title: "Landing Page",
-    description:
-      "Create high-converting landing pages that turn visitors into leads and customers.",
+    id: 'video-script',
+    title: 'Video Script',
+    description: 'Create compelling video scripts that engage viewers and deliver your message effectively.'
   },
   {
-    id: "video-script",
-    title: "Video Script",
-    description:
-      "Create compelling video scripts that engage viewers and deliver your message effectively.",
-  },
-  {
-    id: "whitepaper",
-    title: "Whitepaper",
-    description:
-      "Create authoritative whitepapers that position your brand as an industry leader.",
-  },
+    id: 'whitepaper',
+    title: 'Whitepaper',
+    description: 'Create authoritative whitepapers that position your brand as an industry leader.'
+  }
 ];
 
 // Define tabs for the content creation process
@@ -166,7 +207,7 @@ const CONTENT_TABS = [
 ];
 
 // Helper component for check icons
-const CheckIcon = ({ className }) => (
+const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Check className={className || "h-5 w-5"} />
 );
 
@@ -176,7 +217,7 @@ const ContentCreatorPage = () => {
   const { showNotification } = useNotification();
 
   // State for content information
-  const [contentType, setContentType] = useState(null);
+  const [contentType, setContentType] = useState<ContentType | null>(null);
 
   // State for active tab
   const [activeTab, setActiveTab] = useState("create");
@@ -197,10 +238,10 @@ const ContentCreatorPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
   const [generatedTitle, setGeneratedTitle] = useState("");
-  const [generatedMetadata, setGeneratedMetadata] = useState(null);
+  const [generatedMetadata, setGeneratedMetadata] = useState<GeneratedMetadata | null>(null);
 
   // State for strategic data
-  const [strategicData, setStrategicData] = useState(null);
+  const [strategicData, setStrategicData] = useState<StrategicData | null>(null);
   const [isLoadingStrategicData, setIsLoadingStrategicData] = useState(true);
   const [hasStrategicData, setHasStrategicData] = useState(false);
 
@@ -261,59 +302,58 @@ const ContentCreatorPage = () => {
     const loadStrategicData = async () => {
       setIsLoadingStrategicData(true);
       try {
-        const data = await StrategicDataService.getAllStrategicData();
+        const data = await StrategicDataService.getAllStrategicData() as StrategicData;
         console.log("Loaded strategic data:", data);
         setStrategicData(data);
 
-        // Check if we have any meaningful strategic data (product, audience, or messaging)
-        const hasData =
+        // Check if we have any meaningful strategic data
+        const hasData = Boolean(
           data &&
           (data.isComplete ||
-            (data.product && data.product.name) ||
+            (data.product?.name) ||
             (data.audiences && data.audiences.length > 0) ||
-            (data.messaging && data.messaging.valueProposition) ||
-            (data.writingStyle &&
-              data.writingStyle.styleGuide &&
-              data.writingStyle.styleGuide.primary));
+            (data.messaging?.valueProposition) ||
+            (data.writingStyle?.styleGuide?.primary))
+        );
         setHasStrategicData(hasData);
 
         // Pre-fill advanced options if we have strategic data
-        if (hasData) {
-          setAdvancedOptions((prev) => {
-            const updates = { ...prev };
+        if (data) {
+          if (data.audiences && data.audiences.length > 0) {
+            const audience = data.audiences[0];
+            setAdvancedOptions(prev => ({
+              ...prev,
+              audience: audience.name || `${audience.role}${audience.industry ? ` in ${audience.industry}` : ""}`
+            }));
+          }
 
-            // Set audience from primary persona
-            if (data.audiences && data.audiences.length > 0) {
-              const primaryPersona = data.audiences[0];
-              updates.audience = `${primaryPersona.role}${
-                primaryPersona.industry ? ` in ${primaryPersona.industry}` : ""
-              }`;
+          const brandVoiceTone = data.brandVoice?.brandVoice?.tone;
+          if (brandVoiceTone) {
+            setAdvancedOptions(prev => ({
+              ...prev,
+              tone: brandVoiceTone
+            }));
+          }
+
+          if (data.seoKeywords?.primaryKeywords) {
+            const keywords = data.seoKeywords.primaryKeywords
+              .map(k => typeof k === "string" ? k : k.term)
+              .filter(Boolean)
+              .join(", ");
+
+            if (keywords) {
+              setAdvancedOptions(prev => ({
+                ...prev,
+                keywords
+              }));
             }
-
-            // Set tone from brand voice
-            if (data.brandVoice?.brandVoice?.tone) {
-              updates.tone = data.brandVoice.brandVoice.tone;
-            }
-
-            // Set keywords from SEO keywords
-            if (data.seoKeywords) {
-              const primaryTerms = (data.seoKeywords.primaryKeywords || [])
-                .map((k) => (typeof k === "string" ? k : k.term))
-                .filter(Boolean);
-
-              if (primaryTerms.length > 0) {
-                updates.keywords = primaryTerms.join(", ");
-              }
-            }
-
-            return updates;
-          });
+          }
         }
       } catch (error) {
         console.error("Error loading strategic data:", error);
         showNotification(
-          "error",
-          "Could not load your strategic data. Some personalization features may be limited."
+          "Could not load your strategic data. Some personalization features may be limited.",
+          "error"
         );
       } finally {
         setIsLoadingStrategicData(false);
@@ -330,18 +370,39 @@ const ContentCreatorPage = () => {
     }
   }, [generatedContent]);
 
-  // Handle file upload
+  // Update handleContentUpdate
+  const handleContentUpdate = (newContent: string, newTitle: string) => {
+    setGeneratedContent(newContent);
+    if (newTitle && newTitle !== generatedTitle) {
+      setGeneratedTitle(newTitle);
+    }
+
+    if (newContent !== generatedContent) {
+      setGeneratedMetadata((prev) => {
+        if (!prev) return null;
+        return {
+          title: prev.title || "",
+          description: newContent.substring(0, 160).replace(/[#*_]/g, ""),
+          keywords: prev.keywords || []
+        };
+      });
+    }
+
+    showNotification("Content updated successfully", "success");
+  };
+
+  // Update handleFileContent
   const handleFileContent = (content: string | object) => {
     if (typeof content === "string") {
       setUploadedContent(content);
     } else {
       setUploadedContent(JSON.stringify(content, null, 2));
-      showNotification("success", "Structured content loaded successfully");
+      showNotification("Structured content loaded successfully", "success");
     }
   };
 
   // Handle changes in advanced options
-  const handleAdvancedOptionChange = (option, value) => {
+  const handleAdvancedOptionChange = (option: string, value: string) => {
     setAdvancedOptions((prev) => ({
       ...prev,
       [option]: value,
@@ -349,7 +410,7 @@ const ContentCreatorPage = () => {
   };
 
   // Handle content editing
-  const handleContentEdit = (e) => {
+  const handleContentEdit = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setEditedContent(e.target.value);
   };
 
@@ -357,7 +418,7 @@ const ContentCreatorPage = () => {
   const saveContentEdits = () => {
     setGeneratedContent(editedContent);
     setIsEditMode(false);
-    showNotification("success", "Content updated successfully");
+    showNotification("Content updated successfully", "success");
 
     // Update metadata description if needed
     if (generatedMetadata) {
@@ -368,13 +429,10 @@ const ContentCreatorPage = () => {
     }
   };
 
-  // Replace the handleGenerateContent function in [type].tsx with this version
-
-  // Handle content generation with strategic data integration
+  // Update handleGenerateContent
   const handleGenerateContent = async () => {
-    // Validate inputs
     if (!promptText && !uploadedContent) {
-      showNotification("error", "Please enter a prompt or upload content");
+      showNotification("Please enter a prompt or upload content", "error");
       return;
     }
 
@@ -449,43 +507,20 @@ const ContentCreatorPage = () => {
       } else {
         throw new Error("Invalid response format from API");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error generating content:", error);
-      showNotification(
-        "error",
-        `Failed to generate content: ${error.message || "Unknown error"}`
-      );
-      showNotification(
-        "error",
-        "Please try again or check your internet connection"
-      );
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      showNotification(`Failed to generate content: ${errorMessage}`, "error");
+      showNotification("Please try again or check your internet connection", "error");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Handle content updates from the chat component
-  const handleContentUpdate = (newContent, newTitle) => {
-    setGeneratedContent(newContent);
-    if (newTitle && newTitle !== generatedTitle) {
-      setGeneratedTitle(newTitle);
-    }
-
-    // Update metadata description if the content has changed substantially
-    if (newContent !== generatedContent) {
-      setGeneratedMetadata((prev) => ({
-        ...prev,
-        description: newContent.substring(0, 160).replace(/[#*_]/g, ""),
-      }));
-    }
-
-    showNotification("success", "Content updated successfully");
-  };
-
-  // Handle exporting content as a file
+  // Update handleExportContent
   const handleExportContent = (format = "markdown") => {
     if (!generatedContent) {
-      showNotification("error", "No content to export");
+      showNotification("No content to export", "error");
       return;
     }
 
@@ -518,42 +553,26 @@ const ContentCreatorPage = () => {
 <head>
   <title>${generatedTitle}</title>
   <meta name="description" content="${generatedMetadata?.description || ""}">
-  <meta name="keywords" content="${
-    generatedMetadata?.keywords?.join(", ") || ""
-  }">
+  <meta name="keywords" content="${generatedMetadata?.keywords?.join(", ") || ""
+          }">
 </head>
 <body>
   <article>
     ${generatedContent
-      .replace(/# (.*)\n/g, "<h1>$1</h1>\n")
-      .replace(/## (.*)\n/g, "<h2>$1</h2>\n")
-      .replace(/### (.*)\n/g, "<h3>$1</h3>\n")
-      .replace(/\n\n/g, "</p><p>")
-      .replace(/\n/g, "<br>")}
+            .replace(/# (.*)\n/g, "<h1>$1</h1>\n")
+            .replace(/## (.*)\n/g, "<h2>$1</h2>\n")
+            .replace(/### (.*)\n/g, "<h3>$1</h3>\n")
+            .replace(/\n\n/g, "</p><p>")
+            .replace(/\n/g, "<br>")}
   </article>
 </body>
 </html>`;
         break;
       case "docx":
-        // This would require a more complex library for DOCX generation
-        mimeType =
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-        extension = "docx";
-        // For now, just use plain text as fallback
-        showNotification(
-          "warning",
-          "DOCX export is coming soon. Exporting as plain text instead."
-        );
+        showNotification("DOCX export is coming soon. Exporting as plain text instead.", "warning");
         break;
       case "pdf":
-        // This would require a more complex library for PDF generation
-        mimeType = "application/pdf";
-        extension = "pdf";
-        // For now, just use plain text as fallback
-        showNotification(
-          "warning",
-          "PDF export is coming soon. Exporting as plain text instead."
-        );
+        showNotification("PDF export is coming soon. Exporting as plain text instead.", "warning");
         break;
       default:
         // Use defaults
@@ -574,16 +593,13 @@ const ContentCreatorPage = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showNotification(
-      "success",
-      `Content exported as ${extension.toUpperCase()}`
-    );
+    showNotification(`Content exported as ${extension.toUpperCase()}`, "success");
   };
 
-  // Save content to library
+  // Update handleSaveToLibrary
   const handleSaveToLibrary = () => {
     if (!generatedContent) {
-      showNotification("error", "No content to save");
+      showNotification("No content to save", "error");
       return;
     }
 
@@ -600,17 +616,17 @@ const ContentCreatorPage = () => {
       // Add strategic data references
       strategicDataUsed: hasStrategicData
         ? {
-            productName: strategicData?.product?.name,
-            audienceName:
-              strategicData?.audiences?.length > 0
-                ? strategicData.audiences[0].role
-                : null,
-            messagingSource: strategicData?.messaging?.valueProposition
-              ? "Marketing Program"
-              : "Manual Entry",
-            styleGuide:
-              strategicData?.writingStyle?.styleGuide?.primary || null,
-          }
+          productName: strategicData?.product?.name,
+          audienceName:
+            strategicData?.audiences?.length > 0
+              ? strategicData.audiences[0].role
+              : null,
+          messagingSource: strategicData?.messaging?.valueProposition
+            ? "Marketing Program"
+            : "Manual Entry",
+          styleGuide:
+            strategicData?.writingStyle?.styleGuide?.primary || null,
+        }
         : null,
     };
 
@@ -625,10 +641,10 @@ const ContentCreatorPage = () => {
       // Save back to localStorage
       localStorage.setItem("contentLibrary", JSON.stringify(library));
 
-      showNotification("success", "Content saved to library successfully");
+      showNotification("Content saved to library successfully", "success");
     } catch (error) {
       console.error("Error saving to library:", error);
-      showNotification("error", "Failed to save to library");
+      showNotification("Failed to save to library", "error");
     }
   };
 
@@ -653,9 +669,8 @@ const ContentCreatorPage = () => {
       if (hasStrategicData) {
         if (strategicData.audiences && strategicData.audiences.length > 0) {
           const primaryPersona = strategicData.audiences[0];
-          strategicDefaults.audience = `${primaryPersona.role}${
-            primaryPersona.industry ? ` in ${primaryPersona.industry}` : ""
-          }`;
+          strategicDefaults.audience = `${primaryPersona.role}${primaryPersona.industry ? ` in ${primaryPersona.industry}` : ""
+            }`;
         }
 
         if (strategicData.brandVoice?.brandVoice?.tone) {
@@ -678,7 +693,7 @@ const ContentCreatorPage = () => {
   };
 
   // Parse the markdown content for display
-  const parseMarkdown = (markdown) => {
+  const parseMarkdown = (markdown: string) => {
     if (!markdown) return { title: "", introduction: "", sections: [] };
 
     const lines = markdown.split("\n");
@@ -821,24 +836,24 @@ const ContentCreatorPage = () => {
 
                         {strategicData?.messaging?.keyDifferentiators?.length >
                           0 && (
-                          <div>
-                            <p>
-                              <strong>Key differentiators:</strong>
-                            </p>
-                            <ul className="list-disc pl-5 space-y-1">
-                              {strategicData.messaging.keyDifferentiators
-                                .slice(0, 2)
-                                .map((diff, idx) => (
-                                  <li key={idx}>
-                                    {typeof diff === "string"
-                                      ? diff.substring(0, 60)
-                                      : ""}
-                                    {diff.length > 60 ? "..." : ""}
-                                  </li>
-                                ))}
-                            </ul>
-                          </div>
-                        )}
+                            <div>
+                              <p>
+                                <strong>Key differentiators:</strong>
+                              </p>
+                              <ul className="list-disc pl-5 space-y-1">
+                                {strategicData.messaging.keyDifferentiators
+                                  .slice(0, 2)
+                                  .map((diff, idx) => (
+                                    <li key={idx}>
+                                      {typeof diff === "string"
+                                        ? diff.substring(0, 60)
+                                        : ""}
+                                      {diff.length > 60 ? "..." : ""}
+                                    </li>
+                                  ))}
+                              </ul>
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -906,25 +921,24 @@ const ContentCreatorPage = () => {
                 <CardHeader className="bg-yellow-50 border-b">
                   <CardTitle className="flex items-center">
                     <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
-                    <span>Enhance Your Content with a Marketing Program</span>
+                    <span>No Brand Strategy Detected</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <p className="text-yellow-800 mb-4">
-                    Your content will be created without the benefit of your
-                    strategic marketing foundation. For the best results,
-                    complete the marketing program walkthrough first.
+                    You're creating content without a strategic foundation. Want stronger, more aligned results? Complete the Branding Wizard first.
                   </p>
                   <div className="flex justify-end">
-                    <Link href="/walkthrough/1">
+                    <Link href="https://www.marketingcontentlab.com/walkthrough/1">
                       <button className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
-                        Start Marketing Program
+                        Launch Branding Wizard
                       </button>
                     </Link>
                   </div>
                 </CardContent>
               </Card>
             )}
+
 
             <Card className="overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
@@ -944,9 +958,8 @@ const ContentCreatorPage = () => {
                       value={promptText}
                       onChange={(e) => setPromptText(e.target.value)}
                       className="w-full p-3 border rounded-lg h-32"
-                      placeholder={`Write a ${
-                        contentType?.title?.toLowerCase() || "content piece"
-                      } about...`}
+                      placeholder={`Write a ${contentType?.title?.toLowerCase() || "content piece"
+                        } about...`}
                     />
                   </div>
 
@@ -1284,11 +1297,10 @@ const ContentCreatorPage = () => {
                       {/* Toggle Edit Mode Button */}
                       <button
                         onClick={() => setIsEditMode(!isEditMode)}
-                        className={`px-3 py-1 text-sm border rounded-md flex items-center ${
-                          isEditMode
-                            ? "bg-blue-100 border-blue-500 text-blue-700"
-                            : "border-gray-300 hover:bg-gray-50"
-                        }`}
+                        className={`px-3 py-1 text-sm border rounded-md flex items-center ${isEditMode
+                          ? "bg-blue-100 border-blue-500 text-blue-700"
+                          : "border-gray-300 hover:bg-gray-50"
+                          }`}
                       >
                         <Edit className="w-4 h-4 mr-1" />
                         {isEditMode ? "View Mode" : "Edit Mode"}
@@ -1479,15 +1491,15 @@ const ContentCreatorPage = () => {
                       strategicContext={
                         hasStrategicData
                           ? {
-                              productName: strategicData?.product?.name,
-                              valueProposition:
-                                strategicData?.product?.valueProposition,
-                              audience: strategicData?.audiences?.[0]?.role,
-                              industry: strategicData?.audiences?.[0]?.industry,
-                              tone:
-                                strategicData?.brandVoice?.brandVoice?.tone ||
-                                advancedOptions.tone,
-                            }
+                            productName: strategicData?.product?.name,
+                            valueProposition:
+                              strategicData?.product?.valueProposition,
+                            audience: strategicData?.audiences?.[0]?.role,
+                            industry: strategicData?.audiences?.[0]?.industry,
+                            tone:
+                              strategicData?.brandVoice?.brandVoice?.tone ||
+                              advancedOptions.tone,
+                          }
                           : null
                       }
                     />
@@ -1528,7 +1540,7 @@ const ContentCreatorPage = () => {
 
   // Render the tabs and active tab content
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <Link href="/content-creator">
           <button className="text-blue-600 hover:text-blue-800 flex items-center mb-4">
@@ -1549,11 +1561,10 @@ const ContentCreatorPage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-3 px-1 flex items-center ${
-                activeTab === tab.id
-                  ? "text-blue-600 border-b-2 border-blue-600 font-medium"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`py-3 px-1 flex items-center ${activeTab === tab.id
+                ? "text-blue-600 border-b-2 border-blue-600 font-medium"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
               disabled={tab.id === "edit" && !generatedContent}
             >
               {tab.icon}

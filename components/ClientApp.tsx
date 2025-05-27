@@ -15,8 +15,6 @@ import { DemoModeProvider } from '../src/context/DemoModeContext';
 import { MessagingProvider } from '../src/context/MessagingContext';
 import { WritingStyleProvider } from '../src/context/WritingStyleContext';
 import { BrandVoiceProvider } from '../src/context/BrandVoiceContext';
-import Navbar from '../src/components/shared/Navbar';
-
 
 interface ClientAppProps extends AppProps {
   router: any;
@@ -34,7 +32,6 @@ const ClientApp: React.FC<ClientAppProps> = ({ Component, pageProps, router }) =
                 <BrandVoiceProvider>
                   <WalkthroughProvider>
                     <div className="min-h-screen bg-gray-50">
-                      <Navbar />
                       <main className="container mx-auto px-4 py-8">
                         <Component {...pageProps} />
                       </main>

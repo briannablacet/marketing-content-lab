@@ -7,16 +7,24 @@ import { Loader2, Sparkles } from 'lucide-react';
 import PageLayout from '../../shared/PageLayout';
 import AIAssistance from '../../shared/AIAssistance';
 
-// Add type definitions
+// Update type definitions
 interface ProductInfo {
     name?: string;
     product?: string;
-    // add other fields as needed
+    valueProposition?: string;
+    description?: string;
 }
 
 interface MessagingFramework {
     valueProposition?: string;
-    // add other fields as needed
+    keyDifferentiators?: string[];
+    positioning?: string;
+}
+
+interface Audience {
+    role?: string;
+    industry?: string;
+    description?: string;
 }
 
 const TaglineGenerator: React.FC = () => {
@@ -89,60 +97,69 @@ const TaglineGenerator: React.FC = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const [productDataRaw, audiences, messagingRaw] = await Promise.all([
-                StrategicDataService.getProductInfo(),
-                StrategicDataService.getTargetAudiences(),
-                StrategicDataService.getMessagingFramework()
-            ]);
+            try {
+                const [productDataRaw, audiences, messagingRaw] = await Promise.all([
+                    StrategicDataService.getProductInfo(),
+                    StrategicDataService.getTargetAudiences(),
+                    StrategicDataService.getMessagingFramework()
+                ]);
 
-            // Type assertion to help TypeScript
-            const productData = productDataRaw as ProductInfo;
-            const messaging = messagingRaw as MessagingFramework;
+                // Type assertion to help TypeScript
+                const productData = productDataRaw as ProductInfo;
+                const messaging = messagingRaw as MessagingFramework;
+                const audienceData = audiences as Audience[];
 
-            if (!tone && brandVoice?.brandVoice?.tone) {
-                setTone(brandVoice.brandVoice.tone);
-            }
+                // Set tone from brand voice if available
+                if (!tone && brandVoice?.brandVoice?.tone) {
+                    setTone(brandVoice.brandVoice.tone);
+                }
 
-            if (!audience && audiences.length > 0) {
-                setAudience(brandVoice?.brandVoice?.audience || audiences[0]);
-            }
+                // Set audience from first available audience
+                if (!audience && audienceData.length > 0) {
+                    const primaryAudience = audienceData[0];
+                    setAudience(primaryAudience.role || '');
+                }
 
-            if (!product && productData?.product) {
-                setProduct(productData.product);
-            }
+                // Set product info
+                if (!product && productData?.product) {
+                    setProduct(productData.product);
+                }
 
-            if (!businessName && productData?.name) {
-                setBusinessName(productData.name);
-            }
+                // Set business name
+                if (!businessName && productData?.name) {
+                    setBusinessName(productData.name);
+                }
 
-            if (!promise && messaging?.valueProposition) {
-                setPromise(messaging.valueProposition);
+                // Set description
+                if (!description && productData?.description) {
+                    setDescription(productData.description);
+                }
+
+                // Set promise/value proposition
+                if (!promise) {
+                    if (messaging?.valueProposition) {
+                        setPromise(messaging.valueProposition);
+                    } else if (productData?.valueProposition) {
+                        setPromise(productData.valueProposition);
+                    }
+                }
+
+                // Check for missing core data
+                const hasCoreData =
+                    (productData?.name || businessName) &&
+                    (productData?.product || product) &&
+                    (audienceData.length > 0 || audience) &&
+                    (messaging?.valueProposition || promise);
+
+                setShowWalkthroughPrompt(!hasCoreData);
+            } catch (error) {
+                console.error('Error fetching strategic data:', error);
+                setShowWalkthroughPrompt(true);
             }
         };
 
         fetchData();
-    }, [brandVoice]);
-
-    useEffect(() => {
-        const checkData = async () => {
-            const [productData, audiences, messaging] = await Promise.all([
-                StrategicDataService.getProductInfo(),
-                StrategicDataService.getTargetAudiences(),
-                StrategicDataService.getMessagingFramework()
-            ]);
-
-            const missingCoreData =
-                !brandVoice?.brandVoice?.tone ||
-                !brandVoice?.brandVoice?.archetype ||
-                !audiences.length ||
-                !productData?.name ||
-                !messaging?.valueProposition;
-
-            setShowWalkthroughPrompt(missingCoreData);
-        };
-
-        checkData();
-    }, [brandVoice]);
+    }, [brandVoice, businessName, product, audience, promise]);
 
     return (
         <PageLayout

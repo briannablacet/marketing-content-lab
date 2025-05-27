@@ -31,8 +31,6 @@ const LogoutConfirmModal = dynamic(
 
 const Navbar: React.FC = () => {
   const router = useRouter();
-  // Simplified auth for now - you can add back proper auth later
-  const [setUser] = useState<any>(null);
   const { isAuthenticated, user, login, register, logout } = useAuth();
 
   const [strategicMenuOpen, setStrategicMenuOpen] = useState(false);
@@ -89,7 +87,7 @@ const Navbar: React.FC = () => {
     e.preventDefault();
     try {
       await login(loginEmail, loginPassword);
-      setIsLoginOpen(false); // Close the login modal on success
+      setIsLoginOpen(false);
     } catch (err: any) {
       setError(err.message || "Failed to login");
     }
@@ -99,7 +97,7 @@ const Navbar: React.FC = () => {
     e.preventDefault();
     try {
       await register(registerName, registerEmail, registerPassword);
-      setIsRegisterOpen(false); // Close the register modal on success
+      setIsRegisterOpen(false);
     } catch (err: any) {
       setError(err.message || "Failed to register");
     }
@@ -114,9 +112,7 @@ const Navbar: React.FC = () => {
       router.push("/");
     }
   };
-  const handleLogout = () => {
-    setIsLogoutOpen(true);
-  };
+
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -136,11 +132,12 @@ const Navbar: React.FC = () => {
 
             {/* Main navigation links */}
             <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-              {/* Strategic Tools Dropdown - FIXED: Now using /brandscape */}
+              {/* Strategic Tools Dropdown */}
               <div className="relative" ref={strategicMenuRef}>
-                <Link href="/brandscape" className="inline-block">
+                <Link href="/brandscape">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       setStrategicMenuOpen(!strategicMenuOpen);
                       setCreationMenuOpen(false);
                       setEnhancementMenuOpen(false);
@@ -161,104 +158,124 @@ const Navbar: React.FC = () => {
 
                 {strategicMenuOpen && (
                   <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                    <div
-                      className="py-1"
-                      role="menu"
-                      aria-orientation="vertical"
-                    >
-                      {/* FIXED: Changed from /product to /walkthrough/3 for Ideal Customer */}
-                      <Link
-                        href="/brand-compass"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <button
+                        onClick={() => {
+                          router.push('/brand-compass');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         🧭 Brand Compass
-                      </Link>
-                      <Link
-                        href="/ideal-customer"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/ideal-customer');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         👥 Ideal Customer
-                      </Link>
-                      {/* FIXED: Changed from /key-messages to /walkthrough/4 for Value Proposition */}
-                      <Link
-                        href="/value-proposition"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/value-proposition');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         💎 Value Proposition
-                      </Link>
-                      {/* FIXED: Changed from duplicate /key-messages to /walkthrough/5 for Messaging Framework */}
-                      <Link
-                        href="/key-messages"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/key-messages');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         💬 Messaging Framework
-                      </Link>
-                      {/* FIXED: Changed from /competitive-analysis to /walkthrough/6 for Competitive Analysis */}
-                      <Link
-                        href="/competitive-analysis"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/competitive-analysis');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         🏆 Competitive Analysis
-                      </Link>
-                      {/* FIXED: Changed from /writing-style to /walkthrough/7 for Style Guide Builder */}
-                      <Link
-                        href="/writing-style"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/writing-style');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         ✍️ Style Guide Builder
-                      </Link>
-                      {/* FIXED: Changed from /brand-voice to /walkthrough/8 for Brand Personality */}
-                      <Link
-                        href="/brand-voice"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/brand-voice');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         🎭 Brand Personality
-                      </Link>
+                      </button>
 
                       <div className="border-t border-gray-100 my-1"></div>
                       <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                         Standalone Tools
                       </div>
 
-                      {/* Standalone brand tools - FIXED: All paths now match your file structure */}
-                      <Link
-                        href="/mission-vision-generator"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      <button
+                        onClick={() => {
+                          router.push('/mission-vision-generator');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         🎯 Mission + Vision Generator
-                      </Link>
-                      <Link
-                        href="/tagline-generator"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/tagline-generator');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         ✨ Tagline Generator
-                      </Link>
-                      <Link
-                        href="/boilerplate-generator"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setStrategicMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/boilerplate-generator');
+                          setStrategicMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         📝 Boilerplate Generator
+                      </button>
+
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <Link href="/brandscape">
+                        <button
+                          onClick={() => setStrategicMenuOpen(false)}
+                          className="w-full text-left px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                        >
+                          See All Strategic Tools →
+                        </button>
                       </Link>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Creation Hub Menu - ALREADY CORRECT */}
+              {/* Creation Hub Menu */}
               <div className="relative" ref={creationMenuRef}>
                 <Link href="/creation-hub">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       setCreationMenuOpen(!creationMenuOpen);
                       setStrategicMenuOpen(false);
                       setEnhancementMenuOpen(false);
@@ -278,49 +295,67 @@ const Navbar: React.FC = () => {
                 </Link>
                 {creationMenuOpen && (
                   <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                    <div
-                      className="py-1"
-                      role="menu"
-                      aria-orientation="vertical"
-                    >
-                      <Link
-                        href="/content-creator"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setCreationMenuOpen(false)}
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <div className="px-4 py-2 text-xs font-medium text-gray-500 border-b">
+                        Content Creation
+                      </div>
+                      <button
+                        onClick={() => {
+                          router.push('/content-creator');
+                          setCreationMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        📄 Standalone Content Creator
-                      </Link>
-                      <Link
-                        href="/campaign-builder"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setCreationMenuOpen(false)}
+                        📄 Content Creator
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/campaign-builder');
+                          setCreationMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         🚀 Campaign Builder
-                      </Link>
-                      <Link
-                        href="/content-repurposer"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setCreationMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/content-repurposer');
+                          setCreationMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         🔄 Content Repurposer
-                      </Link>
-                      <Link
-                        href="/ab-testing"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setCreationMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/ab-test-generator');
+                          setCreationMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        🧪 A/B Test Generator
+                        📊 A/B Test Generator
+                      </button>
+
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <Link href="/creation-hub">
+                        <button
+                          onClick={() => setCreationMenuOpen(false)}
+                          className="w-full text-left px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                        >
+                          See All Creation Tools →
+                        </button>
                       </Link>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Enhancement Studio Menu - ALREADY CORRECT */}
+              {/* Enhancement Studio Menu */}
               <div className="relative" ref={enhancementMenuRef}>
                 <Link href="/content-enhancer-tools">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       setEnhancementMenuOpen(!enhancementMenuOpen);
                       setStrategicMenuOpen(false);
                       setCreationMenuOpen(false);
@@ -340,38 +375,50 @@ const Navbar: React.FC = () => {
                 </Link>
                 {enhancementMenuOpen && (
                   <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                    <div
-                      className="py-1"
-                      role="menu"
-                      aria-orientation="vertical"
-                    >
-                      <Link
-                        href="/prose-perfector"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setEnhancementMenuOpen(false)}
-                      >
-                        ✨ Prose Perfector
-                      </Link>
-                      <Link
-                        href="/style-checker"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setEnhancementMenuOpen(false)}
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <button
+                        onClick={() => {
+                          router.push('/style-checker');
+                          setEnhancementMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         📋 Style Guide Compliance
-                      </Link>
-                      <Link
-                        href="/content-humanizer"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setEnhancementMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/prose-perfector');
+                          setEnhancementMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        🤖➡️👤 Humanizer
+                        ✨ Prose Perfector
+                      </button>
+                      <button
+                        onClick={() => {
+                          router.push('/content-humanizer');
+                          setEnhancementMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        🤖 Content Humanizer
+                      </button>
+
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <Link href="/content-enhancer-tools">
+                        <button
+                          onClick={() => setEnhancementMenuOpen(false)}
+                          className="w-full text-left px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                        >
+                          See All Enhancement Tools →
+                        </button>
                       </Link>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Settings Link - ALREADY CORRECT */}
+              {/* Settings Link */}
               <Link
                 href="/settings"
                 className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${router.pathname === "/settings"
@@ -412,7 +459,6 @@ const Navbar: React.FC = () => {
                 {/* User Info */}
                 <div className="flex items-center space-x-2 text-sm text-gray-700 hover:bg-gray-200 p-2 rounded-full">
                   <div className="w-8 h-8 bg-gray-300 text-white flex justify-center items-center rounded-full">
-                    {/* Placeholder user icon */}
                     <User className="w-5 h-5" />
                   </div>
                   <span className="font-semibold">{user?.name}</span>
@@ -420,9 +466,7 @@ const Navbar: React.FC = () => {
 
                 {/* Log out button */}
                 <button
-                  onClick={() => {
-                    setIsLogoutOpen(true);
-                  }}
+                  onClick={() => setIsLogoutOpen(true)}
                   className="text-sm text-white bg-red-600 hover:bg-red-700 transition duration-200 px-3 py-1 rounded-lg shadow-sm hover:shadow-md focus:outline-none"
                 >
                   Logout
@@ -479,9 +523,9 @@ const Navbar: React.FC = () => {
           isOpen={isLogoutOpen}
           onClose={() => setIsLogoutOpen(false)}
           onConfirm={() => {
-            logout();                 // your logout logic
-            setIsLogoutOpen(false); // close the modal
-            router.push("/");         // optional: redirect
+            logout();
+            setIsLogoutOpen(false);
+            router.push("/");
           }}
         />
       )}

@@ -127,10 +127,15 @@ const MarketingWalkthrough: React.FC = () => {
 
   // If no step is specified in the URL, redirect to the first step
   useEffect(() => {
-    if (!router.query.step) {
+    if (router.isReady && !router.query.step) {
       router.push('/walkthrough/1');
     }
-  }, [router.query.step]);
+  }, [router.isReady, router.query.step]);
+
+  // Don't render anything until router is ready
+  if (!router.isReady) {
+    return null;
+  }
 
   const StepIcon = currentStep.icon;
 

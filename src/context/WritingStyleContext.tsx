@@ -84,7 +84,7 @@ export const WritingStyleProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Determine if style has been actively configured by the user
   const isStyleConfigured = Boolean(
-    writingStyle.styleGuide.primary && 
+    writingStyle.styleGuide.primary &&
     writingStyle.styleGuide.primary !== ''
   );
 
@@ -112,7 +112,7 @@ export const WritingStyleProvider: React.FC<{ children: React.ReactNode }> = ({ 
           ...(updates.terminology || {})
         }
       };
-      
+
       return newStyle;
     });
   }, []);
@@ -149,14 +149,15 @@ export const WritingStyleProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const saveStyleToStorage = useCallback(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(writingStyle));
-      console.log('Writing style saved to storage:', writingStyle);
     }
-  }, [writingStyle]);
+  }, []);
 
   // Save to local storage whenever the state changes
   useEffect(() => {
-    saveStyleToStorage();
-  }, [writingStyle, saveStyleToStorage]);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(writingStyle));
+    }
+  }, [writingStyle]);
 
   // Provide context value
   const value: WritingStyleContextType = {

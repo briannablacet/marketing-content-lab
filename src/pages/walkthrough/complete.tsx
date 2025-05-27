@@ -88,8 +88,21 @@ const WalkthroughComplete = () => {
       // Brand Voice
       const savedBrandVoice = localStorage.getItem('marketing-content-lab-brand-voice');
       if (savedBrandVoice) {
-        const parsedData = JSON.parse(savedBrandVoice);
-        setBrandVoice(parsedData.brandVoice);
+        try {
+          const parsedData = JSON.parse(savedBrandVoice);
+          setBrandVoice({
+            archetype: parsedData.brandVoice?.archetype || '',
+            tone: parsedData.brandVoice?.tone || '',
+            personality: parsedData.brandVoice?.personality || [],
+            voiceCharacteristics: [
+              parsedData.brandVoice?.tone,
+              parsedData.brandVoice?.style,
+              parsedData.brandVoice?.audience
+            ].filter(Boolean)
+          });
+        } catch (error) {
+          console.error('Error parsing brand voice data:', error);
+        }
       }
 
       // Content Types
