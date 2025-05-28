@@ -2,11 +2,11 @@
 //this page needs to be fixed by adding the yellow modal and pulling in strategic data
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
+import { Card } from '../../ui/card';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
 import StrategicDataService from '../../../services/StrategicDataService';
 import { useRouter } from 'next/router';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, CheckCircle, Save, Plus, X } from 'lucide-react';
 import PageLayout from '../../shared/PageLayout';
 
 // Update type definitions
@@ -29,8 +29,25 @@ interface Audience {
     description?: string;
 }
 
+const BRAND_ARCHETYPES = [
+    { name: 'The Creator', description: 'Innovative, artistic, striving for authentic self-expression', example: 'Adobe, Lego, Apple', defaultTone: 'Inspirational', defaultPersonality: ['Innovative', 'Empathetic', 'Playful'] },
+    { name: 'The Caregiver', description: 'Nurturing, compassionate, focused on helping others', example: 'Johnson & Johnson, UNICEF, Cleveland Clinic', defaultTone: 'Empathetic', defaultPersonality: ['Empathetic', 'Trustworthy', 'Friendly'] },
+    { name: 'The Ruler', description: 'Authoritative, responsible, providing structure and control', example: 'Microsoft, Mercedes-Benz, American Express', defaultTone: 'Formal', defaultPersonality: ['Authoritative', 'Professional', 'Trustworthy'] },
+    { name: 'The Jester', description: 'Playful, humorous, living in the moment', example: 'Old Spice, Dollar Shave Club, M&Ms', defaultTone: 'Conversational', defaultPersonality: ['Playful', 'Bold', 'Friendly'] },
+    { name: 'The Regular Guy/Gal', description: 'Relatable, authentic, down-to-earth values', example: 'IKEA, Target, Budweiser', defaultTone: 'Neutral', defaultPersonality: ['Friendly', 'Trustworthy', 'Professional'] },
+    { name: 'The Lover', description: 'Passionate, sensual, focused on relationships and experiences', example: "Victoria's Secret, Godiva, Häagen-Dazs", defaultTone: 'Inspirational', defaultPersonality: ['Empathetic', 'Bold', 'Playful'] },
+    { name: 'The Hero', description: 'Brave, determined, overcoming challenges and adversity', example: 'Nike, FedEx, U.S. Army', defaultTone: 'Persuasive', defaultPersonality: ['Bold', 'Authoritative', 'Inspirational'] },
+    { name: 'The Outlaw', description: 'Rebellious, disruptive, challenging the status quo', example: 'Harley-Davidson, Virgin, Red Bull', defaultTone: 'Bold', defaultPersonality: ['Bold', 'Rebellious', 'Playful'] },
+    { name: 'The Magician', description: 'Visionary, transformative, making dreams reality', example: 'Disney, Tesla, Dyson', defaultTone: 'Inspirational', defaultPersonality: ['Innovative', 'Bold', 'Professional'] },
+    { name: 'The Innocent', description: 'Optimistic, pure, honest and straightforward', example: 'Coca-Cola, Dove, Whole Foods', defaultTone: 'Conversational', defaultPersonality: ['Friendly', 'Empathetic', 'Trustworthy'] },
+    { name: 'The Explorer', description: 'Adventurous, independent, seeking discovery and freedom', example: 'Jeep, Patagonia, National Geographic', defaultTone: 'Inspirational', defaultPersonality: ['Bold', 'Professional', 'Empathetic'] },
+    { name: 'The Sage', description: 'Knowledgeable, wise, sharing expertise and insight', example: 'Google, BBC, The Economist', defaultTone: 'Educational', defaultPersonality: ['Professional', 'Authoritative', 'Trustworthy'] }
+];
+
+const TONE_OPTIONS = ['Formal', 'Neutral', 'Conversational', 'Technical', 'Inspirational', 'Educational', 'Persuasive'];
+
 const BoilerplateGenerator: React.FC = () => {
-    const [audience, setAudience] = useState('');
+    const [audiences, setAudiences] = useState<string[]>(['']);
     const [promise, setPromise] = useState('');
     const [product, setProduct] = useState('');
     const [tone, setTone] = useState('');
@@ -39,13 +56,34 @@ const BoilerplateGenerator: React.FC = () => {
     const [differentiator, setDifferentiator] = useState('');
     const [positioning, setPositioning] = useState('');
     const [style, setStyle] = useState('visionary');
-    const [generatedBoilerplates, setGeneratedBoilerplates] = useState<string[]>([]);
-    const [customBoilerplate, setCustomBoilerplate] = useState<string>('');
+    const [generatedOptions, setGeneratedOptions] = useState<string[]>([]);
+    const [selectedBoilerplate, setSelectedBoilerplate] = useState<string>('');
+    const [otherLengths, setOtherLengths] = useState<{ [key: string]: string }>({});
     const [showWalkthroughPrompt, setShowWalkthroughPrompt] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+    const [isAccepted, setIsAccepted] = useState(false);
+    const [selectedWordCount, setSelectedWordCount] = useState<'20' | '50' | '100'>('50');
+    const [showOtherLengths, setShowOtherLengths] = useState(false);
+    const [archetype, setArchetype] = useState('');
 
     const { brandVoice } = useBrandVoice();
     const router = useRouter();
+
+    const addAudience = () => {
+        setAudiences([...audiences, '']);
+    };
+
+    const removeAudience = (index: number) => {
+        const newAudiences = audiences.filter((_, i) => i !== index);
+        setAudiences(newAudiences.length > 0 ? newAudiences : ['']);
+    };
+
+    const updateAudience = (index: number, value: string) => {
+        const newAudiences = [...audiences];
+        newAudiences[index] = value;
+        setAudiences(newAudiences);
+    };
 
     const generateBoilerplates = async () => {
         setIsGenerating(true);
@@ -53,14 +91,16 @@ const BoilerplateGenerator: React.FC = () => {
             businessName,
             description,
             product,
-            audience,
+            audiences: audiences.filter(a => a.trim() !== ''),
             promise,
             tone,
             style,
             differentiator,
             positioning,
             archetype: brandVoice?.brandVoice?.archetype || '',
-            personality: brandVoice?.brandVoice?.personality || []
+            personality: brandVoice?.brandVoice?.personality || [],
+            wordCount: selectedWordCount,
+            numOptions: 3  // Request 3 different options
         };
 
         try {
@@ -75,8 +115,8 @@ const BoilerplateGenerator: React.FC = () => {
             }
 
             const result = await response.json();
-            setGeneratedBoilerplates(result);
-            setCustomBoilerplate(result[0] || '');
+            setGeneratedOptions(result);
+            setShowPreview(true);
         } catch (error) {
             console.error('Error generating boilerplates:', error);
         } finally {
@@ -84,167 +124,393 @@ const BoilerplateGenerator: React.FC = () => {
         }
     };
 
-    const saveAllBoilerplates = () => {
-        const labelList = ['20 words', '50 words', '100 words'];
-        const content = labelList.map((label, i) => {
-            const text = generatedBoilerplates[i] || '';
-            StrategicDataService.setStrategicDataValue(`boilerplate-${label}`, text);
-            return `### ${label}:
-${text.trim()}`;
-        }).join('\n\n---\n\n');
+    const generateOtherLengths = async (baseBoilerplate: string) => {
+        setIsGenerating(true);
+        const otherCounts = ['20', '50', '100'].filter(count => count !== selectedWordCount);
 
-        const filename = businessName
-            ? `${businessName.toLowerCase().replace(/\s+/g, '-')}-boilerplates.txt`
-            : 'boilerplates.txt';
+        try {
+            for (const count of otherCounts) {
+                const payload = {
+                    businessName,
+                    description,
+                    product,
+                    audiences: audiences.filter(a => a.trim() !== ''),
+                    promise,
+                    tone,
+                    style,
+                    differentiator,
+                    positioning,
+                    archetype: brandVoice?.brandVoice?.archetype || '',
+                    personality: brandVoice?.brandVoice?.personality || [],
+                    wordCount: count,
+                    baseBoilerplate  // Pass the selected boilerplate to adapt
+                };
 
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
+                const response = await fetch('/api/api_endpoints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'adaptBoilerplate', data: payload })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate adapted boilerplate');
+                }
+
+                const result = await response.json();
+                setOtherLengths(prev => ({
+                    ...prev,
+                    [count]: result[0] || ''
+                }));
+            }
+            setShowOtherLengths(true);
+        } catch (error) {
+            console.error('Error generating other lengths:', error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleAcceptGenerated = async (boilerplate: string) => {
+        setSelectedBoilerplate(boilerplate);
+        setShowPreview(false);
+        setIsGenerating(true);
+
+        try {
+            // Generate all other lengths
+            const otherCounts = ['20', '50', '100'].filter(count => count !== selectedWordCount);
+            const newOtherLengths: { [key: string]: string } = {};
+
+            for (const count of otherCounts) {
+                const payload = {
+                    businessName,
+                    description,
+                    product,
+                    audiences: audiences.filter(a => a.trim() !== ''),
+                    promise,
+                    tone,
+                    style,
+                    differentiator,
+                    positioning,
+                    archetype: brandVoice?.brandVoice?.archetype || '',
+                    personality: brandVoice?.brandVoice?.personality || [],
+                    wordCount: count,
+                    baseBoilerplate: boilerplate
+                };
+
+                const response = await fetch('/api/api_endpoints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'adaptBoilerplate', data: payload })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate adapted boilerplate');
+                }
+
+                const result = await response.json();
+                newOtherLengths[count] = result[0] || '';
+            }
+
+            setOtherLengths(newOtherLengths);
+            setShowOtherLengths(true);
+        } catch (error) {
+            console.error('Error generating other lengths:', error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!selectedBoilerplate) return;
+
+        // Save to localStorage
+        localStorage.setItem(`marketingBoilerplate${selectedWordCount}`, selectedBoilerplate);
+        Object.entries(otherLengths).forEach(([count, text]) => {
+            localStorage.setItem(`marketingBoilerplate${count}`, text);
+        });
+
+        // Save to StrategicDataService
+        try {
+            await StrategicDataService.setStrategicDataValue(`boilerplate${selectedWordCount}`, selectedBoilerplate);
+            for (const [count, text] of Object.entries(otherLengths)) {
+                await StrategicDataService.setStrategicDataValue(`boilerplate${count}`, text);
+            }
+            setIsAccepted(true);
+        } catch (error) {
+            console.error('Error saving boilerplates:', error);
+            setIsAccepted(true);
+        }
     };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [productDataRaw, audiences, messagingRaw] = await Promise.all([
-                    StrategicDataService.getProductInfo(),
-                    StrategicDataService.getTargetAudiences(),
-                    StrategicDataService.getMessagingFramework()
-                ]);
+        const {
+            productName,
+            productDescription,
+            idealCustomer,
+            brandArchetype,
+            boilerplate,
+            valueProposition
+        } = StrategicDataService.getAllStrategicDataFromStorage();
 
-                // Type assertion to help TypeScript
-                const productData = productDataRaw as ProductInfo;
-                const messaging = messagingRaw as MessagingFramework;
-                const audienceData = audiences as Audience[];
-
-                // Set tone from brand voice if available
-                if (!tone && brandVoice?.brandVoice?.tone) {
-                    setTone(brandVoice.brandVoice.tone);
-                }
-
-                // Set audience from first available audience
-                if (!audience && audienceData.length > 0) {
-                    const primaryAudience = audienceData[0];
-                    setAudience(primaryAudience.role || '');
-                }
-
-                // Set product info
-                if (!product && productData?.product) {
-                    setProduct(productData.product);
-                }
-
-                // Set business name
-                if (!businessName && productData?.name) {
-                    setBusinessName(productData.name);
-                }
-
-                // Set description
-                if (!description && productData?.description) {
-                    setDescription(productData.description);
-                }
-
-                // Set promise/value proposition
-                if (!promise) {
-                    if (messaging?.valueProposition) {
-                        setPromise(messaging.valueProposition);
-                    } else if (productData?.valueProposition) {
-                        setPromise(productData.valueProposition);
-                    }
-                }
-
-                // Check for missing core data
-                const hasCoreData =
-                    (productData?.name || businessName) &&
-                    (productData?.product || product) &&
-                    (audienceData.length > 0 || audience) &&
-                    (messaging?.valueProposition || promise);
-
-                setShowWalkthroughPrompt(!hasCoreData);
-            } catch (error) {
-                console.error('Error fetching strategic data:', error);
-                setShowWalkthroughPrompt(true);
+        if (productName) setBusinessName(productName);
+        if (productDescription) setDescription(productDescription);
+        if (idealCustomer) {
+            if (Array.isArray(idealCustomer)) {
+                setAudiences(idealCustomer.length > 0 ? idealCustomer : ['']);
+            } else {
+                setAudiences([idealCustomer]);
             }
-        };
+        }
+        if (boilerplate) setSelectedBoilerplate(boilerplate);
+        if (valueProposition) setPositioning(valueProposition);
 
-        fetchData();
-    }, [brandVoice, businessName, product, audience, promise]);
+        // Set archetype and tone from brand voice if available
+        if (brandVoice?.brandVoice?.archetype) {
+            setArchetype(brandVoice.brandVoice.archetype);
+            if (brandVoice.brandVoice.tone) {
+                setTone(brandVoice.brandVoice.tone);
+            } else {
+                const selectedArchetype = BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype);
+                if (selectedArchetype) {
+                    setTone(selectedArchetype.defaultTone);
+                }
+            }
+        }
+    }, [brandVoice]);
+
+    const handleArchetypeChange = (value: string) => {
+        setArchetype(value);
+        const selected = BRAND_ARCHETYPES.find(a => a.name === value);
+        if (selected) {
+            setTone(selected.defaultTone);
+        }
+    };
 
     return (
         <PageLayout
+            title=""
+            description=""
             showHelpPrompt={showWalkthroughPrompt}
             helpPromptText="Need help? Let AI suggest a boilerplate based on your"
             helpPromptLink="/brand-personality"
             helpPromptLinkText="brand voice and strategic data"
         >
-
-
             <div className="space-y-8 w-full">
-                {/* BIG HEADER WITH ICON */}
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3">
                     <FileText className="w-8 h-8 text-blue-600" />
-                    <h1 className="text-3xl font-bold text-gray-900">Boilerplate Generator</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Craft Your Boilerplate</h1>
                 </div>
-                <p className="text-gray-600 -mt-6">Generate three boilerplates shaped by your tone, positioning, and personality</p>
-               
-                {/* CONTENT */}
+                <p className="text-gray-600">Generate boilerplates shaped by your tone, positioning, and personality</p>
+
                 <div className="grid gap-4">
-                    <div className="bg-white p-6 rounded-lg border border-gray-200">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Tell us about your business</h2>
-                        <div className="grid gap-4">
+                    {/* SAVED BOILERPLATE DISPLAY */}
+                    {selectedBoilerplate && !showPreview && (
+                        <Card className="p-6 bg-white-50 border-gray-200">
+                            <div className="flex items-center gap-3 mb-4">
+                                <CheckCircle className="w-6 h-6 text-blue-600" />
+                                <h2 className="text-xl font-semibold text-gray-900">Your Boilerplate</h2>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-medium text-gray-700">{selectedWordCount}-Word Version</h3>
+                                    <textarea
+                                        value={selectedBoilerplate}
+                                        onChange={(e) => setSelectedBoilerplate(e.target.value)}
+                                        className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
+                                        rows={4}
+                                    />
+                                </div>
+                                {showOtherLengths && Object.entries(otherLengths).map(([count, text]) => (
+                                    <div key={count} className="space-y-2">
+                                        <h3 className="text-sm font-medium text-gray-700">{count}-Word Version</h3>
+                                        <textarea
+                                            value={text}
+                                            onChange={(e) => {
+                                                setOtherLengths(prev => ({
+                                                    ...prev,
+                                                    [count]: e.target.value
+                                                }));
+                                            }}
+                                            className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
+                                            rows={4}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-4 flex gap-2">
+                                <button
+                                    onClick={handleSave}
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-green-700"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    Edit and Save
+                                </button>
+                                {isAccepted && (
+                                    <span className="flex items-center gap-1 text-blue-600 text-sm">
+                                        <CheckCircle className="w-4 h-4" />
+                                        Saved!
+                                    </span>
+                                )}
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* MAIN INPUT CARD */}
+                    <Card className="p-6">
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-semibold text-gray-900">Let's create your boilerplate</h2>
+                            <p className="text-gray-600 mt-2">We'll use this information to generate boilerplates that match your brand</p>
+                        </div>
+                        <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium mb-1">Business name</label>
-                                <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} className="border border-gray-300 p-2 rounded w-full" />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Business name</label>
+                                <input
+                                    type="text"
+                                    value={businessName}
+                                    onChange={e => setBusinessName(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Business description</label>
-                                <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="border border-gray-300 p-2 rounded w-full" />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Business description</label>
+                                <textarea
+                                    value={description}
+                                    onChange={e => setDescription(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    rows={4}
+                                />
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">What's your product or solution?</label>
-                                <input type="text" value={product} onChange={e => setProduct(e.target.value)} className="border border-gray-300 p-2 rounded w-full" />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Ideal customers or audiences</label>
+                                <div className="space-y-3">
+                                    {audiences.map((audience, index) => (
+                                        <div key={index} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={audience}
+                                                onChange={e => updateAudience(index, e.target.value)}
+                                                className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Enter ideal customer or audience"
+                                            />
+                                            {audiences.length > 1 && (
+                                                <button
+                                                    onClick={() => removeAudience(index)}
+                                                    className="text-red-500 hover:text-red-700 p-2"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button
+                                        onClick={addAudience}
+                                        className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Add another audience
+                                    </button>
+                                </div>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">Ideal customer or audience</label>
-                                <input type="text" value={audience} onChange={e => setAudience(e.target.value)} className="border border-gray-300 p-2 rounded w-full" />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">What problem are you solving?</label>
+                                <input
+                                    type="text"
+                                    value={promise}
+                                    onChange={e => setPromise(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">What problem are you solving?</label>
-                                <input type="text" value={promise} onChange={e => setPromise(e.target.value)} className="border border-gray-300 p-2 rounded w-full" />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Key differentiator</label>
+                                <input
+                                    type="text"
+                                    value={differentiator}
+                                    onChange={e => setDifferentiator(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">How are you different from your competitors?</label>
-                                <input type="text" value={differentiator} onChange={e => setDifferentiator(e.target.value)} className="border border-gray-300 p-2 rounded w-full" />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Value Proposition</label>
+                                <input
+                                    type="text"
+                                    value={positioning}
+                                    onChange={e => setPositioning(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="What unique value do you provide to your customers?"
+                                />
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">Why are you uniquely positioned to solve this?</label>
-                                <input type="text" value={positioning} onChange={e => setPositioning(e.target.value)} className="border border-gray-300 p-2 rounded w-full" />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Brand Archetype</label>
+                                <select
+                                    value={archetype}
+                                    onChange={e => handleArchetypeChange(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    <option value="">Select archetype</option>
+                                    {BRAND_ARCHETYPES.map(a => (
+                                        <option key={a.name} value={a.name}>{a.name}</option>
+                                    ))}
+                                </select>
+                                {archetype && (
+                                    <p className="text-sm text-gray-600 mt-2">
+                                        {BRAND_ARCHETYPES.find(a => a.name === archetype)?.description}<br />
+                                        <span className="text-gray-500">Examples: {BRAND_ARCHETYPES.find(a => a.name === archetype)?.example}</span>
+                                    </p>
+                                )}
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">What tone should it reflect?</label>
-                                <select value={tone} onChange={e => setTone(e.target.value)} className="border border-gray-300 p-2 rounded w-full">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">What tone should it reflect?</label>
+                                <select
+                                    value={tone}
+                                    onChange={e => setTone(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
                                     <option value="">Select tone</option>
-                                    <option value="Formal">Formal</option>
-                                    <option value="Neutral">Neutral</option>
-                                    <option value="Conversational">Conversational</option>
-                                    <option value="Technical">Technical</option>
-                                    <option value="Inspirational">Inspirational</option>
-                                    <option value="Educational">Educational</option>
-                                    <option value="Persuasive">Persuasive</option>
+                                    {TONE_OPTIONS.map(tone => (
+                                        <option key={tone} value={tone}>{tone}</option>
+                                    ))}
                                 </select>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">Writing style</label>
-                                <select value={style} onChange={e => setStyle(e.target.value)} className="border border-gray-300 p-2 rounded w-full">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Writing style</label>
+                                <select
+                                    value={style}
+                                    onChange={e => setStyle(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
                                     <option value="visionary">Visionary</option>
                                     <option value="punchy">Punchy</option>
                                     <option value="straightforward">Straightforward</option>
                                 </select>
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Word Count</label>
+                                <select
+                                    value={selectedWordCount}
+                                    onChange={e => setSelectedWordCount(e.target.value as '20' | '50' | '100')}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    <option value="20">20 Words (Short)</option>
+                                    <option value="50">50 Words (Standard)</option>
+                                    <option value="100">100 Words (Detailed)</option>
+                                </select>
+                                <p className="mt-2 text-sm text-gray-600">
+                                    Choose your preferred length and we'll generate three options. After selecting your favorite, we'll automatically create 20-word and 100-word versions for you.
+                                </p>
+                            </div>
+
                             <button
                                 onClick={generateBoilerplates}
                                 disabled={isGenerating}
-                                className="bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isGenerating ? (
                                     <>
@@ -252,77 +518,42 @@ ${text.trim()}`;
                                         Generating...
                                     </>
                                 ) : (
-                                    'Generate Boilerplates'
+                                    `Generate ${selectedWordCount}-Word Options`
                                 )}
                             </button>
                         </div>
-                    </div>
+                    </Card>
 
-                    {generatedBoilerplates.length > 0 && (
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
-                            <h2 className="text-lg font-semibold text-gray-900">Your Boilerplate Options</h2>
-                            <p className="text-sm font-medium text-gray-700">Choose from the following options:</p>
-                            {['20 words', '50 words', '100 words'].map((label, i) => (
-                                <div key={label} className="p-4 rounded-lg border space-y-2">
-                                    <strong className="text-gray-900">{label}</strong>
-                                    <textarea
-                                        value={generatedBoilerplates[i] || ''}
-                                        onChange={e => {
-                                            const updated = [...generatedBoilerplates];
-                                            updated[i] = e.target.value;
-                                            setGeneratedBoilerplates(updated);
-                                        }}
-                                        className="w-full border border-gray-300 p-3 rounded-md text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        rows={3}
-                                    />
-                                    <div className="flex justify-end gap-3">
-                                        <button
-                                            onClick={() => navigator.clipboard.writeText(generatedBoilerplates[i])}
-                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                        >
-                                            Copy
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const updatedText = generatedBoilerplates[i];
-                                                setCustomBoilerplate(updatedText);
-                                                StrategicDataService.setStrategicDataValue('boilerplate', updatedText);
-
-                                                const blob = new Blob([updatedText], { type: 'text/plain;charset=utf-8' });
-                                                const link = document.createElement('a');
-                                                link.href = URL.createObjectURL(blob);
-                                                link.download = `boilerplate-${label.replace(/\s/g, '-')}.txt`;
-                                                link.click();
-                                            }}
-                                            className="text-sm text-green-600 hover:text-green-700 font-medium"
-                                        >
-                                            Save & Export
-                                        </button>
+                    {/* PREVIEW OF GENERATED OPTIONS */}
+                    {showPreview && generatedOptions.length > 0 && (
+                        <Card className="p-6">
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">Generated Boilerplate Options</h2>
+                            <p className="text-gray-600 mb-4">
+                                Choose your favorite option below. We'll automatically generate 20-word and 100-word versions of your selection.
+                            </p>
+                            <div className="space-y-4">
+                                {generatedOptions.map((boilerplate, i) => (
+                                    <div key={i} className="bg-gray-50 p-4 rounded-lg border space-y-2">
+                                        <strong className="text-gray-900">Option {i + 1}</strong>
+                                        <p className="text-gray-800">{boilerplate}</p>
+                                        <div className="flex justify-end gap-3">
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(boilerplate)}
+                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                            >
+                                                Copy
+                                            </button>
+                                            <button
+                                                onClick={() => handleAcceptGenerated(boilerplate)}
+                                                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                                            >
+                                                Use This Version
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            <div className="pt-4">
-                                <button
-                                    onClick={saveAllBoilerplates}
-                                    className="bg-green-600 text-white px-6 py-3 rounded-md font-medium hover:bg-green-700 transition-colors"
-                                >
-                                    Save and Download All
-                                </button>
+                                ))}
                             </div>
-                        </div>
-                    )}
-
-                    {customBoilerplate && (
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-2">
-                            <h2 className="text-lg font-semibold text-gray-900">Make it your own</h2>
-                            <p className="text-sm font-medium text-gray-700">Make any final adjustments:</p>
-                            <textarea
-                                value={customBoilerplate}
-                                onChange={e => setCustomBoilerplate(e.target.value)}
-                                className="w-full border border-gray-300 p-3 rounded-md text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                rows={4}
-                            />
-                        </div>
+                        </Card>
                     )}
                 </div>
             </div>
