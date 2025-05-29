@@ -24,6 +24,39 @@ const setStrategicDataValue = (key, value) => {
 };
 
 const StrategicDataService = {
+
+    getAllStrategicDataFromStorage: () => {
+        const product = JSON.parse(localStorage.getItem('marketingProduct') || '{}');
+        const audience = JSON.parse(localStorage.getItem('marketingTargetAudience') || '{}');
+        const audiencesRaw = localStorage.getItem('marketingTargetAudiences');
+        const audiences = audiencesRaw ? JSON.parse(audiencesRaw) : [];
+        const brandVoice = JSON.parse(localStorage.getItem('marketing-content-lab-brand-voice') || '{}');
+        const boilerplate = localStorage.getItem('marketingBoilerplate') || '';
+        const valueProposition = localStorage.getItem('marketingValueProp') || '';
+
+        console.log('Raw audience data from localStorage:', audience);
+        console.log('Raw audiences data from localStorage:', audiences);
+        console.log('All localStorage keys:', Object.keys(localStorage));
+
+        // Extract roles from audience objects
+        const audienceRoles = audiences.map(a => a.role || '').filter(role => role);
+        console.log('Extracted roles:', audienceRoles);
+
+        // Get all audiences from the audience data
+        const allAudiences = audienceRoles.length > 0 ? audienceRoles : (audience.role ? [audience.role] : []);
+        console.log('Final allAudiences:', allAudiences);
+
+        return {
+            productName: product.name || '',
+            productDescription: product.type || '',
+            idealCustomer: allAudiences,
+            brandArchetype: brandVoice?.brandVoice?.archetype || '',
+            tagline: product.tagline || '',
+            boilerplate: boilerplate,
+            valueProposition: valueProposition
+        };
+    },
+
     get: getStrategicData,
     setStrategicDataValue,
 
