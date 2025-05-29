@@ -1496,7 +1496,9 @@ export async function generateBoilerplates({
   differentiator,
   positioning,
   archetype,
-  personality
+  personality,
+  wordCount,
+  numOptions = 3
 }: {
   businessName: string;
   description: string;
@@ -1509,9 +1511,11 @@ export async function generateBoilerplates({
   positioning: string;
   archetype: string;
   personality: string[];
+  wordCount: string;
+  numOptions?: number;
 }) {
   const prompt = `
-You're an expert brand copywriter. Based on the information below, generate three marketing boilerplates for this company. The first should be ~20 words, the second ~50 words, and the third ~100 words. All should reflect the brand's voice, tone, and personality.
+You're an expert brand copywriter. Based on the information below, generate ${numOptions} different marketing boilerplates for this company. Each boilerplate should be exactly ${wordCount} words and reflect the brand's voice, tone, and personality.
 
 Business name: ${businessName}
 Description: ${description}
@@ -1525,7 +1529,7 @@ Style: ${style}
 Brand archetype: ${archetype}
 Brand personality traits: ${personality.join(', ')}
 
-Format your response as a JSON array of strings.
+Format your response as a JSON array of strings. Each string should be exactly ${wordCount} words.
 `;
 
   try {
@@ -1636,6 +1640,80 @@ Return your response as a JSON array of three taglines, each with a brief explan
   }
 }
 
+// Adapt boilerplate to different length
+export async function adaptBoilerplate({
+  businessName,
+  description,
+  product,
+  audience,
+  promise,
+  tone,
+  style,
+  differentiator,
+  positioning,
+  archetype,
+  personality,
+  wordCount,
+  baseBoilerplate
+}: {
+  businessName: string;
+  description: string;
+  product: string;
+  audience: string;
+  promise: string;
+  tone: string;
+  style: string;
+  differentiator: string;
+  positioning: string;
+  archetype: string;
+  personality: string[];
+  wordCount: string;
+  baseBoilerplate: string;
+}) {
+  const prompt = `
+You're an expert brand copywriter. Adapt the following boilerplate to be exactly ${wordCount} words while maintaining the same message, tone, and style:
+
+Original Boilerplate: ${baseBoilerplate}
+
+Business name: ${businessName}
+Description: ${description}
+Product or solution: ${product}
+Ideal customer or audience: ${audience}
+Value proposition: ${promise}
+Differentiator: ${differentiator}
+Positioning: ${positioning}
+Tone: ${tone}
+Style: ${style}
+Brand archetype: ${archetype}
+Brand personality traits: ${personality.join(', ')}
+
+Format your response as a JSON array with a single string. The string should be exactly ${wordCount} words.
+`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert brand copywriter who specializes in adapting marketing boilerplates to different lengths while maintaining the core message and brand voice.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+    });
+
+    const responseText = completion.choices[0].message?.content || '';
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error('Error adapting boilerplate:', error);
+    throw new Error('Failed to adapt boilerplate');
+  }
+}
+
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -1707,6 +1785,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'generateTaglines':
         const taglines = await generateTaglines(data);
         return res.status(200).json(taglines);
+      case 'adaptBoilerplate':
+        const adaptedBoilerplate = await adaptBoilerplate(data);
+        return res.status(200).json(adaptedBoilerplate);
       case 'missionVision':
         return await handleMissionVision(data, res);
       default:
