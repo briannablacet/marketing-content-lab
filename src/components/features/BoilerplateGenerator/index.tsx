@@ -250,7 +250,7 @@ const BoilerplateGenerator: React.FC = () => {
             brandArchetype,
             boilerplate,
             valueProposition
-        } = StrategicDataService.getAllStrategicData();
+        } = StrategicDataService.getAllStrategicDataFromStorage();
 
         if (productName) setBusinessName(productName);
         if (productDescription) setDescription(productDescription);
