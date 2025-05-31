@@ -1,164 +1,65 @@
 // src/components/features/ProsePerfector/index.tsx
-import React, { useState, useRef } from 'react';
-import { useNotification } from '../../../context/NotificationContext';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Upload, FileText, X, Loader, Sparkles, ArrowRight, Copy, Info } from 'lucide-react';
+import React, { useState, useRef } from "react";
+import { useNotification } from "../../../context/NotificationContext";
+import {
+  X,
+  Loader,
+  Sparkles,
+  Copy,
+} from "lucide-react";
+import FileHandler from "@/components/shared/FileHandler";
 
 interface ImprovementSuggestion {
   original: string;
   suggestion: string;
   reason: string;
-  type: 'clarity' | 'conciseness' | 'engagement' | 'formality' | 'active voice';
+  type: "clarity" | "conciseness" | "engagement" | "formality" | "active voice";
 }
 
 // Available style guides
 const STYLE_GUIDES = [
-  { id: 'chicago', name: 'Chicago Manual of Style' },
-  { id: 'ap', name: 'AP Style' },
-  { id: 'apa', name: 'APA Style' },
-  { id: 'mla', name: 'MLA Style' },
-  { id: 'custom', name: 'Custom Style Guide' }
+  { id: "chicago", name: "Chicago Manual of Style" },
+  { id: "ap", name: "AP Style" },
+  { id: "apa", name: "APA Style" },
+  { id: "mla", name: "MLA Style" },
+  { id: "custom", name: "Custom Style Guide" },
 ];
-
-// File uploader component
-const FileUploader = ({ onFileContent, onError }) => {
-  const [fileName, setFileName] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setFileName(file.name);
-
-      try {
-        const fileSize = file.size / 1024 / 1024; // size in MB
-        if (fileSize > 5) {
-          onError('File size exceeds 5MB limit');
-          return;
-        }
-
-        const fileExtension = file.name.split('.').pop()?.toLowerCase();
-        const allowedExtensions = ['txt', 'doc', 'docx', 'md', 'rtf', 'html'];
-
-        if (!allowedExtensions.includes(fileExtension)) {
-          onError('Unsupported file format. Please upload a text document.');
-          return;
-        }
-
-        const text = await file.text();
-        onFileContent(text);
-      } catch (error) {
-        console.error('Error reading file:', error);
-        onError('Failed to read file. Please try again.');
-      }
-    }
-  };
-
-  const clearFile = () => {
-    setFileName('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  return (
-    <div className="mb-4">
-      <p className="text-sm text-gray-500 mb-2">Upload a document to enhance your prose:</p>
-      <div className="flex items-center gap-2">
-        <label className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100">
-          <Upload className="w-5 h-5 mr-2" />
-          <span>Upload File</span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            onChange={handleFileUpload}
-            className="hidden"
-            accept=".txt,.doc,.docx,.md,.rtf,.html"
-          />
-        </label>
-        {fileName && (
-          <div className="flex items-center p-2 bg-gray-50 rounded">
-            <FileText className="w-4 h-4 text-gray-500 mr-2" />
-            <span className="text-sm text-gray-600">{fileName}</span>
-            <button
-              onClick={clearFile}
-              className="ml-2 text-gray-400 hover:text-red-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </div>
-      <p className="text-xs text-gray-500 mt-2">Supports .txt, .doc, .docx, .md, .rtf, .html (max 5MB)</p>
-    </div>
-  );
-};
-
-// Style guide tooltip component
-const StyleGuideTooltip = ({ styleGuideId }) => {
-  const tooltips = {
-    'chicago': 'Comprehensive style guide for American English, widely used in publishing',
-    'ap': 'Associated Press style, commonly used in journalism and news writing',
-    'apa': 'American Psychological Association style, often used in academic and scientific writing',
-    'mla': 'Modern Language Association style, preferred in humanities and liberal arts',
-    'custom': 'Your own defined style rules and preferences'
-  };
-
-  return (
-    <div className="relative inline-block group">
-      <Info className="w-4 h-4 text-gray-400 cursor-help ml-1" />
-      <div className="absolute left-0 bottom-full mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity z-10">
-        {tooltips[styleGuideId] || 'A formal writing style guide'}
-      </div>
-    </div>
-  );
-};
 
 // Main component
 const ProsePerfector: React.FC = () => {
   const { showNotification } = useNotification();
 
   // Local state
-  const [originalText, setOriginalText] = useState('');
-  const [enhancedText, setEnhancedText] = useState('');
+  const [enhancedText, setEnhancedText] = useState("");
   const [suggestions, setSuggestions] = useState<ImprovementSuggestion[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isFileUploaded, setIsFileUploaded] = useState(false);
-  const [improvementStats, setImprovementStats] = useState({
-    readabilityScore: 0,
-    clarityImprovements: 0,
-    concisionImprovements: 0,
-    engagementImprovements: 0,
-    passiveVoiceCount: 0,
-    averageSentenceLength: 0
-  });
+  
+  const [content, setContent] = useState("");
+  const [uploadedContent, setUploadedContent] = useState<string>("");
 
   // Processing options
   const [options, setOptions] = useState({
     improveClarity: true,
     enhanceEngagement: true,
     adjustFormality: false,
-    formalityLevel: 'neutral', // 'formal', 'neutral', 'casual'
-    styleGuide: 'chicago' // Default to Chicago style
+    formalityLevel: "neutral", // 'formal', 'neutral', 'casual'
+    styleGuide: "chicago", // Default to Chicago style
   });
 
-  // Handle document upload via the component
-  const handleFileContent = (fileContent: string) => {
-    setOriginalText(fileContent);
-    setIsFileUploaded(true);
-    setEnhancedText(''); // Reset enhanced text when new content is uploaded
-    setSuggestions([]); // Reset suggestions
-    showNotification('success', 'Document uploaded successfully');
-  };
-
-  const handleFileError = (errorMessage: string) => {
-    showNotification('error', errorMessage);
+  // Update handleFileContent
+  const handleFileContent = (content: string | object) => {
+    if (typeof content === "string") {
+      setContent(content);
+    } else {
+      setUploadedContent(JSON.stringify(content, null, 2));
+      showNotification("Structured content loaded successfully", "success");
+    }
   };
 
   // Process text for improvement
   const processText = async () => {
-    if (!originalText.trim()) {
-      showNotification('error', 'Please enter or upload text to enhance');
+    if (!content.trim()) {
+      showNotification("error", "Please enter or upload text to enhance");
       return;
     }
 
@@ -166,62 +67,58 @@ const ProsePerfector: React.FC = () => {
 
     try {
       // Map the styleGuide ID to the full name
-      const styleGuideName = STYLE_GUIDES.find(sg => sg.id === options.styleGuide)?.name || 'Chicago Manual of Style';
+      const styleGuideName =
+        STYLE_GUIDES.find((sg) => sg.id === options.styleGuide)?.name ||
+        "Chicago Manual of Style";
 
       // Call the API endpoint to process the text
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
+      const response = await fetch("/api/api_endpoints", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          endpoint: 'prose-perfector',
+          endpoint: "prose-perfector",
           data: {
-            text: originalText,
+            text: content,
             options: {
               ...options,
-              styleGuide: styleGuideName
-            }
-          }
+              styleGuide: styleGuideName,
+            },
+          },
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to enhance text');
+        throw new Error(errorData.message || "Failed to enhance text");
       }
 
       const data = await response.json();
-      console.log('API Response:', data); // Helpful for debugging
+      console.log("API Response:", data); // Helpful for debugging
 
       // Set the enhanced text from the API response
       setEnhancedText(data.enhancedText);
 
       // Map the suggestions from the API to match our expected format
-      const mappedSuggestions = (data.suggestions || []).map(suggestion => ({
+      const mappedSuggestions = (data.suggestions || []).map((suggestion) => ({
         original: suggestion.original,
         suggestion: suggestion.suggestion,
         reason: suggestion.reason,
-        type: suggestion.type || 'clarity' // Default to clarity if type is not provided
+        type: suggestion.type || "clarity", // Default to clarity if type is not provided
       }));
 
       setSuggestions(mappedSuggestions);
 
-      // Set improvement stats with enhanced metrics
-      setImprovementStats({
-        readabilityScore: data.stats?.readabilityScore || 0,
-        clarityImprovements: data.stats?.clarityImprovements || 0,
-        concisionImprovements: data.stats?.concisionImprovements || 0,
-        engagementImprovements: data.stats?.engagementImprovements || 0,
-        passiveVoiceCount: data.stats?.passiveVoiceCount || 0,
-        averageSentenceLength: data.stats?.averageSentenceLength || 0
-      });
-
-      showNotification('success', 'Text enhanced successfully');
+      // Set impr
+      showNotification("success", "Text enhanced successfully");
     } catch (error) {
-      console.error('Error processing text:', error);
-      showNotification('error', error.message || 'Failed to enhance text. Please try again.');
+      console.error("Error processing text:", error);
+      showNotification(
+        "error",
+        error.message || "Failed to enhance text. Please try again."
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -229,10 +126,9 @@ const ProsePerfector: React.FC = () => {
 
   // Clear all content
   const handleClear = () => {
-    setOriginalText('');
-    setEnhancedText('');
+    setContent("");
+    setEnhancedText("");
     setSuggestions([]);
-    setIsFileUploaded(false);
   };
 
   // Apply individual suggestion
@@ -240,7 +136,10 @@ const ProsePerfector: React.FC = () => {
     const suggestion = suggestions[index];
 
     // Simple replacement (in a real app, you'd need more sophisticated text manipulation)
-    const updatedText = enhancedText.replace(suggestion.original, suggestion.suggestion);
+    const updatedText = enhancedText.replace(
+      suggestion.original,
+      suggestion.suggestion
+    );
     setEnhancedText(updatedText);
 
     // Remove the applied suggestion
@@ -260,32 +159,40 @@ const ProsePerfector: React.FC = () => {
 
     setEnhancedText(text);
     setSuggestions([]);
-    showNotification('success', 'All suggestions applied');
+    showNotification("success", "All suggestions applied");
   };
 
   // Copy enhanced text to clipboard
   const copyToClipboard = () => {
     navigator.clipboard.writeText(enhancedText);
-    showNotification('success', 'Enhanced text copied to clipboard');
+    showNotification("success", "Enhanced text copied to clipboard");
   };
 
   return (
     <div className="space-y-8">
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Enhance Your Writing</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Enhance Your Writing
+        </h2>
         <p className="text-sm text-gray-600 mb-6">
-          Upload a document or paste your text to improve clarity, engagement, and style. Choose your preferred style guide and enhancement options below.
+          Upload a document or paste your text to improve clarity, engagement,
+          and style. Choose your preferred style guide and enhancement options
+          below.
         </p>
 
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-2">Style Guide</label>
+            <label className="block text-sm font-medium mb-2">
+              Style Guide
+            </label>
             <select
               value={options.styleGuide}
-              onChange={(e) => setOptions({ ...options, styleGuide: e.target.value })}
+              onChange={(e) =>
+                setOptions({ ...options, styleGuide: e.target.value })
+              }
               className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
             >
-              {STYLE_GUIDES.map(guide => (
+              {STYLE_GUIDES.map((guide) => (
                 <option key={guide.id} value={guide.id}>
                   {guide.name}
                 </option>
@@ -294,44 +201,68 @@ const ProsePerfector: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <label className="block text-sm font-medium mb-2">Enhancement Options</label>
+            <label className="block text-sm font-medium mb-2">
+              Enhancement Options
+            </label>
             <div className="space-y-2">
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={options.improveClarity}
-                  onChange={(e) => setOptions({ ...options, improveClarity: e.target.checked })}
+                  onChange={(e) =>
+                    setOptions({ ...options, improveClarity: e.target.checked })
+                  }
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Improve clarity and readability</span>
+                <span className="text-sm text-gray-700">
+                  Improve clarity and readability
+                </span>
               </label>
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={options.enhanceEngagement}
-                  onChange={(e) => setOptions({ ...options, enhanceEngagement: e.target.checked })}
+                  onChange={(e) =>
+                    setOptions({
+                      ...options,
+                      enhanceEngagement: e.target.checked,
+                    })
+                  }
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Enhance engagement and impact</span>
+                <span className="text-sm text-gray-700">
+                  Enhance engagement and impact
+                </span>
               </label>
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={options.adjustFormality}
-                  onChange={(e) => setOptions({ ...options, adjustFormality: e.target.checked })}
+                  onChange={(e) =>
+                    setOptions({
+                      ...options,
+                      adjustFormality: e.target.checked,
+                    })
+                  }
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Adjust formality level</span>
+                <span className="text-sm text-gray-700">
+                  Adjust formality level
+                </span>
               </label>
             </div>
           </div>
 
           {options.adjustFormality && (
             <div>
-              <label className="block text-sm font-medium mb-2">Formality Level</label>
+              <label className="block text-sm font-medium mb-2">
+                Formality Level
+              </label>
               <select
                 value={options.formalityLevel}
-                onChange={(e) => setOptions({ ...options, formalityLevel: e.target.value })}
+                onChange={(e) =>
+                  setOptions({ ...options, formalityLevel: e.target.value })
+                }
                 className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
               >
                 <option value="formal">Formal</option>
@@ -340,17 +271,55 @@ const ProsePerfector: React.FC = () => {
               </select>
             </div>
           )}
+          {/* File Upload */}
+          <div className="border-t pt-6">
+            <p className="text-sm text-gray-700 mb-4">
+              Upload Document to Enhance your prose:
+            </p>
+            <FileHandler
+              onContentLoaded={handleFileContent}
+              content={uploadedContent}
+            />
 
-          <FileUploader onFileContent={handleFileContent} onError={handleFileError} />
-
+            {uploadedContent && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-medium text-sm">
+                    Uploaded Content Preview
+                  </h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setPromptText(uploadedContent); // Set the promptText
+                        setActiveTab("keywords"); // Proceed to next step
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      Use This
+                    </button>
+                    <button
+                      onClick={() => setUploadedContent("")}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <pre className="text-xs text-gray-600 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">
+                  {uploadedContent}
+                </pre>
+              </div>
+            )}
+          </div>
+          {/* Text Input */}
           <div>
-            <label className="block text-sm font-medium mb-2">Your Text</label>
+            <label className="block text-sm font-medium mb-2">Content</label>
             <textarea
-              value={originalText}
-              onChange={(e) => setOriginalText(e.target.value)}
-              placeholder="Paste your text here or upload a document..."
-              className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
-              rows={6}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+
+              className="w-full h-64 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Paste or type your content here..."
             />
           </div>
 
@@ -363,7 +332,7 @@ const ProsePerfector: React.FC = () => {
             </button>
             <button
               onClick={processText}
-              disabled={isProcessing || !originalText.trim()}
+              disabled={isProcessing || !content.trim()}
               className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {isProcessing ? (
@@ -384,7 +353,9 @@ const ProsePerfector: React.FC = () => {
 
       {enhancedText && (
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Enhanced Text</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Enhanced Text
+          </h2>
           <div className="space-y-4">
             <textarea
               value={enhancedText}
@@ -407,12 +378,19 @@ const ProsePerfector: React.FC = () => {
 
       {suggestions.length > 0 && (
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Improvement Suggestions</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Improvement Suggestions
+          </h2>
           <div className="space-y-4">
             {suggestions.map((suggestion, index) => (
-              <div key={index} className="p-4 rounded-md border border-gray-200">
+              <div
+                key={index}
+                className="p-4 rounded-md border border-gray-200"
+              >
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-sm font-medium text-gray-700">{suggestion.type}</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {suggestion.type}
+                  </span>
                   <button
                     onClick={() => applySuggestion(index)}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -420,15 +398,21 @@ const ProsePerfector: React.FC = () => {
                     Apply
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 mb-2">{suggestion.reason}</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  {suggestion.reason}
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Original</p>
-                    <p className="text-sm text-gray-700">{suggestion.original}</p>
+                    <p className="text-sm text-gray-700">
+                      {suggestion.original}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Suggestion</p>
-                    <p className="text-sm text-gray-700">{suggestion.suggestion}</p>
+                    <p className="text-sm text-gray-700">
+                      {suggestion.suggestion}
+                    </p>
                   </div>
                 </div>
               </div>
