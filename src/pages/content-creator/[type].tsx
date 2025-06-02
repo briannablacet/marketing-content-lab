@@ -1,5 +1,4 @@
 // src/pages/content-creator/[type].tsx
-// Fixed version that properly uses the generate-content endpoint
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -87,7 +86,7 @@ type NotificationMessage = string;
 
 // Update the useNotification hook type
 interface NotificationContextType {
-  showNotification: (message: NotificationMessage, type: NotificationType) => void;
+  showNotification: (type: NotificationType, message: NotificationMessage) => void;
 }
 
 // A more reliable function to reset style and walkthrough
@@ -104,24 +103,32 @@ function resetStyleAndWalkthrough() {
     })
   );
 
-  // Force set brand voice data
-  localStorage.setItem(
-    "marketing-content-lab-brand-voice",
-    JSON.stringify({
-      completed: true,
-      brandVoice: {
-        tone: "Professional",
-        archetype: "Sage",
-        personality: ["Authoritative", "Trustworthy", "Innovative"],
-        completed: true
-      }
-    })
-  );
-
   // Force set walkthrough as completed
   localStorage.setItem("content-creator-walkthrough-completed", "true");
   localStorage.setItem("walkthrough-completed", "true");
   localStorage.setItem("writing-style-completed", "true");
+
+  // Also clear any potential old flags that might interfere
+  const keysToCheck = [
+    "walkthrough-step-",
+    "marketing-content-lab-writing",
+    "writing-style-",
+  ];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key) {
+      for (const prefix of keysToCheck) {
+        if (
+          key.includes(prefix) &&
+          !key.includes("completed") &&
+          !key.includes("marketing-content-lab-writing-style")
+        ) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+  }
 
   console.log("Reset applied successfully");
 }
@@ -255,23 +262,28 @@ const ContentCreatorPage = () => {
 
   // Skip walkthrough and writing style prompts on component mount
   useEffect(() => {
+    // Mark walkthrough as completed in localStorage
     resetStyleAndWalkthrough();
   }, []);
 
   // Load content type from URL parameter
   useEffect(() => {
     if (type && router.isReady) {
+      // Find content type info based on URL parameter
       const typeFromUrl = Array.isArray(type) ? type[0] : type;
       const foundType = CONTENT_TYPES.find((t) => t.id === typeFromUrl);
 
       if (foundType) {
         setContentType(foundType);
+
+        // Reset state for new content type
         setAdvancedOptions({
           audience: "",
           tone: "professional",
           keywords: "",
           additionalNotes: "",
         });
+
         setPromptText("");
         setUploadedContent("");
         setGeneratedContent("");
@@ -279,6 +291,7 @@ const ContentCreatorPage = () => {
         setGeneratedMetadata(null);
         setActiveTab("create");
       } else {
+        // If content type isn't found, redirect to content creator page
         router.push("/content-creator");
       }
     }
@@ -290,22 +303,19 @@ const ContentCreatorPage = () => {
       setIsLoadingStrategicData(true);
       try {
         const data = await StrategicDataService.getAllStrategicData() as StrategicData;
+        console.log("Loaded strategic data:", data);
         setStrategicData(data);
 
+        // Check if we have any meaningful strategic data
         const hasData = Boolean(
           data &&
-          (
-            (data.writingStyle?.styleGuide?.primary) ||
-            (data.brandVoice?.brandVoice?.tone)
-          )
+          (data.isComplete ||
+            (data.product?.name) ||
+            (data.audiences && data.audiences.length > 0) ||
+            (data.messaging?.valueProposition) ||
+            (data.writingStyle?.styleGuide?.primary))
         );
-
-        const hasCompletedWizard = Boolean(
-          localStorage.getItem('marketing-content-lab-walkthrough') === 'completed' ||
-          localStorage.getItem('walkthrough-completed') === 'true'
-        );
-
-        setHasStrategicData(hasCompletedWizard || hasData);
+        setHasStrategicData(hasData);
 
         // Pre-fill advanced options if we have strategic data
         if (data) {
@@ -360,7 +370,7 @@ const ContentCreatorPage = () => {
     }
   }, [generatedContent]);
 
-  // Helper functions
+  // Update handleContentUpdate
   const handleContentUpdate = (newContent: string, newTitle: string) => {
     setGeneratedContent(newContent);
     if (newTitle && newTitle !== generatedTitle) {
@@ -381,6 +391,7 @@ const ContentCreatorPage = () => {
     showNotification("Content updated successfully", "success");
   };
 
+  // Update handleFileContent
   const handleFileContent = (content: string | object) => {
     if (typeof content === "string") {
       setUploadedContent(content);
@@ -390,6 +401,7 @@ const ContentCreatorPage = () => {
     }
   };
 
+  // Handle changes in advanced options
   const handleAdvancedOptionChange = (option: string, value: string) => {
     setAdvancedOptions((prev) => ({
       ...prev,
@@ -397,15 +409,18 @@ const ContentCreatorPage = () => {
     }));
   };
 
+  // Handle content editing
   const handleContentEdit = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setEditedContent(e.target.value);
   };
 
+  // Save content edits
   const saveContentEdits = () => {
     setGeneratedContent(editedContent);
     setIsEditMode(false);
     showNotification("Content updated successfully", "success");
 
+    // Update metadata description if needed
     if (generatedMetadata) {
       setGeneratedMetadata((prev) => ({
         ...prev,
@@ -414,7 +429,7 @@ const ContentCreatorPage = () => {
     }
   };
 
-  // PROPERLY FIXED handleGenerateContent function
+  // Update handleGenerateContent
   const handleGenerateContent = async () => {
     if (!promptText && !uploadedContent) {
       showNotification("Please enter a prompt or upload content", "error");
@@ -424,148 +439,102 @@ const ContentCreatorPage = () => {
     setIsGenerating(true);
 
     try {
-      // Create the request payload that matches what your API expects
-      const requestBody = {
-        campaignData: {
-          name: `${contentType?.title} - ${promptText.substring(0, 50)}`,
-          type: contentType?.id || "blog-post",
-          goal: `Create a ${contentType?.title}`,
-          targetAudience: advancedOptions.audience || "general audience",
-          keyMessages: advancedOptions.keywords
-            .split(",")
-            .map((k) => k.trim())
-            .filter((k) => k.length > 0)
-        },
-        contentTypes: [contentType?.title || "Blog Posts"],
-        writingStyle: {
-          styleGuide: {
-            primary: strategicData?.writingStyle?.styleGuide?.primary || advancedOptions.tone,
-            customRules: advancedOptions.additionalNotes ? [advancedOptions.additionalNotes] : [],
-          },
-          formatting: {},
-          punctuation: {},
-        },
-        // Add the actual content/prompt
-        prompt: promptText || uploadedContent,
-        tone: advancedOptions.tone,
-        audience: advancedOptions.audience,
-        keywords: advancedOptions.keywords,
-        additionalNotes: advancedOptions.additionalNotes
-      };
-
-      console.log("🚀 Sending content generation request:");
-      console.log("Content Type:", contentType?.id);
-      console.log("Request Body:", JSON.stringify(requestBody, null, 2));
-
-      const response = await fetch('/api/api_endpoints', {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          endpoint: "generate-content",
-          data: requestBody
-        }),
-      });
-
-      console.log("📡 Response Status:", response.status);
-      console.log("📡 Response Headers:", Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ API Error Response:", errorText);
-        
-        // Try to parse the error response
-        let errorMessage = `Server responded with status ${response.status}`;
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.message || errorJson.error || errorMessage;
-        } catch (e) {
-          // If we can't parse JSON, use the raw text
-          errorMessage = errorText || errorMessage;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      const result = await response.json();
-      console.log("✅ API Success Response:", result);
-
-      // Handle the response - your API returns content keyed by content type
-      const contentKey = contentType?.title || "Blog Posts";
-      const generatedData = result[contentKey];
-
-      if (generatedData) {
-        let content = "";
-        let title = "";
-
-        // Handle different response formats
-        if (typeof generatedData === "string") {
-          content = generatedData;
-          title = `${contentType?.title} - ${new Date().toLocaleDateString()}`;
-        } else if (generatedData.content) {
-          content = generatedData.content;
-          title = generatedData.title || `${contentType?.title} - ${new Date().toLocaleDateString()}`;
-        } else {
-          // Fallback - stringify the object
-          content = JSON.stringify(generatedData, null, 2);
-          title = `${contentType?.title} - ${new Date().toLocaleDateString()}`;
-        }
-
-        setGeneratedContent(content);
-        setGeneratedTitle(title);
-        setGeneratedMetadata({
-          title: title,
-          description: content.substring(0, 160).replace(/[#*_]/g, ""),
+      const baseRequest = {
+        contentType: contentType?.id || "blog-post",
+        prompt: promptText,
+        sourceContent: uploadedContent,
+        parameters: {
+          audience: advancedOptions.audience,
+          tone: advancedOptions.tone,
           keywords: advancedOptions.keywords
             .split(",")
             .map((k) => k.trim())
-            .filter((k) => k.length > 0),
+            .filter((k) => k),
+          additionalNotes: advancedOptions.additionalNotes,
+        },
+      };
+
+      console.log("Content generation request details:", {
+        contentType: contentType?.id,
+        promptLength: promptText.length,
+        selectedTone: advancedOptions.tone,
+        keywordCount: advancedOptions.keywords
+          ? advancedOptions.keywords.split(",").length
+          : 0,
+      });
+
+      const payload = {
+        endpoint: "generate-content",
+        data: baseRequest,
+      };
+
+      console.log(
+        "Sending API request with payload:",
+        JSON.stringify(payload).substring(0, 500) + "..."
+      );
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API response not OK:", response.status, errorText);
+        throw new Error(`API responded with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      const document = result?.data?.document;
+
+      console.log("API Response received:", document ? "success" : "empty");
+
+      if (document?.processedContent) {
+        setGeneratedContent(document.processedContent);
+        setGeneratedTitle("Generated Content");
+        setGeneratedMetadata({
+          title: "Generated Content",
+          description: document.processedContent.substring(0, 160),
+          keywords: baseRequest.parameters.keywords,
         });
-
-        showNotification("Content generated successfully! 🎉", "success");
       } else {
-        console.error("❌ No content found in response for key:", contentKey);
-        console.error("Available keys:", Object.keys(result));
-        throw new Error(`No content generated for ${contentKey}. Available content types: ${Object.keys(result).join(", ")}`);
+        throw new Error("Invalid response format from API");
       }
-
     } catch (error: unknown) {
-      console.error("💥 Content Generation Error:", error);
-      
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      
-      // Provide specific error messages for common issues
-      if (errorMessage.includes("OPENAI_API_KEY")) {
-        showNotification("OpenAI API key is missing. Please check your environment variables.", "error");
-      } else if (errorMessage.includes("404")) {
-        showNotification("API endpoint not found. Please check your server setup.", "error");
-      } else if (errorMessage.includes("500")) {
-        showNotification("Server error occurred. Please try again in a moment.", "error");
-      } else if (errorMessage.includes("429")) {
-        showNotification("Rate limit reached. Please wait a moment and try again.", "error");
-      } else {
-        showNotification(`Failed to generate content: ${errorMessage}`, "error");
-      }
+      console.error("Error generating content:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      showNotification(`Failed to generate content: ${errorMessage}`, "error");
+      showNotification("Please try again or check your internet connection", "error");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Export and save functions (keeping the same as before)
+  // Update handleExportContent
   const handleExportContent = (format = "markdown") => {
     if (!generatedContent) {
       showNotification("No content to export", "error");
       return;
     }
 
+    // Create a file name based on the title
     const sanitizedTitle = generatedTitle
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "");
 
-    const fileName = `${sanitizedTitle}-${new Date().toISOString().slice(0, 10)}`;
+    const fileName = `${sanitizedTitle}-${new Date()
+      .toISOString()
+      .slice(0, 10)}`;
 
+    // Create content based on format
     let fileContent = generatedContent;
     let mimeType = "text/plain";
     let extension = "txt";
@@ -578,12 +547,14 @@ const ContentCreatorPage = () => {
       case "html":
         mimeType = "text/html";
         extension = "html";
+        // Simple markdown to HTML conversion
         fileContent = `<!DOCTYPE html>
 <html>
 <head>
   <title>${generatedTitle}</title>
   <meta name="description" content="${generatedMetadata?.description || ""}">
-  <meta name="keywords" content="${generatedMetadata?.keywords?.join(", ") || ""}">
+  <meta name="keywords" content="${generatedMetadata?.keywords?.join(", ") || ""
+          }">
 </head>
 <body>
   <article>
@@ -603,26 +574,37 @@ const ContentCreatorPage = () => {
       case "pdf":
         showNotification("PDF export is coming soon. Exporting as plain text instead.", "warning");
         break;
+      default:
+        // Use defaults
+        break;
     }
 
+    // Create a blob and download it
     const blob = new Blob([fileContent], { type: mimeType });
     const url = URL.createObjectURL(blob);
+
     const a = document.createElement("a");
     a.href = url;
     a.download = `${fileName}.${extension}`;
     document.body.appendChild(a);
     a.click();
+
+    // Clean up
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     showNotification(`Content exported as ${extension.toUpperCase()}`, "success");
   };
 
+  // Update handleSaveToLibrary
   const handleSaveToLibrary = () => {
     if (!generatedContent) {
       showNotification("No content to save", "error");
       return;
     }
+
+    // In a real implementation, you would save to a database
+    // For now, we'll just save to localStorage
 
     const savedContent = {
       id: Date.now(),
@@ -631,21 +613,34 @@ const ContentCreatorPage = () => {
       metadata: generatedMetadata,
       contentType: contentType?.title,
       createdAt: new Date().toISOString(),
+      // Add strategic data references
       strategicDataUsed: hasStrategicData
         ? {
           productName: strategicData?.product?.name,
-          audienceName: strategicData?.audiences?.length > 0 ? strategicData.audiences[0].role : null,
-          messagingSource: strategicData?.messaging?.valueProposition ? "Marketing Program" : "Manual Entry",
-          styleGuide: strategicData?.writingStyle?.styleGuide?.primary || null,
+          audienceName:
+            strategicData?.audiences?.length > 0
+              ? strategicData.audiences[0].role
+              : null,
+          messagingSource: strategicData?.messaging?.valueProposition
+            ? "Marketing Program"
+            : "Manual Entry",
+          styleGuide:
+            strategicData?.writingStyle?.styleGuide?.primary || null,
         }
         : null,
     };
 
     try {
+      // Get existing content library or initialize a new one
       const existingLibrary = localStorage.getItem("contentLibrary");
       const library = existingLibrary ? JSON.parse(existingLibrary) : [];
+
+      // Add new content
       library.push(savedContent);
+
+      // Save back to localStorage
       localStorage.setItem("contentLibrary", JSON.stringify(library));
+
       showNotification("Content saved to library successfully", "success");
     } catch (error) {
       console.error("Error saving to library:", error);
@@ -653,6 +648,7 @@ const ContentCreatorPage = () => {
     }
   };
 
+  // Reset the content and go back to content creation
   const handleResetContent = () => {
     setGeneratedContent("");
     setGeneratedTitle("");
@@ -661,7 +657,7 @@ const ContentCreatorPage = () => {
     setIsEditMode(false);
 
     // Reset advanced options but keep strategic data
-    setAdvancedOptions(() => {
+    setAdvancedOptions((prev) => {
       const strategicDefaults = {
         audience: "",
         tone: "professional",
@@ -669,10 +665,12 @@ const ContentCreatorPage = () => {
         additionalNotes: "",
       };
 
-      if (hasStrategicData && strategicData) {
+      // If we have strategic data, use it to set defaults
+      if (hasStrategicData) {
         if (strategicData.audiences && strategicData.audiences.length > 0) {
           const primaryPersona = strategicData.audiences[0];
-          strategicDefaults.audience = `${primaryPersona.role}${primaryPersona.industry ? ` in ${primaryPersona.industry}` : ""}`;
+          strategicDefaults.audience = `${primaryPersona.role}${primaryPersona.industry ? ` in ${primaryPersona.industry}` : ""
+            }`;
         }
 
         if (strategicData.brandVoice?.brandVoice?.tone) {
@@ -694,6 +692,7 @@ const ContentCreatorPage = () => {
     });
   };
 
+  // Parse the markdown content for display
   const parseMarkdown = (markdown: string) => {
     if (!markdown) return { title: "", introduction: "", sections: [] };
 
@@ -701,16 +700,19 @@ const ContentCreatorPage = () => {
     let title = "";
     let introduction = "";
     const sections = [];
+
     let currentSection = { title: "", content: "" };
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
+      // Get title (# Heading)
       if (line.startsWith("# ") && !title) {
         title = line.substring(2).trim();
         continue;
       }
 
+      // Get sections (## Heading)
       if (line.startsWith("## ")) {
         if (currentSection.title) {
           sections.push({ ...currentSection });
@@ -722,15 +724,23 @@ const ContentCreatorPage = () => {
         continue;
       }
 
-      if (sections.length === 0 && !currentSection.title && line.trim() && !line.startsWith("#")) {
+      // If we haven't found a section yet, this is part of the introduction
+      if (
+        sections.length === 0 &&
+        !currentSection.title &&
+        line.trim() &&
+        !line.startsWith("#")
+      ) {
         introduction += line + "\n";
       }
 
+      // Add content to current section
       if (currentSection.title && !line.startsWith("#")) {
         currentSection.content += line + "\n";
       }
     }
 
+    // Add the last section if it exists
     if (currentSection.title) {
       sections.push(currentSection);
     }
@@ -743,43 +753,163 @@ const ContentCreatorPage = () => {
     return <div className="p-8 text-center">Loading content type...</div>;
   }
 
+  // Parse the generated content for display
   const parsedContent = parseMarkdown(generatedContent);
 
-  // Tab rendering functions (keeping the same UI structure as before)
+  // Render tab contents based on active tab
   const renderTabContent = () => {
     switch (activeTab) {
       case "create":
         return (
           <div className="space-y-6">
-            {/* Strategic Data Banner */}
+            {/* Strategic Data Banner - Show if we have meaningful strategic data */}
             {hasStrategicData && (
               <Card className="mb-6 border-2 border-green-200 overflow-hidden">
                 <CardHeader className="bg-green-50 border-b">
                   <CardTitle className="flex items-center">
                     <FileCheck className="w-5 h-5 text-green-600 mr-2" />
-                    <span>Using Your Brand Style</span>
+                    <span>Using Your Marketing Program</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="font-medium text-gray-800 mb-2">Writing Style:</h3>
-                      {strategicData?.writingStyle?.styleGuide?.primary && (
-                        <div className="flex items-start">
-                          <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
-                          <span className="text-gray-700">{strategicData.writingStyle.styleGuide.primary}</span>
-                        </div>
-                      )}
+                      <h3 className="font-medium text-gray-800 mb-2">
+                        Content will be created using:
+                      </h3>
+                      <ul className="space-y-2">
+                        {strategicData?.product?.name && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your product:</strong>{" "}
+                              {strategicData.product.name}
+                            </span>
+                          </li>
+                        )}
+
+                        {strategicData?.audiences?.length > 0 && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your audience:</strong>{" "}
+                              {strategicData.audiences[0].role}
+                            </span>
+                          </li>
+                        )}
+
+                        {strategicData?.messaging?.valueProposition && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your messaging framework</strong>
+                            </span>
+                          </li>
+                        )}
+
+                        {strategicData?.writingStyle?.styleGuide?.primary && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your writing style:</strong>{" "}
+                              {strategicData.writingStyle.styleGuide.primary}
+                            </span>
+                          </li>
+                        )}
+                      </ul>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-800 mb-2">Brand Voice:</h3>
-                      {strategicData?.brandVoice?.brandVoice?.tone && (
-                        <div className="flex items-start">
-                          <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
-                          <span className="text-gray-700">{strategicData.brandVoice.brandVoice.tone}</span>
-                        </div>
-                      )}
+                    <div className="bg-white p-4 rounded-lg border border-green-100">
+                      <h3 className="font-medium text-gray-800 mb-2">
+                        Content will reflect:
+                      </h3>
+                      <div className="space-y-2 text-gray-700 text-sm">
+                        {strategicData?.product?.valueProposition && (
+                          <p className="italic">
+                            "
+                            {strategicData.product.valueProposition.substring(
+                              0,
+                              100
+                            )}
+                            ..."
+                          </p>
+                        )}
+
+                        {strategicData?.messaging?.keyDifferentiators?.length >
+                          0 && (
+                            <div>
+                              <p>
+                                <strong>Key differentiators:</strong>
+                              </p>
+                              <ul className="list-disc pl-5 space-y-1">
+                                {strategicData.messaging.keyDifferentiators
+                                  .slice(0, 2)
+                                  .map((diff, idx) => (
+                                    <li key={idx}>
+                                      {typeof diff === "string"
+                                        ? diff.substring(0, 60)
+                                        : ""}
+                                      {diff.length > 60 ? "..." : ""}
+                                    </li>
+                                  ))}
+                              </ul>
+                            </div>
+                          )}
+                      </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Guidance Card */}
+            {showGuidanceCard && (
+              <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
+                <CardHeader className="bg-blue-50 border-b">
+                  <CardTitle className="flex items-center">
+                    <Info className="w-5 h-5 text-blue-600 mr-2" />
+                    <span>How to Create Content</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-4 mb-3 bg-blue-100 rounded-full">
+                        <MessageSquare className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h3 className="font-medium mb-2">Option 1: Prompt</h3>
+                      <p className="text-sm text-gray-600">
+                        Describe what you want the AI to create. Be specific for
+                        best results.
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-4 mb-3 bg-blue-100 rounded-full">
+                        <Upload className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h3 className="font-medium mb-2">Option 2: Upload</h3>
+                      <p className="text-sm text-gray-600">
+                        Alternatively, upload existing notes or a document to
+                        use as a starting point.
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-4 mb-3 bg-blue-100 rounded-full">
+                        <Search className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h3 className="font-medium mb-2">Add Keywords</h3>
+                      <p className="text-sm text-gray-600">
+                        In the next tab, you can add keywords to optimize your
+                        content for search.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end mt-4">
+                    <button
+                      onClick={() => setShowGuidanceCard(false)}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      Don't show this again
+                    </button>
                   </div>
                 </CardContent>
               </Card>
@@ -799,7 +929,7 @@ const ContentCreatorPage = () => {
                     You're creating content without a strategic foundation. Want stronger, more aligned results? Complete the Branding Wizard first.
                   </p>
                   <div className="flex justify-end">
-                    <Link href="/walkthrough/1">
+                    <Link href="https://www.marketingcontentlab.com/walkthrough/1">
                       <button className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
                         Launch Branding Wizard
                       </button>
@@ -808,6 +938,7 @@ const ContentCreatorPage = () => {
                 </CardContent>
               </Card>
             )}
+
 
             <Card className="overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
@@ -827,7 +958,8 @@ const ContentCreatorPage = () => {
                       value={promptText}
                       onChange={(e) => setPromptText(e.target.value)}
                       className="w-full p-3 border rounded-lg h-32"
-                      placeholder={`Write a ${contentType?.title?.toLowerCase() || "content piece"} about...`}
+                      placeholder={`Write a ${contentType?.title?.toLowerCase() || "content piece"
+                        } about...`}
                     />
                   </div>
 
@@ -844,12 +976,14 @@ const ContentCreatorPage = () => {
                     {uploadedContent && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
                         <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-sm">Uploaded Content Preview</h4>
+                          <h4 className="font-medium text-sm">
+                            Uploaded Content Preview
+                          </h4>
                           <div className="flex gap-2">
                             <button
                               onClick={() => {
-                                setPromptText(uploadedContent);
-                                setActiveTab("keywords");
+                                setPromptText(uploadedContent); // Set the promptText
+                                setActiveTab("keywords"); // Proceed to next step
                               }}
                               className="text-blue-600 hover:text-blue-800 text-sm"
                             >
@@ -872,7 +1006,7 @@ const ContentCreatorPage = () => {
 
                   {/* Next button to go to Keywords tab */}
                   <div className="flex justify-between mt-4">
-                    <div></div>
+                    <div></div> {/* Empty div for spacing */}
                     <button
                       onClick={() => setActiveTab("keywords")}
                       disabled={!promptText && !uploadedContent}
@@ -907,27 +1041,33 @@ const ContentCreatorPage = () => {
                         Keywords from Your Marketing Program
                       </h3>
                       <p className="text-sm text-green-700 mb-3">
-                        We've pre-selected keywords from your SEO strategy. You can add or remove keywords as needed.
+                        We've pre-selected keywords from your SEO strategy. You
+                        can add or remove keywords as needed.
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {strategicData.seoKeywords.primaryKeywords.map((kw, idx) => (
-                          <span
-                            key={idx}
-                            className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm flex items-center"
-                          >
-                            <CheckIcon className="h-4 w-4 mr-1" />
-                            {typeof kw === "string" ? kw : kw.term}
-                          </span>
-                        ))}
+                        {strategicData.seoKeywords.primaryKeywords.map(
+                          (kw, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm flex items-center"
+                            >
+                              <CheckIcon className="h-4 w-4 mr-1" />
+                              {typeof kw === "string" ? kw : kw.term}
+                            </span>
+                          )
+                        )}
                       </div>
                     </div>
                   )}
 
                   <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                    <h3 className="font-medium text-blue-800 mb-2">Why Keywords Matter</h3>
+                    <h3 className="font-medium text-blue-800 mb-2">
+                      Why Keywords Matter
+                    </h3>
                     <p className="text-sm text-blue-700">
-                      Adding relevant keywords helps your content rank higher in search results and reach the right audience. 
-                      Click on suggested keywords below to add them to your content.
+                      Adding relevant keywords helps your content rank higher in
+                      search results and reach the right audience. Click on
+                      suggested keywords below to add them to your content.
                     </p>
                   </div>
 
@@ -938,7 +1078,8 @@ const ContentCreatorPage = () => {
                       <h3 className="font-medium">Recommended Keywords</h3>
                     </div>
                     <p className="text-sm text-gray-600 mb-6">
-                      <strong>Click on a keyword to add it</strong> to your content. Selected keywords will be highlighted.
+                      <strong>Click on a keyword to add it</strong> to your
+                      content. Selected keywords will be highlighted.
                     </p>
 
                     <KeywordSuggestions
@@ -954,19 +1095,22 @@ const ContentCreatorPage = () => {
 
                   {/* Current selected keywords */}
                   <div>
-                    <label className="block text-sm font-medium mb-2">Selected Keywords:</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Selected Keywords:
+                    </label>
                     <div className="p-3 bg-gray-50 rounded-lg min-h-[50px]">
                       {advancedOptions.keywords ? (
                         <div className="flex flex-wrap gap-2">
-                          {advancedOptions.keywords.split(",").map((keyword, idx) =>
-                            keyword.trim() && (
-                              <span
-                                key={idx}
-                                className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                              >
-                                {keyword.trim()}
-                              </span>
-                            )
+                          {advancedOptions.keywords.split(",").map(
+                            (keyword, idx) =>
+                              keyword.trim() && (
+                                <span
+                                  key={idx}
+                                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                                >
+                                  {keyword.trim()}
+                                </span>
+                              )
                           )}
                         </div>
                       ) : (
@@ -1018,16 +1162,25 @@ const ContentCreatorPage = () => {
                         Using Your Brand Voice
                       </h3>
                       <p className="text-sm text-green-700">
-                        We're using your brand voice settings from your marketing program:
+                        We're using your brand voice settings from your
+                        marketing program:
                       </p>
                       <div className="mt-2">
-                        <span className="text-sm font-medium text-green-700">Tone: </span>
-                        <span className="text-sm text-green-800">{strategicData.brandVoice.brandVoice.tone}</span>
+                        <span className="text-sm font-medium text-green-700">
+                          Tone:{" "}
+                        </span>
+                        <span className="text-sm text-green-800">
+                          {strategicData.brandVoice.brandVoice.tone}
+                        </span>
                       </div>
                       {strategicData.brandVoice.brandVoice.archetype && (
                         <div>
-                          <span className="text-sm font-medium text-green-700">Archetype: </span>
-                          <span className="text-sm text-green-800">{strategicData.brandVoice.brandVoice.archetype}</span>
+                          <span className="text-sm font-medium text-green-700">
+                            Archetype:{" "}
+                          </span>
+                          <span className="text-sm text-green-800">
+                            {strategicData.brandVoice.brandVoice.archetype}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -1035,24 +1188,33 @@ const ContentCreatorPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Target Audience</label>
+                      <label className="block text-sm font-medium mb-2">
+                        Target Audience
+                      </label>
                       <input
                         type="text"
                         value={advancedOptions.audience}
-                        onChange={(e) => handleAdvancedOptionChange("audience", e.target.value)}
+                        onChange={(e) =>
+                          handleAdvancedOptionChange("audience", e.target.value)
+                        }
                         className="w-full p-3 border rounded-lg"
                         placeholder="Who is this content for? (e.g., Small business owners)"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Being specific about your audience helps create more targeted content.
+                        Being specific about your audience helps create more
+                        targeted content.
                       </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">Content Tone</label>
+                      <label className="block text-sm font-medium mb-2">
+                        Content Tone
+                      </label>
                       <select
                         value={advancedOptions.tone}
-                        onChange={(e) => handleAdvancedOptionChange("tone", e.target.value)}
+                        onChange={(e) =>
+                          handleAdvancedOptionChange("tone", e.target.value)
+                        }
                         className="w-full p-3 border rounded-lg"
                       >
                         <option value="professional">Professional</option>
@@ -1066,16 +1228,24 @@ const ContentCreatorPage = () => {
                         <option value="technical">Technical</option>
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
-                        The tone will affect how your content resonates with readers.
+                        The tone will affect how your content resonates with
+                        readers.
                       </p>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Additional Instructions (optional)</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Additional Instructions (optional)
+                    </label>
                     <textarea
                       value={advancedOptions.additionalNotes}
-                      onChange={(e) => handleAdvancedOptionChange("additionalNotes", e.target.value)}
+                      onChange={(e) =>
+                        handleAdvancedOptionChange(
+                          "additionalNotes",
+                          e.target.value
+                        )
+                      }
                       className="w-full p-3 border rounded-lg h-32"
                       placeholder="Any specific requirements for your content? (e.g., Include statistics, focus on specific aspects, etc.)"
                     />
@@ -1091,7 +1261,9 @@ const ContentCreatorPage = () => {
                     </button>
                     <button
                       onClick={handleGenerateContent}
-                      disabled={isGenerating || (!promptText && !uploadedContent)}
+                      disabled={
+                        isGenerating || (!promptText && !uploadedContent)
+                      }
                       className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
                     >
                       {isGenerating ? (
@@ -1125,11 +1297,10 @@ const ContentCreatorPage = () => {
                       {/* Toggle Edit Mode Button */}
                       <button
                         onClick={() => setIsEditMode(!isEditMode)}
-                        className={`px-3 py-1 text-sm border rounded-md flex items-center ${
-                          isEditMode
-                            ? "bg-blue-100 border-blue-500 text-blue-700"
-                            : "border-gray-300 hover:bg-gray-50"
-                        }`}
+                        className={`px-3 py-1 text-sm border rounded-md flex items-center ${isEditMode
+                          ? "bg-blue-100 border-blue-500 text-blue-700"
+                          : "border-gray-300 hover:bg-gray-50"
+                          }`}
                       >
                         <Edit className="w-4 h-4 mr-1" />
                         {isEditMode ? "View Mode" : "Edit Mode"}
@@ -1184,6 +1355,24 @@ const ContentCreatorPage = () => {
                             >
                               Plain Text (.txt)
                             </button>
+                            <button
+                              onClick={() => {
+                                handleExportContent("docx");
+                                setIsDropdownOpen(false);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                              Word (.docx)
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleExportContent("pdf");
+                                setIsDropdownOpen(false);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                              PDF (.pdf)
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1202,9 +1391,13 @@ const ContentCreatorPage = () => {
                       {isEditMode ? (
                         /* Edit Mode - Show textarea */
                         <div className="space-y-4">
-                          <h3 className="text-lg font-medium text-blue-800">Editing Content</h3>
+                          <h3 className="text-lg font-medium text-blue-800">
+                            Editing Content
+                          </h3>
                           <p className="text-sm text-gray-600">
-                            Make direct edits to your content below. Use markdown formatting for headings, lists, and styling.
+                            Make direct edits to your content below. Use
+                            markdown formatting for headings, lists, and
+                            styling.
                           </p>
                           <textarea
                             value={editedContent}
@@ -1224,11 +1417,16 @@ const ContentCreatorPage = () => {
                           {/* Introduction */}
                           {parsedContent.introduction && (
                             <div className="text-gray-700 mb-6">
-                              {parsedContent.introduction.split("\n").map((para, idx) => (
-                                <p key={idx} className={idx > 0 ? "mt-4" : ""}>
-                                  {para}
-                                </p>
-                              ))}
+                              {parsedContent.introduction
+                                .split("\n")
+                                .map((para, idx) => (
+                                  <p
+                                    key={idx}
+                                    className={idx > 0 ? "mt-4" : ""}
+                                  >
+                                    {para}
+                                  </p>
+                                ))}
                             </div>
                           )}
 
@@ -1243,7 +1441,10 @@ const ContentCreatorPage = () => {
                                   .split("\n")
                                   .filter((p) => p.trim())
                                   .map((para, pIdx) => (
-                                    <p key={pIdx} className={pIdx > 0 ? "mt-4" : ""}>
+                                    <p
+                                      key={pIdx}
+                                      className={pIdx > 0 ? "mt-4" : ""}
+                                    >
                                       {para}
                                     </p>
                                   ))}
@@ -1262,7 +1463,8 @@ const ContentCreatorPage = () => {
                     <div className="flex items-center text-sm text-gray-600">
                       <FileCheck className="w-4 h-4 mr-2 text-green-600" />
                       <span>
-                        Created using your marketing program for {strategicData?.product?.name || "your product"}.
+                        Created using your marketing program for{" "}
+                        {strategicData?.product?.name || "your product"}.
                         {strategicData?.audiences?.length > 0
                           ? ` Targeted for ${strategicData.audiences[0].role}.`
                           : ""}
@@ -1285,15 +1487,19 @@ const ContentCreatorPage = () => {
                       originalTitle={generatedTitle}
                       contentType={contentType?.id || "content"}
                       onContentUpdate={handleContentUpdate}
+                      // Pass strategic context for better improvements
                       strategicContext={
                         hasStrategicData
                           ? {
-                              productName: strategicData?.product?.name,
-                              valueProposition: strategicData?.product?.valueProposition,
-                              audience: strategicData?.audiences?.[0]?.role,
-                              industry: strategicData?.audiences?.[0]?.industry,
-                              tone: strategicData?.brandVoice?.brandVoice?.tone || advancedOptions.tone,
-                            }
+                            productName: strategicData?.product?.name,
+                            valueProposition:
+                              strategicData?.product?.valueProposition,
+                            audience: strategicData?.audiences?.[0]?.role,
+                            industry: strategicData?.audiences?.[0]?.industry,
+                            tone:
+                              strategicData?.brandVoice?.brandVoice?.tone ||
+                              advancedOptions.tone,
+                          }
                           : null
                       }
                     />
@@ -1332,7 +1538,7 @@ const ContentCreatorPage = () => {
     }
   };
 
-  // Main render
+  // Render the tabs and active tab content
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -1342,7 +1548,9 @@ const ContentCreatorPage = () => {
             Back to Content Types
           </button>
         </Link>
-        <h1 className="text-3xl font-bold">{contentType?.title || "Content Creator"}</h1>
+        <h1 className="text-3xl font-bold">
+          {contentType?.title || "Content Creator"}
+        </h1>
         <p className="text-gray-600 mt-2">{contentType?.description}</p>
       </div>
 
@@ -1353,11 +1561,10 @@ const ContentCreatorPage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-3 px-1 flex items-center ${
-                activeTab === tab.id
-                  ? "text-blue-600 border-b-2 border-blue-600 font-medium"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`py-3 px-1 flex items-center ${activeTab === tab.id
+                ? "text-blue-600 border-b-2 border-blue-600 font-medium"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
               disabled={tab.id === "edit" && !generatedContent}
             >
               {tab.icon}

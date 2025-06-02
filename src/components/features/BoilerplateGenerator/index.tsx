@@ -1,5 +1,5 @@
 // src/components/features/BoilerplateGenerator/index.tsx
-//this page needs to be fixed by adding the yellow modal and pulling in strategic data
+
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../ui/card';
