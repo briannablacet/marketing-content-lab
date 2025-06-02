@@ -29,7 +29,7 @@ interface BrandData {
     brandArchetype?: string;
 
     // Communication Tools
-    boilerplates?: string[];
+    boilerplates?: { text: string; wordCount: number }[];
 
     // Strategic Context
     differentiators?: string[];
@@ -50,17 +50,67 @@ const BrandCompass: React.FC = () => {
             // Also check localStorage for any additional data
             const productInfo = JSON.parse(localStorage.getItem('marketingProduct') || '{}');
             const messageFramework = JSON.parse(localStorage.getItem('messageFramework') || '{}');
-            const tagline = localStorage.getItem('brandTagline') || '';
-            const mission = StrategicDataService.getMission() || '';
-            const vision = StrategicDataService.getVision() || '';
-            const boilerplates = JSON.parse(localStorage.getItem('brandBoilerplates') || '[]');
+
+            // Check all possible locations for tagline
+            const tagline = localStorage.getItem('brandTagline') ||
+                allData.tagline ||
+                productInfo.tagline ||
+                StrategicDataService.getTagline() ||
+                '';
+
+            // Check all possible locations for mission
+            const mission = localStorage.getItem('brandMission') ||
+                allData.mission ||
+                StrategicDataService.getMission() ||
+                '';
+
+            // Check all possible locations for vision
+            const vision = localStorage.getItem('brandVision') ||
+                allData.vision ||
+                StrategicDataService.getVision() ||
+                '';
+
+            // Load boilerplates and format them with word counts
+            const rawBoilerplates = JSON.parse(localStorage.getItem('brandBoilerplates') || '[]');
+            const boilerplates = rawBoilerplates.slice(0, 3).map((text: string, index: number) => {
+                // Map to target lengths: first is 20, second is 50, third is 100
+                const targetLengths = [20, 50, 100];
+                return {
+                    text,
+                    wordCount: targetLengths[index]
+                };
+            });
+
+            console.log('Brand Compass - Loading boilerplates:', {
+                fromLocalStorage: localStorage.getItem('brandBoilerplates'),
+                parsed: boilerplates,
+                fromStrategicData: allData.boilerplates
+            });
+
+            // Get target audiences from all possible locations
+            const idealCustomer = StrategicDataService.getAllStrategicDataFromStorage().idealCustomer;
+            const targetAudiences = idealCustomer ?
+                (Array.isArray(idealCustomer) ? idealCustomer : [idealCustomer]) :
+                (allData.audiences || []);
+
+            // Format target audiences for display
+            const formattedAudiences = targetAudiences.map(audience => {
+                if (typeof audience === 'string') {
+                    return { role: audience, industry: '' };
+                }
+                return {
+                    role: audience.role || '',
+                    industry: audience.industry || '',
+                    challenges: audience.challenges || []
+                };
+            });
 
             // Combine all sources
             const combinedData: BrandData = {
                 businessName: productInfo.name || allData.product?.name || 'Your Brand',
-                mission: mission || allData.mission,
-                vision: vision || allData.vision,
-                tagline: tagline || allData.tagline,
+                mission: mission,
+                vision: vision,
+                tagline: tagline,
                 valueProposition: messageFramework.valueProposition || allData.messaging?.valueProposition || productInfo.valueProposition,
                 messagePillars: [
                     messageFramework.pillar1,
@@ -68,7 +118,7 @@ const BrandCompass: React.FC = () => {
                     messageFramework.pillar3
                 ].filter(Boolean) || [],
                 keyBenefits: messageFramework.keyBenefits || allData.messaging?.keyBenefits || [],
-                targetAudiences: allData.audiences || [],
+                targetAudiences: formattedAudiences,
                 brandVoice: allData.brandVoice,
                 brandArchetype: allData.brandArchetype,
                 boilerplates: boilerplates,
@@ -76,6 +126,7 @@ const BrandCompass: React.FC = () => {
                 competitiveAnalysis: allData.competitiveAnalysis || []
             };
 
+            console.log('Loaded brand data:', combinedData);
             setBrandData(combinedData);
         } catch (error) {
             console.error('Error loading brand data:', error);
@@ -195,7 +246,7 @@ Archetype: ${brandData.brandArchetype || 'Not defined'}
 Tone: ${brandData.brandVoice?.tone || 'Not defined'}
 
 📝 BRAND BOILERPLATES
-${brandData.boilerplates?.map((text, i) => `${i + 1}. ${text}`).join('\n\n') || 'Not defined'}
+${brandData.boilerplates?.map((boilerplate, index) => `${index + 1}. ${boilerplate.text} (${boilerplate.wordCount} words)`).join('\n\n') || 'Not defined'}
 
 ${Array(50).fill('=').join('')}
 Generated by Marketing Content Lab - Brand Compass
@@ -389,6 +440,26 @@ Generated by Marketing Content Lab - Brand Compass
                     </Card>
                 )}
 
+                {/* Brand Boilerplates */}
+                {brandData.boilerplates && brandData.boilerplates.length > 0 && (
+                    <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm">
+                        <div className={`flex items-center gap-3 mb-6 ${theme.accent}`}>
+                            <FileText className="w-6 h-6" />
+                            <h3 className="text-xl font-bold">Brand Boilerplates</h3>
+                        </div>
+                        <div className="space-y-4">
+                            {brandData.boilerplates.slice(0, 3).map((boilerplate, index) => (
+                                <div key={index} className={`p-4 ${theme.bg} rounded-lg ${theme.border} border`}>
+                                    <div className="text-sm font-semibold text-gray-700 mb-2">
+                                        {boilerplate.wordCount} Words
+                                    </div>
+                                    <p className="text-gray-700 leading-relaxed">{boilerplate.text}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                )}
+
                 {/* Brand Voice */}
                 {(brandData.brandArchetype || brandData.brandVoice?.tone) && (
                     <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm">
@@ -413,26 +484,6 @@ Generated by Marketing Content Lab - Brand Compass
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    </Card>
-                )}
-
-                {/* Brand Boilerplates */}
-                {brandData.boilerplates && brandData.boilerplates.length > 0 && (
-                    <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm">
-                        <div className={`flex items-center gap-3 mb-6 ${theme.accent}`}>
-                            <FileText className="w-6 h-6" />
-                            <h3 className="text-xl font-bold">Brand Boilerplates</h3>
-                        </div>
-                        <div className="space-y-4">
-                            {brandData.boilerplates.map((boilerplate, index) => (
-                                <div key={index} className={`p-4 ${theme.bg} rounded-lg ${theme.border} border`}>
-                                    <div className="text-sm font-semibold text-gray-700 mb-2">
-                                        Boilerplate {index + 1} ({boilerplate.length} words)
-                                    </div>
-                                    <p className="text-gray-700 leading-relaxed">{boilerplate}</p>
-                                </div>
-                            ))}
                         </div>
                     </Card>
                 )}

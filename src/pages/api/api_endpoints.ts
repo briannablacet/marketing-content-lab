@@ -1515,7 +1515,7 @@ export async function generateBoilerplates({
   numOptions?: number;
 }) {
   const prompt = `
-You're an expert brand copywriter. Based on the information below, generate ${numOptions} different marketing boilerplates for this company. Each boilerplate should be exactly ${wordCount} words and reflect the brand's voice, tone, and personality.
+You're an expert brand copywriter. Based on the information below, generate ${numOptions} different marketing boilerplates for this company. Each boilerplate should be approximately ${wordCount} words (within 5 words of the target) and reflect the brand's voice, tone, and personality.
 
 Business name: ${businessName}
 Description: ${description}
@@ -1529,7 +1529,7 @@ Style: ${style}
 Brand archetype: ${archetype}
 Brand personality traits: ${personality.join(', ')}
 
-Format your response as a JSON array of strings. Each string should be exactly ${wordCount} words.
+Format your response as a JSON array of strings. Each string should be approximately ${wordCount} words (within 5 words of the target). Count words by splitting on spaces and counting each word as one unit.
 `;
 
   try {

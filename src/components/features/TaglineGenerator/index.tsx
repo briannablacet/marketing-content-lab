@@ -51,13 +51,16 @@ const TaglineGenerator: React.FC = () => {
     const [tone, setTone] = useState('');
     const [style, setStyle] = useState('visionary');
     const [generatedTaglines, setGeneratedTaglines] = useState<string[]>([]);
-    const [customTagline, setCustomTagline] = useState<string>('');
+    const [customTagline, setCustomTagline] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [showWalkthroughPrompt, setShowWalkthroughPrompt] = useState(false);
     const [boilerplates, setBoilerplates] = useState([]);
     const [archetype, setArchetype] = useState('');
     const [showPreview, setShowPreview] = useState(false);
     const [isAccepted, setIsAccepted] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedTagline, setSelectedTagline] = useState<string | null>(null);
 
     const { brandVoice } = useBrandVoice();
     const router = useRouter();
@@ -96,6 +99,15 @@ const TaglineGenerator: React.FC = () => {
             }
         }
     }, [brandVoice]);
+
+    // Load saved tagline when component mounts
+    useEffect(() => {
+        const savedTagline = localStorage.getItem('brandTagline');
+        if (savedTagline) {
+            setSelectedTagline(savedTagline);
+            setCustomTagline(savedTagline);
+        }
+    }, []);
 
     const handleArchetypeChange = (value: string) => {
         setArchetype(value);
@@ -168,8 +180,8 @@ const TaglineGenerator: React.FC = () => {
             return;
         }
 
-        // Save to localStorage
-        localStorage.setItem('marketingTagline', finalValue);
+        // Save to localStorage with the correct key
+        localStorage.setItem('brandTagline', finalValue);
 
         // Save to StrategicDataService
         try {
