@@ -936,14 +936,18 @@ Only include information that would be publicly available or reasonably inferred
 }
 
 // Handler for generate content endpoint
+// Handler for generate content endpoint - FIXED VERSION
+// Replace the existing handleGenerateContent function in your api_endpoints.ts with this:
+
 export async function handleGenerateContent(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Extract data from either req.body.data or req.body
-    const { campaignData, contentTypes, writingStyle } = req.body;
+    // FIXED: Extract data from either req.body.data or req.body (handle both formats)
+    const requestData = req.body.data || req.body;
+    const { campaignData, contentTypes, writingStyle } = requestData;
 
     if (!campaignData || !contentTypes) {
       console.error('Missing required data:', { campaignData, contentTypes });
-      return res.status(400).json({ error: 'Missing required data' });
+      return res.status(400).json({ error: 'Missing required data: campaignData and contentTypes are required' });
     }
 
     console.log('Generating content for campaign:', campaignData.name);
@@ -964,13 +968,21 @@ export async function handleGenerateContent(req: NextApiRequest, res: NextApiRes
       - Punctuation: ${Object.entries(writingStyle.punctuation).map(([k, v]) => `${k}: ${v}`).join(', ')}
       ` : 'Use a professional and engaging tone.'}
       
-      Generate the following content types: ${contentTypes.join(', ')}`;
+      Generate the following content types: ${contentTypes.join(', ')}
+      
+      Create comprehensive, engaging content that is well-structured and includes:
+      1. An attention-grabbing title
+      2. Clear, well-organized sections  
+      3. Actionable insights
+      4. A compelling conclusion
+      
+      Format the response as markdown with proper headings.`;
 
     console.log('Sending prompt to OpenAI');
 
     // Call OpenAI API
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -996,6 +1008,7 @@ export async function handleGenerateContent(req: NextApiRequest, res: NextApiRes
     contentTypes.forEach((type: string) => {
       switch (type) {
         case 'Blog Posts':
+        case 'blog-post':
           content[type] = {
             title: "Campaign Blog Post",
             content: `# ${campaignData.name}\n\n${generatedContent}\n\n## Key Takeaways\n${campaignData.keyMessages.map((msg: string) => `- ${msg}`).join('\n')}`,
@@ -1004,6 +1017,7 @@ export async function handleGenerateContent(req: NextApiRequest, res: NextApiRes
           };
           break;
         case 'Social Posts':
+        case 'social':
           content[type] = {
             platform: "LinkedIn",
             posts: [
@@ -1015,6 +1029,7 @@ export async function handleGenerateContent(req: NextApiRequest, res: NextApiRes
           };
           break;
         case 'Email Campaigns':
+        case 'email':
           content[type] = {
             subject: campaignData.name,
             preview: generatedContent.substring(0, 100),
@@ -1023,6 +1038,7 @@ export async function handleGenerateContent(req: NextApiRequest, res: NextApiRes
           };
           break;
         case 'Landing Pages':
+        case 'landing-page':
           content[type] = {
             headline: campaignData.name,
             subheadline: campaignData.keyMessages[0],
