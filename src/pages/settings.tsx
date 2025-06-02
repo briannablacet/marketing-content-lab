@@ -17,11 +17,63 @@ const SettingsPage: React.FC = () => {
   const handleResetAllData = () => {
     if (window.confirm('Are you sure you want to reset all data? This cannot be undone.')) {
       // Clear all localStorage items related to the app
-      localStorage.removeItem('marketing-content-lab-writing-style');
-      localStorage.removeItem('marketing-content-lab-brand-voice');
-      localStorage.removeItem('marketing-content-lab-messaging');
-      localStorage.removeItem('marketing-content-lab-content-settings');
-      
+      const keysToRemove = [
+        // Core settings
+        'marketing-content-lab-writing-style',
+        'marketing-content-lab-brand-voice',
+        'marketing-content-lab-messaging',
+        'marketing-content-lab-content-settings',
+
+        // Boilerplates
+        'brandBoilerplates',
+        'savedBoilerplates',
+        'marketingBoilerplate',
+        'marketingBoilerplate20',
+        'marketingBoilerplate50',
+        'marketingBoilerplate100',
+
+        // Product and audience
+        'marketingProduct',
+        'marketingTargetAudience',
+        'marketingTargetAudiences',
+        'marketingValueProp',
+
+        // Brand
+        'brandVision',
+        'brandMission',
+
+        // Messaging specific
+        'marketingMessaging',
+        'marketingMessages',
+        'messageFramework',
+        'marketingCompetitors',
+        'marketingCompetitorAnalysis',
+
+        // Walkthrough flags
+        'content-creator-walkthrough-completed',
+        'walkthrough-completed',
+        'writing-style-completed',
+        'marketing-content-lab-walkthrough'
+      ];
+
+      // Remove all specified keys
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      // Also clear any other potential items that might contain marketing data
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (
+          key.includes('marketing') ||
+          key.includes('content') ||
+          key.includes('brand') ||
+          key.includes('boilerplate') ||
+          key.includes('message') ||
+          key.includes('competitor')
+        )) {
+          localStorage.removeItem(key);
+        }
+      }
+
       // Reload the page to apply changes
       window.location.reload();
     }
@@ -113,23 +165,7 @@ const SettingsPage: React.FC = () => {
 
                 <div className="border-t pt-6 mt-6">
                   <h2 className="text-xl font-semibold mb-4">Data Management</h2>
-                  
-                  <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
-                    <div className="flex items-start">
-                      <Save className="w-6 h-6 text-blue-600 mr-4 mt-1" />
-                      <div>
-                        <h3 className="text-lg font-medium mb-2">Data Storage</h3>
-                        <p className="text-gray-600 mb-2">
-                          All your data is stored locally in your browser's storage. Your data remains private 
-                          and never leaves your device unless you export it.
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          To prevent data loss, export your settings regularly or before clearing your browser data.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
+
                   <div className="bg-red-50 p-6 rounded-lg border border-red-200">
                     <div className="flex items-start">
                       <Trash className="w-6 h-6 text-red-600 mr-4 mt-1" />
