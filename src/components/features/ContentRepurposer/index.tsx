@@ -7,6 +7,7 @@ import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
 import { useMessaging } from '../../../context/MessagingContext';
 import { ArrowRight, FileText, Copy, AlertCircle, Upload, X, Sparkles } from 'lucide-react';
+import FileHandler from "@/components/shared/FileHandler";
 
 const ContentRepurposer: React.FC = () => {
   const { showNotification } = useNotification();
@@ -26,6 +27,7 @@ const ContentRepurposer: React.FC = () => {
     newLength: number;
     readabilityScore?: number;
   } | null>(null);
+  const [uploadedContent, setUploadedContent] = useState<string>("");
 
   const contentFormats = [
     'Blog Post',
@@ -64,25 +66,17 @@ const ContentRepurposer: React.FC = () => {
     }
   }, [writingStyle, brandVoice, messaging]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    if (file.size > 1024 * 1024 * 5) { // 5MB
-      showNotification('File too large. Please select a file under 5MB.', 'error');
-      return;
-    }
+    // Update handleFileContent
+    const handleFileContent = (content: string | object) => {
+      if (typeof content === "string") {
+        setContent(content);
 
-    try {
-      setSelectedFile(file);
-      const text = await file.text();
-      setContent(text);
-      showNotification('File uploaded successfully', 'success');
-    } catch (err) {
-      showNotification('Error reading file', 'error');
-      console.error('Error reading file:', err);
-    }
-  };
+      } else {
+        setUploadedContent(JSON.stringify(content, null, 2));
+        showNotification("Structured content loaded successfully", "success");
+      }
+    };
 
   const handleRepurpose = async () => {
     if (!content.trim()) {
@@ -114,7 +108,6 @@ const ContentRepurposer: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           endpoint: 'contentRepurposer',
@@ -227,33 +220,45 @@ const ContentRepurposer: React.FC = () => {
               </div>
 
               {/* File Upload */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Upload File (Optional)</label>
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100">
-                    <Upload className="w-5 h-5 mr-2" />
-                    <span>Choose File</span>
-                    <input
-                      type="file"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      accept=".txt,.doc,.docx,.md,.html"
+              <div className="border-t pt-6">
+                    <p className="text-sm text-gray-700 mb-4">
+                    Upload File (Optional)
+                    </p>
+                    <FileHandler
+                      onContentLoaded={handleFileContent}
+                      content={uploadedContent}
                     />
-                  </label>
-                  {selectedFile && (
-                    <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md">
-                      <FileText className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{selectedFile.name}</span>
-                      <button
-                        onClick={clearFile}
-                        className="ml-2 text-gray-400 hover:text-red-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+
+                    {uploadedContent && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium text-sm">
+                            Uploaded Content Preview
+                          </h4>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setPromptText(uploadedContent); // Set the promptText
+                                setActiveTab("keywords"); // Proceed to next step
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-sm"
+                            >
+                              Use This
+                            </button>
+                            <button
+                              onClick={() => setUploadedContent("")}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <pre className="text-xs text-gray-600 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">
+                          {uploadedContent}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
 
               {/* Text Input */}
               <div>

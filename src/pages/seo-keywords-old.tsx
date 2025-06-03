@@ -299,14 +299,13 @@ const SEOKeywordsPage: React.FC = () => {
       }
 
       // Call your backend
-      const response = await fetch('/api/api_endpoints', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/kewords`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'generateKeywords',
           data: {
             context: {
               messages,

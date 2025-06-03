@@ -58,13 +58,14 @@ const ABTestGenerator: React.FC = () => {
         setSavedVariations(false);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate-variations`, {
+            const response = await fetch(`/api/api_endpoints`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
+                                       
                     data: {
                         contentType: selectedType,
                         contentContext,
