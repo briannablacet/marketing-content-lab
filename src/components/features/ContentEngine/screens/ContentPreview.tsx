@@ -1,12 +1,22 @@
 // src/components/features/ContentEngine/screens/ContentPreview.tsx
 // This component handles the preview and generation of campaign content
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Loader, RefreshCw, Download, CheckCircle, Edit, X, Save, Eye, PlusCircle } from 'lucide-react';
-import { useNotification } from '../../../../context/NotificationContext';
-import { useRouter } from 'next/router';
-import { useWritingStyle } from '../../../../context/WritingStyleContext';
+import React, { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Loader,
+  RefreshCw,
+  Download,
+  CheckCircle,
+  Edit,
+  X,
+  Save,
+  Eye,
+  PlusCircle,
+} from "lucide-react";
+import { useNotification } from "../../../../context/NotificationContext";
+import { useRouter } from "next/router";
+import { useWritingStyle } from "../../../../context/WritingStyleContext";
 
 const ContentPreview: React.FC = () => {
   const router = useRouter();
@@ -24,22 +34,22 @@ const ContentPreview: React.FC = () => {
 
   // Content preview states
   const [previewMode, setPreviewMode] = useState({
-    type: '',
-    index: -1
+    type: "",
+    index: -1,
   });
 
   // Function to get campaign data from localStorage
   const getCampaignData = () => {
     try {
-      const campaignData = localStorage.getItem('currentCampaign');
+      const campaignData = localStorage.getItem("currentCampaign");
       if (campaignData) {
         const parsedData = JSON.parse(campaignData);
-        console.log('Campaign data loaded:', parsedData);
+        console.log("Campaign data loaded:", parsedData);
         return parsedData;
       }
       return null;
     } catch (error) {
-      console.error('Error getting campaign data:', error);
+      console.error("Error getting campaign data:", error);
       return null;
     }
   };
@@ -48,83 +58,100 @@ const ContentPreview: React.FC = () => {
   const generateAllContent = async () => {
     const campaignData = getCampaignData();
     if (!campaignData) {
-      showNotification('No campaign data found. Please go back and complete the campaign setup.', 'error');
+      showNotification(
+        "No campaign data found. Please go back and complete the campaign setup.",
+        "error"
+      );
       return;
     }
 
-    console.log('Starting content generation with campaign data:', campaignData);
+    console.log(
+      "Starting content generation with campaign data:",
+      campaignData
+    );
 
     setLoading({ all: true });
     try {
       // Create prompt for campaign content generation
-      const campaignPrompt = `Create a comprehensive content package for a ${campaignData.type} campaign:
+      const campaignPrompt = `Create a comprehensive content package for a ${
+        campaignData.type
+      } campaign:
 
 Campaign Name: ${campaignData.name}
 Target Audience: ${campaignData.targetAudience}
-Content Types: ${campaignData.contentTypes?.join(', ')}
-Key Messages: ${campaignData.keyMessages?.join(', ')}
+Content Types: ${campaignData.contentTypes?.join(", ")}
+Key Messages: ${campaignData.keyMessages?.join(", ")}
 
 Please create content for each of the selected content types.`;
 
-      console.log('Sending API request for content generation');
-
-      // The main handler REQUIRES a 'data' object, so we need to provide it
-      // even though handleGenerateContent doesn't use it
       const requestBody = {
-        endpoint: 'generate-content',
-        data: {}, // Required by main handler validation
-        campaignData: campaignData,
-        contentTypes: campaignData.contentTypes || [],
+        prompt: campaignPrompt, // 👈 Add this
+        data: {
+          contentType: campaignData?.contentType?.id || "blog-post",
+          campaignData: campaignData,
+          prompt: campaignPrompt, // 👈 Add this for compatibility
+        },
         writingStyle: writingStyle || {
-          styleGuide: { primary: 'Professional' },
+          styleGuide: { primary: "Professional" },
           formatting: {},
-          punctuation: {}
-        }
+          punctuation: {},
+        },
       };
 
-      console.log('Request body being sent:', JSON.stringify(requestBody, null, 2));
+      console.log(
+        "Request body being sent:",
+        JSON.stringify(requestBody, null, 2)
+      );
 
-      const response = await fetch('/api/api_endpoints', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
-      console.log('API response status:', response.status);
+      console.log("API response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API error response:', errorText);
-        throw new Error(`Failed to generate content: ${response.status} ${response.statusText}`);
+        console.error("API error response:", errorText);
+        throw new Error(
+          `Failed to generate content: ${response.status} ${response.statusText}`
+        );
       }
 
       const data = await response.json();
-      console.log('Generated content received:', data);
+      console.log("Generated content received:", data);
 
       // The API is now returning the content directly as an object with content types
-      console.log('Raw API response data:', data);
-      
+      console.log("Raw API response data:", data);
+
       // Use the data directly since it's already properly structured
       setContent(data);
 
       // Initialize edit states for each content type
       const newEditMode: Record<string, boolean> = {};
       const newEditContent: Record<string, any> = {};
-      Object.keys(data).forEach(type => {
+      Object.keys(data).forEach((type) => {
         newEditMode[type] = false;
         newEditContent[type] = data[type];
       });
       setEditMode(newEditMode);
       setEditContent(newEditContent);
 
-      showNotification('Content generated successfully!', 'success');
+      showNotification("Content generated successfully!", "success");
     } catch (error) {
-      console.error('Error generating content:', error);
+      console.error("Error generating content:", error);
       showNotification(
-        error instanceof Error ? error.message : 'Failed to generate content. Please try again.', 
-        'error'
+        error instanceof Error
+          ? error.message
+          : "Failed to generate content. Please try again.",
+        "error"
       );
     } finally {
       setLoading({ all: false });
@@ -139,7 +166,8 @@ Please create content for each of the selected content types.`;
     if (!contentType) return null;
 
     const previewTitle = contentType.title || previewMode.type;
-    const previewContent = contentType.content || JSON.stringify(contentType, null, 2);
+    const previewContent =
+      contentType.content || JSON.stringify(contentType, null, 2);
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -147,7 +175,7 @@ Please create content for each of the selected content types.`;
           <div className="p-4 border-b flex justify-between items-center">
             <h3 className="font-bold text-lg">{previewTitle}</h3>
             <button
-              onClick={() => setPreviewMode({ type: '', index: -1 })}
+              onClick={() => setPreviewMode({ type: "", index: -1 })}
               className="text-gray-500 hover:text-gray-700"
             >
               <X size={20} />
@@ -175,12 +203,15 @@ Please create content for each of the selected content types.`;
                 <>
                   <button
                     onClick={() => {
-                      setContent(prev => ({
+                      setContent((prev) => ({
                         ...prev,
-                        [type]: editContent[type]
+                        [type]: editContent[type],
                       }));
-                      setEditMode(prev => ({ ...prev, [type]: false }));
-                      showNotification('Content updated successfully!', 'success');
+                      setEditMode((prev) => ({ ...prev, [type]: false }));
+                      showNotification(
+                        "Content updated successfully!",
+                        "success"
+                      );
                     }}
                     className="text-green-600 hover:text-green-700 p-1"
                     title="Save changes"
@@ -189,10 +220,10 @@ Please create content for each of the selected content types.`;
                   </button>
                   <button
                     onClick={() => {
-                      setEditMode(prev => ({ ...prev, [type]: false }));
-                      setEditContent(prev => ({
+                      setEditMode((prev) => ({ ...prev, [type]: false }));
+                      setEditContent((prev) => ({
                         ...prev,
-                        [type]: content[type]
+                        [type]: content[type],
                       }));
                     }}
                     className="text-red-600 hover:text-red-700 p-1"
@@ -204,7 +235,9 @@ Please create content for each of the selected content types.`;
               ) : (
                 <>
                   <button
-                    onClick={() => setEditMode(prev => ({ ...prev, [type]: true }))}
+                    onClick={() =>
+                      setEditMode((prev) => ({ ...prev, [type]: true }))
+                    }
                     className="text-blue-600 hover:text-blue-700 p-1"
                     title="Edit content"
                   >
@@ -226,24 +259,29 @@ Please create content for each of the selected content types.`;
           {editMode[type] ? (
             <textarea
               value={
-                typeof editContent[type] === 'object' 
+                typeof editContent[type] === "object"
                   ? JSON.stringify(editContent[type], null, 2)
                   : editContent[type]
               }
-              onChange={(e) => setEditContent(prev => ({
-                ...prev,
-                [type]: typeof editContent[type] === 'object' 
-                  ? JSON.parse(e.target.value)
-                  : e.target.value
-              }))}
+              onChange={(e) =>
+                setEditContent((prev) => ({
+                  ...prev,
+                  [type]:
+                    typeof editContent[type] === "object"
+                      ? JSON.parse(e.target.value)
+                      : e.target.value,
+                }))
+              }
               className="w-full h-96 p-3 border rounded-lg font-mono text-sm"
               placeholder="Edit content here..."
             />
           ) : (
             <div className="prose max-w-none">
-              {typeof data === 'object' ? (
+              {typeof data === "object" ? (
                 <div>
-                  {data.title && <h3 className="text-xl font-semibold mb-4">{data.title}</h3>}
+                  {data.title && (
+                    <h3 className="text-xl font-semibold mb-4">{data.title}</h3>
+                  )}
                   {data.content && (
                     <div className="whitespace-pre-wrap leading-relaxed">
                       {data.content}
@@ -258,30 +296,40 @@ Please create content for each of the selected content types.`;
                   {data.body && (
                     <div className="mb-4">
                       <h4 className="font-medium text-gray-700">Body:</h4>
-                      <div className="whitespace-pre-wrap leading-relaxed">{data.body}</div>
+                      <div className="whitespace-pre-wrap leading-relaxed">
+                        {data.body}
+                      </div>
                     </div>
                   )}
                   {data.posts && (
                     <div className="space-y-4">
                       {data.posts.map((post: any, index: number) => (
                         <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                          <h4 className="font-medium text-gray-700">Post {index + 1}:</h4>
-                          <div className="whitespace-pre-wrap leading-relaxed">{post.content}</div>
+                          <h4 className="font-medium text-gray-700">
+                            Post {index + 1}:
+                          </h4>
+                          <div className="whitespace-pre-wrap leading-relaxed">
+                            {post.content}
+                          </div>
                           {post.hashtags && (
                             <div className="mt-2 text-blue-600">
-                              {post.hashtags.join(' ')}
+                              {post.hashtags.join(" ")}
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
                   )}
-                  {typeof data === 'string' && (
-                    <div className="whitespace-pre-wrap leading-relaxed">{data}</div>
+                  {typeof data === "string" && (
+                    <div className="whitespace-pre-wrap leading-relaxed">
+                      {data}
+                    </div>
                   )}
                   {data.metadata && Object.keys(data.metadata).length > 0 && (
                     <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium text-gray-700 mb-2">Metadata:</h4>
+                      <h4 className="font-medium text-gray-700 mb-2">
+                        Metadata:
+                      </h4>
                       <pre className="text-sm text-gray-600">
                         {JSON.stringify(data.metadata, null, 2)}
                       </pre>
@@ -289,7 +337,9 @@ Please create content for each of the selected content types.`;
                   )}
                 </div>
               ) : (
-                <div className="whitespace-pre-wrap leading-relaxed">{data}</div>
+                <div className="whitespace-pre-wrap leading-relaxed">
+                  {data}
+                </div>
               )}
             </div>
           )}
@@ -309,7 +359,9 @@ Please create content for each of the selected content types.`;
       <div className="flex flex-col items-center justify-center h-64">
         <Loader className="w-10 h-10 text-blue-500 animate-spin mb-4" />
         <p className="text-slate-600">Generating your campaign content...</p>
-        <p className="text-slate-500 text-sm mt-2">This may take a few moments</p>
+        <p className="text-slate-500 text-sm mt-2">
+          This may take a few moments
+        </p>
       </div>
     );
   }
@@ -319,7 +371,9 @@ Please create content for each of the selected content types.`;
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Content Preview</h1>
-          <p className="text-gray-600 mt-1">Review and edit your generated campaign content</p>
+          <p className="text-gray-600 mt-1">
+            Review and edit your generated campaign content
+          </p>
         </div>
         <div className="flex gap-3">
           <button
@@ -343,28 +397,39 @@ Please create content for each of the selected content types.`;
             onClick={() => {
               // Export as markdown instead of JSON
               const campaignData = getCampaignData();
-              
+
               // Create a nicely formatted markdown document
-              let markdownContent = `# ${campaignData?.name || 'Campaign'} Content\n\n`;
-              markdownContent += `**Campaign Type:** ${campaignData?.type || 'Not specified'}\n`;
-              markdownContent += `**Target Audience:** ${campaignData?.targetAudience || 'Not specified'}\n`;
+              let markdownContent = `# ${
+                campaignData?.name || "Campaign"
+              } Content\n\n`;
+              markdownContent += `**Campaign Type:** ${
+                campaignData?.type || "Not specified"
+              }\n`;
+              markdownContent += `**Target Audience:** ${
+                campaignData?.targetAudience || "Not specified"
+              }\n`;
               markdownContent += `**Generated:** ${new Date().toLocaleDateString()}\n\n`;
-              
-              if (campaignData?.keyMessages && campaignData.keyMessages.length > 0) {
+
+              if (
+                campaignData?.keyMessages &&
+                campaignData.keyMessages.length > 0
+              ) {
                 markdownContent += `## Key Messages\n\n`;
-                campaignData.keyMessages.forEach((message: string, index: number) => {
-                  markdownContent += `${index + 1}. ${message}\n`;
-                });
+                campaignData.keyMessages.forEach(
+                  (message: string, index: number) => {
+                    markdownContent += `${index + 1}. ${message}\n`;
+                  }
+                );
                 markdownContent += `\n`;
               }
-              
+
               markdownContent += `---\n\n`;
-              
+
               // Add each content type
               Object.entries(content).forEach(([type, data]) => {
                 markdownContent += `## ${type}\n\n`;
-                
-                if (typeof data === 'object') {
+
+                if (typeof data === "object") {
                   // Handle different content structures
                   if (data.title) {
                     markdownContent += `### ${data.title}\n\n`;
@@ -383,7 +448,9 @@ Please create content for each of the selected content types.`;
                       markdownContent += `### Post ${index + 1}\n\n`;
                       markdownContent += `${post.content}\n\n`;
                       if (post.hashtags) {
-                        markdownContent += `**Hashtags:** ${post.hashtags.join(' ')}\n\n`;
+                        markdownContent += `**Hashtags:** ${post.hashtags.join(
+                          " "
+                        )}\n\n`;
                       }
                     });
                   }
@@ -397,23 +464,27 @@ Please create content for each of the selected content types.`;
                   // Handle string content
                   markdownContent += `${data}\n\n`;
                 }
-                
+
                 markdownContent += `---\n\n`;
               });
-              
+
               markdownContent += `*Generated by Marketing Content Lab*\n`;
-              
+
               // Create and download markdown file
-              const blob = new Blob([markdownContent], { type: 'text/markdown' });
+              const blob = new Blob([markdownContent], {
+                type: "text/markdown",
+              });
               const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
+              const a = document.createElement("a");
               a.href = url;
-              a.download = `${(campaignData?.name || 'campaign').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_content.md`;
+              a.download = `${(campaignData?.name || "campaign")
+                .replace(/[^a-z0-9]/gi, "_")
+                .toLowerCase()}_content.md`;
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
               URL.revokeObjectURL(url);
-              showNotification('Content exported as markdown file!', 'success');
+              showNotification("Content exported as markdown file!", "success");
             }}
             disabled={!content || Object.keys(content).length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -438,9 +509,8 @@ Please create content for each of the selected content types.`;
       ) : (
         <div>
           {renderContentSections()}
-          
+
           {/* Footer actions */}
-          
         </div>
       )}
 
