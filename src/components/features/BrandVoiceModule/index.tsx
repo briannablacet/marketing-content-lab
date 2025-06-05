@@ -46,14 +46,20 @@ const HelpText = ({ text, link }: { text: string; link?: string }) => (
     <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-sm rounded p-2 absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64">
       {text}
       {link && (
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-blue-300 hover:text-blue-200 mt-1 text-xs"
-        >
-          Learn more →
-        </a>
+       <a
+       href="#"
+       onClick={(e) => {
+         e.preventDefault();
+         window.open(
+           'https://iconicfox.com.au/brand-archetypes/',
+           'popupWindow',
+           'width=600,height=800,scrollbars=yes'
+         );
+       }}
+       className="text-blue-500 hover:underline text-xs"
+     >
+       Learn more
+     </a>
       )}
       <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
         <div className="border-8 border-transparent border-t-gray-800"></div>
