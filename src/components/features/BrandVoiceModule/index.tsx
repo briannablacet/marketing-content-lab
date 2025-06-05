@@ -168,9 +168,15 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
                 Select your brand's archetype
                 <span className="inline-block align-middle ml-1">
                   <a
-                    href="https://iconicfox.com.au/brand-archetypes/"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.open(
+                        'https://iconicfox.com.au/brand-archetypes/',
+                        'popupWindow',
+                        'width=600,height=800,scrollbars=yes'
+                      );
+                    }}
                     className="text-blue-500 hover:underline text-xs"
                   >
                     Learn more
