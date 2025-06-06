@@ -91,26 +91,22 @@ Text: ${data.content}
 
 Apply these humanization techniques:
 ${parameters.clicheRemoval ? "- Remove AI clichés and robotic phrasing\n" : ""}
-${
-  parameters.addContractions
-    ? "- Add natural contractions where appropriate\n"
-    : ""
-}
-${
-  parameters.addPersonality
-    ? "- Incorporate a warmer, more personable tone\n"
-    : ""
-}
-${
-  parameters.formality
-    ? `- Adjust formality level to be ${parameters.formality}\n`
-    : ""
-}
-${
-  parameters.creativity
-    ? `- Apply ${parameters.creativity} level of creative variation\n`
-    : ""
-}
+${parameters.addContractions
+          ? "- Add natural contractions where appropriate\n"
+          : ""
+        }
+${parameters.addPersonality
+          ? "- Incorporate a warmer, more personable tone\n"
+          : ""
+        }
+${parameters.formality
+          ? `- Adjust formality level to be ${parameters.formality}\n`
+          : ""
+        }
+${parameters.creativity
+          ? `- Apply ${parameters.creativity} level of creative variation\n`
+          : ""
+        }
 
 Additional humanization principles:
 - Replace robotic transitions ("it is important to note," "as mentioned earlier")
@@ -119,9 +115,8 @@ Additional humanization principles:
 - Add natural discourse markers humans use when speaking or writing
 - Incorporate tasteful idioms and colloquialisms where appropriate
 - Replace generic words with more specific, vivid alternatives
-- Follow ${
-        parameters.styleGuide || "Chicago Manual of Style"
-      } for punctuation and formatting
+- Follow ${parameters.styleGuide || "Chicago Manual of Style"
+        } for punctuation and formatting
 - Ensure the content sounds like it was written by a thoughtful human expert
 - Maintain the original meaning and expertise level while making it sound more natural`;
 
@@ -475,39 +470,34 @@ async function handleMissionVision(data: any, res: NextApiResponse) {
     console.log(`Generating mission and vision for: ${companyName}`);
 
     // Create a comprehensive prompt for mission and vision generation
-    const prompt = `You are an expert brand strategist specializing in creating compelling mission and vision statements.
+    const prompt = `You are a senior brand strategist with a sharp sense of voice and emotional intelligence. You don't write for brochures—you write for real humans. Your mission and vision statements are never generic. They're specific, bold, and just a little unexpected.
+
+Your goal is to help brands sound alive. Avoid filler phrases like "we strive" or "innovative solutions." Instead, write like you've been up all night building the thing yourself. Use vivid verbs, plain speech, and emotional clarity. Let it feel like someone with a spine and a sense of humor wrote it.
 
 Please create a mission statement and vision statement for a company with the following details:
 
 Company Name: ${companyName || "This company"}
-Target Audience: ${audience || "Not specified"}
-Key Differentiator: ${differentiator || "Not specified"}
-Value Proposition: ${valueProp || "Not specified"}
-Current Tagline: ${tagline || "Not specified"}
-Company Description: ${boilerplate || "Not specified"}
-Additional Context: ${additionalContext || "None provided"}
+What they offer: ${valueProp || "a product or service"}
+Who they serve: ${audience || "a target audience"}
+Core Beliefs: ${boilerplate || "N/A"}
+Tone: ${valueProp ? "authentic and confident" : "professional"}
 
 Mission Statement Guidelines:
-- Should describe what the company does TODAY
-- Should explain WHY the company exists
-- Should be inspiring but grounded in reality
-- Should be 1-3 sentences long
-- Should connect with the target audience
+- Describe what the company does TODAY
+- Explain WHY the company exists
+- Use clear, emotionally resonant language—not filler
+- Keep it under 50 words
 
 Vision Statement Guidelines:
-- Should describe the company's aspirational future
-- Should paint a picture of the world the company wants to create
-- Should be inspirational and forward-looking
-- Should be 1-2 sentences long
-- Should be memorable and motivating
+- Describe the better future the company wants to help create
+- Be inspiring, but grounded
+- Avoid clichés like "make the world a better place"
 
 Format your response as a JSON object with these exact fields:
 {
   "mission": "The mission statement here",
   "vision": "The vision statement here"
-}
-
-Make the statements specific to this company, avoid generic corporate speak, and ensure they reflect the company's unique value and purpose.`;
+}`;
 
     console.log("Sending prompt to OpenAI for mission and vision");
 
@@ -602,20 +592,18 @@ async function handleProsePerfector(data: any, res: NextApiResponse) {
     };
 
     try {
-      const prompt = `As a professional editor with expertise matching ${
-        options.styleGuide || "Chicago Manual of Style"
-      } guidelines, enhance the following text:
+      const prompt = `As a professional editor with expertise matching ${options.styleGuide || "Chicago Manual of Style"
+        } guidelines, enhance the following text:
 
 Text: ${data.text}
 
 Apply these professional editing standards:
 ${options.improveClarity ? "- Improve clarity and readability\n" : ""}
 ${options.enhanceEngagement ? "- Enhance engagement\n" : ""}
-${
-  options.adjustFormality
-    ? `- Adjust formality level to be ${options.formalityLevel}\n`
-    : ""
-}
+${options.adjustFormality
+          ? `- Adjust formality level to be ${options.formalityLevel}\n`
+          : ""
+        }
 
 Additional editing principles:
 - Remove all unnecessary words and redundancies
@@ -735,11 +723,10 @@ async function handleGenerateKeywords(data: any, res: NextApiResponse) {
 
     // Generate a prompt for keyword generation
     const prompt = `Generate SEO keywords for: ${topicText}
-    Target audience: ${
-      Array.isArray(personas)
+    Target audience: ${Array.isArray(personas)
         ? personas.join(", ")
         : personas || "marketing professionals"
-    }
+      }
     Content type: ${contentType || "blog post"}
     
     Please provide the following in your response:
@@ -1023,15 +1010,15 @@ Only include information that would be publicly available or reasonably inferred
         processedCompetitors.length > 0
           ? processedCompetitors
           : [
-              {
-                name: "Analysis failed",
-                uniquePositioning: [
-                  "Failed to analyze competitors. Please try again.",
-                ],
-                keyThemes: [],
-                gaps: [],
-              },
-            ],
+            {
+              name: "Analysis failed",
+              uniquePositioning: [
+                "Failed to analyze competitors. Please try again.",
+              ],
+              keyThemes: [],
+              gaps: [],
+            },
+          ],
     });
   } catch (error) {
     console.error("Error in competitor analysis:", error);
@@ -1070,30 +1057,27 @@ export async function handleGenerateContent(
     console.log("Content types:", contentTypes);
 
     // Construct the prompt based on campaign data and writing style
-    const prompt = `Generate content for a ${
-      campaignData.type
-    } campaign with the following details:
+    const prompt = `Generate content for a ${campaignData.type
+      } campaign with the following details:
       Campaign Name: ${campaignData.name}
       Goal: ${campaignData.goal}
       Target Audience: ${campaignData.targetAudience}
       Key Messages: ${campaignData.keyMessages.join(", ")}
       
       Writing Style Guidelines:
-      ${
-        writingStyle
-          ? `
+      ${writingStyle
+        ? `
       - Primary Style: ${writingStyle.styleGuide.primary}
-      - Custom Rules: ${
-        writingStyle.styleGuide.customRules?.join(", ") || "None"
-      }
+      - Custom Rules: ${writingStyle.styleGuide.customRules?.join(", ") || "None"
+        }
       - Formatting: ${Object.entries(writingStyle.formatting)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(", ")}
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(", ")}
       - Punctuation: ${Object.entries(writingStyle.punctuation)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(", ")}
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(", ")}
       `
-          : "Use a professional and engaging tone."
+        : "Use a professional and engaging tone."
       }
       
       Generate the following content types: ${contentTypes.join(", ")}`;
@@ -1131,11 +1115,10 @@ export async function handleGenerateContent(
         case "Blog Posts":
           content[type] = {
             title: "Campaign Blog Post",
-            content: `# ${
-              campaignData.name
-            }\n\n${generatedContent}\n\n## Key Takeaways\n${campaignData.keyMessages
-              .map((msg: string) => `- ${msg}`)
-              .join("\n")}`,
+            content: `# ${campaignData.name
+              }\n\n${generatedContent}\n\n## Key Takeaways\n${campaignData.keyMessages
+                .map((msg: string) => `- ${msg}`)
+                .join("\n")}`,
             metaDescription: "A compelling blog post for your campaign",
             keywords: campaignData.keyMessages,
           };
@@ -1167,11 +1150,10 @@ export async function handleGenerateContent(
           content[type] = {
             headline: campaignData.name,
             subheadline: campaignData.keyMessages[0],
-            content: `# ${
-              campaignData.name
-            }\n\n${generatedContent}\n\n## Key Benefits\n${campaignData.keyMessages
-              .map((msg: string) => `- ${msg}`)
-              .join("\n")}`,
+            content: `# ${campaignData.name
+              }\n\n${generatedContent}\n\n## Key Benefits\n${campaignData.keyMessages
+                .map((msg: string) => `- ${msg}`)
+                .join("\n")}`,
             cta: "Get Started",
           };
           break;
@@ -1213,42 +1195,21 @@ async function handleValuePropositionGenerator(
       tone = "professional",
     } = data;
     console.log(
-      `Generating value proposition for: ${
-        productInfo.name || "Marketing Platform"
+      `Generating value proposition for: ${productInfo.name || "Marketing Platform"
       }`
     );
 
     // Build a prompt for the AI
-    const prompt = `Create a messaging framework for the following product:
+    const prompt = `You are an elite brand strategist trained to craft sharp, human-centered value propositions that stand out. You think in clear language, vivid outcomes, and real-world relevance. Every word must earn its place. You avoid generic phrasing and aim for language that's slightly unexpected—sparkling, surprising, and emotionally intelligent. The goal: sound like a brilliant strategist, not a content farm.
 
-Product/Service: ${productInfo.name || "Marketing Platform"}
-Description: ${productInfo.description || ""}
-Target Audience: ${
-      Array.isArray(productInfo.targetAudience)
-        ? productInfo.targetAudience.join("; ")
-        : productInfo.targetAudience || ""
-    }
-Industry: ${industry}
-Competitors: ${
-      Array.isArray(competitors) ? competitors.join(", ") : competitors
-    }
+Write a compelling value proposition for a brand called "${productInfo.name || "Marketing Platform"}" that offers ${productInfo.description || "a service"} to ${Array.isArray(productInfo.targetAudience) ? productInfo.targetAudience.join("; ") : productInfo.targetAudience || "its target audience"}. Make it clear, confident, and slightly unexpected. Focus on real outcomes. The tone should be ${tone || "professional"}. Keep it under 30 words.
 
-Focus Areas: ${Array.isArray(focusAreas) ? focusAreas.join(", ") : focusAreas}
-Tone: ${tone}
-
-Please create a messaging framework with the following components:
-1. A compelling value proposition (1-2 sentences)
-2. 3-5 key differentiators that set this product apart
-3. 3-5 specific benefits for the target audience
-
-Format your response as a valid JSON object with these fields:
+Format your response as a valid JSON object with these exact fields:
 {
-  "valueProposition": "A clear, compelling value proposition statement",
+  "valueProposition": "your value proposition here",
   "keyDifferentiators": ["differentiator 1", "differentiator 2", "differentiator 3"],
-  "targetedMessages": ["benefit 1", "benefit 2", "benefit 3"]
-}
-
-Make the content specific, substantive and actionable. Do not use generic marketing language.`;
+  "targetedMessages": ["message 1", "message 2", "message 3"]
+}`;
 
     try {
       console.log("Sending prompt to OpenAI");
@@ -1350,11 +1311,10 @@ async function handlePersonaGenerator(data: any, res: NextApiResponse) {
 Product: ${productName}
 Product Type: ${productType}
 ${currentPersona?.role ? `Current Target Role: ${currentPersona.role}` : ""}
-${
-  currentPersona?.industry
-    ? `Current Industry Focus: ${currentPersona.industry}`
-    : ""
-}
+${currentPersona?.industry
+        ? `Current Industry Focus: ${currentPersona.industry}`
+        : ""
+      }
 
 Please provide 2 detailed target audience personas that would be ideal customers for this product.
 Each persona should include:
@@ -1472,9 +1432,8 @@ async function handleModifyContent(data: any, res: NextApiResponse) {
     } = data;
 
     // Create a prompt for the AI
-    const prompt = `You are an AI content editor specializing in editing and improving ${
-      contentType || "content"
-    }.
+    const prompt = `You are an AI content editor specializing in editing and improving ${contentType || "content"
+      }.
     
 Current content title: ${originalTitle || "Untitled content"}
 
@@ -1485,16 +1444,15 @@ User request:
 ${userRequest}
 
 Previous conversation for context:
-${
-  previousMessages
-    ? previousMessages
-        .map(
-          (msg: { role: string; content: string }) =>
-            `${msg.role}: ${msg.content}`
-        )
-        .join("\n")
-    : "None"
-}
+${previousMessages
+        ? previousMessages
+          .map(
+            (msg: { role: string; content: string }) =>
+              `${msg.role}: ${msg.content}`
+          )
+          .join("\n")
+        : "None"
+      }
 
 Please edit the content according to the user's request. Provide the following:
 1. A brief message explaining what changes you've made
@@ -1802,41 +1760,34 @@ export async function generateTaglines({
   personality: string[];
 }) {
   try {
-    const prompt = `As an expert copywriter, create three unique, compelling taglines for a business with the following details:
+    const prompt = `You are a creative director who crafts punchy, memorable taglines that make people stop, smile, or lean in. Your taglines are never generic—they're sharp, emotionally intelligent, and slightly unexpected.
 
-Business Name: ${businessName}
-Description: ${description}
-Product/Solution: ${product}
-Target Audience: ${audience}
-Value Proposition: ${promise}
-Tone: ${tone}
-Writing Style: ${style}
-Brand Archetype: ${archetype}
-Brand Personality Traits: ${personality.join(", ")}
+Your job is to write taglines that:
+- Are short (under 10 words)
+- Capture the product's promise or experience
+- Feel like they belong on a billboard—or a T-shirt
+- Match the product's tone: from luxury and poetic to playful or bold
+- Clever but never cutesy—no puns, no dad jokes. Think sharp, evocative, and emotionally intelligent. Avoid puns or filler phrases. Write like you're naming something unforgettable—a line people quote, print, or tattoo. Clarity + spark over cleverness alone.
 
-Requirements for each tagline:
-1. Must be memorable and impactful
-2. Should reflect the brand's tone and personality
-3. Must be concise (ideally 2-7 words)
-4. Should communicate the core value proposition
-5. Must be unique and avoid clichés
-6. Should be adaptable across different marketing channels
+Write in the tone of the selected archetype. If the archetype is the Lover, prioritize language that is romantic, emotionally rich, and evocative—no puns, no snark, no jokes. The goal is to stir the heart, not get a laugh. If the archetype is the Jester, aim for cleverness and charm without being cringey or cartoonish. Match the archetype's emotional truth, not just its surface style.
 
-Return your response as a JSON array of three taglines, each with a brief explanation of why it works:
-[
-  {
-    "tagline": "first tagline",
-    "explanation": "brief explanation of why this tagline works"
-  },
-  {
-    "tagline": "second tagline",
-    "explanation": "brief explanation of why this tagline works"
-  },
-  {
-    "tagline": "third tagline",
-    "explanation": "brief explanation of why this tagline works"
-  }
-]`;
+Here's what you're working with:
+Brand Name: ${businessName || "Brand"}
+Product/Service: ${description || "A product or service"}
+Audience: ${audience || "its audience"}
+Tone: ${tone || "smart and confident"}
+Archetype: ${archetype || "Not specified"}
+
+Write 3 tagline options that reflect the product's unique energy. Make them distinct, evocative, and hard to ignore.
+
+Respond with:
+{
+  "taglines": [
+    "First option here.",
+    "Second option here.",
+    "Third option here."
+  ]
+}`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
@@ -1858,7 +1809,7 @@ Return your response as a JSON array of three taglines, each with a brief explan
     const parsedResponse = JSON.parse(responseText);
 
     // Extract just the taglines from the response
-    return parsedResponse.map((item: any) => item.tagline);
+    return parsedResponse.taglines;
   } catch (error) {
     console.error("Error generating taglines:", error);
     throw error;
