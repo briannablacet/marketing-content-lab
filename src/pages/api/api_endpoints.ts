@@ -1240,9 +1240,11 @@ Write a paragraph that feels like it was crafted by someone who truly understand
       const responseText = completion.choices[0].message?.content || "";
       console.log("Received response from OpenAI");
 
-      // Just return the text as the value proposition
+      // Return the response in the format expected by the frontend
       return res.status(200).json({
         valueProposition: responseText,
+        keyDifferentiators: [],
+        targetedMessages: []
       });
     } catch (apiError: unknown) {
       console.error("OpenAI API error:", apiError);
@@ -1703,7 +1705,15 @@ Format your response as a valid JSON object with this structure:
 
     try {
       const parsedResponse = JSON.parse(responseText);
-      return res.status(200).json(parsedResponse);
+
+      // Map the response to match the frontend's expected format
+      const mappedResponse = {
+        valueProposition: parsedResponse.valueProp || '',
+        keyDifferentiators: parsedResponse.pillars || [],
+        targetedMessages: parsedResponse.benefits || []
+      };
+
+      return res.status(200).json(mappedResponse);
     } catch (parseError) {
       console.error("Failed to parse messaging framework response:", parseError);
       return res.status(500).json({
@@ -2036,7 +2046,9 @@ export default async function handler(
         return await handleAnalyzeCompetitors(data, res);
       case "value-proposition":
       case "valueProposition":
-        return await handleValuePropositionGenerator(data, res);
+        return handleMessagingFramework(data, res);
+      case "generateMessagingFramework":
+        return handleMessagingFramework(data, res);
       case "persona-generator":
       case "personaGenerator":
         return await handlePersonaGenerator(data, res);
@@ -2061,8 +2073,6 @@ export default async function handler(
         return res.status(200).json(adaptedBoilerplate);
       case "missionVision":
         return await handleMissionVision(data, res);
-      case "generateMessagingFramework":
-        return handleMessagingFramework(data, res);
       default:
         return res.status(400).json({
           error: "Invalid endpoint",
