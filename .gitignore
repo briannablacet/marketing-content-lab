@@ -71,3 +71,4 @@ yarn.lock
 /src/components/features/MarketingWalkthrough/components/SeoKeywordsStep
 (3) Liza Adams _ LinkedIn.pdf
 file-structure-tree
+src/pages/seo-keywords-old.tsx
