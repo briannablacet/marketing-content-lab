@@ -1200,16 +1200,24 @@ async function handleValuePropositionGenerator(
     );
 
     // Build a prompt for the AI
-    const prompt = `You are an elite brand strategist trained to craft sharp, human-centered value propositions that stand out. You think in clear language, vivid outcomes, and real-world relevance. Every word must earn its place. You avoid generic phrasing and aim for language that's slightly unexpected—sparkling, surprising, and emotionally intelligent. The goal: sound like a brilliant strategist, not a content farm.
+    const prompt = `You are a sharp, human-centered brand strategist. Write a 50-word boilerplate paragraph that captures the essence of a company in a way that's both professional and deeply human.
 
-Write a compelling value proposition for a brand called "${productInfo.name || "Marketing Platform"}" that offers ${productInfo.description || "a service"} to ${Array.isArray(productInfo.targetAudience) ? productInfo.targetAudience.join("; ") : productInfo.targetAudience || "its target audience"}. Make it clear, confident, and slightly unexpected. Focus on real outcomes. The tone should be ${tone || "professional"}. Keep it under 30 words.
+Your task is to craft a paragraph that:
+- Opens with a strong, clear statement of what the company does
+- Highlights the unique value or approach that sets them apart
+- Speaks directly to their ideal audience
+- Closes with a forward-looking statement about their impact or vision
+- Uses active voice and concrete details
+- Avoids corporate jargon, buzzwords, or empty superlatives
 
-Format your response as a valid JSON object with these exact fields:
-{
-  "valueProposition": "your value proposition here",
-  "keyDifferentiators": ["differentiator 1", "differentiator 2", "differentiator 3"],
-  "targetedMessages": ["message 1", "message 2", "message 3"]
-}`;
+The tone should embody the selected brand archetype: ${tone || "Professional"}. If it's the Sage, use language that conveys wisdom and insight. If it's the Creator, emphasize innovation and imagination. If it's the Caregiver, focus on nurturing and support. Match the archetype's emotional truth, not just its surface style.
+
+Here's what we know:
+- Product Name: ${productInfo.name || "The Company"}
+- Description: ${productInfo.description || "No description provided."}
+- Target Audience: ${Array.isArray(productInfo.targetAudience) ? productInfo.targetAudience.join(", ") : productInfo.targetAudience || "General audience"}
+
+Write a paragraph that feels like it was crafted by someone who truly understands this company's purpose and potential. Make every word count.`;
 
     try {
       console.log("Sending prompt to OpenAI");
@@ -1678,7 +1686,6 @@ export async function generateBoilerplates({
   positioning,
   archetype,
   personality,
-  wordCount,
   numOptions = 3,
 }: {
   businessName: string;
@@ -1692,26 +1699,22 @@ export async function generateBoilerplates({
   positioning: string;
   archetype: string;
   personality: string[];
-  wordCount: string;
   numOptions?: number;
 }) {
-  const prompt = `
-You're an expert brand copywriter. Based on the information below, generate ${numOptions} different marketing boilerplates for this company. Each boilerplate should be approximately ${wordCount} words (within 5 words of the target) and reflect the brand's voice, tone, and personality.
+  const prompt = `You are a sharp, human-centered brand strategist. Write ${numOptions} different 20-word boilerplate options for a company based on the following inputs.
 
-Business name: ${businessName}
-Description: ${description}
-Product or solution: ${product}
-Ideal customer or audience: ${audience}
-Value proposition: ${promise}
-Differentiator: ${differentiator}
-Positioning: ${positioning}
-Tone: ${tone}
-Style: ${style}
-Brand archetype: ${archetype}
-Brand personality traits: ${personality.join(", ")}
+Use clear, specific language that avoids jargon or filler. Every word should earn its place.
 
-Format your response as a JSON array of strings. Each string should be approximately ${wordCount} words (within 5 words of the target). Count words by splitting on spaces and counting each word as one unit.
-`;
+The tone should reflect the selected brand archetype: ${archetype || "Professional"}. If the brand is bold and innovative, reflect that. If it's nurturing or high-end, adapt accordingly. If it's mystical or transformative, make it feel like a vision.
+
+Here's what we know:
+- Product Name: ${businessName || "The Company"}
+- Description: ${description || "No description provided."}
+- Target Audience: ${Array.isArray(audience) ? audience.join(", ") : audience || "General audience"}
+
+Focus on what the company does, who it serves, and what makes it different. Avoid clichés. Make it feel alive.
+
+Format your response as a JSON array of strings, each exactly 20 words.`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -1719,8 +1722,7 @@ Format your response as a JSON array of strings. Each string should be approxima
       messages: [
         {
           role: "system",
-          content:
-            "You are an expert brand copywriter who specializes in creating compelling marketing boilerplates.",
+          content: "You are an expert brand strategist who specializes in creating compelling, human-centered boilerplates.",
         },
         {
           role: "user",
@@ -1733,8 +1735,50 @@ Format your response as a JSON array of strings. Each string should be approxima
     const responseText = completion.choices[0].message?.content || "";
     return JSON.parse(responseText);
   } catch (error) {
-    console.error("Error generating boilerplates:", error);
-    throw new Error("Failed to generate boilerplates");
+    console.error("Error generating boilerplate options:", error);
+    throw new Error("Failed to generate boilerplate options");
+  }
+}
+
+export async function expandBoilerplate({
+  boilerplate,
+  wordCount = "50",
+}: {
+  boilerplate: string;
+  wordCount?: string;
+}) {
+  const prompt = `Expand the following 20-word boilerplate to ${wordCount} words. Maintain the same tone and voice. Add detail, depth, and emotional richness while keeping the core message intact.
+
+Boilerplate:
+${boilerplate}
+
+Format your response as a JSON object with these fields:
+{
+  "boilerplate": "the expanded boilerplate text",
+  "wordCount": ${wordCount}
+}`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert writer who specializes in expanding content while maintaining its core message and emotional impact.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+    });
+
+    const responseText = completion.choices[0].message?.content || "";
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error("Error expanding boilerplate:", error);
+    throw new Error("Failed to expand boilerplate");
   }
 }
 
