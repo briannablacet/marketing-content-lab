@@ -1195,8 +1195,7 @@ async function handleValuePropositionGenerator(
       tone = "professional",
     } = data;
     console.log(
-      `Generating value proposition for: ${productInfo.name || "Marketing Platform"
-      }`
+      `Generating value proposition for: ${productInfo.name || "Marketing Platform"}`
     );
 
     // Build a prompt for the AI
@@ -1241,39 +1240,10 @@ Write a paragraph that feels like it was crafted by someone who truly understand
       const responseText = completion.choices[0].message?.content || "";
       console.log("Received response from OpenAI");
 
-      try {
-        // Parse the JSON response
-        console.log("Parsing AI response for messaging framework");
-        const parsedResponse = JSON.parse(responseText);
-
-        // Basic validation of the response
-        if (
-          !parsedResponse.valueProposition ||
-          !Array.isArray(parsedResponse.keyDifferentiators) ||
-          !Array.isArray(parsedResponse.targetedMessages)
-        ) {
-          throw new Error("Invalid response format from API");
-        }
-
-        console.log("Successfully generated messaging framework");
-        return res.status(200).json({
-          valueProposition: parsedResponse.valueProposition,
-          keyDifferentiators: parsedResponse.keyDifferentiators,
-          targetedMessages: parsedResponse.targetedMessages,
-        });
-      } catch (parseError) {
-        console.error(
-          "Failed to parse messaging framework response:",
-          parseError
-        );
-        console.log("Response text:", responseText.substring(0, 500));
-
-        return res.status(500).json({
-          error: "Failed to parse API response",
-          message:
-            "The AI returned an invalid response format. Please try again.",
-        });
-      }
+      // Just return the text as the value proposition
+      return res.status(200).json({
+        valueProposition: responseText,
+      });
     } catch (apiError: unknown) {
       console.error("OpenAI API error:", apiError);
       return res.status(500).json({
@@ -1281,7 +1251,7 @@ Write a paragraph that feels like it was crafted by someone who truly understand
         message:
           apiError instanceof Error
             ? apiError.message
-            : "Failed to generate messaging framework",
+            : "Failed to generate value proposition",
       });
     }
   } catch (error: unknown) {
@@ -1291,7 +1261,7 @@ Write a paragraph that feels like it was crafted by someone who truly understand
       message:
         error instanceof Error
           ? error.message
-          : "Failed to generate messaging framework",
+          : "Failed to generate value proposition",
     });
   }
 }
@@ -1673,6 +1643,83 @@ Return your response as JSON with the following structure:
   }
 }
 
+// Handler for messaging framework generator endpoint
+async function handleMessagingFramework(data: any, res: NextApiResponse) {
+  try {
+    console.log("Messaging framework generator received data:", data);
+
+    // Validate input
+    if (!data.productInfo) {
+      console.log("Missing product information");
+      return res.status(400).json({
+        error: "Invalid request",
+        message: "Missing product information",
+      });
+    }
+
+    const { productInfo, tone = "professional", competitors = [], valueProp } = data;
+
+    // Build the prompt
+    const prompt = `You are a senior brand strategist. Based on the following product details, generate:
+
+1. A refined Value Proposition (unless one is already provided)
+2. Three Messaging Pillars – each a full, emotionally compelling statement combining a short headline with supporting detail (in one string)
+3. Three Key Benefits – short, specific advantages for the customer
+
+Use vivid, unexpected language. Avoid clichés. Reflect the tone or archetype: ${tone || "Professional"}.
+
+Inputs:
+- Brand Name: ${productInfo.name}
+- Description: ${productInfo.description}
+- Target Audience: ${productInfo.targetAudience}
+- Competitors: ${competitors.join(", ") || "None"}
+- Existing Value Proposition: ${valueProp || "None provided"}
+
+Format your response as a valid JSON object with this structure:
+{
+  "valueProp": "Your value proposition here",
+  "pillars": ["Pillar 1 with supporting detail", "Pillar 2 with supporting detail", "Pillar 3 with supporting detail"],
+  "benefits": ["Benefit 1", "Benefit 2", "Benefit 3"]
+}`;
+
+    console.log("Sending prompt to OpenAI");
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert marketing strategist who specializes in creating clear, compelling messaging frameworks.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+    });
+
+    const responseText = completion.choices[0].message?.content || "";
+    console.log("Received response from OpenAI");
+
+    try {
+      const parsedResponse = JSON.parse(responseText);
+      return res.status(200).json(parsedResponse);
+    } catch (parseError) {
+      console.error("Failed to parse messaging framework response:", parseError);
+      return res.status(500).json({
+        error: "Failed to parse API response",
+        message: "The AI returned an invalid response format. Please try again.",
+      });
+    }
+  } catch (error) {
+    console.error("Error in messaging framework generator:", error);
+    return res.status(500).json({
+      error: "Server error",
+      message: error instanceof Error ? error.message : "Failed to generate messaging framework",
+    });
+  }
+}
+
 // boilerplate generator
 export async function generateBoilerplates({
   businessName,
@@ -2014,6 +2061,8 @@ export default async function handler(
         return res.status(200).json(adaptedBoilerplate);
       case "missionVision":
         return await handleMissionVision(data, res);
+      case "generateMessagingFramework":
+        return handleMessagingFramework(data, res);
       default:
         return res.status(400).json({
           error: "Invalid endpoint",
