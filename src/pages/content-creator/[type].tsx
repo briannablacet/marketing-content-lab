@@ -429,7 +429,7 @@ const ContentCreatorPage = () => {
     }
   };
 
-  // Update handleGenerateContent
+  // Update handleGenerateContent - FIXED VERSION
   const handleGenerateContent = async () => {
     if (!promptText && !uploadedContent) {
       showNotification("Please enter a prompt or upload content", "error");
@@ -439,51 +439,41 @@ const ContentCreatorPage = () => {
     setIsGenerating(true);
 
     try {
-      const baseRequest = {
-        contentType: contentType?.id || "blog-post",
-        prompt: promptText,
-        sourceContent: uploadedContent,
-        parameters: {
-          audience: advancedOptions.audience,
-          tone: advancedOptions.tone,
-          keywords: advancedOptions.keywords
-            .split(",")
-            .map((k) => k.trim())
-            .filter((k) => k),
-          additionalNotes: advancedOptions.additionalNotes,
+      const payload = {
+        endpoint: "generate-content",
+        data: {
+          campaignData: {
+            name: promptText || "Generated Content",
+            type: contentType?.id || "blog-post",
+            goal: "Create engaging content",
+            targetAudience: advancedOptions.audience || "general audience",
+            keyMessages: advancedOptions.keywords
+              .split(",")
+              .map((k) => k.trim())
+              .filter((k) => k),
+          },
+          contentTypes: [contentType?.id || "blog-post"],
+          writingStyle: {
+            styleGuide: {
+              primary: advancedOptions.tone || "professional",
+              customRules: [],
+            },
+            formatting: {},
+            punctuation: {},
+          },
         },
       };
 
-      console.log("Content generation request details:", {
-        contentType: contentType?.id,
-        promptLength: promptText.length,
-        selectedTone: advancedOptions.tone,
-        keywordCount: advancedOptions.keywords
-          ? advancedOptions.keywords.split(",").length
-          : 0,
+      console.log("Sending API request with payload:", JSON.stringify(payload).substring(0, 500) + "...");
+
+      const response = await fetch('/api/api_endpoints', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload),
       });
-
-      const payload = {
-        endpoint: "generate-content",
-        data: baseRequest,
-      };
-
-      console.log(
-        "Sending API request with payload:",
-        JSON.stringify(payload).substring(0, 500) + "..."
-      );
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -492,17 +482,23 @@ const ContentCreatorPage = () => {
       }
 
       const result = await response.json();
-      const document = result?.data?.document;
+      console.log("API Response received:", result);
 
-      console.log("API Response received:", document ? "success" : "empty");
+      // The api_endpoints returns content in a different format
+      const contentKey = contentType?.id || "blog-post";
+      const content = result[contentKey];
 
-      if (document?.processedContent) {
-        setGeneratedContent(document.processedContent);
-        setGeneratedTitle("Generated Content");
+      if (content) {
+        const contentText = content.content || content;
+        setGeneratedContent(contentText);
+        setGeneratedTitle(content.title || "Generated Content");
         setGeneratedMetadata({
-          title: "Generated Content",
-          description: document.processedContent.substring(0, 160),
-          keywords: baseRequest.parameters.keywords,
+          title: content.title || "Generated Content",
+          description: contentText.substring(0, 160),
+          keywords: advancedOptions.keywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter((k) => k),
         });
       } else {
         throw new Error("Invalid response format from API");
@@ -1407,22 +1403,41 @@ const ContentCreatorPage = () => {
                           />
                         </div>
                       ) : (
-                        /* View Mode - Show formatted content */
-                        <>
-                          {/* Title */}
-                          <h1 className="text-2xl font-bold mb-4">
-                            {parsedContent.title || generatedTitle}
-                          </h1>
+                        /* // src/pages/content-creator/[type].tsx - Replace the "View Mode" section in your edit tab
+
+/* View Mode - Show Word-style formatted content */
+                        <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
+                          fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                          lineHeight: '1.6',
+                          fontSize: '11pt',
+                          color: '#333'
+                        }}>
+                          {/* Document Title - Word style */}
+                          <div className="text-center mb-6">
+                            <h1 className="text-2xl font-bold mb-2" style={{
+                              color: '#2B579A',
+                              fontFamily: 'Calibri, sans-serif',
+                              fontSize: '18pt',
+                              fontWeight: 'bold'
+                            }}>
+                              {parsedContent.title || generatedTitle}
+                            </h1>
+                          </div>
 
                           {/* Introduction */}
                           {parsedContent.introduction && (
-                            <div className="text-gray-700 mb-6">
+                            <div className="mb-6" style={{ textAlign: 'justify' }}>
                               {parsedContent.introduction
                                 .split("\n")
                                 .map((para, idx) => (
                                   <p
                                     key={idx}
                                     className={idx > 0 ? "mt-4" : ""}
+                                    style={{
+                                      margin: idx > 0 ? '12pt 0' : '0',
+                                      textIndent: '0pt',
+                                      lineHeight: '1.6'
+                                    }}
                                   >
                                     {para}
                                   </p>
@@ -1430,20 +1445,32 @@ const ContentCreatorPage = () => {
                             </div>
                           )}
 
-                          {/* Content Sections */}
+                          {/* Content Sections with Word-style headings */}
                           {parsedContent.sections.map((section, idx) => (
                             <div key={idx} className="mb-6">
-                              <h2 className="text-xl font-semibold text-blue-700 mb-3">
+                              <h2 className="font-semibold mb-3" style={{
+                                color: '#2B579A', // Word blue color
+                                fontSize: '14pt',
+                                fontWeight: 'bold',
+                                marginTop: idx > 0 ? '18pt' : '12pt',
+                                marginBottom: '6pt',
+                                borderBottom: '1px solid #E5E7EB',
+                                paddingBottom: '3pt'
+                              }}>
                                 {section.title}
                               </h2>
-                              <div className="text-gray-700">
+                              <div style={{ textAlign: 'justify' }}>
                                 {section.content
                                   .split("\n")
                                   .filter((p) => p.trim())
                                   .map((para, pIdx) => (
                                     <p
                                       key={pIdx}
-                                      className={pIdx > 0 ? "mt-4" : ""}
+                                      style={{
+                                        margin: pIdx > 0 ? '12pt 0' : '0 0 12pt 0',
+                                        textIndent: '0pt',
+                                        lineHeight: '1.6'
+                                      }}
                                     >
                                       {para}
                                     </p>
@@ -1451,7 +1478,12 @@ const ContentCreatorPage = () => {
                               </div>
                             </div>
                           ))}
-                        </>
+
+                          {/* Word count display */}
+                          <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-gray-500">
+                            <span>Word count: {generatedContent.split(/\s+/).length}</span>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </CardContent>
@@ -1577,15 +1609,7 @@ const ContentCreatorPage = () => {
       {/* Content for active tab */}
       {renderTabContent()}
 
-      {/* Fix Prompts Button (kept for convenience) */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <button
-          onClick={resetStyleAndWalkthrough}
-          className="bg-red-600 text-white px-3 py-2 rounded-md text-sm shadow-lg"
-        >
-          Fix Prompts
-        </button>
-      </div>
+
     </div>
   );
 };

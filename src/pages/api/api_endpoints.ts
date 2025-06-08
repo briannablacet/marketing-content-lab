@@ -1038,7 +1038,8 @@ Only include information that would be publicly available or reasonably inferred
   }
 }
 
-// Handler for generate content endpoint
+// src/pages/api/api_endpoints.ts - Replace your existing handleGenerateContent function with this
+
 export async function handleGenerateContent(
   req: NextApiRequest,
   res: NextApiResponse
@@ -1056,42 +1057,74 @@ export async function handleGenerateContent(
     console.log("Generating content for campaign:", campaignData.name);
     console.log("Content types:", contentTypes);
 
-    // Construct the prompt based on campaign data and writing style
-    const prompt = `Generate content for a ${campaignData.type
-      } campaign with the following details:
+    // YOUR HIGH-QUALITY BLOG PROMPT
+    let prompt = "";
+    if (contentTypes.includes("blog-post") || contentTypes.includes("Blog Posts")) {
+      prompt = `You are a feature writer for a smart lifestyle magazine like Real Simple or Bon Appétit. You write engaging, accessible pieces that feel like chatting with a knowledgeable friend.
+
+ASSIGNMENT: Write a feature article of EXACTLY 1,500 words (minimum 1,400, maximum 1,600) about: "${campaignData.name}"
+
+🚨 WORD COUNT ENFORCEMENT: You are being paid per word. Your editor demands EXACTLY 1,500 words. Too short = fired. Count every single word.
+
+STRUCTURE GUIDELINES (adapt to your topic):
+- COMPELLING OPENING (200-250 words): Start with vivid, engaging scene-setting
+- DEVELOP YOUR STORY (1,000-1,200 words): Create 4-6 substantial sections that naturally flow from your topic. Use descriptive, topic-specific subheadings (NOT generic ones like "Benefits" or "Analysis")
+- MEMORABLE ENDING (150-200 words): Powerful close that resonates - avoid calling it "Conclusion"
+
+Each major section should be 200-250 words minimum. Develop your ideas thoroughly with rich detail, examples, and insights.
+
+EDITORIAL STANDARDS (follow these precisely):
+• LEAD: Open with something relatable—a personal moment, surprising discovery, or "you know that feeling when..." 
+- STRUCTURE: After your lead, smoothly guide readers through what's coming—but never use phrases like "we'll explore," "let's dive into," "sit back and discover," or "embark on this journey"
+• VOICE: Smart but approachable. Think conversations with your most interesting friend—informed but never preachy
+• DETAILS: Use specific, concrete examples people can picture. Include real stories and relatable moments
+• TONE: Curious and engaging. You're exploring this topic WITH the reader, not lecturing them about it
+• PARAGRAPHS: Mix it up—some short and punchy, others that develop an idea fully
+• ACCESSIBILITY: Write for smart people who don't need to be impressed by big words
+• WORD COUNT: This is critical—deliver 1,200-1,500 words. Magazine pieces require substantial length for proper development
+• ENDING: Close with resonance—a callback to your opening, a forward-looking thought, or an unexpected insight
+
+TARGET AUDIENCE: ${campaignData.targetAudience}
+TONE: ${campaignData.tone || writingStyle?.styleGuide?.primary || "Sophisticated, engaging, authoritative"}
+
+Writing Guidelines:
+${writingStyle ? `
+- Follow ${writingStyle.styleGuide.primary} standards
+- Additional rules: ${writingStyle.styleGuide.customRules?.join(", ") || "None"}
+` : "Use magazine-quality prose with sophisticated vocabulary and varied sentence structure."}
+
+Do not stop writing until you have reached AT LEAST 1,500 words. This is a magazine feature, not a blog post. Develop each section thoroughly with rich detail, examples, and analysis.
+
+FORMATTING: Do NOT use markdown syntax. Write in plain text with clear section breaks. Use simple headings without ## symbols or ** formatting.`;
+    } else {
+      // fallback to generic prompt for other content types
+      prompt = `Generate content for a ${campaignData.type} campaign with the following details:
       Campaign Name: ${campaignData.name}
       Goal: ${campaignData.goal}
       Target Audience: ${campaignData.targetAudience}
-      Key Messages: ${campaignData.keyMessages.join(", ")}
+      Key Messages: ${campaignData.keyMessages?.join(", ") || ""}
       
       Writing Style Guidelines:
-      ${writingStyle
-        ? `
+      ${writingStyle ? `
       - Primary Style: ${writingStyle.styleGuide.primary}
-      - Custom Rules: ${writingStyle.styleGuide.customRules?.join(", ") || "None"
+      - Custom Rules: ${writingStyle.styleGuide.customRules?.join(", ") || "None"}
+      - Formatting: ${Object.entries(writingStyle.formatting || {}).map(([k, v]) => `${k}: ${v}`).join(", ")}
+      - Punctuation: ${Object.entries(writingStyle.punctuation || {}).map(([k, v]) => `${k}: ${v}`).join(", ")}
+      ` : "Use a professional and engaging tone."
         }
-      - Formatting: ${Object.entries(writingStyle.formatting)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(", ")}
-      - Punctuation: ${Object.entries(writingStyle.punctuation)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(", ")}
-      `
-        : "Use a professional and engaging tone."
-      }
       
-      Generate the following content types: ${contentTypes.join(", ")}`;
+      Generate the following content types: ${contentTypes.join(", ")} `;
+    }
 
-    console.log("Sending prompt to OpenAI");
+    console.log("Sending improved prompt to OpenAI");
 
     // Call OpenAI API
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4-turbo-preview",
       messages: [
         {
           role: "system",
-          content:
-            "You are a professional content creator specializing in marketing campaigns. Generate high-quality, engaging content that aligns with the campaign goals and writing style guidelines.",
+          content: "You are a professional content creator specializing in high-quality editorial content. Generate engaging, well-structured content that follows the provided guidelines precisely.",
         },
         {
           role: "user",
@@ -1112,15 +1145,13 @@ export async function handleGenerateContent(
 
     contentTypes.forEach((type: string) => {
       switch (type) {
+        case "blog-post":
         case "Blog Posts":
           content[type] = {
-            title: "Campaign Blog Post",
-            content: `# ${campaignData.name
-              }\n\n${generatedContent}\n\n## Key Takeaways\n${campaignData.keyMessages
-                .map((msg: string) => `- ${msg}`)
-                .join("\n")}`,
+            title: "Generated Blog Post",
+            content: generatedContent, // Use the full editorial blog content
             metaDescription: "A compelling blog post for your campaign",
-            keywords: campaignData.keyMessages,
+            keywords: campaignData.keyMessages || [],
           };
           break;
         case "Social Posts":
@@ -1128,11 +1159,12 @@ export async function handleGenerateContent(
             platform: "LinkedIn",
             posts: [
               {
-                content: `${generatedContent}\n\n${campaignData.keyMessages
+                content: `${generatedContent} \n\n${(campaignData.keyMessages || [])
                   .map((msg: string) => `#${msg.replace(/\s+/g, "")}`)
-                  .join(" ")}`,
-                hashtags: campaignData.keyMessages.map(
-                  (msg: string) => `#${msg.replace(/\s+/g, "")}`
+                  .join(" ")
+                  } `,
+                hashtags: (campaignData.keyMessages || []).map(
+                  (msg: string) => `#${msg.replace(/\s+/g, "")} `
                 ),
               },
             ],
@@ -1142,23 +1174,23 @@ export async function handleGenerateContent(
           content[type] = {
             subject: campaignData.name,
             preview: generatedContent.substring(0, 100),
-            body: `Dear ${campaignData.targetAudience},\n\n${generatedContent}\n\nBest regards,\nYour Team`,
+            body: `Dear ${campaignData.targetAudience}, \n\n${generatedContent} \n\nBest regards, \nYour Team`,
             cta: "Learn More",
           };
           break;
         case "Landing Pages":
           content[type] = {
             headline: campaignData.name,
-            subheadline: campaignData.keyMessages[0],
-            content: `# ${campaignData.name
-              }\n\n${generatedContent}\n\n## Key Benefits\n${campaignData.keyMessages
-                .map((msg: string) => `- ${msg}`)
-                .join("\n")}`,
+            subheadline: (campaignData.keyMessages || [])[0],
+            content: `# ${campaignData.name} \n\n${generatedContent} \n\n## Key Benefits\n${(campaignData.keyMessages || [])
+              .map((msg: string) => `- ${msg}`)
+              .join("\n")
+              } `,
             cta: "Get Started",
           };
           break;
         default:
-          content[type] = `# ${campaignData.name}\n\n${generatedContent}`;
+          content[type] = `# ${campaignData.name} \n\n${generatedContent} `;
       }
     });
 
@@ -1169,6 +1201,7 @@ export async function handleGenerateContent(
     return res.status(500).json({ error: "Failed to generate content" });
   }
 }
+
 
 // Handler for value proposition generator endpoint
 async function handleValuePropositionGenerator(
@@ -1195,26 +1228,26 @@ async function handleValuePropositionGenerator(
       tone = "professional",
     } = data;
     console.log(
-      `Generating value proposition for: ${productInfo.name || "Marketing Platform"}`
+      `Generating value proposition for: ${productInfo.name || "Marketing Platform"} `
     );
 
     // Build a prompt for the AI
-    const prompt = `You are a sharp, human-centered brand strategist. Write a 50-word boilerplate paragraph that captures the essence of a company in a way that's both professional and deeply human.
+    const prompt = `You are a sharp, human - centered brand strategist.Write a 50 - word boilerplate paragraph that captures the essence of a company in a way that's both professional and deeply human.
 
 Your task is to craft a paragraph that:
-- Opens with a strong, clear statement of what the company does
-- Highlights the unique value or approach that sets them apart
-- Speaks directly to their ideal audience
-- Closes with a forward-looking statement about their impact or vision
-- Uses active voice and concrete details
-- Avoids corporate jargon, buzzwords, or empty superlatives
+      - Opens with a strong, clear statement of what the company does
+        - Highlights the unique value or approach that sets them apart
+          - Speaks directly to their ideal audience
+            - Closes with a forward - looking statement about their impact or vision
+              - Uses active voice and concrete details
+                - Avoids corporate jargon, buzzwords, or empty superlatives
 
-The tone should embody the selected brand archetype: ${tone || "Professional"}. If it's the Sage, use language that conveys wisdom and insight. If it's the Creator, emphasize innovation and imagination. If it's the Caregiver, focus on nurturing and support. Match the archetype's emotional truth, not just its surface style.
+The tone should embody the selected brand archetype: ${tone || "Professional"}. If it's the Sage, use language that conveys wisdom and insight. If it's the Creator, emphasize innovation and imagination.If it's the Caregiver, focus on nurturing and support. Match the archetype's emotional truth, not just its surface style.
 
-Here's what we know:
-- Product Name: ${productInfo.name || "The Company"}
-- Description: ${productInfo.description || "No description provided."}
-- Target Audience: ${Array.isArray(productInfo.targetAudience) ? productInfo.targetAudience.join(", ") : productInfo.targetAudience || "General audience"}
+        Here's what we know:
+          - Product Name: ${productInfo.name || "The Company"}
+      - Description: ${productInfo.description || "No description provided."}
+      - Target Audience: ${Array.isArray(productInfo.targetAudience) ? productInfo.targetAudience.join(", ") : productInfo.targetAudience || "General audience"}
 
 Write a paragraph that feels like it was crafted by someone who truly understands this company's purpose and potential. Make every word count.`;
 
