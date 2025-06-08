@@ -1067,7 +1067,7 @@ ASSIGNMENT: Write a feature article of EXACTLY 1,500 words (minimum 1,400, maxim
 🚨 WORD COUNT ENFORCEMENT: You are being paid per word. Your editor demands EXACTLY 1,500 words. Too short = fired. Count every single word.
 
 STRUCTURE GUIDELINES (adapt to your topic):
-- COMPELLING OPENING (200-250 words): Start with vivid, engaging scene-setting
+- COMPELLING OPENING (220-250 words): Start with vivid, engaging scene-setting
 - DEVELOP YOUR STORY (1,000-1,200 words): Create 4-6 substantial sections that naturally flow from your topic. Use descriptive, topic-specific subheadings (NOT generic ones like "Benefits" or "Analysis")
 - MEMORABLE ENDING (150-200 words): Powerful close that resonates - avoid calling it "Conclusion"
 

@@ -1117,7 +1117,7 @@ const ContentCreatorPage = () => {
                     </div>
                   </div>
 
-                  {/* Navigation buttons */}
+                  {/* Navigation buttons and generate content button */}
                   <div className="flex justify-between mt-4">
                     <button
                       onClick={() => setActiveTab("create")}
