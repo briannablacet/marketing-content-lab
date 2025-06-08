@@ -599,7 +599,7 @@ const BoilerplateGenerator: React.FC = () => {
                                     <option value="100">100 Words (Detailed)</option>
                                 </select>
                                 <p className="mt-2 text-sm text-gray-600">
-                                    Choose your preferred length and we'll generate three options. After selecting your favorite, we'll automatically create 50-word and 100-word versions for you.
+                                    Choose your favorite 20-word option and we'll expand it into 50- and 100-word versions.
                                 </p>
                             </div>
 
