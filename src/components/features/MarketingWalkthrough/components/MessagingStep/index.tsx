@@ -27,16 +27,22 @@ interface MessageFrameworkProps {
 }
 
 const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, setFormData }) => {
+  console.log("🔍 Checking localStorage:", localStorage.getItem('marketingValueProp'));
+
   const { showNotification } = useNotification();
   const router = useRouter();
 
-  // Main state for the message framework
-  const [framework, setFramework] = useState<MessageFramework>({
-    valueProposition: formData?.valueProp || '',
-    pillar1: '',
-    pillar2: '',
-    pillar3: '',
-    keyBenefits: ['']
+  const [framework, setFramework] = useState<MessageFramework>(() => {
+    // Get value prop from localStorage on initial load
+    const savedValueProp = typeof window !== 'undefined' ? localStorage.getItem('marketingValueProp') : '';
+
+    return {
+      valueProposition: formData?.valueProp || savedValueProp || '',
+      pillar1: '',
+      pillar2: '',
+      pillar3: '',
+      keyBenefits: ['']
+    };
   });
 
   // UI state
@@ -61,14 +67,29 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     index: number | null;
   }>({ type: null, index: null });
 
-  // Update framework when formData changes
+  // Update framework when formData changes OR load from localStorage
   useEffect(() => {
+    let valueToUse = '';
+
+    // First try formData
     if (formData?.valueProp) {
+      valueToUse = formData.valueProp;
+      console.log("Using value prop from formData:", formData.valueProp);
+    } else {
+      // Fallback to localStorage
+      const savedValueProp = localStorage.getItem('marketingValueProp');
+      if (savedValueProp) {
+        valueToUse = savedValueProp;
+        console.log("Using value prop from localStorage:", savedValueProp);
+      }
+    }
+
+    if (valueToUse) {
       setFramework(prev => ({
         ...prev,
-        valueProposition: formData.valueProp
+        valueProposition: valueToUse
       }));
-      console.log("Updated value prop from formData:", formData.valueProp);
+      console.log("🔍 Framework after setting value prop:", framework);
     }
   }, [formData]);
 
@@ -157,13 +178,12 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     updateField(field, newArray);
   };
 
-  // Check if the framework has meaningful content
   const hasContent = () => {
-    const hasValueProp = framework.valueProposition.trim() !== '';
-    const hasPillar = framework.pillar1.trim() !== '' ||
-      framework.pillar2.trim() !== '' ||
-      framework.pillar3.trim() !== '';
-    const hasBenefits = framework.keyBenefits.some(b => b.trim() !== '');
+    const hasValueProp = (framework.valueProposition || '').trim() !== '';
+    const hasPillar = (framework.pillar1 || '').trim() !== '' ||
+      (framework.pillar2 || '').trim() !== '' ||
+      (framework.pillar3 || '').trim() !== '';
+    const hasBenefits = (framework.keyBenefits || []).some(b => (b || '').trim() !== '');
 
     // Only return true if we have at least a value proposition AND either a pillar or benefit
     return hasValueProp && (hasPillar || hasBenefits);
@@ -209,8 +229,8 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       }
 
       // Gather benefits from either framework or product data
-      const benefits = framework.keyBenefits.filter(b => b.trim()).length > 0
-        ? framework.keyBenefits.filter(b => b.trim())
+      const benefits = (framework.keyBenefits || []).filter(b => b.trim()).length > 0
+        ? (framework.keyBenefits || []).filter(b => b.trim())
         : productInfo.benefits;
 
       // Prepare the request data with all required fields
@@ -616,7 +636,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
         <div className="mb-8">
           {isEditingValueProp ? (
             <textarea
-              value={framework.valueProposition}
+              value={framework.valueProposition || localStorage.getItem('marketingValueProp') || ''}
               onChange={(e) => updateField('valueProposition', e.target.value)}
               className="w-full p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
               rows={4}
@@ -626,9 +646,10 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
           ) : (
             <div className="relative">
               <div className="p-4 bg-gray-50 rounded-lg border mb-2 text-lg">
-                {framework.valueProposition ? framework.valueProposition : (
-                  <span className="text-gray-400 italic">No value proposition added yet</span>
-                )}
+                {framework.valueProposition || localStorage.getItem('marketingValueProp') ?
+                  (framework.valueProposition || localStorage.getItem('marketingValueProp')) : (
+                    <span className="text-gray-400 italic">No value proposition added yet</span>
+                  )}
               </div>
               <button
                 onClick={() => setIsEditingValueProp(true)}
@@ -694,7 +715,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
 
         {/* Benefits Section */}
         <div className="space-y-3">
-          {framework.keyBenefits.map((benefit, index) => (
+          {(framework.keyBenefits || []).map((benefit, index) => (
             <div key={index} className="flex gap-2">
               <input
                 ref={index === framework.keyBenefits.length - 1 ? newBenefitRef : null}
@@ -845,7 +866,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                         <div className="mt-4">
                           <button
                             onClick={() => {
-                              const newBenefits = [...framework.keyBenefits];
+                              const newBenefits = [...(framework.keyBenefits || [])];
                               newBenefits[index] = benefit;
                               updateField('keyBenefits', newBenefits);
                               showNotification('success', 'Benefit updated');

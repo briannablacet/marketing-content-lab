@@ -2,9 +2,10 @@
 // Review component that displays all collected strategy data (like complete page but cleaner)
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../../../shared/ui/card';
+import { Card } from '../../../../ui/card';
 import {
-    Users, Target, MessageSquare, TrendingUp, Eye, CheckCircle, FileText, Compass
+    Users, Target, MessageSquare, TrendingUp, Eye, CheckCircle, FileText, Compass,
+    Building, Flag, Quote, Hash
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -50,6 +51,7 @@ interface ReviewStepProps {
 }
 
 const ReviewStep: React.FC<ReviewStepProps> = ({ onNext, onBack }) => {
+
     // State for all the strategy data
     const [productInfo, setProductInfo] = useState<ProductInfo>({});
     const [targetAudiences, setTargetAudiences] = useState<TargetAudience[]>([]);
@@ -57,6 +59,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ onNext, onBack }) => {
     const [competitors, setCompetitors] = useState<Competitor[]>([]);
     const [brandVoice, setBrandVoice] = useState<BrandVoice>({});
     const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
+
+    const [mission, setMission] = useState<string>('');
+    const [vision, setVision] = useState<string>('');
+    const [tagline, setTagline] = useState<string>('');
+    const [boilerplates, setBoilerplates] = useState<{ short: string, medium: string, long: string }>({
+        short: '',
+        medium: '',
+        long: ''
+    });
+
     const [isLoading, setIsLoading] = useState(true);
 
     // Load all strategy data from localStorage (same as complete page)
@@ -87,15 +99,53 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ onNext, onBack }) => {
             }
 
             // Brand Voice
-            const savedBrandVoice = localStorage.getItem('brandVoice');
+            const savedBrandVoice = localStorage.getItem('marketing-content-lab-brand-voice');
             if (savedBrandVoice) {
-                setBrandVoice(JSON.parse(savedBrandVoice));
+                try {
+                    const parsedData = JSON.parse(savedBrandVoice);
+                    setBrandVoice({
+                        archetype: parsedData.brandVoice?.archetype || '',
+                        tone: parsedData.brandVoice?.tone || '',
+                        personality: parsedData.brandVoice?.personality || [],
+                        voiceCharacteristics: [
+                            parsedData.brandVoice?.tone,
+                            parsedData.brandVoice?.style,
+                            parsedData.brandVoice?.audience
+                        ].filter(Boolean)
+                    });
+                } catch (error) {
+                    console.error('Error parsing brand voice data:', error);
+                }
             }
 
             // Content Types
             const savedContentTypes = localStorage.getItem('selectedContentTypes');
             if (savedContentTypes) {
                 setSelectedContentTypes(JSON.parse(savedContentTypes));
+            }
+
+            // Corporate Identity data
+            const savedMission = localStorage.getItem('brandMission');
+            if (savedMission) setMission(savedMission);
+
+            const savedVision = localStorage.getItem('brandVision');
+            if (savedVision) setVision(savedVision);
+
+            const savedTagline = localStorage.getItem('brandTagline');
+            if (savedTagline) setTagline(savedTagline);
+
+            const savedBoilerplates = localStorage.getItem('brandBoilerplates');
+            if (savedBoilerplates) {
+                try {
+                    const parsed = JSON.parse(savedBoilerplates);
+                    setBoilerplates({
+                        short: parsed[0] || '',
+                        medium: parsed[1] || '',
+                        long: parsed[2] || ''
+                    });
+                } catch (error) {
+                    console.error('Error loading boilerplates:', error);
+                }
             }
 
         } catch (error) {
@@ -180,6 +230,77 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ onNext, onBack }) => {
                         {messageFramework.valueProposition || productInfo.valueProposition || 'Not yet defined'}
                     </p>
                 </Card>
+
+                {/* Mission Statement Card */}
+                {mission && (
+                    <Card className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-indigo-100 rounded-lg">
+                                <Building className="w-5 h-5 text-indigo-600" />
+                            </div>
+                            <h3 className="font-semibold">Mission Statement</h3>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">{mission}</p>
+                    </Card>
+                )}
+
+                {/* Vision Statement Card */}
+                {vision && (
+                    <Card className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-purple-100 rounded-lg">
+                                <Eye className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <h3 className="font-semibold">Vision Statement</h3>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">{vision}</p>
+                    </Card>
+                )}
+
+                {/* Brand Tagline Card */}
+                {tagline && (
+                    <Card className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-pink-100 rounded-lg">
+                                <Quote className="w-5 h-5 text-pink-600" />
+                            </div>
+                            <h3 className="font-semibold">Brand Tagline</h3>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed font-medium">"{tagline}"</p>
+                    </Card>
+                )}
+
+                {/* Brand Boilerplates Card */}
+                {(boilerplates.short || boilerplates.medium || boilerplates.long) && (
+                    <Card className="p-6 md:col-span-2 lg:col-span-3">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-orange-100 rounded-lg">
+                                <Hash className="w-5 h-5 text-orange-600" />
+                            </div>
+                            <h3 className="font-semibold">Brand Boilerplates</h3>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            {boilerplates.short && (
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <p className="font-medium text-gray-700 mb-2">20-Word</p>
+                                    <p className="text-gray-600 text-sm leading-relaxed">{boilerplates.short}</p>
+                                </div>
+                            )}
+                            {boilerplates.medium && (
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <p className="font-medium text-gray-700 mb-2">50-Word</p>
+                                    <p className="text-gray-600 text-sm leading-relaxed">{boilerplates.medium}</p>
+                                </div>
+                            )}
+                            {boilerplates.long && (
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <p className="font-medium text-gray-700 mb-2">100-Word</p>
+                                    <p className="text-gray-600 text-sm leading-relaxed">{boilerplates.long}</p>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                )}
 
                 {/* Target Audiences */}
                 <Card className="p-6">
