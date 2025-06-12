@@ -84,7 +84,7 @@ export const WritingStyleProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Determine if style has been actively configured by the user
   const isStyleConfigured = Boolean(
-    writingStyle.styleGuide.primary &&
+    writingStyle?.styleGuide?.primary &&
     writingStyle.styleGuide.primary !== ''
   );
 

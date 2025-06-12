@@ -9,6 +9,7 @@ import MessagingStep from './components/MessagingStep';
 import CompetitiveStep from './components/CompetitiveStep';
 import StyleGuideStep from './components/StyleGuideStep';
 import BrandVoiceModule from '../BrandVoiceModule';
+import CorporateIdentityStep from './components/CorporateIdentityStep/index';
 import { useRouter } from 'next/router';
 import { Target, User, Package, MessageSquare, Users, Palette, Heart } from 'lucide-react';
 
@@ -69,6 +70,13 @@ const STEPS = [
     component: BrandVoiceModule,
     icon: Heart
   },
+ {
+ id: '9',
+title: 'Corporate Identity',
+subtitle: 'Create your mission, vision, taglines, and company boilerplates',
+component: CorporateIdentityStep,
+icon: Heart
+ }
 ];
 
 const MarketingWalkthrough: React.FC = () => {
@@ -79,18 +87,43 @@ const MarketingWalkthrough: React.FC = () => {
     targetAudience: '',
     valueProp: '',
   });
-
+  useEffect(() => {
+    console.log("🔍 Value prop in localStorage:", localStorage.getItem('marketingValueProp'));
+  }, []);
   // Get current step from URL or default to first step
   const currentStepIndex = STEPS.findIndex(step => step.id === router.query.step);
   const currentStep = currentStepIndex >= 0 ? STEPS[currentStepIndex] : STEPS[0];
   const isSkippable = currentStep.id !== '1';
 
   const handleNext = () => {
+    // If we're on the Value Prop step, make sure data is saved to formData first
+    if (currentStep.id === '4') {
+      // For ValueProp step, ensure the current value prop is saved
+      const currentValueProp = localStorage.getItem('marketingValueProp');
+      if (currentValueProp) {
+        setFormData(prev => ({
+          ...prev,
+          valueProp: currentValueProp
+        }));
+
+        // Add a small delay to ensure state updates before navigation
+        setTimeout(() => {
+          if (currentStepIndex < STEPS.length - 1) {
+            const nextStep = STEPS[currentStepIndex + 1];
+            router.push(`/walkthrough/${nextStep.id}`);
+          } else {
+            router.push('/walkthrough/complete');
+          }
+        }, 100);
+        return;
+      }
+    }
+
+    // For all other steps, navigate immediately
     if (currentStepIndex < STEPS.length - 1) {
       const nextStep = STEPS[currentStepIndex + 1];
       router.push(`/walkthrough/${nextStep.id}`);
     } else {
-      // If we're on the last step, navigate to complete page
       router.push('/walkthrough/complete');
     }
   };

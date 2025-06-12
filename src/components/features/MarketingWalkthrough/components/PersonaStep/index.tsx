@@ -139,7 +139,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
   };
 
   const addSuggestion = (suggestion: TargetAudience) => {
-    const firstEmptyIndex = personas.findIndex(p => !p.role && !p.industry && p.challenges.every(c => !c));
+    const firstEmptyIndex = personas.findIndex(p => !p.role && !p.industry && (p.challenges || []).every(c => !c));
     if (firstEmptyIndex >= 0) {
       const updated = [...personas];
       updated[firstEmptyIndex] = {
@@ -186,7 +186,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
             onChange={(e) => handleTextChange(idx, 'industry', e.target.value)}
             className="w-full p-2 border rounded"
           />
-          {persona.challenges.map((challenge, cIdx) => (
+          {(persona.challenges || []).map((challenge, cIdx) => (
             <div key={cIdx} className="flex space-x-2">
               <input
                 type="text"

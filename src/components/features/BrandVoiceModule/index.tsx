@@ -46,20 +46,20 @@ const HelpText = ({ text, link }: { text: string; link?: string }) => (
     <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-sm rounded p-2 absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64">
       {text}
       {link && (
-       <a
-       href="#"
-       onClick={(e) => {
-         e.preventDefault();
-         window.open(
-           'https://iconicfox.com.au/brand-archetypes/',
-           'popupWindow',
-           'width=600,height=800,scrollbars=yes'
-         );
-       }}
-       className="text-blue-500 hover:underline text-xs"
-     >
-       Learn more
-     </a>
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            window.open(
+              'https://iconicfox.com.au/brand-archetypes/',
+              'popupWindow',
+              'width=600,height=800,scrollbars=yes'
+            );
+          }}
+          className="text-blue-500 hover:underline text-xs"
+        >
+          Learn more
+        </a>
       )}
       <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
         <div className="border-8 border-transparent border-t-gray-800"></div>
@@ -124,14 +124,14 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
       // Save the current state
       const updatedBrandVoice = {
         brandVoice: {
-          ...brandVoice.brandVoice,
+          ...brandVoice?.brandVoice,
           // Ensure all required fields are present
-          tone: brandVoice.brandVoice.tone || '',
-          style: brandVoice.brandVoice.style || '',
-          audience: brandVoice.brandVoice.audience || '',
-          archetype: brandVoice.brandVoice.archetype || '',
-          personality: brandVoice.brandVoice.personality || [],
-          brandPersonality: brandVoice.brandVoice.brandPersonality || ''
+          tone: brandVoice?.brandVoice?.tone || '',
+          style: brandVoice?.brandVoice?.style || '',
+          audience: brandVoice?.brandVoice?.audience || '',
+          archetype: brandVoice?.brandVoice?.archetype || '',
+          personality: brandVoice?.brandVoice?.personality || [],
+          brandPersonality: brandVoice?.brandVoice?.brandPersonality || ''
         }
       };
 
@@ -190,7 +190,7 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
                 </span>
               </label>
               <select
-                value={brandVoice.brandVoice.archetype}
+                value={brandVoice?.brandVoice?.archetype || ''}
                 onChange={(e) => handleArchetypeChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
@@ -199,10 +199,10 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
                   <option key={a.name} value={a.name}>{a.name}</option>
                 ))}
               </select>
-              {brandVoice.brandVoice.archetype && (
+              {brandVoice?.brandVoice?.archetype && (
                 <p className="text-sm text-gray-600 mt-2">
-                  {BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype)?.description}<br />
-                  <span className="text-gray-500">Examples: {BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype)?.example}</span>
+                  {BRAND_ARCHETYPES.find(a => a.name === brandVoice?.brandVoice?.archetype)?.description}<br />
+                  <span className="text-gray-500">Examples: {BRAND_ARCHETYPES.find(a => a.name === brandVoice?.brandVoice?.archetype)?.example}</span>
                 </p>
               )}
             </div>
@@ -217,7 +217,7 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
                       type="radio"
                       id={`tone-${tone}`}
                       name="tone"
-                      checked={brandVoice.brandVoice.tone === tone}
+                      checked={brandVoice?.brandVoice?.tone === tone}
                       onChange={() => handleBrandVoiceUpdate('tone', tone)}
                       className="h-4 w-4 text-blue-600 rounded border-gray-300 mr-2"
                     />
@@ -244,7 +244,7 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
                     <input
                       type="checkbox"
                       id={`trait-${trait}`}
-                      checked={brandVoice.brandVoice.personality?.includes(trait)}
+                      checked={brandVoice?.brandVoice?.personality?.includes(trait)}
                       onChange={() => togglePersonality(trait)}
                       className="h-4 w-4 text-blue-600 rounded border-gray-300 mr-2"
                     />
@@ -287,22 +287,22 @@ const BrandVoiceModuleContent: React.FC<Props> = ({ isWalkthrough, onNext, onBac
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Brand Archetype</h3>
-                <p className="text-lg font-medium">{brandVoice.brandVoice.archetype}</p>
+                <p className="text-lg font-medium">{brandVoice?.brandVoice?.archetype}</p>
                 <p className="text-sm text-gray-600 mt-1">
-                  {BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype)?.description}
+                  {BRAND_ARCHETYPES.find(a => a.name === brandVoice?.brandVoice?.archetype)?.description}
                 </p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Voice & Tone</h3>
-                <p className="text-lg font-medium">{brandVoice.brandVoice.tone}</p>
+                <p className="text-lg font-medium">{brandVoice?.brandVoice?.tone}</p>
                 <p className="text-sm text-gray-600 mt-1">
-                  {TONE_EXAMPLES[brandVoice.brandVoice.tone]}
+                  {TONE_EXAMPLES[brandVoice?.brandVoice?.tone]}
                 </p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Personality Traits</h3>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {brandVoice.brandVoice.personality?.map((trait: string) => (
+                  {brandVoice?.brandVoice? .personality?.map((trait: string) => (
                     <span key={trait} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                       {trait}
                     </span>
