@@ -261,17 +261,17 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
     // SAVE FUNCTION
     const handleSave = async (valueToSave = null) => {
         const finalValue = valueToSave || paragraph || existingValueProp;
-
+    
         if (!finalValue) {
             showNotification('Please enter or generate a value proposition first', 'error');
             return;
         }
-
+    
         setFormData(prev => ({ ...prev, valueProp: finalValue }));
-
+    
         // Save to localStorage
         localStorage.setItem('marketingValueProp', finalValue);
-
+    
         // Save to StrategicDataService
         try {
             if (StrategicDataService.setValueProposition && typeof StrategicDataService.setValueProposition === 'function') {
@@ -285,11 +285,29 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
             showNotification('Value proposition saved successfully!', 'success');
         }
     };
-
-    const addBenefit = () => {
-        setKeyBenefits([...keyBenefits, '']);
+    
+    // NEW: Handle Next button with data saving
+    const handleNext = () => {
+        const currentValueProp = paragraph || existingValueProp;
+        if (currentValueProp) {
+            setFormData(prev => ({
+                ...prev,
+                valueProp: currentValueProp,
+                productName,
+                productDescription
+            }));
+            // Small delay to ensure state is updated
+            setTimeout(() => {
+                onNext();
+            }, 100);
+        } else {
+            showNotification('Please create a value proposition before continuing', 'error');
+        }
     };
-
+    
+    const addBenefit = () => {
+        onNext={handleNext}
+    };
     return (
         <div className="w-full max-w-none space-y-6">
             {/* SAVED VALUE PROP DISPLAY (shows at top when saved) */}

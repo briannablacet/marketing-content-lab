@@ -26,17 +26,43 @@ interface MessageFrameworkProps {
   setFormData?: (data: any) => void;
 }
 
+const safeLocalStorage = {
+  getItem: (key: string) => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error(`Error getting ${key} from localStorage:`, error);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error(`Error setting ${key} in localStorage:`, error);
+    }
+  }
+};
+
 const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, setFormData }) => {
+  console.log("🔍 Checking localStorage:", safeLocalStorage.getItem('marketingValueProp'));
+
   const { showNotification } = useNotification();
   const router = useRouter();
 
-  // Main state for the message framework
-  const [framework, setFramework] = useState<MessageFramework>({
-    valueProposition: formData?.valueProp || '',
-    pillar1: '',
-    pillar2: '',
-    pillar3: '',
-    keyBenefits: ['']
+  const [framework, setFramework] = useState<MessageFramework>(() => {
+    // Get value prop from localStorage on initial load
+    const savedValueProp = safeLocalStorage.getItem('marketingValueProp') || '';
+
+    return {
+      valueProposition: formData?.valueProp || savedValueProp || '',
+      pillar1: '',
+      pillar2: '',
+      pillar3: '',
+      keyBenefits: ['']
+    };
   });
 
   // UI state
@@ -61,21 +87,36 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     index: number | null;
   }>({ type: null, index: null });
 
-  // Update framework when formData changes
+  // Update framework when formData changes OR load from localStorage
   useEffect(() => {
+    let valueToUse = '';
+
+    // First try formData
     if (formData?.valueProp) {
+      valueToUse = formData.valueProp;
+      console.log("Using value prop from formData:", formData.valueProp);
+    } else {
+      // Fallback to localStorage
+      const savedValueProp = safeLocalStorage.getItem('marketingValueProp');
+      if (savedValueProp) {
+        valueToUse = savedValueProp;
+        console.log("Using value prop from localStorage:", savedValueProp);
+      }
+    }
+
+    if (valueToUse) {
       setFramework(prev => ({
         ...prev,
-        valueProposition: formData.valueProp
+        valueProposition: valueToUse
       }));
-      console.log("Updated value prop from formData:", formData.valueProp);
+      console.log("🔍 Framework after setting value prop:", framework);
     }
   }, [formData]);
 
   // Load saved message framework from localStorage
   useEffect(() => {
     try {
-      const savedFramework = localStorage.getItem('messageFramework');
+      const savedFramework = safeLocalStorage.getItem('messageFramework');
       if (savedFramework) {
         const parsedFramework = JSON.parse(savedFramework);
         setFramework(parsedFramework);
@@ -90,7 +131,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
   useEffect(() => {
     try {
       // First try multiple audiences
-      const savedAudiences = localStorage.getItem('marketingTargetAudiences');
+      const savedAudiences = safeLocalStorage.getItem('marketingTargetAudiences');
       if (savedAudiences) {
         const audiences = JSON.parse(savedAudiences);
         if (Array.isArray(audiences) && audiences.length > 0) {
@@ -99,7 +140,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
         }
       } else {
         // Try single audience format
-        const savedAudience = localStorage.getItem('marketingTargetAudience');
+        const savedAudience = safeLocalStorage.getItem('marketingTargetAudience');
         if (savedAudience) {
           const audience = JSON.parse(savedAudience);
           setTargetAudience([audience]);
@@ -157,13 +198,12 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     updateField(field, newArray);
   };
 
-  // Check if the framework has meaningful content
   const hasContent = () => {
-    const hasValueProp = framework.valueProposition.trim() !== '';
-    const hasPillar = framework.pillar1.trim() !== '' ||
-      framework.pillar2.trim() !== '' ||
-      framework.pillar3.trim() !== '';
-    const hasBenefits = framework.keyBenefits.some(b => b.trim() !== '');
+    const hasValueProp = (framework.valueProposition || '').trim() !== '';
+    const hasPillar = (framework.pillar1 || '').trim() !== '' ||
+      (framework.pillar2 || '').trim() !== '' ||
+      (framework.pillar3 || '').trim() !== '';
+    const hasBenefits = (framework.keyBenefits || []).some(b => (b || '').trim() !== '');
 
     // Only return true if we have at least a value proposition AND either a pillar or benefit
     return hasValueProp && (hasPillar || hasBenefits);
@@ -177,7 +217,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
 
     try {
       // Check for product data
-      const savedProduct = localStorage.getItem('marketingProduct');
+      const savedProduct = safeLocalStorage.getItem('marketingProduct');
       if (!savedProduct) {
         throw new Error('Please enter your product information before generating AI enhancements');
       }
@@ -209,8 +249,8 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       }
 
       // Gather benefits from either framework or product data
-      const benefits = framework.keyBenefits.filter(b => b.trim()).length > 0
-        ? framework.keyBenefits.filter(b => b.trim())
+      const benefits = (framework.keyBenefits || []).filter(b => b.trim()).length > 0
+        ? (framework.keyBenefits || []).filter(b => b.trim())
         : productInfo.benefits;
 
       // Prepare the request data with all required fields
@@ -240,7 +280,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${safeLocalStorage.getItem('token')}`
         },
         body: JSON.stringify({
           endpoint: 'valueProposition',
@@ -276,12 +316,12 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
         keyBenefits: data.targetedMessages || []
       });
 
-      showNotification('success', 'AI enhancements generated successfully');
+      showNotification('AI enhancements generated successfully', 'success');
     } catch (error: unknown) {
       console.error('Error generating AI framework:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate AI enhancements. Please try again later.';
       setError(`API Error: ${errorMessage}`);
-      showNotification('error', 'Failed to generate AI enhancements');
+      showNotification('Failed to generate AI enhancements', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -308,7 +348,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     setAiSuggestions(null);
 
     // Show notification
-    showNotification('success', 'AI suggestions applied to your framework');
+    showNotification('AI suggestions applied to your framework', 'success');
   };
 
   // Handle file upload
@@ -333,7 +373,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
             pillar3: parsedData.pillar3 || parsedData.differentiators?.[2] || '',
             keyBenefits: parsedData.keyBenefits || ['']
           });
-          showNotification('success', 'Framework loaded from file successfully');
+          showNotification('Framework loaded from file successfully', 'success');
         } else {
           throw new Error('Invalid file format');
         }
@@ -370,11 +410,11 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           keyBenefits: potentialBenefits.length ? potentialBenefits : ['']
         });
 
-        showNotification('info', 'File imported as text - review content for accuracy');
+        showNotification('File imported as text - review content for accuracy', 'info');
       }
     } catch (error) {
       console.error('Error reading file:', error);
-      showNotification('error', 'Failed to read file. Please try again.');
+      showNotification('Failed to read file. Please try again.', 'error');
     }
   };
 
@@ -385,13 +425,13 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     try {
       // Validate data
       if (!framework.valueProposition.trim()) {
-        showNotification('error', 'Please provide a value proposition');
+        showNotification('Please provide a value proposition', 'error');
         setIsSaving(false);
         return;
       }
 
       if (!framework.keyBenefits.some(b => b.trim())) {
-        showNotification('error', 'Please provide at least one benefit');
+        showNotification('Please provide at least one benefit', 'error');
         setIsSaving(false);
         return;
       }
@@ -403,15 +443,15 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       };
 
       // Save to localStorage
-      localStorage.setItem('messageFramework', JSON.stringify(cleanedFramework));
+      safeLocalStorage.setItem('messageFramework', JSON.stringify(cleanedFramework));
 
       // Also update product valueProposition for consistency
       try {
-        const savedProduct = localStorage.getItem('marketingProduct');
+        const savedProduct = safeLocalStorage.getItem('marketingProduct');
         if (savedProduct) {
           const productData = JSON.parse(savedProduct);
           productData.valueProposition = framework.valueProposition;
-          localStorage.setItem('marketingProduct', JSON.stringify(productData));
+          safeLocalStorage.setItem('marketingProduct', JSON.stringify(productData));
         }
       } catch (error) {
         console.error('Error updating product data:', error);
@@ -422,10 +462,10 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
         onSave(cleanedFramework);
       }
 
-      showNotification('success', 'Message framework saved successfully');
+      showNotification('Message framework saved successfully', 'success');
     } catch (error) {
       console.error('Error saving framework:', error);
-      showNotification('error', 'Failed to save framework. Please try again.');
+      showNotification('Failed to save framework. Please try again.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -480,10 +520,10 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
       link.click();
       document.body.removeChild(link);
 
-      showNotification('success', 'Framework exported as Markdown');
+      showNotification('Framework exported as Markdown', 'success');
     } catch (error) {
       console.error('Error exporting framework:', error);
-      showNotification('error', 'Failed to export framework. Please try again.');
+      showNotification('Failed to export framework. Please try again.', 'error');
     }
   };
 
@@ -504,7 +544,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
 
     setAiSuggestions(null);
     setShowConfirmClear(false);
-    showNotification('success', 'Framework cleared successfully');
+    showNotification('Framework cleared successfully', 'success');
   };
 
   // Main render method
@@ -616,7 +656,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
         <div className="mb-8">
           {isEditingValueProp ? (
             <textarea
-              value={framework.valueProposition}
+              value={framework.valueProposition || safeLocalStorage.getItem('marketingValueProp') || ''}
               onChange={(e) => updateField('valueProposition', e.target.value)}
               className="w-full p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
               rows={4}
@@ -626,9 +666,10 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
           ) : (
             <div className="relative">
               <div className="p-4 bg-gray-50 rounded-lg border mb-2 text-lg">
-                {framework.valueProposition ? framework.valueProposition : (
-                  <span className="text-gray-400 italic">No value proposition added yet</span>
-                )}
+                {framework.valueProposition || safeLocalStorage.getItem('marketingValueProp') ?
+                  (framework.valueProposition || safeLocalStorage.getItem('marketingValueProp')) : (
+                    <span className="text-gray-400 italic">No value proposition added yet</span>
+                  )}
               </div>
               <button
                 onClick={() => setIsEditingValueProp(true)}
@@ -694,7 +735,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
 
         {/* Benefits Section */}
         <div className="space-y-3">
-          {framework.keyBenefits.map((benefit, index) => (
+          {(framework.keyBenefits || []).map((benefit, index) => (
             <div key={index} className="flex gap-2">
               <input
                 ref={index === framework.keyBenefits.length - 1 ? newBenefitRef : null}
@@ -766,7 +807,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                       <button
                         onClick={() => {
                           updateField('valueProposition', aiSuggestions.valueProposition);
-                          showNotification('success', 'Value proposition updated');
+                          showNotification('Value proposition updated', 'success');
                         }}
                         className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
                       >
@@ -789,7 +830,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                         <button
                           onClick={() => {
                             updateField('pillar1', aiSuggestions.pillar1);
-                            showNotification('success', 'Pillar 1 updated');
+                            showNotification('Pillar 1 updated', 'success');
                           }}
                           className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
                         >
@@ -806,7 +847,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                         <button
                           onClick={() => {
                             updateField('pillar2', aiSuggestions.pillar2);
-                            showNotification('success', 'Pillar 2 updated');
+                            showNotification('Pillar 2 updated', 'success');
                           }}
                           className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
                         >
@@ -823,7 +864,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                         <button
                           onClick={() => {
                             updateField('pillar3', aiSuggestions.pillar3);
-                            showNotification('success', 'Pillar 3 updated');
+                            showNotification('Pillar 3 updated', 'success');
                           }}
                           className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
                         >
@@ -845,10 +886,10 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                         <div className="mt-4">
                           <button
                             onClick={() => {
-                              const newBenefits = [...framework.keyBenefits];
+                              const newBenefits = [...(framework.keyBenefits || [])];
                               newBenefits[index] = benefit;
                               updateField('keyBenefits', newBenefits);
-                              showNotification('success', 'Benefit updated');
+                              showNotification('Benefit updated', 'success');
                             }}
                             className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
                           >
