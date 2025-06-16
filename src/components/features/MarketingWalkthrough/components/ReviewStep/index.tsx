@@ -73,6 +73,9 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ onNext, onBack }) => {
 
     // Load all strategy data from localStorage (same as complete page)
     useEffect(() => {
+        // Only run on client side
+        if (typeof window === 'undefined') return;
+
         try {
             // Product Info
             const savedProduct = localStorage.getItem('marketingProduct');
