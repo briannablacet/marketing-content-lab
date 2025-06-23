@@ -166,7 +166,7 @@ const BoilerplateGenerator: React.FC = () => {
             const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'generateBoilerplates', data: payload })
+                body: JSON.stringify({ mode: 'boilerplate', data: payload })
             });
 
             if (!response.ok) {
@@ -208,7 +208,7 @@ const BoilerplateGenerator: React.FC = () => {
                 const response = await fetch('/api/api_endpoints', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'adaptBoilerplate', data: payload })
+                    body: JSON.stringify({ mode: 'adaptBoilerplate', data: payload })
                 });
 
                 if (!response.ok) {
@@ -262,7 +262,7 @@ const BoilerplateGenerator: React.FC = () => {
                 const response = await fetch('/api/api_endpoints', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'adaptBoilerplate', data: payload })
+                    body: JSON.stringify({ mode: 'adaptBoilerplate', data: payload })
                 });
 
                 if (!response.ok) {

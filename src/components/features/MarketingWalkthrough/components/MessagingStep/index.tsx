@@ -283,8 +283,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           'Authorization': `Bearer ${safeLocalStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          endpoint: 'valueProposition',
-          type: 'valueProposition',
+          mode: 'keyMessages',
           data: requestBody.data
         }),
         signal: controller.signal

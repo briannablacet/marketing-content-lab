@@ -79,7 +79,7 @@ const ProsePerfector: React.FC = () => {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          endpoint: "prose-perfector",
+          mode: "prosePerfector",
           data: {
             text: content,
             options: {

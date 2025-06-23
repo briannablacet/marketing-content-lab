@@ -110,7 +110,7 @@ const ContentRepurposer: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          endpoint: 'contentRepurposer',
+          mode: 'contentRepurposer',
           data: {
             content,
             sourceFormat,
