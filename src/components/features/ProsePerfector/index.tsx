@@ -72,14 +72,14 @@ const ProsePerfector: React.FC = () => {
         "Chicago Manual of Style";
 
       // Call the API endpoint to process the text
-      const response = await fetch("/api/api_endpoints", {
-        method: "POST",
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          mode: "prosePerfector",
+          mode: 'prosePerfector',
           data: {
             text: content,
             options: {
