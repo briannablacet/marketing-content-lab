@@ -13,6 +13,7 @@ import KeywordSuggestions from "../../components/shared/KeywordSuggestions";
 import ContentEditChat from "../../components/features/ContentEditChat";
 import StrategicDataService from "../../services/StrategicDataService";
 import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../utils/exportUtils';
+import ReactMarkdown from 'react-markdown';
 
 import {
   ArrowLeft,
@@ -391,13 +392,13 @@ const ContentCreatorPage = () => {
     }
 
     if (newContent !== generatedContent) {
-      setGeneratedMetadata((prev) => {
-        if (!prev) return null;
-        return {
-          title: prev.title || "",
-          description: newContent.substring(0, 160).replace(/[#*_]/g, ""),
-          keywords: prev.keywords || []
-        };
+      setGeneratedMetadata({
+        title: newTitle || "",
+        description: newContent.substring(0, 160).replace(/[#*_]/g, ""),
+        keywords: advancedOptions.keywords
+          .split(",")
+          .map((k) => k.trim())
+          .filter((k) => k),
       });
     }
 
@@ -480,7 +481,6 @@ const ContentCreatorPage = () => {
           },
           punctuation: {
             oxfordComma: writingStyle?.punctuation?.oxfordComma,
-            quotationMarks: writingStyle?.formatting?.quotationMarks,
             hyphenation: writingStyle?.punctuation?.hyphenation
           },
           completed: true
@@ -525,7 +525,7 @@ const ContentCreatorPage = () => {
         setGeneratedTitle(actualTitle);
 
         setGeneratedMetadata({
-          title: actualTitle,
+          title: actualTitle || "",
           description: contentText.substring(0, 160),
           keywords: advancedOptions.keywords
             .split(",")
@@ -725,49 +725,42 @@ const ContentCreatorPage = () => {
     let title = "";
     let introduction = "";
     const sections = [];
-
     let currentSection = { title: "", content: "" };
+    let inIntro = true;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // Get title (# Heading)
+      // Main title
       if (line.startsWith("# ") && !title) {
-        title = line.substring(2).trim();
-        // FIXED: Apply heading case formatting from writing style
-        title = applyHeadingCase(title);
+        title = applyHeadingCase(line.substring(2).trim());
         continue;
       }
 
-      // Get sections (## Heading)
-      if (line.startsWith("## ")) {
+      // Section or sub-section heading (## or ###)
+      if (line.startsWith("## ") || line.startsWith("### ")) {
         if (currentSection.title) {
           sections.push({ ...currentSection });
         }
+        // Remove either ## or ###
+        const headingText = line.replace(/^##+\s*/, "");
         currentSection = {
-          title: applyHeadingCase(line.substring(3).trim()),
+          title: applyHeadingCase(headingText.trim()),
           content: "",
         };
+        inIntro = false;
         continue;
       }
 
-      // If we haven't found a section yet, this is part of the introduction
-      if (
-        sections.length === 0 &&
-        !currentSection.title &&
-        line.trim() &&
-        !line.startsWith("#")
-      ) {
+      // Add to intro or section
+      if (inIntro) {
         introduction += line + "\n";
-      }
-
-      // Add content to current section
-      if (currentSection.title && !line.startsWith("#")) {
+      } else {
         currentSection.content += line + "\n";
       }
     }
 
-    // Add the last section if it exists
+    // Add last section if exists
     if (currentSection.title) {
       sections.push(currentSection);
     }
@@ -1474,7 +1467,6 @@ const ContentCreatorPage = () => {
                                 borderBottom: '1px solid #E5E7EB',
                                 paddingBottom: '3pt'
                               }}>
-                                {/* FIXED: Display headings with proper case formatting */}
                                 {section.title}
                               </h2>
                               <div style={{ textAlign: 'justify' }}>
@@ -1523,15 +1515,14 @@ const ContentCreatorPage = () => {
                 )}
 
                 {/* Strategic Data Attribution */}
-                {hasStrategicData && (
+                {hasStrategicData && strategicData && strategicData.product && (
                   <Card className="mt-4 p-4 bg-gray-50 border border-gray-200">
                     <div className="flex items-center text-sm text-gray-600">
                       <FileCheck className="w-4 h-4 mr-2 text-blue-600" />
                       <span>
-                        Created using your marketing program for{" "}
-                        {strategicData?.product?.name || "your product"}.
-                        {strategicData?.audiences?.length > 0
-                          ? ` Targeted for ${strategicData.audiences[0].role}.`
+                        Created using your marketing program for {strategicData.product.name || "your product"}.
+                        {strategicData.audiences && Array.isArray(strategicData.audiences) && strategicData.audiences.length > 0
+                          ? ` Targeted for ${strategicData.audiences[0]?.role || ''}.`
                           : ""}
                       </span>
                     </div>

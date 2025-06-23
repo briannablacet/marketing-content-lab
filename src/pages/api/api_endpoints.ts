@@ -89,18 +89,19 @@ async function handleEnhancedContent(requestData: any, res: NextApiResponse) {
     prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
-⚠️ HEADING ENFORCEMENT: All headings must follow the guide.
+⚠️ HEADING ENFORCEMENT: All headings and subheadings must use markdown syntax (e.g., # Title, ## Section, ### Subsection).
 
 You are a professional magazine writer. Write a compelling 1,500-word article about: "${campaignData.name}"
 
 STRUCTURE:
 - Engaging opening (250 words)
-- 4-5 substantial sections
+- 4–5 substantial sections with clear, descriptive subheadings (200–250 words each)
 - Strong conclusion (150 words)
 
 TARGET AUDIENCE: ${campaignData.targetAudience}
+Avoid cliches, such as "Imagine this"
 
-Follow EVERY style rule listed at the top.`;
+Use markdown formatting for all headings, subheadings, and lists. Do NOT use HTML. Paragraphs should be separated by blank lines. Your editor is strict—follow the style guide to the letter.`;
   } else {
     prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
@@ -115,23 +116,6 @@ STRUCTURE:
 TARGET AUDIENCE: ${campaignData.targetAudience}
 
 Remember: Adhere to all style rules.`;
-  } if (contentTypes.includes("blog-post") || contentTypes.includes("Blog Posts")) {
-    prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
-  ${styleInstructions}
-  
-  ⚠️ HEADING ENFORCEMENT: If the style guide says "upper" then ALL subheads must be COMPLETE UPPERCASE like "INTRODUCTION", not "Introduction".
-  
-  You are a professional magazine writer. Write a compelling 1,500-word article about: "${campaignData.name}"
-  
-  STRUCTURE:
-  - Engaging opening (250 words)
-  - 4–5 substantial sections with clear, descriptive subheadings (200–250 words each)
-  - Strong conclusion (150 words)
-  
-  TARGET AUDIENCE: ${campaignData.targetAudience}
-  Avoid cliches, such as "Imagine this"
-  
-  Do NOT use markdown or HTML. Format using clean, publication-ready plain text. Include paragraph breaks and rich formatting (like a magazine article). Your editor is strict—follow the style guide to the letter.`;
   }
 
 

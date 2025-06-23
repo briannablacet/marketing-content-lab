@@ -14,14 +14,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = new formidable.IncomingForm();
+  const form = formidable();
   
   form.parse(req, async (err, fields, files) => {
     if (err) {
       return res.status(500).json({ error: 'Error parsing form' });
     }
     
-    const pdfFile = files.file;
+    let pdfFile = files.file;
+    // Handle if files.file is an array (formidable v3+ can return array for multiple files)
+    if (Array.isArray(pdfFile)) {
+      pdfFile = pdfFile[0];
+    }
     if (!pdfFile) {
       return res.status(400).json({ error: 'No PDF file uploaded' });
     }

@@ -7,8 +7,10 @@ import { Alert, AlertDescription } from '../../ui/alert';
 import { Check, AlertTriangle, X, Copy, Eye, EyeOff, Upload, FileText, Sparkles, FileCheck } from 'lucide-react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { WritingStyleData } from '../../../context/WritingStyleContext';
 import StrategicDataService from '../../../services/StrategicDataService';
+import FileHandler from '../../shared/FileHandler';
+import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../../utils/exportUtils';
+import ReactMarkdown from 'react-markdown';
 
 // Enhanced TypeScript interfaces
 interface HumanizerOptions {
@@ -347,7 +349,6 @@ const ContentHumanizer: React.FC = () => {
           ...options,
           styleGuideParameters: writingStyle.styleGuide ? {
             primary: writingStyle.styleGuide.primary,
-            overrides: writingStyle.styleGuide.overrides,
             customRules: writingStyle.styleGuide.customRules
           } : undefined
         }
@@ -372,7 +373,7 @@ const ContentHumanizer: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          type: 'contentHumanizer',
+          mode: 'humanize',
           data: requestData
         })
       });
@@ -627,61 +628,6 @@ const ContentHumanizer: React.FC = () => {
     </div>
   );
 
-  const renderFileUploadSection = () => (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <label className="block text-sm font-medium">Upload Document</label>
-        {uploadedFile && (
-          <button
-            onClick={handleRemoveFile}
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            Remove
-          </button>
-        )}
-      </div>
-
-      {uploadedFile ? (
-        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded border">
-          <FileText className="h-5 w-5 text-gray-500" />
-          <span className="text-sm font-medium">{uploadedFile.name}</span>
-          <span className="text-xs text-gray-500">
-            ({Math.round(uploadedFile.size / 1024)} KB)
-          </span>
-          <button
-            onClick={handleRemoveFile}
-            className="ml-auto text-gray-400 hover:text-red-600"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ) : (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input
-            type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                handleFileUpload(file);
-              }
-            }}
-            className="hidden"
-            accept=".txt,.doc,.docx,.md,.rtf,.html"
-            id="file-upload"
-          />
-          <label
-            htmlFor="file-upload"
-            className="cursor-pointer flex flex-col items-center space-y-2"
-          >
-            <Upload className="h-8 w-8 text-gray-400" />
-            <span className="text-sm text-gray-600">Upload a document to humanize</span>
-            <span className="text-xs text-gray-500">TXT, DOC, DOCX, MD, RTF, or HTML (max 5MB)</span>
-          </label>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Content Humanizer</h1>
@@ -855,8 +801,30 @@ const ContentHumanizer: React.FC = () => {
           <CardTitle>Content Input</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* File Upload Section */}
-          {renderFileUploadSection()}
+          {/* File Upload & Export Section (replaces renderFileUploadSection) */}
+          <div className="mb-6">
+            <FileHandler
+              onContentLoaded={(loadedContent) => {
+                if (typeof loadedContent === 'string') {
+                  setContent(prev => ({
+                    ...prev,
+                    original: loadedContent,
+                    enhanced: ''
+                  }));
+                } else {
+                  setContent(prev => ({
+                    ...prev,
+                    original: JSON.stringify(loadedContent, null, 2),
+                    enhanced: ''
+                  }));
+                }
+              }}
+              content={content.original}
+              showExport={true}
+              acceptedFormats={".txt,.doc,.docx,.md,.rtf,.html,.csv,.xlsx,.pdf"}
+              maxSizeMB={5}
+            />
+          </div>
 
           <div className="mb-2 text-sm text-gray-600">
             Or enter your content directly:
@@ -872,14 +840,24 @@ const ContentHumanizer: React.FC = () => {
             placeholder="Upload or paste your content here..."
             className="w-full h-64 p-4 border rounded"
           />
-          <div className="mt-4 flex justify-between items-center">
-            <button
-              onClick={() => setShowDiffView(!showDiffView)}
-              className="px-4 py-2 border rounded hover:bg-gray-50"
-            >
-              {showDiffView ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showDiffView ? ' Hide Changes' : ' View Detailed Changes'}
-            </button>
+          <div className="mt-4 flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDiffView(!showDiffView)}
+                className="px-4 py-2 border rounded hover:bg-gray-50"
+              >
+                {showDiffView ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showDiffView ? ' Hide Changes' : ' View Detailed Changes'}
+              </button>
+              {/* Export original content button */}
+              <FileHandler
+                onContentLoaded={() => {}}
+                content={content.original}
+                showExport={true}
+                acceptedFormats={""}
+                maxSizeMB={5}
+              />
+            </div>
             <button
               onClick={humanizeContent}
               disabled={content.processing || !content.original.trim()}
@@ -926,18 +904,72 @@ const ContentHumanizer: React.FC = () => {
               <CardTitle>Enhanced Content</CardTitle>
             </CardHeader>
             <CardContent>
-              <h2 className="text-xl font-semibold mb-4">Before & After</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-medium mb-2">Original</h3>
-                  <div className="p-4 bg-gray-50 rounded">
-                    {content.original}
+              <h2 className="text-xl font-semibold mb-4 text-center">Before & After</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-0 md:divide-x md:divide-gray-300">
+                {/* Original Document Panel */}
+                <div className="px-0 md:pr-6">
+                  <div className="rounded-t-lg bg-gray-100 border border-b-0 border-gray-300 p-3 flex items-center justify-between">
+                    <h3 className="font-bold text-gray-700 text-lg">Original Document</h3>
+                  </div>
+                  <div className="p-6 bg-white rounded-b-lg border border-t-0 border-gray-300 shadow-sm min-h-[180px] prose max-w-none text-gray-800">
+                    {content.original.trim() ? (
+                      <ReactMarkdown>{content.original}</ReactMarkdown>
+                    ) : (
+                      <pre className="whitespace-pre-wrap break-words font-sans text-base bg-transparent border-0 p-0 m-0">{content.original}</pre>
+                    )}
+                  </div>
+                  {/* Export original content */}
+                  <div className="mt-4 flex flex-col gap-2 border-t pt-3 px-2">
+                    <span className="text-xs text-gray-500 mb-1">Export Original:</span>
+                    <div className="flex flex-wrap gap-2">
+                      <FileHandler
+                        onContentLoaded={() => {}}
+                        content={content.original}
+                        showExport={true}
+                        acceptedFormats={""}
+                        maxSizeMB={5}
+                      />
+                      <button
+                        onClick={() => exportToDocx(content.original, 'original-content.docx')}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        Export as Word
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h3 className="font-medium mb-2">Enhanced</h3>
-                  <div className="p-4 bg-gray-50 rounded">
-                    {content.enhanced}
+                {/* Enhanced Document Panel */}
+                <div className="px-0 md:pl-6">
+                  <div className="rounded-t-lg bg-green-100 border border-b-0 border-green-400 p-3 flex items-center justify-between">
+                    <h3 className="font-bold text-green-800 text-lg">Enhanced Document</h3>
+                  </div>
+                  <div className="p-6 bg-white rounded-b-lg border border-t-0 border-green-400 shadow-sm min-h-[180px] prose max-w-none text-gray-900">
+                    {content.enhanced.trim() ? (
+                      <ReactMarkdown>{content.enhanced}</ReactMarkdown>
+                    ) : (
+                      <pre className="whitespace-pre-wrap break-words font-sans text-base bg-transparent border-0 p-0 m-0">{content.enhanced}</pre>
+                    )}
+                  </div>
+                  {/* Export enhanced content */}
+                  <div className="mt-4 flex flex-col gap-2 border-t pt-3 px-2">
+                    <span className="text-xs text-gray-500 mb-1">Export Enhanced:</span>
+                    <div className="flex flex-wrap gap-2">
+                      <FileHandler
+                        onContentLoaded={() => {}}
+                        content={content.enhanced}
+                        showExport={true}
+                        acceptedFormats={""}
+                        maxSizeMB={5}
+                      />
+                      <button
+                        onClick={() => exportToDocx(content.enhanced, 'enhanced-content.docx')}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        Export as Word
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
