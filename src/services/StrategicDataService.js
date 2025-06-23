@@ -183,7 +183,10 @@ const StrategicDataService = {
     },
 
     // Tagline
-    getTagline: () => strategicData.tagline || '',
+    getTagline: () => {
+        const storedTagline = safeLocalStorage.getItem('brandTagline');
+        return storedTagline || strategicData.tagline || '';
+    },
     setTagline: (value) => {
         strategicData.tagline = value;
         safeLocalStorage.setItem('brandTagline', value);
