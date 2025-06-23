@@ -90,7 +90,7 @@ const MissionVisionGenerator: React.FC = () => {
         setIsLoading(true);
         try {
             const requestBody = {
-                type: 'missionVision',
+                mode: 'missionVision',
                 data: {
                     companyName,
                     audience,

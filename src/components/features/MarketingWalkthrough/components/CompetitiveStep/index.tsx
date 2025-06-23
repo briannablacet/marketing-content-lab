@@ -182,9 +182,15 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       const result = await response.json();
       console.log('API response:', result);
 
-      if (result.competitorInsights && result.competitorInsights.length > 0) {
-        const insight = result.competitorInsights[0];
+      let insights = [];
+      if (Array.isArray(result)) {
+        insights = result;
+      } else if (result.competitorInsights && Array.isArray(result.competitorInsights)) {
+        insights = result.competitorInsights;
+      }
 
+      if (insights.length > 0) {
+        const insight = insights[0];
         // Update the competitor in the state with the analysis
         setCompetitors(prev => prev.map(comp =>
           comp.name === competitorName ? {
@@ -195,7 +201,6 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             weaknesses: insight.gaps || []
           } : comp
         ));
-
         showNotification(`Analysis complete for ${competitorName}`, 'success');
       } else {
         throw new Error('No insights returned from analysis');

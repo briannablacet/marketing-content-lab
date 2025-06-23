@@ -66,17 +66,15 @@ const ContentRepurposer: React.FC = () => {
     }
   }, [writingStyle, brandVoice, messaging]);
 
-
-    // Update handleFileContent
-    const handleFileContent = (content: string | object) => {
-      if (typeof content === "string") {
-        setContent(content);
-
-      } else {
-        setUploadedContent(JSON.stringify(content, null, 2));
-        showNotification("Structured content loaded successfully", "success");
-      }
-    };
+  // Update handleFileContent
+  const handleFileContent = (content: string | object) => {
+    if (typeof content === "string") {
+      setContent(content);
+    } else {
+      setUploadedContent(JSON.stringify(content, null, 2));
+      showNotification("Structured content loaded successfully", "success");
+    }
+  };
 
   const handleRepurpose = async () => {
     if (!content.trim()) {

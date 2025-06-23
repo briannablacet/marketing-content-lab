@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { OpenAIStream, StreamingTextResponse } from "ai";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -331,7 +330,7 @@ async function handleTaglineGeneration(data: any, res: NextApiResponse) {
 async function handlePersonaGenerator(data: any, res: NextApiResponse) {
   try {
     const { productName, productType, currentPersona } = data;
-    const prompt = `Generate an ideal customer persona for the following product.\n\nProduct Name: ${productName}\nProduct Type/Description: ${productType}\nCurrent Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}\n\nReturn a JSON array of personas with role, industry, and challenges.`;
+    const prompt = `Generate an ideal customer persona for the following product.\n\nProduct Name: ${productName}\nProduct Type/Description: ${productType}\nCurrent Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}\n\nReturn ONLY a valid JSON array of personas with role, industry, and challenges. Do not include any explanation or formatting.`;
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -340,12 +339,22 @@ async function handlePersonaGenerator(data: any, res: NextApiResponse) {
         { role: "user", content: prompt },
       ],
     });
-    const personas = response.choices[0].message.content || "[]";
+    let personasText = response.choices[0].message.content || "[]";
     let parsed;
     try {
-      parsed = JSON.parse(personas);
+      parsed = JSON.parse(personasText);
     } catch {
-      parsed = [{ role: "Sample Role", industry: "Sample Industry", challenges: ["Sample Challenge"] }];
+      // Try to extract JSON array from the text
+      const match = personasText.match(/\[.*\]/s);
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch {
+          parsed = [{ role: "Sample Role", industry: "Sample Industry", challenges: ["Sample Challenge"] }];
+        }
+      } else {
+        parsed = [{ role: "Sample Role", industry: "Sample Industry", challenges: ["Sample Challenge"] }];
+      }
     }
     return res.status(200).json({ personas: parsed });
   } catch (error) {
@@ -431,7 +440,7 @@ async function handleProsePerfector(data: any, res: NextApiResponse) {
 async function handleKeyMessages(data: any, res: NextApiResponse) {
   try {
     const { productInfo, competitors, industry, focusAreas, tone, currentFramework } = data;
-    const prompt = `Generate a value proposition, 3 key differentiators, and 5 targeted key messages for the following product.\n\nProduct Info: ${JSON.stringify(productInfo)}\nIndustry: ${industry}\nFocus Areas: ${focusAreas}\nTone: ${tone}\nCurrent Framework: ${JSON.stringify(currentFramework)}\n\nReturn a JSON object with valueProposition, keyDifferentiators (array), and targetedMessages (array).`;
+    const prompt = `Generate a value proposition, 3 key differentiators, and 5 targeted key messages for the following product.\n\nProduct Info: ${JSON.stringify(productInfo)}\nIndustry: ${industry}\nFocus Areas: ${focusAreas}\nTone: ${tone}\nCurrent Framework: ${JSON.stringify(currentFramework)}\n\nReturn ONLY a valid JSON object with valueProposition, keyDifferentiators (array), and targetedMessages (array). Do not include any explanation or formatting.`;
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -440,11 +449,22 @@ async function handleKeyMessages(data: any, res: NextApiResponse) {
         { role: "user", content: prompt },
       ],
     });
+    let text = response.choices[0].message.content || '{}';
     let result;
     try {
-      result = JSON.parse(response.choices[0].message.content || '{}');
+      result = JSON.parse(text);
     } catch {
-      result = { valueProposition: '', keyDifferentiators: [], targetedMessages: [] };
+      // Try to extract JSON object from the text
+      const match = text.match(/{[\s\S]*}/);
+      if (match) {
+        try {
+          result = JSON.parse(match[0]);
+        } catch {
+          result = { valueProposition: '', keyDifferentiators: [], targetedMessages: [] };
+        }
+      } else {
+        result = { valueProposition: '', keyDifferentiators: [], targetedMessages: [] };
+      }
     }
     return res.status(200).json(result);
   } catch (error) {
@@ -454,33 +474,58 @@ async function handleKeyMessages(data: any, res: NextApiResponse) {
 }
 
 // Handler for competitor analysis
-async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
+async function handleCompetitiveAnalysis(data: any, res: NextApiResponse) {
   try {
-    const { competitors, industry } = data;
-    const prompt = `Analyze the following competitors in the ${industry} industry. For each, provide:\n- Unique positioning (array)\n- Key themes/messages (array)\n- Gaps/opportunities (array)\n\nCompetitors: ${JSON.stringify(competitors)}\n\nReturn a JSON array of objects with name, uniquePositioning, keyThemes, and gaps.`;
+    const { competitors, productInfo, industry, focusAreas, tone } = data;
+    const prompt = `Analyze the following competitors for the given product.\n\nProduct Info: ${JSON.stringify(productInfo)}\nIndustry: ${industry}\nFocus Areas: ${focusAreas}\nTone: ${tone}\nCompetitors: ${JSON.stringify(competitors)}\n\nReturn ONLY a valid JSON array. Each item should have name, uniquePositioning (array, at least 1), keyThemes (array, at least 1), and gaps (array, at least 1). Do not include any explanation or formatting. Never return empty arrays; always provide at least one insight for each field.`;
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
-      temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a competitive analysis expert." },
-        { role: "user", content: prompt },
+        { role: "system", content: "You are a marketing strategist." },
+        { role: "user", content: prompt }
       ],
+      max_tokens: 800,
+      temperature: 0.7
     });
-    let competitorInsights;
+    let text = response.choices[0].message.content.trim();
+    console.log("[CompetitiveAnalysis] AI raw response:", text);
+    let result;
     try {
-      competitorInsights = JSON.parse(response.choices[0].message.content || '[]');
-    } catch {
-      competitorInsights = competitors.map((c: any) => ({
-        name: c.name,
-        uniquePositioning: ["Sample positioning"],
-        keyThemes: ["Sample theme"],
-        gaps: ["Sample gap"]
-      }));
+      result = JSON.parse(text);
+      console.log("[CompetitiveAnalysis] Parsed JSON:", result);
+    } catch (e) {
+      // Try to extract JSON array from the response (ES2018 workaround)
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        try {
+          result = JSON.parse(match[0]);
+          console.log("[CompetitiveAnalysis] Extracted JSON array:", result);
+        } catch (e2) {
+          console.error("[CompetitiveAnalysis] Failed to parse extracted JSON array:", e2);
+          result = null;
+        }
+      } else {
+        console.error("[CompetitiveAnalysis] No JSON array found in AI response.");
+        result = null;
+      }
     }
-    return res.status(200).json({ competitorInsights });
+    if (!result || !Array.isArray(result)) {
+      // fallback sample
+      console.warn("[CompetitiveAnalysis] Falling back to sample data.");
+      result = Array.isArray(competitors)
+        ? competitors.map((c: any) => ({
+            name: c.name,
+            uniquePositioning: ["Sample positioning"],
+            keyThemes: ["Sample theme"],
+            gaps: ["Sample gap"]
+          }))
+        : [];
+    }
+    res.status(200).json(result);
   } catch (error) {
-    console.error("Analyze Competitors error:", error);
-    return res.status(500).json({ error: "Failed to analyze competitors" });
+    const errorMessage = typeof error === 'object' && error && 'message' in error ? (error as any).message : String(error);
+    console.error("[CompetitiveAnalysis] Handler error:", errorMessage);
+    res.status(500).json({ error: errorMessage });
   }
 }
 
@@ -549,7 +594,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (mode === "keyMessages") {
     return handleKeyMessages(data, res);
   } else if (mode === "analyzeCompetitors") {
-    return handleAnalyzeCompetitors(data, res);
+    return handleCompetitiveAnalysis(data, res);
   } else if (mode === "missionVision") {
     return handleMissionVision(data, res);
   } else {
