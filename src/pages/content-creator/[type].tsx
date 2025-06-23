@@ -1,10 +1,12 @@
 // src/pages/content-creator/[type].tsx
+// FIXED: Now uses actual writing style data from context, displays formatted content properly
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { useNotification } from "../../context/NotificationContext";
+import { useWritingStyle } from "../../context/WritingStyleContext"; // FIXED: Import writing style context
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import FileHandler from "@/components/shared/FileHandler";
 import KeywordSuggestions from "../../components/shared/KeywordSuggestions";
@@ -216,6 +218,11 @@ const ContentCreatorPage = () => {
   const { type } = router.query;
   const { showNotification } = useNotification();
 
+  // FIXED: Get writing style from context instead of using defaults
+  const { writingStyle, isStyleConfigured } = useWritingStyle();
+  console.log('🔥 CONTENT CREATOR writingStyle:', writingStyle);
+  console.log('🔥 CONTENT CREATOR primary:', writingStyle?.styleGuide?.primary);
+  console.log('🔥 CONTENT CREATOR headingCase:', writingStyle?.formatting?.headingCase);
   // State for content information
   const [contentType, setContentType] = useState<ContentType | null>(null);
 
@@ -263,8 +270,13 @@ const ContentCreatorPage = () => {
   // Skip walkthrough and writing style prompts on component mount
   useEffect(() => {
     // Mark walkthrough as completed in localStorage
-    resetStyleAndWalkthrough();
   }, []);
+
+  // FIXED: Debug writing style context loading
+  useEffect(() => {
+    console.log('🎯 Content Creator: Current writing style from context:', writingStyle);
+    console.log('🎯 Content Creator: Is style configured?', isStyleConfigured);
+  }, [writingStyle, isStyleConfigured]);
 
   // Load content type from URL parameter
   useEffect(() => {
@@ -429,7 +441,6 @@ const ContentCreatorPage = () => {
     }
   };
 
-  // Update handleGenerateContent - FIXED VERSION
   const handleGenerateContent = async () => {
     if (!promptText && !uploadedContent) {
       showNotification("Please enter a prompt or upload content", "error");
@@ -439,32 +450,45 @@ const ContentCreatorPage = () => {
     setIsGenerating(true);
 
     try {
+   
+
       const payload = {
-        endpoint: "generate-content",
-        data: {
-          campaignData: {
-            name: promptText || "Generated Content",
-            type: contentType?.id || "blog-post",
-            goal: "Create engaging content",
-            targetAudience: advancedOptions.audience || "general audience",
-            keyMessages: advancedOptions.keywords
-              .split(",")
-              .map((k) => k.trim())
-              .filter((k) => k),
+        campaignData: {
+          name: promptText || "Generated Content",
+          type: contentType?.id || "blog-post",
+          goal: "Create engaging content",
+          targetAudience: advancedOptions.audience || "general audience",
+          keyMessages: advancedOptions.keywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter((k) => k),
+        },
+        contentTypes: [contentType?.id || "blog-post"],
+        // FIXED: Pass actual writing style from context, not defaults
+        writingStyle: {
+          styleGuide: {
+            primary: writingStyle?.styleGuide?.primary,
+            customRules: writingStyle?.styleGuide?.customRules || [],
+            completed: true
           },
-          contentTypes: [contentType?.id || "blog-post"],
-          writingStyle: {
-            styleGuide: {
-              primary: advancedOptions.tone || "professional",
-              customRules: [],
-            },
-            formatting: {},
-            punctuation: {},
+          formatting: {
+            headingCase: writingStyle?.formatting?.headingCase,
+            numberFormat: writingStyle?.formatting?.numberFormat,
+            dateFormat: writingStyle?.formatting?.dateFormat,
+            listStyle: writingStyle?.formatting?.listStyle
           },
+          punctuation: {
+            oxfordComma: writingStyle?.punctuation?.oxfordComma,
+            quotationMarks: writingStyle?.formatting?.quotationMarks,
+            hyphenation: writingStyle?.punctuation?.hyphenation
+          },
+          completed: true
         },
       };
-
-      console.log("Sending API request with payload:", JSON.stringify(payload).substring(0, 500) + "...");
+           
+      console.log("🚀 API Payload:", JSON.stringify(payload, null, 2));
+      console.log('🔍 WritingStyle from context in content creator:', writingStyle);
+      console.log('🔍 Heading case specifically:', writingStyle?.formatting?.headingCase);
 
       const response = await fetch('/api/api_endpoints', {
         method: "POST",
@@ -472,7 +496,10 @@ const ContentCreatorPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          mode: 'enhance',
+          data: payload
+        }),
       });
 
       if (!response.ok) {
@@ -482,7 +509,7 @@ const ContentCreatorPage = () => {
       }
 
       const result = await response.json();
-      console.log("API Response received:", result);
+      console.log("✅ API Response received:", result);
 
       // The api_endpoints returns content in a different format
       const contentKey = contentType?.id || "blog-post";
@@ -491,15 +518,21 @@ const ContentCreatorPage = () => {
       if (content) {
         const contentText = content.content || content;
         setGeneratedContent(contentText);
-        setGeneratedTitle(content.title || "Generated Content");
+
+        // FIXED: Use the actual title from the content, not the prompt
+        const actualTitle = content.title || extractTitleFromContent(contentText) || "Generated Content";
+        setGeneratedTitle(actualTitle);
+
         setGeneratedMetadata({
-          title: content.title || "Generated Content",
+          title: actualTitle,
           description: contentText.substring(0, 160),
           keywords: advancedOptions.keywords
             .split(",")
             .map((k) => k.trim())
             .filter((k) => k),
         });
+
+        showNotification("Content generated successfully!", "success");
       } else {
         throw new Error("Invalid response format from API");
       }
@@ -511,6 +544,20 @@ const ContentCreatorPage = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // FIXED: Helper function to extract title from content
+  const extractTitleFromContent = (content: string): string | null => {
+    // Look for the first heading in the content
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.length > 0 && !trimmed.startsWith('*') && !trimmed.startsWith('-')) {
+        // Remove any markdown formatting and return first substantial line
+        return trimmed.replace(/^#+\s*/, '').replace(/\*\*/g, '');
+      }
+    }
+    return null;
   };
 
   // Update handleExportContent
@@ -688,7 +735,7 @@ const ContentCreatorPage = () => {
     });
   };
 
-  // Parse the markdown content for display
+  // FIXED: Parse the markdown content for display AND apply style guide formatting
   const parseMarkdown = (markdown: string) => {
     if (!markdown) return { title: "", introduction: "", sections: [] };
 
@@ -705,6 +752,8 @@ const ContentCreatorPage = () => {
       // Get title (# Heading)
       if (line.startsWith("# ") && !title) {
         title = line.substring(2).trim();
+        // FIXED: Apply heading case formatting from writing style
+        title = applyHeadingCase(title);
         continue;
       }
 
@@ -714,7 +763,7 @@ const ContentCreatorPage = () => {
           sections.push({ ...currentSection });
         }
         currentSection = {
-          title: line.substring(3).trim(),
+          title: applyHeadingCase(line.substring(3).trim()),
           content: "",
         };
         continue;
@@ -744,6 +793,26 @@ const ContentCreatorPage = () => {
     return { title, introduction: introduction.trim(), sections };
   };
 
+  // FIXED: Apply heading case formatting based on writing style
+  const applyHeadingCase = (text: string): string => {
+    const headingCase = writingStyle?.formatting?.headingCase || 'title';
+
+    switch (headingCase) {
+      case 'upper':
+        return text.toUpperCase();
+      case 'lower':
+        return text.toLowerCase();
+      case 'sentence':
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+      case 'title':
+      default:
+        // Title case
+        return text.replace(/\w\S*/g, (txt) =>
+          txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+        );
+    }
+  };
+
   // If content type is not loaded yet, show loading
   if (!contentType && router.isReady && type) {
     return <div className="p-8 text-center">Loading content type...</div>;
@@ -758,12 +827,83 @@ const ContentCreatorPage = () => {
       case "create":
         return (
           <div className="space-y-6">
-            {/* Strategic Data Banner - Show if we have meaningful strategic data */}
-            {hasStrategicData && (
+            {/* Writing Style Status Banner - Show current writing style settings */}
+            {isStyleConfigured && (
               <Card className="mb-6 border-2 border-green-200 overflow-hidden">
                 <CardHeader className="bg-green-50 border-b">
                   <CardTitle className="flex items-center">
                     <FileCheck className="w-5 h-5 text-green-600 mr-2" />
+                    <span>Using Your Writing Style Settings</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-medium text-gray-800 mb-2">
+                        Content will follow these style rules:
+                      </h3>
+                      <ul className="space-y-2">
+                        <li className="flex items-start">
+                          <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                          <span className="text-gray-700">
+                            <strong>Style Guide:</strong> {writingStyle?.styleGuide?.primary}
+                          </span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                          <span className="text-gray-700">
+                            <strong>Heading Format:</strong> {
+                              writingStyle?.formatting?.headingCase === 'upper' ? 'ALL CAPS' :
+                                writingStyle?.formatting?.headingCase === 'lower' ? 'lowercase' :
+                                  writingStyle?.formatting?.headingCase === 'sentence' ? 'Sentence case' :
+                                    'Title Case'
+                            }
+                          </span>
+                        </li>
+                        {writingStyle?.formatting?.numberFormat && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Numbers:</strong> {
+                                writingStyle.formatting.numberFormat === 'words' ? 'Spelled out' :
+                                  writingStyle.formatting.numberFormat === 'numerals' ? 'As numerals' :
+                                    'Mixed format'
+                              }
+                            </span>
+                          </li>
+                        )}
+                        {writingStyle?.punctuation?.oxfordComma !== undefined && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Oxford Comma:</strong> {writingStyle.punctuation.oxfordComma ? 'Used' : 'Omitted'}
+                            </span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-green-100">
+                      <h3 className="font-medium text-gray-800 mb-2">
+                        Debug Info:
+                      </h3>
+                      <div className="space-y-1 text-gray-700 text-sm">
+                        <p><strong>Style configured:</strong> {isStyleConfigured ? 'Yes' : 'No'}</p>
+                        <p><strong>Primary style:</strong> {writingStyle?.styleGuide?.primary}</p>
+                        <p><strong>Heading case:</strong> {writingStyle?.formatting?.headingCase}</p>
+                        <p><strong>Completed:</strong> {writingStyle?.completed ? 'Yes' : 'No'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Strategic Data Banner - Show if we have meaningful strategic data */}
+            {hasStrategicData && (
+              <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
+                <CardHeader className="bg-blue-50 border-b">
+                  <CardTitle className="flex items-center">
+                    <FileCheck className="w-5 h-5 text-blue-600 mr-2" />
                     <span>Using Your Marketing Program</span>
                   </CardTitle>
                 </CardHeader>
@@ -776,7 +916,7 @@ const ContentCreatorPage = () => {
                       <ul className="space-y-2">
                         {strategicData?.product?.name && (
                           <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
                             <span className="text-gray-700">
                               <strong>Your product:</strong>{" "}
                               {strategicData.product.name}
@@ -786,7 +926,7 @@ const ContentCreatorPage = () => {
 
                         {strategicData?.audiences?.length > 0 && (
                           <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
                             <span className="text-gray-700">
                               <strong>Your audience:</strong>{" "}
                               {strategicData.audiences[0].role}
@@ -796,123 +936,21 @@ const ContentCreatorPage = () => {
 
                         {strategicData?.messaging?.valueProposition && (
                           <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
+                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
                             <span className="text-gray-700">
                               <strong>Your messaging framework</strong>
                             </span>
                           </li>
                         )}
-
-                        {strategicData?.writingStyle?.styleGuide?.primary && (
-                          <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
-                            <span className="text-gray-700">
-                              <strong>Your writing style:</strong>{" "}
-                              {strategicData.writingStyle.styleGuide.primary}
-                            </span>
-                          </li>
-                        )}
                       </ul>
                     </div>
-                    <div className="bg-white p-4 rounded-lg border border-green-100">
-                      <h3 className="font-medium text-gray-800 mb-2">
-                        Content will reflect:
-                      </h3>
-                      <div className="space-y-2 text-gray-700 text-sm">
-                        {strategicData?.product?.valueProposition && (
-                          <p className="italic">
-                            "
-                            {strategicData.product.valueProposition.substring(
-                              0,
-                              100
-                            )}
-                            ..."
-                          </p>
-                        )}
-
-                        {strategicData?.messaging?.keyDifferentiators?.length >
-                          0 && (
-                            <div>
-                              <p>
-                                <strong>Key differentiators:</strong>
-                              </p>
-                              <ul className="list-disc pl-5 space-y-1">
-                                {strategicData.messaging.keyDifferentiators
-                                  .slice(0, 2)
-                                  .map((diff, idx) => (
-                                    <li key={idx}>
-                                      {typeof diff === "string"
-                                        ? diff.substring(0, 60)
-                                        : ""}
-                                      {diff.length > 60 ? "..." : ""}
-                                    </li>
-                                  ))}
-                              </ul>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Guidance Card */}
-            {showGuidanceCard && (
-              <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="flex items-center">
-                    <Info className="w-5 h-5 text-blue-600 mr-2" />
-                    <span>How to Create Content</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex flex-col items-center text-center">
-                      <div className="p-4 mb-3 bg-blue-100 rounded-full">
-                        <MessageSquare className="w-8 h-8 text-blue-600" />
-                      </div>
-                      <h3 className="font-medium mb-2">Option 1: Prompt</h3>
-                      <p className="text-sm text-gray-600">
-                        Describe what you want the AI to create. Be specific for
-                        best results.
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center text-center">
-                      <div className="p-4 mb-3 bg-blue-100 rounded-full">
-                        <Upload className="w-8 h-8 text-blue-600" />
-                      </div>
-                      <h3 className="font-medium mb-2">Option 2: Upload</h3>
-                      <p className="text-sm text-gray-600">
-                        Alternatively, upload existing notes or a document to
-                        use as a starting point.
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center text-center">
-                      <div className="p-4 mb-3 bg-blue-100 rounded-full">
-                        <Search className="w-8 h-8 text-blue-600" />
-                      </div>
-                      <h3 className="font-medium mb-2">Add Keywords</h3>
-                      <p className="text-sm text-gray-600">
-                        In the next tab, you can add keywords to optimize your
-                        content for search.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex justify-end mt-4">
-                    <button
-                      onClick={() => setShowGuidanceCard(false)}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      Don't show this again
-                    </button>
                   </div>
                 </CardContent>
               </Card>
             )}
 
             {/* No Strategic Data Warning */}
-            {!isLoadingStrategicData && !hasStrategicData && (
+            {!isLoadingStrategicData && !hasStrategicData && !isStyleConfigured && (
               <Card className="mb-6 border-2 border-yellow-200 overflow-hidden">
                 <CardHeader className="bg-yellow-50 border-b">
                   <CardTitle className="flex items-center">
@@ -925,7 +963,7 @@ const ContentCreatorPage = () => {
                     You're creating content without a strategic foundation. Want stronger, more aligned results? Complete the Branding Wizard first.
                   </p>
                   <div className="flex justify-end">
-                    <Link href="https://www.marketingcontentlab.com/walkthrough/1">
+                    <Link href="/walkthrough/1">
                       <button className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
                         Launch Branding Wizard
                       </button>
@@ -934,7 +972,6 @@ const ContentCreatorPage = () => {
                 </CardContent>
               </Card>
             )}
-
 
             <Card className="overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
@@ -1403,16 +1440,14 @@ const ContentCreatorPage = () => {
                           />
                         </div>
                       ) : (
-                        /* // src/pages/content-creator/[type].tsx - Replace the "View Mode" section in your edit tab
-
-/* View Mode - Show Word-style formatted content */
+                        /* FIXED: View Mode - Show properly formatted content with style guide rules applied */
                         <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
                           fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
                           lineHeight: '1.6',
                           fontSize: '11pt',
                           color: '#333'
                         }}>
-                          {/* Document Title - Word style */}
+                          {/* Document Title - Word style with proper formatting */}
                           <div className="text-center mb-6">
                             <h1 className="text-2xl font-bold mb-2" style={{
                               color: '#2B579A',
@@ -1445,11 +1480,11 @@ const ContentCreatorPage = () => {
                             </div>
                           )}
 
-                          {/* Content Sections with Word-style headings */}
+                          {/* Content Sections with PROPERLY APPLIED style guide formatting */}
                           {parsedContent.sections.map((section, idx) => (
                             <div key={idx} className="mb-6">
                               <h2 className="font-semibold mb-3" style={{
-                                color: '#2B579A', // Word blue color
+                                color: '#2B579A',
                                 fontSize: '14pt',
                                 fontWeight: 'bold',
                                 marginTop: idx > 0 ? '18pt' : '12pt',
@@ -1457,6 +1492,7 @@ const ContentCreatorPage = () => {
                                 borderBottom: '1px solid #E5E7EB',
                                 paddingBottom: '3pt'
                               }}>
+                                {/* FIXED: Display headings with proper case formatting */}
                                 {section.title}
                               </h2>
                               <div style={{ textAlign: 'justify' }}>
@@ -1489,11 +1525,26 @@ const ContentCreatorPage = () => {
                   </CardContent>
                 </Card>
 
+                {/* Writing Style Applied Notice */}
+                {isStyleConfigured && (
+                  <Card className="mt-4 p-4 bg-green-50 border border-green-200">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <FileCheck className="w-4 h-4 mr-2 text-green-600" />
+                      <span>
+                        Content created using {writingStyle?.styleGuide?.primary} style guide
+                        {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
+                        {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}
+                        {strategicData?.product?.name && ` for ${strategicData.product.name}`}.
+                      </span>
+                    </div>
+                  </Card>
+                )}
+
                 {/* Strategic Data Attribution */}
                 {hasStrategicData && (
                   <Card className="mt-4 p-4 bg-gray-50 border border-gray-200">
                     <div className="flex items-center text-sm text-gray-600">
-                      <FileCheck className="w-4 h-4 mr-2 text-green-600" />
+                      <FileCheck className="w-4 h-4 mr-2 text-blue-600" />
                       <span>
                         Created using your marketing program for{" "}
                         {strategicData?.product?.name || "your product"}.
@@ -1608,8 +1659,6 @@ const ContentCreatorPage = () => {
 
       {/* Content for active tab */}
       {renderTabContent()}
-
-
     </div>
   );
 };

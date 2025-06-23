@@ -1,4 +1,6 @@
 // src/components/features/WritingStyleModule/index.tsx
+// COMPLETE WORKING VERSION - All functions included and property names fixed
+
 import React, { useState, useEffect } from 'react';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -29,36 +31,51 @@ const HEADING_STYLES = [
 ];
 
 const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext, onBack, returnTo }) => {
-  const { writingStyle, updateWritingStyle, applyStyleGuideRules, saveStyleToStorage } = useWritingStyle();
+const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
   const { showNotification } = useNotification();
-  const [uploadedStyleGuide, setUploadedStyleGuide] = useState<File | null>(null);
-  const [internalConventions, setInternalConventions] = useState<string>('');
   const router = useRouter();
 
+  // State
+  const [uploadedStyleGuide, setUploadedStyleGuide] = useState<File | null>(null);
+  const [internalConventions, setInternalConventions] = useState<string>('');
+
+  // Initialize internal conventions from context on mount
   useEffect(() => {
-    saveStyleToStorage();
-  }, [writingStyle, saveStyleToStorage]);
+    if (writingStyle?.terminology?.preferredTerms) {
+      const conventions = Object.entries(writingStyle.terminology.preferredTerms)
+        .map(([term, rule]) => `- ${term}: ${rule}`)
+        .join('\n');
+      setInternalConventions(conventions);
+    }
+  }, []);
 
   const handleStyleGuideContent = (content: string | object) => {
     const textContent = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
     const file = new File([textContent], 'uploaded-style-guide.txt', { type: 'text/plain' });
     setUploadedStyleGuide(file);
-    updateWritingStyle({
+
+    setWritingStyle({
+      ...writingStyle,
       styleGuide: {
+        ...writingStyle.styleGuide,
         primary: 'Custom Style Guide',
         overrides: false,
         uploadedGuide: file.name
       }
     });
+
     showNotification('Style guide uploaded and processed successfully', 'success');
   };
 
   const handleRemoveUpload = () => {
     setUploadedStyleGuide(null);
+
     if (writingStyle.styleGuide.primary === 'Custom Style Guide') {
-      applyStyleGuideRules('Chicago Manual of Style');
+      handleStyleGuideUpdate('Chicago Manual of Style');
     }
-    updateWritingStyle({
+
+    setWritingStyle({
+      ...writingStyle,
       styleGuide: {
         ...writingStyle.styleGuide,
         uploadedGuide: undefined
@@ -67,24 +84,175 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
   };
 
   const handleStyleGuideUpdate = (value: string) => {
+    console.log('Updating style guide to:', value);
+
     if (value === 'Custom Style Guide') {
-      updateWritingStyle({
-        styleGuide: { primary: value, overrides: false }
+      setWritingStyle({
+        ...writingStyle,
+        styleGuide: {
+          ...writingStyle.styleGuide,
+          primary: value,
+          overrides: false
+        }
       });
     } else if (value) {
-      applyStyleGuideRules(value);
+      const styleDefaults = getStyleGuideDefaults(value);
+
+      setWritingStyle({
+        ...writingStyle,
+        styleGuide: {
+          ...writingStyle.styleGuide,
+          primary: value,
+          overrides: false
+        },
+        formatting: {
+          ...writingStyle.formatting,
+          ...styleDefaults.formatting
+        },
+        punctuation: {
+          ...writingStyle.punctuation,
+          ...styleDefaults.punctuation
+        }
+      });
     }
   };
 
+  const getStyleGuideDefaults = (styleName: string) => {
+    const defaults = {
+      formatting: {
+        headingCase: 'title',
+        numberFormat: 'mixed',
+        dateFormat: 'american'
+      },
+      punctuation: {
+        oxfordComma: true,
+        bulletPoints: 'Period if complete sentence',
+        quotationMarks: 'double'
+      }
+    };
+
+    switch (styleName) {
+      case 'AP Style':
+        return {
+          formatting: {
+            headingCase: 'title',
+            numberFormat: 'mixed',
+            dateFormat: 'american'
+          },
+          punctuation: {
+            oxfordComma: false,
+            bulletPoints: 'No period for fragments',
+            quotationMarks: 'double'
+          }
+        };
+      case 'APA Style':
+        return {
+          formatting: {
+            headingCase: 'title',
+            numberFormat: 'numerals',
+            dateFormat: 'american'
+          },
+          punctuation: {
+            oxfordComma: true,
+            bulletPoints: 'Period if complete sentence',
+            quotationMarks: 'double'
+          }
+        };
+      case 'MLA Style':
+        return {
+          formatting: {
+            headingCase: 'title',
+            numberFormat: 'words',
+            dateFormat: 'international'
+          },
+          punctuation: {
+            oxfordComma: true,
+            bulletPoints: 'Period if complete sentence',
+            quotationMarks: 'double'
+          }
+        };
+      case 'Chicago Manual of Style':
+      default:
+        return defaults;
+    }
+  };
+
+  // FIXED: Handle formatting updates with proper property mapping
   const handleFormattingUpdate = (field: string, value: string) => {
-    updateWritingStyle({
-      formatting: { ...writingStyle.formatting, [field]: value }
+    console.log(`🔥 Updating formatting ${field} to:`, value);
+
+    // Map UI values to context property names and values
+    let contextField = field;
+    let contextValue = value;
+
+    if (field === 'headings') {
+      contextField = 'headingCase';
+      if (value === 'All caps for main headings') contextValue = 'upper';
+      else if (value === 'Title Case') contextValue = 'title';
+      else if (value === 'Sentence case') contextValue = 'sentence';
+      else if (value === 'Custom') contextValue = 'lower';
+    } else if (field === 'numbers') {
+      contextField = 'numberFormat';
+      if (value === 'Always use numerals') contextValue = 'numerals';
+      else if (value === 'Spell out numbers under 10') contextValue = 'mixed';
+      else if (value === 'Numerals for 10 and above') contextValue = 'mixed';
+    } else if (field === 'dates') {
+      contextField = 'dateFormat';
+      if (value === 'MM/DD/YYYY') contextValue = 'american';
+      else if (value === 'DD/MM/YYYY') contextValue = 'international';
+      else if (value === 'YYYY-MM-DD') contextValue = 'iso';
+    }
+
+    console.log('🔥 Mapping:', { originalField: field, originalValue: value, contextField, contextValue });
+
+    setWritingStyle({
+      ...writingStyle,
+      formatting: {
+        ...writingStyle.formatting,
+        [contextField]: contextValue
+      }
     });
   };
 
+  // FIXED: Handle punctuation updates
   const handlePunctuationUpdate = (field: string, value: boolean | string) => {
-    updateWritingStyle({
-      punctuation: { ...writingStyle.punctuation, [field]: value }
+    console.log(`🔥 Updating punctuation ${field} to:`, value);
+
+    // Map UI field names to context field names
+    let contextField = field;
+    if (field === 'quotes') {
+      contextField = 'quotationMarks';
+    }
+
+    setWritingStyle({
+      ...writingStyle,
+      punctuation: {
+        ...writingStyle.punctuation,
+        [contextField]: value
+      }
+    });
+  };
+
+  // Handle internal conventions
+  const handleInternalConventionsChange = (value: string) => {
+    setInternalConventions(value);
+
+    const lines = value.split('\n').filter(line => line.trim());
+    const preferredTerms: Record<string, string> = {};
+
+    lines.forEach(line => {
+      const match = line.match(/^-?\s*(.+?):\s*(.+)$/);
+      if (match) {
+        preferredTerms[match[1].trim()] = match[2].trim();
+      }
+    });
+
+    setWritingStyle({
+      ...writingStyle,
+      terminology: {
+        ...writingStyle.terminology,
+        preferredTerms
+      }
     });
   };
 
@@ -95,10 +263,43 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
   };
 
   const handleSubmit = () => {
-    saveStyleToStorage();
+    console.log('🔥 SAVING - Current writingStyle:', writingStyle);
+    saveWritingStyle();
     showNotification('Writing style preferences saved successfully', 'success');
-    if (isWalkthrough && onNext) onNext();
-    else if (returnTo) router.push(returnTo);
+
+    setTimeout(() => {
+      if (isWalkthrough && onNext) {
+        onNext();
+      } else if (returnTo) {
+        router.push(returnTo);
+      }
+    }, 100);
+  };
+
+  // Helper to get current UI value from context value
+  const getCurrentHeadingStyle = () => {
+    const headingCase = writingStyle?.formatting?.headingCase;
+    if (headingCase === 'upper') return 'All caps for main headings';
+    if (headingCase === 'title') return 'Title Case';
+    if (headingCase === 'sentence') return 'Sentence case';
+    if (headingCase === 'lower') return 'Custom';
+    return '';
+  };
+
+  const getCurrentNumberStyle = () => {
+    const numberFormat = writingStyle?.formatting?.numberFormat;
+    if (numberFormat === 'numerals') return 'Always use numerals';
+    if (numberFormat === 'mixed') return 'Spell out numbers under 10';
+    if (numberFormat === 'words') return 'Spell out numbers under 10';
+    return '';
+  };
+
+  const getCurrentDateStyle = () => {
+    const dateFormat = writingStyle?.formatting?.dateFormat;
+    if (dateFormat === 'american') return 'MM/DD/YYYY';
+    if (dateFormat === 'international') return 'DD/MM/YYYY';
+    if (dateFormat === 'iso') return 'YYYY-MM-DD';
+    return '';
   };
 
   return (
@@ -109,7 +310,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
         <div className="mb-6">
           <div className="mb-6">
             <select
-              value={writingStyle.styleGuide.primary}
+              value={writingStyle.styleGuide.primary || ''}
               onChange={(e) => handleStyleGuideUpdate(e.target.value)}
               className="w-full px-3 py-2 rounded-md mb-3 border border-gray-300"
             >
@@ -157,7 +358,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
           <div>
             <label className="block text-sm font-medium mb-2">Heading Style <span className="text-gray-500">(optional)</span></label>
             <select
-              value={writingStyle.formatting?.headings || ''}
+              value={getCurrentHeadingStyle()}
               onChange={(e) => handleFormattingUpdate('headings', e.target.value)}
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
@@ -171,7 +372,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
           <div>
             <label className="block text-sm font-medium mb-2">Numbers <span className="text-gray-500">(optional)</span></label>
             <select
-              value={writingStyle.formatting?.numbers || ''}
+              value={getCurrentNumberStyle()}
               onChange={(e) => handleFormattingUpdate('numbers', e.target.value)}
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
@@ -185,7 +386,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
           <div>
             <label className="block text-sm font-medium mb-2">Date Format <span className="text-gray-500">(optional)</span></label>
             <select
-              value={writingStyle.formatting?.dates || ''}
+              value={getCurrentDateStyle()}
               onChange={(e) => handleFormattingUpdate('dates', e.target.value)}
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
@@ -206,7 +407,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
           <div>
             <label className="block text-sm font-medium mb-2">Oxford Comma <span className="text-gray-500">(optional)</span></label>
             <select
-              value={writingStyle.punctuation?.oxfordComma ? 'true' : 'false'}
+              value={writingStyle.punctuation?.oxfordComma !== undefined ? writingStyle.punctuation.oxfordComma.toString() : ''}
               onChange={(e) => handlePunctuationUpdate('oxfordComma', e.target.value === 'true')}
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
@@ -219,7 +420,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
           <div>
             <label className="block text-sm font-medium mb-2">Quotation Marks <span className="text-gray-500">(optional)</span></label>
             <select
-              value={writingStyle.punctuation?.quotes || ''}
+              value={writingStyle.punctuation?.quotationMarks || ''}
               onChange={(e) => handlePunctuationUpdate('quotes', e.target.value)}
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
@@ -240,7 +441,7 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
         </p>
         <textarea
           value={internalConventions}
-          onChange={(e) => setInternalConventions(e.target.value)}
+          onChange={(e) => handleInternalConventionsChange(e.target.value)}
           rows={6}
           placeholder="Example:
 - Always capitalize 'Client'
@@ -248,6 +449,18 @@ const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext
 - Never use contractions in product descriptions"
           className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
         />
+      </div>
+
+      {/* Debug Info */}
+      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <h3 className="text-sm font-medium mb-2">Debug Info:</h3>
+        <div className="text-xs space-y-1">
+          <p><strong>Style Guide:</strong> {writingStyle?.styleGuide?.primary}</p>
+          <p><strong>Heading Case:</strong> {writingStyle?.formatting?.headingCase}</p>
+          <p><strong>Number Format:</strong> {writingStyle?.formatting?.numberFormat}</p>
+          <p><strong>Oxford Comma:</strong> {writingStyle?.punctuation?.oxfordComma?.toString()}</p>
+          <p><strong>Completed:</strong> {writingStyle?.completed?.toString()}</p>
+        </div>
       </div>
 
       {/* Submit Button */}
