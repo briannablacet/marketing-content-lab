@@ -206,7 +206,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    type: 'valueProposition',
+                    mode: 'keyMessages',
                     data: {
                         productInfo: {
                             name: productName,

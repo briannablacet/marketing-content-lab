@@ -484,6 +484,40 @@ async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   }
 }
 
+// Handler for mission and vision generation
+async function handleMissionVision(data: any, res: NextApiResponse) {
+  try {
+    const { companyName, audience, valueProp, additionalContext } = data;
+    const prompt = `Generate a concise mission statement and a vision statement for the following company.\n\nCompany Name: ${companyName}\nTarget Audience: ${audience}\nValue Proposition: ${valueProp}\nAdditional Context: ${additionalContext}\n\nReturn a JSON object with 'mission' and 'vision' fields. Do not include any explanations.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      temperature: 0.7,
+      messages: [
+        { role: "system", content: "You are a branding strategist." },
+        { role: "user", content: prompt },
+      ],
+    });
+    let result;
+    try {
+      result = JSON.parse(response.choices[0].message.content || '{}');
+    } catch {
+      // Fallback: try to extract mission/vision from text
+      const text = response.choices[0].message.content || '';
+      const missionMatch = text.match(/mission\s*[:\-]?\s*(.+)/i);
+      const visionMatch = text.match(/vision\s*[:\-]?\s*(.+)/i);
+      result = {
+        mission: missionMatch ? missionMatch[1].trim() : '',
+        vision: visionMatch ? visionMatch[1].trim() : ''
+      };
+    }
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Mission/Vision generation error:", error);
+    return res.status(500).json({ error: "Failed to generate mission and vision" });
+  }
+}
+
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method, body } = req;
@@ -516,6 +550,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleKeyMessages(data, res);
   } else if (mode === "analyzeCompetitors") {
     return handleAnalyzeCompetitors(data, res);
+  } else if (mode === "missionVision") {
+    return handleMissionVision(data, res);
   } else {
     return res.status(400).json({ error: "Invalid mode" });
   }

@@ -262,7 +262,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             });
 
             const requestBody = {
-                type: 'missionVision',
+                mode: 'missionVision',
                 data: {
                     companyName,
                     audience,
@@ -346,7 +346,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             console.log('🔍 formData.valueProp:', formData.valueProp);
 
             const requestBody = {
-                type: 'adaptBoilerplate',
+                mode: 'adaptBoilerplate',
                 data: {
                     businessName,
                     description,
@@ -428,7 +428,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             }
 
             const requestBody = {
-                type: 'generateTaglines',
+                mode: 'tagline',
                 data: {
                     businessName,
                     description,
