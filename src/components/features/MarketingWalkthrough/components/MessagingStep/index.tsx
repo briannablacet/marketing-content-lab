@@ -288,7 +288,11 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           'Authorization': `Bearer ${safeLocalStorage.getItem('token')}`
         },
         body: JSON.stringify({
+<<<<<<< Updated upstream
           mode: 'keyMessages',
+=======
+          mode: 'key-messages',
+>>>>>>> Stashed changes
           data: requestBody.data
         }),
         signal: controller.signal

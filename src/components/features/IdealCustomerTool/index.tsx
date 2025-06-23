@@ -168,7 +168,11 @@ const IdealCustomerGenerator: React.FC = () => {
 
         try {
             const requestBody = {
+<<<<<<< Updated upstream
                 mode: 'personaGenerator',
+=======
+                mode: 'personas',
+>>>>>>> Stashed changes
                 data: {
                     productName: productName.trim(),
                     productType: productDescription.trim() || '',

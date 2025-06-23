@@ -149,7 +149,11 @@ const TaglineGenerator: React.FC = () => {
             const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+<<<<<<< Updated upstream
                 body: JSON.stringify({ mode: 'tagline', data: payload })
+=======
+                body: JSON.stringify({ mode: 'taglines', data: payload })
+>>>>>>> Stashed changes
             });
 
             if (!response.ok) {

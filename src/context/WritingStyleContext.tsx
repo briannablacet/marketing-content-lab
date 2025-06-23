@@ -108,16 +108,19 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         console.log('✅ Merged writing style:', mergedStyle);
         setWritingStyle(mergedStyle);
+        setIsLoaded(true);
+        console.log('✅ WritingStyleContext: Loading complete with saved data');
       } else {
         console.log('❌ No saved writing style, using defaults');
         setWritingStyle(defaultWritingStyle);
+        setIsLoaded(true);
+        console.log('✅ WritingStyleContext: Loading complete with defaults');
       }
     } catch (error) {
       console.error('❌ Error loading writing style:', error);
       setWritingStyle(defaultWritingStyle);
-    } finally {
       setIsLoaded(true);
-      console.log('✅ WritingStyleContext: Loading complete');
+      console.log('✅ WritingStyleContext: Loading complete after error');
     }
   };
 
@@ -181,8 +184,21 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     writingStyle.completed === true ||
     writingStyle.styleGuide.primary !== 'Chicago Manual of Style' ||
     writingStyle.formatting.headingCase !== 'title' ||
+    writingStyle.formatting.numberFormat !== 'mixed' ||
+    writingStyle.punctuation.oxfordComma !== true ||
     Object.keys(writingStyle.styleGuide.customRules || []).length > 0
   );
+
+  console.log('🔍 isStyleConfigured calculation:', {
+    isLoaded,
+    completed: writingStyle.completed,
+    primary: writingStyle.styleGuide.primary,
+    headingCase: writingStyle.formatting.headingCase,
+    numberFormat: writingStyle.formatting.numberFormat,
+    oxfordComma: writingStyle.punctuation.oxfordComma,
+    customRulesLength: Object.keys(writingStyle.styleGuide.customRules || []).length,
+    result: isStyleConfigured
+  });
 
   const value: WritingStyleContextType = {
     writingStyle,

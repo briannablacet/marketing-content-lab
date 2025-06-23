@@ -60,6 +60,38 @@ function buildStyleGuideInstructions(writingStyle: any, brandVoice: any, messagi
   return instructions;
 }
 
+// Function to clean generated content
+function cleanGeneratedContent(content: string): string {
+  if (!content) return content;
+
+  // Split into lines and clean each line
+  const lines = content.split('\n');
+  const cleanedLines = lines.map(line => {
+    // Remove semicolon at the beginning of lines (but keep them in the middle)
+    let cleaned = line.replace(/^;\s*/, '');
+    // Remove other common unwanted characters at line beginnings
+    cleaned = cleaned.replace(/^[:\\-\\*]\s*/, '');
+    // Remove extra whitespace at the beginning
+    cleaned = cleaned.replace(/^\s+/, '');
+    return cleaned;
+  });
+
+  return cleanedLines.join('\n');
+}
+
+// Function to clean taglines by removing unnecessary quotation marks
+function cleanTagline(tagline: string): string {
+  if (!tagline) return tagline;
+
+  // Remove leading and trailing quotation marks (both single and double)
+  let cleaned = tagline.trim();
+  cleaned = cleaned.replace(/^["']|["']$/g, '');
+
+  // Remove extra whitespace
+  cleaned = cleaned.trim();
+
+  return cleaned;
+}
 
 // Handler for enhanced content generation
 async function handleEnhancedContent(requestData: any, res: NextApiResponse) {
@@ -133,6 +165,8 @@ Remember: Adhere to all style rules.`;
 
 
     const generatedContent = response.choices[0].message.content || "";
+    // Clean the generated content to remove unwanted formatting
+    const cleanedContent = cleanGeneratedContent(generatedContent);
     const content: Record<string, any> = {};
 
     contentTypes.forEach((type: string) => {
@@ -141,7 +175,7 @@ Remember: Adhere to all style rules.`;
         case "Blog Posts":
           content[type] = {
             title: "Generated Blog Post",
-            content: generatedContent,
+            content: cleanedContent,
             metaDescription: "A compelling blog post for your campaign",
             keywords: campaignData.keyMessages || [],
           };
@@ -151,7 +185,7 @@ Remember: Adhere to all style rules.`;
             platform: "LinkedIn",
             posts: [
               {
-                content: `${generatedContent.substring(0, 200)}...
+                content: `${cleanedContent.substring(0, 200)}...
 
 ${(campaignData.keyMessages || []).map((msg: string) => `#${msg.replace(/\s+/g, "")}`).join(" ")}`,
               },
@@ -161,14 +195,14 @@ ${(campaignData.keyMessages || []).map((msg: string) => `#${msg.replace(/\s+/g, 
         case "Email Campaigns":
           content[type] = {
             subject: campaignData.name,
-            preview: generatedContent.substring(0, 100),
-            body: generatedContent,
+            preview: cleanedContent.substring(0, 100),
+            body: cleanedContent,
           };
           break;
         default:
           content[type] = {
             title: `Generated ${type}`,
-            content: generatedContent,
+            content: cleanedContent,
           };
       }
     });
@@ -206,7 +240,9 @@ ${data.content}`,
     });
 
     const humanizedContent = response.choices[0].message.content || "";
-    return res.status(200).json({ content: humanizedContent });
+    // Clean the humanized content to remove unwanted formatting
+    const cleanedHumanizedContent = cleanGeneratedContent(humanizedContent);
+    return res.status(200).json({ content: cleanedHumanizedContent });
   } catch (error) {
     console.error("OpenAI API Error:", error);
     return res.status(500).json({ error: "Failed to humanize content" });
@@ -319,7 +355,8 @@ async function handleTaglineGeneration(data: any, res: NextApiResponse) {
       )
     );
     const taglines = completions.map((c) => c.choices[0].message.content?.trim() || "");
-    return res.status(200).json(taglines);
+    const cleanedTaglines = taglines.map(cleanTagline);
+    return res.status(200).json(cleanedTaglines);
   } catch (error) {
     console.error("Tagline generation error:", error);
     return res.status(500).json({ error: "Failed to generate taglines" });
@@ -330,7 +367,25 @@ async function handleTaglineGeneration(data: any, res: NextApiResponse) {
 async function handlePersonaGenerator(data: any, res: NextApiResponse) {
   try {
     const { productName, productType, currentPersona } = data;
+<<<<<<< Updated upstream
     const prompt = `Generate an ideal customer persona for the following product.\n\nProduct Name: ${productName}\nProduct Type/Description: ${productType}\nCurrent Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}\n\nReturn ONLY a valid JSON array of personas with role, industry, and challenges. Do not include any explanation or formatting.`;
+=======
+    const prompt = `Generate 3 ideal customer personas for the following product. Return ONLY a valid JSON array with this exact format:
+
+[
+  {
+    "role": "Job title or role",
+    "industry": "Industry they work in",
+    "challenges": ["Challenge 1", "Challenge 2", "Challenge 3"]
+  }
+]
+
+Product Name: ${productName}
+Product Type/Description: ${productType}
+Current Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}
+
+Important: Return ONLY the JSON array, no explanations or additional text.`;
+>>>>>>> Stashed changes
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -476,8 +531,33 @@ async function handleKeyMessages(data: any, res: NextApiResponse) {
 // Handler for competitor analysis
 async function handleCompetitiveAnalysis(data: any, res: NextApiResponse) {
   try {
+<<<<<<< Updated upstream
     const { competitors, productInfo, industry, focusAreas, tone } = data;
     const prompt = `Analyze the following competitors for the given product.\n\nProduct Info: ${JSON.stringify(productInfo)}\nIndustry: ${industry}\nFocus Areas: ${focusAreas}\nTone: ${tone}\nCompetitors: ${JSON.stringify(competitors)}\n\nReturn ONLY a valid JSON array. Each item should have name, uniquePositioning (array, at least 1), keyThemes (array, at least 1), and gaps (array, at least 1). Do not include any explanation or formatting. Never return empty arrays; always provide at least one insight for each field.`;
+=======
+    const { competitors, industry } = data;
+    const prompt = `Analyze the following competitors in the ${industry} industry. For each competitor, provide:
+
+1. Unique positioning (array of strings)
+2. Key themes/messages (array of strings)
+3. Gaps/opportunities (array of strings)
+
+Competitors: ${JSON.stringify(competitors)}
+Industry: ${industry}
+
+Return ONLY a valid JSON array with this exact format:
+[
+  {
+    "name": "Competitor Name",
+    "uniquePositioning": ["Positioning 1", "Positioning 2"],
+    "keyThemes": ["Theme 1", "Theme 2"],
+    "gaps": ["Gap 1", "Gap 2"]
+  }
+]
+
+Important: Return ONLY the JSON array, no explanations or additional text. Ensure the JSON is valid and properly formatted.`;
+
+>>>>>>> Stashed changes
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [
@@ -579,6 +659,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleEnhancedContent(data, res);
   } else if (mode === "boilerplate") {
     return handleBoilerplateGeneration(data, res);
+<<<<<<< Updated upstream
   } else if (mode === "adaptBoilerplate") {
     return handleAdaptBoilerplate(data, res);
   } else if (mode === "tagline") {
@@ -596,6 +677,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (mode === "analyzeCompetitors") {
     return handleCompetitiveAnalysis(data, res);
   } else if (mode === "missionVision") {
+=======
+  } else if (mode === "adapt-boilerplate") {
+    return handleAdaptBoilerplate(data, res);
+  } else if (mode === "taglines") {
+    return handleTaglineGeneration(data, res);
+  } else if (mode === "personas") {
+    return handlePersonaGenerator(data, res);
+  } else if (mode === "repurpose") {
+    return handleContentRepurposer(data, res);
+  } else if (mode === "ab-test") {
+    return handleABTestGenerator(data, res);
+  } else if (mode === "prose") {
+    return handleProsePerfector(data, res);
+  } else if (mode === "key-messages") {
+    return handleKeyMessages(data, res);
+  } else if (mode === "competitors") {
+    return handleAnalyzeCompetitors(data, res);
+  } else if (mode === "mission-vision") {
+>>>>>>> Stashed changes
     return handleMissionVision(data, res);
   } else {
     return res.status(400).json({ error: "Invalid mode" });
