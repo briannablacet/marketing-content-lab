@@ -367,9 +367,6 @@ async function handleTaglineGeneration(data: any, res: NextApiResponse) {
 async function handlePersonaGenerator(data: any, res: NextApiResponse) {
   try {
     const { productName, productType, currentPersona } = data;
-<<<<<<< Updated upstream
-    const prompt = `Generate an ideal customer persona for the following product.\n\nProduct Name: ${productName}\nProduct Type/Description: ${productType}\nCurrent Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}\n\nReturn ONLY a valid JSON array of personas with role, industry, and challenges. Do not include any explanation or formatting.`;
-=======
     const prompt = `Generate 3 ideal customer personas for the following product. Return ONLY a valid JSON array with this exact format:
 
 [
@@ -385,7 +382,6 @@ Product Type/Description: ${productType}
 Current Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}
 
 Important: Return ONLY the JSON array, no explanations or additional text.`;
->>>>>>> Stashed changes
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -400,7 +396,7 @@ Important: Return ONLY the JSON array, no explanations or additional text.`;
       parsed = JSON.parse(personasText);
     } catch {
       // Try to extract JSON array from the text
-      const match = personasText.match(/\[.*\]/s);
+      const match = personasText.match(/\[[\s\S]*\]/);
       if (match) {
         try {
           parsed = JSON.parse(match[0]);
@@ -531,10 +527,6 @@ async function handleKeyMessages(data: any, res: NextApiResponse) {
 // Handler for competitor analysis
 async function handleCompetitiveAnalysis(data: any, res: NextApiResponse) {
   try {
-<<<<<<< Updated upstream
-    const { competitors, productInfo, industry, focusAreas, tone } = data;
-    const prompt = `Analyze the following competitors for the given product.\n\nProduct Info: ${JSON.stringify(productInfo)}\nIndustry: ${industry}\nFocus Areas: ${focusAreas}\nTone: ${tone}\nCompetitors: ${JSON.stringify(competitors)}\n\nReturn ONLY a valid JSON array. Each item should have name, uniquePositioning (array, at least 1), keyThemes (array, at least 1), and gaps (array, at least 1). Do not include any explanation or formatting. Never return empty arrays; always provide at least one insight for each field.`;
-=======
     const { competitors, industry } = data;
     const prompt = `Analyze the following competitors in the ${industry} industry. For each competitor, provide:
 
@@ -557,7 +549,6 @@ Return ONLY a valid JSON array with this exact format:
 
 Important: Return ONLY the JSON array, no explanations or additional text. Ensure the JSON is valid and properly formatted.`;
 
->>>>>>> Stashed changes
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [
@@ -574,7 +565,7 @@ Important: Return ONLY the JSON array, no explanations or additional text. Ensur
       result = JSON.parse(text);
       console.log("[CompetitiveAnalysis] Parsed JSON:", result);
     } catch (e) {
-      // Try to extract JSON array from the response (ES2018 workaround)
+      // Try to extract JSON array from the response
       const match = text.match(/\[[\s\S]*\]/);
       if (match) {
         try {
@@ -594,11 +585,11 @@ Important: Return ONLY the JSON array, no explanations or additional text. Ensur
       console.warn("[CompetitiveAnalysis] Falling back to sample data.");
       result = Array.isArray(competitors)
         ? competitors.map((c: any) => ({
-            name: c.name,
-            uniquePositioning: ["Sample positioning"],
-            keyThemes: ["Sample theme"],
-            gaps: ["Sample gap"]
-          }))
+          name: c.name || "Unknown Competitor",
+          uniquePositioning: ["Sample positioning"],
+          keyThemes: ["Sample theme"],
+          gaps: ["Sample gap"]
+        }))
         : [];
     }
     res.status(200).json(result);
@@ -632,8 +623,8 @@ async function handleMissionVision(data: any, res: NextApiResponse) {
       const missionMatch = text.match(/mission\s*[:\-]?\s*(.+)/i);
       const visionMatch = text.match(/vision\s*[:\-]?\s*(.+)/i);
       result = {
-        mission: missionMatch ? missionMatch[1].trim() : '',
-        vision: visionMatch ? visionMatch[1].trim() : ''
+        mission: missionMatch && missionMatch[1] ? missionMatch[1].trim() : '',
+        vision: visionMatch && visionMatch[1] ? visionMatch[1].trim() : ''
       };
     }
     return res.status(200).json(result);
@@ -659,34 +650,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleEnhancedContent(data, res);
   } else if (mode === "boilerplate") {
     return handleBoilerplateGeneration(data, res);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  } else if (mode === "adaptBoilerplate") {
-    return handleAdaptBoilerplate(data, res);
-  } else if (mode === "tagline") {
-    return handleTaglineGeneration(data, res);
-  } else if (mode === "personaGenerator") {
-    return handlePersonaGenerator(data, res);
-  } else if (mode === "contentRepurposer") {
-    return handleContentRepurposer(data, res);
-  } else if (mode === "abTestGenerator") {
-    return handleABTestGenerator(data, res);
-  } else if (mode === "prosePerfector") {
-    return handleProsePerfector(data, res);
-  } else if (mode === "keyMessages") {
-    return handleKeyMessages(data, res);
-  } else if (mode === "analyzeCompetitors") {
-    return handleCompetitiveAnalysis(data, res);
-  } else if (mode === "missionVision") {
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   } else if (mode === "adapt-boilerplate") {
     return handleAdaptBoilerplate(data, res);
   } else if (mode === "taglines") {
@@ -702,18 +665,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (mode === "key-messages") {
     return handleKeyMessages(data, res);
   } else if (mode === "competitors") {
-    return handleAnalyzeCompetitors(data, res);
+    return handleCompetitiveAnalysis(data, res);
   } else if (mode === "mission-vision") {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     return handleMissionVision(data, res);
   } else {
     return res.status(400).json({ error: "Invalid mode" });
