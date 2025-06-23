@@ -100,7 +100,11 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
       const requestBody = {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         mode: 'personaGenerator',
+=======
+        mode: 'personas',
+>>>>>>> Stashed changes
 =======
         mode: 'personas',
 >>>>>>> Stashed changes

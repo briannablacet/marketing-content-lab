@@ -151,7 +151,11 @@ const TaglineGenerator: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 body: JSON.stringify({ mode: 'tagline', data: payload })
+=======
+                body: JSON.stringify({ mode: 'taglines', data: payload })
+>>>>>>> Stashed changes
 =======
                 body: JSON.stringify({ mode: 'taglines', data: payload })
 >>>>>>> Stashed changes

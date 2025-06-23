@@ -167,7 +167,11 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         body: JSON.stringify({
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
           mode: 'analyzeCompetitors',
+=======
+          mode: 'competitors', // This matches your API endpoint
+>>>>>>> Stashed changes
 =======
           mode: 'competitors', // This matches your API endpoint
 >>>>>>> Stashed changes
