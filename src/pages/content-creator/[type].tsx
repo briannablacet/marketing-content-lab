@@ -452,7 +452,7 @@ const ContentCreatorPage = () => {
     setIsGenerating(true);
 
     try {
-   
+
 
       const payload = {
         campaignData: {
@@ -486,7 +486,7 @@ const ContentCreatorPage = () => {
           completed: true
         },
       };
-           
+
       console.log("🚀 API Payload:", JSON.stringify(payload, null, 2));
       console.log('🔍 WritingStyle from context in content creator:', writingStyle);
       console.log('🔍 Heading case specifically:', writingStyle?.formatting?.headingCase);
@@ -856,17 +856,6 @@ const ContentCreatorPage = () => {
                           </li>
                         )}
                       </ul>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg border border-green-100">
-                      <h3 className="font-medium text-gray-800 mb-2">
-                        Debug Info:
-                      </h3>
-                      <div className="space-y-1 text-gray-700 text-sm">
-                        <p><strong>Style configured:</strong> {isStyleConfigured ? 'Yes' : 'No'}</p>
-                        <p><strong>Primary style:</strong> {writingStyle?.styleGuide?.primary}</p>
-                        <p><strong>Heading case:</strong> {writingStyle?.formatting?.headingCase}</p>
-                        <p><strong>Completed:</strong> {writingStyle?.completed ? 'Yes' : 'No'}</p>
-                      </div>
                     </div>
                   </div>
                 </CardContent>
