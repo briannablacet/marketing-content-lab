@@ -265,7 +265,11 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 mode: 'missionVision',
+=======
+                mode: 'mission-vision',
+>>>>>>> Stashed changes
 =======
                 mode: 'mission-vision',
 >>>>>>> Stashed changes
@@ -361,7 +365,11 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 mode: 'adaptBoilerplate',
+=======
+                mode: 'adapt-boilerplate',
+>>>>>>> Stashed changes
 =======
                 mode: 'adapt-boilerplate',
 >>>>>>> Stashed changes
@@ -455,7 +463,11 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 mode: 'tagline',
+=======
+                mode: 'taglines',
+>>>>>>> Stashed changes
 =======
                 mode: 'taglines',
 >>>>>>> Stashed changes

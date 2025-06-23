@@ -171,7 +171,11 @@ const IdealCustomerGenerator: React.FC = () => {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 mode: 'personaGenerator',
+=======
+                mode: 'personas',
+>>>>>>> Stashed changes
 =======
                 mode: 'personas',
 >>>>>>> Stashed changes

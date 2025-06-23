@@ -209,7 +209,11 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                     mode: 'keyMessages',
+=======
+                    mode: 'key-messages',
+>>>>>>> Stashed changes
 =======
                     mode: 'key-messages',
 >>>>>>> Stashed changes

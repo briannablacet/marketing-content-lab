@@ -662,6 +662,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   } else if (mode === "adaptBoilerplate") {
     return handleAdaptBoilerplate(data, res);
   } else if (mode === "tagline") {
@@ -680,6 +681,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleCompetitiveAnalysis(data, res);
   } else if (mode === "missionVision") {
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -703,6 +706,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (mode === "mission-vision") {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
