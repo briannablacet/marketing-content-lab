@@ -289,7 +289,11 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
         },
         body: JSON.stringify({
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
           mode: 'keyMessages',
+=======
+          mode: 'key-messages',
+>>>>>>> Stashed changes
 =======
           mode: 'key-messages',
 >>>>>>> Stashed changes

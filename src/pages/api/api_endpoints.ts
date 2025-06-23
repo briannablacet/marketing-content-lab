@@ -660,6 +660,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (mode === "boilerplate") {
     return handleBoilerplateGeneration(data, res);
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   } else if (mode === "adaptBoilerplate") {
     return handleAdaptBoilerplate(data, res);
   } else if (mode === "tagline") {
@@ -678,6 +679,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleCompetitiveAnalysis(data, res);
   } else if (mode === "missionVision") {
 =======
+=======
+>>>>>>> Stashed changes
   } else if (mode === "adapt-boilerplate") {
     return handleAdaptBoilerplate(data, res);
   } else if (mode === "taglines") {
@@ -695,6 +698,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (mode === "competitors") {
     return handleAnalyzeCompetitors(data, res);
   } else if (mode === "mission-vision") {
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     return handleMissionVision(data, res);
   } else {

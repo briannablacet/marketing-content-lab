@@ -169,7 +169,11 @@ const IdealCustomerGenerator: React.FC = () => {
         try {
             const requestBody = {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 mode: 'personaGenerator',
+=======
+                mode: 'personas',
+>>>>>>> Stashed changes
 =======
                 mode: 'personas',
 >>>>>>> Stashed changes

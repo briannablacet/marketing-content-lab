@@ -207,7 +207,11 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                 },
                 body: JSON.stringify({
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                     mode: 'keyMessages',
+=======
+                    mode: 'key-messages',
+>>>>>>> Stashed changes
 =======
                     mode: 'key-messages',
 >>>>>>> Stashed changes
