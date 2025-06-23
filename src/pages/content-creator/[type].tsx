@@ -593,11 +593,11 @@ const ContentCreatorPage = () => {
         mimeType = "text/html";
         extension = "html";
         fileContent = `<!DOCTYPE html>\n<html>\n<head>\n  <title>${generatedTitle}</title>\n  <meta name=\"description\" content=\"${generatedMetadata?.description || ""}\">\n  <meta name=\"keywords\" content=\"${generatedMetadata?.keywords?.join(", ") || ""}\">\n</head>\n<body>\n  <article>\n    ${generatedContent
-            .replace(/# (.*)\n/g, "<h1>$1</h1>\n")
-            .replace(/## (.*)\n/g, "<h2>$1</h2>\n")
-            .replace(/### (.*)\n/g, "<h3>$1</h3>\n")
-            .replace(/\n\n/g, "</p><p>")
-            .replace(/\n/g, "<br>")}
+          .replace(/# (.*)\n/g, "<h1>$1</h1>\n")
+          .replace(/## (.*)\n/g, "<h2>$1</h2>\n")
+          .replace(/### (.*)\n/g, "<h3>$1</h3>\n")
+          .replace(/\n\n/g, "</p><p>")
+          .replace(/\n/g, "<br>")}
   </article>\n</body>\n</html>`;
         exportToHTML(fileContent, `${fileName}.html`);
         break;
