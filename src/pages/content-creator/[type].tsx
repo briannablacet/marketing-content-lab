@@ -12,6 +12,7 @@ import FileHandler from "@/components/shared/FileHandler";
 import KeywordSuggestions from "../../components/shared/KeywordSuggestions";
 import ContentEditChat from "../../components/features/ContentEditChat";
 import StrategicDataService from "../../services/StrategicDataService";
+import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../utils/exportUtils';
 
 import {
   ArrowLeft,
@@ -586,57 +587,38 @@ const ContentCreatorPage = () => {
       case "markdown":
         mimeType = "text/markdown";
         extension = "md";
+        exportToMarkdown(fileContent, `${fileName}.md`);
         break;
       case "html":
         mimeType = "text/html";
         extension = "html";
-        // Simple markdown to HTML conversion
-        fileContent = `<!DOCTYPE html>
-<html>
-<head>
-  <title>${generatedTitle}</title>
-  <meta name="description" content="${generatedMetadata?.description || ""}">
-  <meta name="keywords" content="${generatedMetadata?.keywords?.join(", ") || ""
-          }">
-</head>
-<body>
-  <article>
-    ${generatedContent
+        fileContent = `<!DOCTYPE html>\n<html>\n<head>\n  <title>${generatedTitle}</title>\n  <meta name=\"description\" content=\"${generatedMetadata?.description || ""}\">\n  <meta name=\"keywords\" content=\"${generatedMetadata?.keywords?.join(", ") || ""}\">\n</head>\n<body>\n  <article>\n    ${generatedContent
             .replace(/# (.*)\n/g, "<h1>$1</h1>\n")
             .replace(/## (.*)\n/g, "<h2>$1</h2>\n")
             .replace(/### (.*)\n/g, "<h3>$1</h3>\n")
             .replace(/\n\n/g, "</p><p>")
             .replace(/\n/g, "<br>")}
-  </article>
-</body>
-</html>`;
+  </article>\n</body>\n</html>`;
+        exportToHTML(fileContent, `${fileName}.html`);
+        break;
+      case "text":
+        mimeType = "text/plain";
+        extension = "txt";
+        exportToText(fileContent, `${fileName}.txt`);
         break;
       case "docx":
-        showNotification("DOCX export is coming soon. Exporting as plain text instead.", "warning");
+        exportToDocx(fileContent, `${fileName}.docx`);
         break;
       case "pdf":
-        showNotification("PDF export is coming soon. Exporting as plain text instead.", "warning");
+        exportToPDF(fileContent, `${fileName}.pdf`);
         break;
       default:
         // Use defaults
+        exportToText(fileContent, `${fileName}.txt`);
         break;
     }
 
-    // Create a blob and download it
-    const blob = new Blob([fileContent], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${fileName}.${extension}`;
-    document.body.appendChild(a);
-    a.click();
-
-    // Clean up
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showNotification(`Content exported as ${extension.toUpperCase()}`, "success");
+    showNotification(`Content exported as ${format.toUpperCase()}`, "success");
   };
 
   // Update handleSaveToLibrary

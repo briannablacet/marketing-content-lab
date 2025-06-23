@@ -1,5 +1,25 @@
 // src/services/StrategicDataService.js
 
+const safeLocalStorage = {
+    getItem: (key) => {
+        if (typeof window === 'undefined') return null;
+        try {
+            return localStorage.getItem(key);
+        } catch (error) {
+            console.error(`Error getting ${key} from localStorage:`, error);
+            return null;
+        }
+    },
+    setItem: (key, value) => {
+        if (typeof window === 'undefined') return;
+        try {
+            localStorage.setItem(key, value);
+        } catch (error) {
+            console.error(`Error setting ${key} in localStorage:`, error);
+        }
+    }
+};
+
 const strategicData = {
     productInfo: {},
     audiences: [],
@@ -29,13 +49,13 @@ const setStrategicDataValue = (key, value) => {
 
 const StrategicDataService = {
     getAllStrategicDataFromStorage: () => {
-        const product = JSON.parse(localStorage.getItem('marketingProduct') || '{}');
-        const audience = JSON.parse(localStorage.getItem('marketingTargetAudience') || '{}');
-        const audiencesRaw = localStorage.getItem('marketingTargetAudiences');
+        const product = JSON.parse(safeLocalStorage.getItem('marketingProduct') || '{}');
+        const audience = JSON.parse(safeLocalStorage.getItem('marketingTargetAudience') || '{}');
+        const audiencesRaw = safeLocalStorage.getItem('marketingTargetAudiences');
         const audiences = audiencesRaw ? JSON.parse(audiencesRaw) : [];
-        const brandVoice = JSON.parse(localStorage.getItem('marketing-content-lab-brand-voice') || '{}');
-        const boilerplate = localStorage.getItem('marketingBoilerplate') || '';
-        const valueProposition = localStorage.getItem('marketingValueProp') || '';
+        const brandVoice = JSON.parse(safeLocalStorage.getItem('marketing-content-lab-brand-voice') || '{}');
+        const boilerplate = safeLocalStorage.getItem('marketingBoilerplate') || '';
+        const valueProposition = safeLocalStorage.getItem('marketingValueProp') || '';
 
         console.log('Raw audience data from localStorage:', audience);
         console.log('Raw audiences data from localStorage:', audiences);
@@ -67,7 +87,7 @@ const StrategicDataService = {
     getProductInfo: () => strategicData.productInfo || {},
     setProductInfo: (data) => {
         strategicData.productInfo = data;
-        localStorage.setItem('marketingProduct', JSON.stringify(data));
+        safeLocalStorage.setItem('marketingProduct', JSON.stringify(data));
     },
 
     // Target Audiences
@@ -78,7 +98,7 @@ const StrategicDataService = {
         }
 
         // If not in memory, try to get from localStorage
-        const audiencesRaw = localStorage.getItem('marketingTargetAudiences');
+        const audiencesRaw = safeLocalStorage.getItem('marketingTargetAudiences');
         if (audiencesRaw) {
             const audiences = JSON.parse(audiencesRaw);
             // Update in-memory state
@@ -87,7 +107,7 @@ const StrategicDataService = {
         }
 
         // If no audiences in localStorage, try single audience
-        const audienceRaw = localStorage.getItem('marketingTargetAudience');
+        const audienceRaw = safeLocalStorage.getItem('marketingTargetAudience');
         if (audienceRaw) {
             const audience = JSON.parse(audienceRaw);
             const audiences = [audience];
@@ -101,9 +121,9 @@ const StrategicDataService = {
     setTargetAudiences: (data) => {
         strategicData.audiences = data;
         // Save to both localStorage keys for compatibility
-        localStorage.setItem('marketingTargetAudiences', JSON.stringify(data));
+        safeLocalStorage.setItem('marketingTargetAudiences', JSON.stringify(data));
         if (data.length > 0) {
-            localStorage.setItem('marketingTargetAudience', JSON.stringify(data[0]));
+            safeLocalStorage.setItem('marketingTargetAudience', JSON.stringify(data[0]));
         }
     },
 
@@ -111,90 +131,90 @@ const StrategicDataService = {
     getMessagingFramework: () => strategicData.messaging || {},
     setMessagingFramework: (data) => {
         strategicData.messaging = data;
-        localStorage.setItem('messageFramework', JSON.stringify(data));
+        safeLocalStorage.setItem('messageFramework', JSON.stringify(data));
     },
 
     // Brand Voice
     getBrandVoice: () => strategicData.brandVoice || {},
     setBrandVoice: (data) => {
         strategicData.brandVoice = data;
-        localStorage.setItem('marketing-content-lab-brand-voice', JSON.stringify(data));
+        safeLocalStorage.setItem('marketing-content-lab-brand-voice', JSON.stringify(data));
     },
 
     // Vision
     getVision: () => {
-        const storedVision = localStorage.getItem('brandVision');
+        const storedVision = safeLocalStorage.getItem('brandVision');
         return storedVision || strategicData.vision || '';
     },
     setVision: (value) => {
         strategicData.vision = value;
-        localStorage.setItem('brandVision', value);
+        safeLocalStorage.setItem('brandVision', value);
     },
 
     // Mission
     getMission: () => {
-        const storedMission = localStorage.getItem('brandMission');
+        const storedMission = safeLocalStorage.getItem('brandMission');
         return storedMission || strategicData.mission || '';
     },
     setMission: (value) => {
         strategicData.mission = value;
-        localStorage.setItem('brandMission', value);
+        safeLocalStorage.setItem('brandMission', value);
     },
 
     // Value Proposition
     getValueProposition: () => strategicData.valueProposition || '',
     setValueProposition: (value) => {
         strategicData.valueProposition = value;
-        localStorage.setItem('marketingValueProp', value);
+        safeLocalStorage.setItem('marketingValueProp', value);
     },
 
     // Differentiators
     getDifferentiators: () => strategicData.differentiators || [],
     setDifferentiators: (data) => {
         strategicData.differentiators = data;
-        localStorage.setItem('marketingDifferentiators', JSON.stringify(data));
+        safeLocalStorage.setItem('marketingDifferentiators', JSON.stringify(data));
     },
 
     // Persona
     getPersona: () => strategicData.persona || {},
     setPersona: (data) => {
         strategicData.persona = data;
-        localStorage.setItem('marketingPersona', JSON.stringify(data));
+        safeLocalStorage.setItem('marketingPersona', JSON.stringify(data));
     },
 
     // Tagline
     getTagline: () => strategicData.tagline || '',
     setTagline: (value) => {
         strategicData.tagline = value;
-        localStorage.setItem('brandTagline', value);
+        safeLocalStorage.setItem('brandTagline', value);
     },
 
     // Boilerplates
     getBoilerplates: () => strategicData.boilerplates || {},
     setBoilerplates: (data) => {
         strategicData.boilerplates = data;
-        localStorage.setItem('brandBoilerplates', JSON.stringify(data));
+        safeLocalStorage.setItem('brandBoilerplates', JSON.stringify(data));
     },
 
     // Brand Archetype
     getBrandArchetype: () => strategicData.brandArchetype || '',
     setBrandArchetype: (value) => {
         strategicData.brandArchetype = value;
-        localStorage.setItem('brandArchetype', value);
+        safeLocalStorage.setItem('brandArchetype', value);
     },
 
     // Competitive Analysis
     getCompetitiveAnalysis: () => strategicData.competitiveAnalysis || [],
     setCompetitiveAnalysis: (data) => {
         strategicData.competitiveAnalysis = data;
-        localStorage.setItem('marketingCompetitors', JSON.stringify(data));
+        safeLocalStorage.setItem('marketingCompetitors', JSON.stringify(data));
     },
 
     // Style Guide
     getStyleGuide: () => strategicData.styleGuide || {},
     setStyleGuide: (data) => {
         strategicData.styleGuide = data;
-        localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(data));
+        safeLocalStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(data));
     },
 
     // Helper method to get all strategic data at once
@@ -218,7 +238,7 @@ const StrategicDataService = {
         };
 
         // Load writing style from localStorage
-        const writingStyleRaw = localStorage.getItem('marketing-content-lab-writing-style');
+        const writingStyleRaw = safeLocalStorage.getItem('marketing-content-lab-writing-style');
         if (writingStyleRaw) {
             const writingStyle = JSON.parse(writingStyleRaw);
             inMemoryData.writingStyle = writingStyle;
@@ -226,7 +246,7 @@ const StrategicDataService = {
         }
 
         // Load brand voice from localStorage
-        const brandVoiceRaw = localStorage.getItem('marketing-content-lab-brand-voice');
+        const brandVoiceRaw = safeLocalStorage.getItem('marketing-content-lab-brand-voice');
         if (brandVoiceRaw) {
             const brandVoice = JSON.parse(brandVoiceRaw);
             inMemoryData.brandVoice = brandVoice;
@@ -239,14 +259,14 @@ const StrategicDataService = {
         }
 
         // If no audiences in memory, try to load from localStorage
-        const audiencesRaw = localStorage.getItem('marketingTargetAudiences');
+        const audiencesRaw = safeLocalStorage.getItem('marketingTargetAudiences');
         if (audiencesRaw) {
             const audiences = JSON.parse(audiencesRaw);
             inMemoryData.audiences = audiences;
             strategicData.audiences = audiences;
         } else {
             // Try single audience format
-            const audienceRaw = localStorage.getItem('marketingTargetAudience');
+            const audienceRaw = safeLocalStorage.getItem('marketingTargetAudience');
             if (audienceRaw) {
                 const audience = JSON.parse(audienceRaw);
                 inMemoryData.audiences = [audience];

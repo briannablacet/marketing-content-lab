@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { parseFile } from '../../../utils/fileUtils';
-import { exportToText, exportToMarkdown, exportToHTML } from '../../../utils/exportUtils';
+import { exportToText, exportToMarkdown, exportToHTML, exportToPDF } from '../../../utils/exportUtils';
 import { Upload, Download, FileText, X } from 'lucide-react';
 
 interface FileHandlerProps {
@@ -69,6 +69,9 @@ const FileHandler: React.FC<FileHandlerProps> = ({
         break;
       case 'html':
         exportToHTML(content, `${filename}.html`);
+        break;
+      case 'pdf':
+        exportToPDF(content, `${filename}.pdf`);
         break;
       default:
         setError('Unsupported export format');
@@ -148,6 +151,13 @@ const FileHandler: React.FC<FileHandlerProps> = ({
             >
               <Download className="w-4 h-4 mr-1" />
               HTML
+            </button>
+            <button 
+              onClick={() => handleExport('pdf')}
+              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              PDF
             </button>
           </div>
         </div>

@@ -60,26 +60,22 @@ const BrandVoiceContext = createContext<BrandVoiceContextType | undefined>(undef
 const STORAGE_KEY = 'marketing-content-lab-brand-voice';
 
 // Helper function to safely parse JSON from localStorage
-const getSavedBrandVoiceData = (): BrandVoiceData | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
+const loadFromStorage = () => {
+  if (typeof window === 'undefined') return null;
+  
   try {
     const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      return JSON.parse(savedData);
-    }
+    return savedData ? JSON.parse(savedData) : null;
   } catch (error) {
     console.error('Error loading brand voice from localStorage:', error);
+    return null;
   }
-  return null;
 };
 
 // Helper function to safely save data to localStorage
-const saveBrandVoiceData = (data: BrandVoiceData): void => {
-  if (typeof window === 'undefined') {
-    return;
-  }
+const saveToStorage = (data: BrandVoiceData) => {
+  if (typeof window === 'undefined') return;
+  
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
@@ -96,7 +92,7 @@ export function BrandVoiceProvider({ children }: { children: ReactNode }) {
   // Load saved data from localStorage on initial mount
   useEffect(() => {
     try {
-      const savedData = getSavedBrandVoiceData();
+      const savedData = loadFromStorage();
       if (savedData) {
         setBrandVoice(savedData);
       }
@@ -110,7 +106,7 @@ export function BrandVoiceProvider({ children }: { children: ReactNode }) {
   // Save to localStorage whenever data changes
   useEffect(() => {
     if (!loading) {  // Don't save during initial loading
-      saveBrandVoiceData(brandVoice);
+      saveToStorage(brandVoice);
     }
   }, [brandVoice, loading]);
 

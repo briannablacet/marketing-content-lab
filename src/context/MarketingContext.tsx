@@ -104,15 +104,27 @@ export function MarketingProvider({ children }: { children: React.ReactNode }) {
 
   // Load saved state from localStorage on mount
   useEffect(() => {
-    const savedState = localStorage.getItem('marketingProgramState');
-    if (savedState) {
-      dispatch({ type: 'LOAD_SAVED_STATE', payload: JSON.parse(savedState) });
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const savedState = localStorage.getItem('marketingProgramState');
+      if (savedState) {
+        dispatch({ type: 'LOAD_SAVED_STATE', payload: JSON.parse(savedState) });
+      }
+    } catch (error) {
+      console.error('Error loading marketing program state:', error);
     }
   }, []);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('marketingProgramState', JSON.stringify(state));
+    if (typeof window === 'undefined') return;
+    
+    try {
+      localStorage.setItem('marketingProgramState', JSON.stringify(state));
+    } catch (error) {
+      console.error('Error saving marketing program state:', error);
+    }
   }, [state]);
 
   return (
