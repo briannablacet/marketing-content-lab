@@ -185,7 +185,7 @@ const TaglineGenerator: React.FC = () => {
 
         // Save to StrategicDataService
         try {
-            await StrategicDataService.setStrategicDataValue('tagline', finalValue);
+            StrategicDataService.setTagline(finalValue);
             setIsAccepted(true);
         } catch (error) {
             console.error('Error saving tagline to StrategicDataService:', error);

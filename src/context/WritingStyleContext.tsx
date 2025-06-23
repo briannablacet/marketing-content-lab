@@ -40,6 +40,7 @@ interface WritingStyleContextType {
   loadWritingStyle: () => void;
   isStyleConfigured: boolean;
   resetWritingStyle: () => void;
+  isLoaded: boolean;
 }
 
 // Default writing style - fallback when nothing is saved
@@ -78,6 +79,15 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
   // Load writing style from localStorage
   const loadWritingStyle = () => {
     console.log('🔄 LoadWritingStyle called!');
+
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      console.log('🌐 Server-side rendering, using defaults');
+      setWritingStyle(defaultWritingStyle);
+      setIsLoaded(true);
+      return;
+    }
+
     try {
       const saved = localStorage.getItem('marketing-content-lab-writing-style');
       console.log('📦 Raw localStorage in loadWritingStyle:', saved);
@@ -128,8 +138,10 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
         ...writingStyle,
         completed: true, // Mark as completed when saving
       };
+      console.log('💾 About to save writing style to localStorage:', styleToSave);
       localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(styleToSave));
-      console.log('💾 Writing style saved:', styleToSave);
+      console.log('💾 Writing style saved successfully to localStorage');
+      console.log('💾 Verifying save - reading back:', localStorage.getItem('marketing-content-lab-writing-style'));
       setWritingStyle(styleToSave);
     } catch (error) {
       console.error('❌ Error saving writing style:', error);
@@ -197,13 +209,8 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     isLoaded,
   };
 
-  // Don't render children until we've loaded the data
-  if (!isLoaded) {
-    console.log('⏳ WritingStyleContext: Still loading...');
-    return <div>Loading writing style...</div>;
-  }
-
-  console.log('🎯 WritingStyleContext: Providing context with style:', writingStyle);
+  // Always render children, don't block on loading
+  console.log('🎯 WritingStyleContext: Providing context with style:', writingStyle, 'isLoaded:', isLoaded);
   return (
     <WritingStyleContext.Provider value={value}>
       {children}

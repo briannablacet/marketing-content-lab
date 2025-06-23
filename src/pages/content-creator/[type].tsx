@@ -278,6 +278,9 @@ const ContentCreatorPage = () => {
   useEffect(() => {
     console.log('🎯 Content Creator: Current writing style from context:', writingStyle);
     console.log('🎯 Content Creator: Is style configured?', isStyleConfigured);
+    console.log('🎯 Content Creator: Style guide primary:', writingStyle?.styleGuide?.primary);
+    console.log('🎯 Content Creator: Formatting heading case:', writingStyle?.formatting?.headingCase);
+    console.log('🎯 Content Creator: Completed flag:', writingStyle?.completed);
   }, [writingStyle, isStyleConfigured]);
 
   // Load content type from URL parameter
@@ -490,6 +493,9 @@ const ContentCreatorPage = () => {
       console.log("🚀 API Payload:", JSON.stringify(payload, null, 2));
       console.log('🔍 WritingStyle from context in content creator:', writingStyle);
       console.log('🔍 Heading case specifically:', writingStyle?.formatting?.headingCase);
+      console.log('🔍 Writing style being sent to API:', payload.writingStyle);
+      console.log('🔍 Style guide primary being sent:', payload.writingStyle.styleGuide.primary);
+      console.log('🔍 Formatting being sent:', payload.writingStyle.formatting);
 
       const response = await fetch('/api/api_endpoints', {
         method: "POST",

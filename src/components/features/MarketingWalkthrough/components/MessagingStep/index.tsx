@@ -423,14 +423,14 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     setIsSaving(true);
 
     try {
-      // Validate data
-      if (!framework.valueProposition.trim()) {
+      // Validate data with proper null checks
+      if (!framework.valueProposition || !framework.valueProposition.trim()) {
         showNotification('Please provide a value proposition', 'error');
         setIsSaving(false);
         return;
       }
 
-      if (!framework.keyBenefits.some(b => b.trim())) {
+      if (!framework.keyBenefits || !framework.keyBenefits.some(b => b && b.trim())) {
         showNotification('Please provide at least one benefit', 'error');
         setIsSaving(false);
         return;
@@ -439,7 +439,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       // Clean up empty entries
       const cleanedFramework = {
         ...framework,
-        keyBenefits: framework.keyBenefits.filter(b => b.trim())
+        keyBenefits: framework.keyBenefits.filter(b => b && b.trim())
       };
 
       // Save to localStorage
