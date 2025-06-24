@@ -36,165 +36,117 @@ interface WritingStyleContextType {
   updateStyleGuide: (guide: Partial<StyleGuide>) => void;
   updateFormatting: (formatting: Partial<FormattingRules>) => void;
   updatePunctuation: (punctuation: Partial<PunctuationRules>) => void;
-  saveWritingStyle: () => void;
-  loadWritingStyle: () => void;
+  saveWritingStyle: (style: WritingStyle) => void;
+  loadWritingStyle: () => WritingStyle;
   isStyleConfigured: boolean;
   resetWritingStyle: () => void;
   isLoaded: boolean;
 }
 
-// Default writing style - fallback when nothing is saved
-const defaultWritingStyle: WritingStyle = {
-  styleGuide: {
-    primary: 'Chicago Manual of Style',
-    customRules: [],
-    completed: false,
-  },
-  formatting: {
-    headingCase: 'title',
-    numberFormat: 'mixed',
-    dateFormat: 'american',
-    listStyle: 'bullets',
-  },
-  punctuation: {
-    oxfordComma: true,
-    quotationMarks: 'double',
-    hyphenation: 'standard',
-  },
-  completed: false,
-};
-
 const WritingStyleContext = createContext<WritingStyleContextType | undefined>(undefined);
 
-export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [writingStyle, setWritingStyle] = useState<WritingStyle>(defaultWritingStyle);
+export const WritingStyleProvider = ({ children }: { children: ReactNode }) => {
+  const defaultStyle: WritingStyle = {
+    styleGuide: {
+      primary: 'Chicago Manual of Style',
+      customRules: [],
+      completed: false,
+    },
+    formatting: {
+      headingCase: 'title',
+      numberFormat: 'mixed',
+      dateFormat: 'american',
+      listStyle: 'bullets',
+    },
+    punctuation: {
+      oxfordComma: true,
+      quotationMarks: 'double',
+      hyphenation: 'standard',
+    },
+    completed: false,
+  };
+
+  const [writingStyle, setWritingStyle] = useState<WritingStyle>(defaultStyle);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // FIXED: Load writing style from localStorage on mount
+  // Only run on client
   useEffect(() => {
-    console.log('🔄 WritingStyleContext: Loading from localStorage...');
-    loadWritingStyle();
+    // Prevent SSR mismatch: only run on client
+    if (typeof window === 'undefined') return;
+    const saved = localStorage.getItem('marketing-content-lab-writing-style');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && parsed.styleGuide && parsed.formatting) {
+          setWritingStyle(parsed);
+        }
+      } catch (e) {
+        // Ignore parse errors, fallback to default
+      }
+    }
+    setIsLoaded(true);
   }, []);
 
-  // Load writing style from localStorage
-  const loadWritingStyle = () => {
-    console.log('🔄 LoadWritingStyle called!');
-
-    // Check if we're in a browser environment
-    if (typeof window === 'undefined') {
-      console.log('🌐 Server-side rendering, using defaults');
-      setWritingStyle(defaultWritingStyle);
-      setIsLoaded(true);
-      return;
+  // Save to localStorage when writingStyle changes and isLoaded
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(writingStyle));
     }
+  }, [writingStyle, isLoaded]);
+
+  // Only provide context after loading is complete
+  if (!isLoaded) {
+    return null;
+  }
+
+  const isStyleConfigured = isLoaded && writingStyle?.completed === true;
+
+  const updateStyleGuide = (updates: Partial<StyleGuide>) => {
+    setWritingStyle(prev => ({
+      ...prev,
+      styleGuide: { ...prev.styleGuide, ...updates }
+    }));
+  };
+
+  const updateFormatting = (updates: Partial<FormattingRules>) => {
+    setWritingStyle(prev => ({
+      ...prev,
+      formatting: { ...prev.formatting, ...updates }
+    }));
+  };
+
+  const updatePunctuation = (updates: Partial<PunctuationRules>) => {
+    setWritingStyle(prev => ({
+      ...prev,
+      punctuation: { ...prev.punctuation, ...updates }
+    }));
+  };
+
+  const saveWritingStyle = (style: WritingStyle) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(style));
+    }
+    setWritingStyle(style);
+  };
+
+  const loadWritingStyle = () => {
+    if (typeof window === 'undefined') return defaultStyle;
 
     try {
       const saved = localStorage.getItem('marketing-content-lab-writing-style');
-      console.log('📦 Raw localStorage in loadWritingStyle:', saved);
-
-      if (saved) {
-        console.log('🔍 Found saved data, parsing...');
-        const parsedStyle = JSON.parse(saved);
-        console.log('🔍 Parsed data before merging:', parsedStyle);
-
-        console.log('✅ Loading saved style in loadWritingStyle:', parsedStyle);
-
-        // Merge with defaults to ensure all properties exist
-        const mergedStyle: WritingStyle = {
-          styleGuide: {
-            ...defaultWritingStyle.styleGuide,
-            ...parsedStyle.styleGuide,
-          },
-          formatting: {
-            ...defaultWritingStyle.formatting,
-            ...parsedStyle.formatting,
-          },
-          punctuation: {
-            ...defaultWritingStyle.punctuation,
-            ...parsedStyle.punctuation,
-          },
-          completed: parsedStyle.completed || false,
-        };
-
-        console.log('✅ Merged writing style:', mergedStyle);
-        setWritingStyle(mergedStyle);
-      } else {
-        console.log('❌ No saved writing style, using defaults');
-        setWritingStyle(defaultWritingStyle);
-      }
+      return saved ? JSON.parse(saved) : defaultStyle;
     } catch (error) {
-      console.error('❌ Error loading writing style:', error);
-      setWritingStyle(defaultWritingStyle);
-    } finally {
-      setIsLoaded(true);
-      console.log('✅ WritingStyleContext: Loading complete');
+      console.error('Error loading writing style:', error);
+      return defaultStyle;
     }
   };
 
-  // Save writing style to localStorage
-  const saveWritingStyle = () => {
-    try {
-      const styleToSave = {
-        ...writingStyle,
-        completed: true, // Mark as completed when saving
-      };
-      console.log('💾 About to save writing style to localStorage:', styleToSave);
-      localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(styleToSave));
-      console.log('💾 Writing style saved successfully to localStorage');
-      console.log('💾 Verifying save - reading back:', localStorage.getItem('marketing-content-lab-writing-style'));
-      setWritingStyle(styleToSave);
-    } catch (error) {
-      console.error('❌ Error saving writing style:', error);
-    }
-  };
-
-  // Update style guide
-  const updateStyleGuide = (guide: Partial<StyleGuide>) => {
-    setWritingStyle(prev => ({
-      ...prev,
-      styleGuide: {
-        ...prev.styleGuide,
-        ...guide,
-      },
-    }));
-  };
-
-  // Update formatting rules
-  const updateFormatting = (formatting: Partial<FormattingRules>) => {
-    setWritingStyle(prev => ({
-      ...prev,
-      formatting: {
-        ...prev.formatting,
-        ...formatting,
-      },
-    }));
-  };
-
-  // Update punctuation rules
-  const updatePunctuation = (punctuation: Partial<PunctuationRules>) => {
-    setWritingStyle(prev => ({
-      ...prev,
-      punctuation: {
-        ...prev.punctuation,
-        ...punctuation,
-      },
-    }));
-  };
-
-  // Reset to defaults
   const resetWritingStyle = () => {
-    setWritingStyle(defaultWritingStyle);
-    localStorage.removeItem('marketing-content-lab-writing-style');
-    console.log('🔄 Writing style reset to defaults');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('marketing-content-lab-writing-style');
+    }
+    setWritingStyle(defaultStyle);
   };
-
-  // Check if style is configured (not using defaults)
-  const isStyleConfigured = isLoaded && (
-    writingStyle.completed === true ||
-    writingStyle.styleGuide.primary !== 'Chicago Manual of Style' ||
-    writingStyle.formatting.headingCase !== 'title' ||
-    Object.keys(writingStyle.styleGuide.customRules || []).length > 0
-  );
 
   const value: WritingStyleContextType = {
     writingStyle,
@@ -209,8 +161,6 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     isLoaded,
   };
 
-  // Always render children, don't block on loading
-  console.log('🎯 WritingStyleContext: Providing context with style:', writingStyle, 'isLoaded:', isLoaded);
   return (
     <WritingStyleContext.Provider value={value}>
       {children}

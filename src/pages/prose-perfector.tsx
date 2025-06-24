@@ -2,7 +2,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { NotificationProvider } from '../context/NotificationContext';
-import { WritingStyleProvider } from '../context/WritingStyleContext';
 import StyleGuideNotificationBanner from '../components/features/StyleGuideNotificationBanner';
 import ScreenTemplate from '../components/shared/UIComponents';
 
@@ -15,20 +14,18 @@ const ProsePerfector = dynamic(() => import('../components/features/ProsePerfect
 const ProsePerfectorPage: React.FC = () => {
   return (
     <NotificationProvider>
-      <WritingStyleProvider>
-        <StyleGuideNotificationBanner />
-        <ScreenTemplate
-          title="Prose Perfector"
-          subtitle="Enhance your writing with AI-powered suggestions for clarity, conciseness, and engagement"
-          aiInsights={[
-            "Clear, concise content improves engagement by 58%",
-            "Enhanced content gets 27% more social shares",
-            "Professional editing can increase conversion rates by 30%"
-          ]}
-        >
-          <ProsePerfector />
-        </ScreenTemplate>
-      </WritingStyleProvider>
+      <StyleGuideNotificationBanner />
+      <ScreenTemplate
+        title="Prose Perfector"
+        subtitle="Enhance your writing with AI-powered suggestions for clarity, conciseness, and engagement"
+        aiInsights={[
+          "Clear, concise content improves engagement by 58%",
+          "Enhanced content gets 27% more social shares",
+          "Professional editing can increase conversion rates by 30%"
+        ]}
+      >
+        <ProsePerfector />
+      </ScreenTemplate>
     </NotificationProvider>
   );
 };

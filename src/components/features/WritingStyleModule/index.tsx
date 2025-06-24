@@ -31,7 +31,7 @@ const HEADING_STYLES = [
 ];
 
 const WritingStyleModule: React.FC<WritingStyleProps> = ({ isWalkthrough, onNext, onBack, returnTo }) => {
-const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
+  const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
   const { showNotification } = useNotification();
   const router = useRouter();
 
@@ -106,11 +106,11 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
           overrides: false
         },
         formatting: {
-          ...writingStyle.formatting,
+          ...writingStyle?.formatting,
           ...styleDefaults.formatting
         },
         punctuation: {
-          ...writingStyle.punctuation,
+          ...writingStyle?.punctuation,
           ...styleDefaults.punctuation
         }
       });
@@ -208,7 +208,7 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
     setWritingStyle({
       ...writingStyle,
       formatting: {
-        ...writingStyle.formatting,
+        ...writingStyle?.formatting,
         [contextField]: contextValue
       }
     });
@@ -227,7 +227,7 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
     setWritingStyle({
       ...writingStyle,
       punctuation: {
-        ...writingStyle.punctuation,
+        ...writingStyle?.punctuation,
         [contextField]: value
       }
     });
@@ -264,7 +264,7 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
 
   const handleSubmit = () => {
     console.log('🔥 SAVING - Current writingStyle:', writingStyle);
-    saveWritingStyle();
+    saveWritingStyle({ ...writingStyle, completed: true });
     showNotification('Writing style preferences saved successfully', 'success');
 
     setTimeout(() => {
@@ -310,7 +310,7 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
         <div className="mb-6">
           <div className="mb-6">
             <select
-              value={writingStyle.styleGuide.primary || ''}
+              value={writingStyle?.styleGuide?.primary || ''}
               onChange={(e) => handleStyleGuideUpdate(e.target.value)}
               className="w-full px-3 py-2 rounded-md mb-3 border border-gray-300"
             >
@@ -349,8 +349,8 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Format Your Content</h2>
         <div className="mb-4">
           <p className="text-sm text-gray-600 mt-2">
-            {writingStyle.styleGuide.primary && writingStyle.styleGuide.primary !== 'Custom Style Guide'
-              ? `Using ${writingStyle.styleGuide.primary} defaults. Override any specific rules below as needed.`
+            {writingStyle?.styleGuide?.primary && writingStyle?.styleGuide?.primary !== 'Custom Style Guide'
+              ? `Using ${writingStyle?.styleGuide?.primary} defaults. Override any specific rules below as needed.`
               : 'Set your custom formatting preferences below. All fields are optional.'}
           </p>
         </div>
@@ -407,7 +407,7 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
           <div>
             <label className="block text-sm font-medium mb-2">Oxford Comma <span className="text-gray-500">(optional)</span></label>
             <select
-              value={writingStyle.punctuation?.oxfordComma !== undefined ? writingStyle.punctuation.oxfordComma.toString() : ''}
+              value={writingStyle?.punctuation?.oxfordComma !== undefined ? writingStyle?.punctuation?.oxfordComma.toString() : ''}
               onChange={(e) => handlePunctuationUpdate('oxfordComma', e.target.value === 'true')}
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
@@ -420,7 +420,7 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
           <div>
             <label className="block text-sm font-medium mb-2">Quotation Marks <span className="text-gray-500">(optional)</span></label>
             <select
-              value={writingStyle.punctuation?.quotationMarks || ''}
+              value={writingStyle?.punctuation?.quotationMarks || ''}
               onChange={(e) => handlePunctuationUpdate('quotes', e.target.value)}
               className="w-full px-3 py-2 rounded-md border border-gray-300"
             >
@@ -449,18 +449,6 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
 - Never use contractions in product descriptions"
           className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
         />
-      </div>
-
-      {/* Debug Info */}
-      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-        <h3 className="text-sm font-medium mb-2">Debug Info:</h3>
-        <div className="text-xs space-y-1">
-          <p><strong>Style Guide:</strong> {writingStyle?.styleGuide?.primary}</p>
-          <p><strong>Heading Case:</strong> {writingStyle?.formatting?.headingCase}</p>
-          <p><strong>Number Format:</strong> {writingStyle?.formatting?.numberFormat}</p>
-          <p><strong>Oxford Comma:</strong> {writingStyle?.punctuation?.oxfordComma?.toString()}</p>
-          <p><strong>Completed:</strong> {writingStyle?.completed?.toString()}</p>
-        </div>
       </div>
 
       {/* Submit Button */}

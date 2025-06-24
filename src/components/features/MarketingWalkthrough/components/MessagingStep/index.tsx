@@ -255,7 +255,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
 
       // Prepare the request data with all required fields
       const requestBody = {
-        type: "valueProposition",
+        mode: "key-messages",
         data: {
           productInfo: {
             name: productInfo.name,
@@ -282,11 +282,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${safeLocalStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          endpoint: 'valueProposition',
-          type: 'valueProposition',
-          data: requestBody.data
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal
       });
 

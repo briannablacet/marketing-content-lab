@@ -221,10 +221,8 @@ const ContentCreatorPage = () => {
   const { showNotification } = useNotification();
 
   // FIXED: Get writing style from context instead of using defaults
-  const { writingStyle, isStyleConfigured } = useWritingStyle();
-  console.log('🔥 CONTENT CREATOR writingStyle:', writingStyle);
-  console.log('🔥 CONTENT CREATOR primary:', writingStyle?.styleGuide?.primary);
-  console.log('🔥 CONTENT CREATOR headingCase:', writingStyle?.formatting?.headingCase);
+  const { writingStyle, isStyleConfigured, isLoaded } = useWritingStyle();
+
   // State for content information
   const [contentType, setContentType] = useState<ContentType | null>(null);
 
@@ -273,15 +271,6 @@ const ContentCreatorPage = () => {
   useEffect(() => {
     // Mark walkthrough as completed in localStorage
   }, []);
-
-  // FIXED: Debug writing style context loading
-  useEffect(() => {
-    console.log('🎯 Content Creator: Current writing style from context:', writingStyle);
-    console.log('🎯 Content Creator: Is style configured?', isStyleConfigured);
-    console.log('🎯 Content Creator: Style guide primary:', writingStyle?.styleGuide?.primary);
-    console.log('🎯 Content Creator: Formatting heading case:', writingStyle?.formatting?.headingCase);
-    console.log('🎯 Content Creator: Completed flag:', writingStyle?.completed);
-  }, [writingStyle, isStyleConfigured]);
 
   // Load content type from URL parameter
   useEffect(() => {
@@ -455,11 +444,9 @@ const ContentCreatorPage = () => {
     setIsGenerating(true);
 
     try {
-   
-
       const payload = {
         campaignData: {
-          name: promptText || "Generated Content",
+          name: promptText || `Generated ${contentType?.title || 'Content'}`,
           type: contentType?.id || "blog-post",
           goal: "Create engaging content",
           targetAudience: advancedOptions.audience || "general audience",
@@ -489,13 +476,6 @@ const ContentCreatorPage = () => {
           completed: true
         },
       };
-           
-      console.log("🚀 API Payload:", JSON.stringify(payload, null, 2));
-      console.log('🔍 WritingStyle from context in content creator:', writingStyle);
-      console.log('🔍 Heading case specifically:', writingStyle?.formatting?.headingCase);
-      console.log('🔍 Writing style being sent to API:', payload.writingStyle);
-      console.log('🔍 Style guide primary being sent:', payload.writingStyle.styleGuide.primary);
-      console.log('🔍 Formatting being sent:', payload.writingStyle.formatting);
 
       const response = await fetch('/api/api_endpoints', {
         method: "POST",
@@ -599,11 +579,11 @@ const ContentCreatorPage = () => {
         mimeType = "text/html";
         extension = "html";
         fileContent = `<!DOCTYPE html>\n<html>\n<head>\n  <title>${generatedTitle}</title>\n  <meta name=\"description\" content=\"${generatedMetadata?.description || ""}\">\n  <meta name=\"keywords\" content=\"${generatedMetadata?.keywords?.join(", ") || ""}\">\n</head>\n<body>\n  <article>\n    ${generatedContent
-            .replace(/# (.*)\n/g, "<h1>$1</h1>\n")
-            .replace(/## (.*)\n/g, "<h2>$1</h2>\n")
-            .replace(/### (.*)\n/g, "<h3>$1</h3>\n")
-            .replace(/\n\n/g, "</p><p>")
-            .replace(/\n/g, "<br>")}
+          .replace(/# (.*)\n/g, "<h1>$1</h1>\n")
+          .replace(/## (.*)\n/g, "<h2>$1</h2>\n")
+          .replace(/### (.*)\n/g, "<h3>$1</h3>\n")
+          .replace(/\n\n/g, "</p><p>")
+          .replace(/\n/g, "<br>")}
   </article>\n</body>\n</html>`;
         exportToHTML(fileContent, `${fileName}.html`);
         break;
@@ -862,17 +842,6 @@ const ContentCreatorPage = () => {
                           </li>
                         )}
                       </ul>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg border border-green-100">
-                      <h3 className="font-medium text-gray-800 mb-2">
-                        Debug Info:
-                      </h3>
-                      <div className="space-y-1 text-gray-700 text-sm">
-                        <p><strong>Style configured:</strong> {isStyleConfigured ? 'Yes' : 'No'}</p>
-                        <p><strong>Primary style:</strong> {writingStyle?.styleGuide?.primary}</p>
-                        <p><strong>Heading case:</strong> {writingStyle?.formatting?.headingCase}</p>
-                        <p><strong>Completed:</strong> {writingStyle?.completed ? 'Yes' : 'No'}</p>
-                      </div>
                     </div>
                   </div>
                 </CardContent>

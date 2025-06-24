@@ -165,10 +165,10 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: 'analyzeCompetitors', // This matches your API endpoint
+          mode: 'competitors',
           data: {
-            competitors: [{ name: competitorName }], // Structure expected by your API
-            industry: 'food' // Default industry
+            competitors: [{ name: competitorName }],
+            industry: 'food'
           }
         }),
       });

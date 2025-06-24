@@ -65,9 +65,12 @@ function buildStyleGuideInstructions(writingStyle: any, brandVoice: any, messagi
 async function handleEnhancedContent(requestData: any, res: NextApiResponse) {
   const { campaignData, contentTypes, writingStyle, brandVoice, messaging } = requestData;
 
-  if (!campaignData || !contentTypes || !campaignData.name || contentTypes.length === 0) {
-    console.error("Missing required data:", { campaignData, contentTypes });
-    return res.status(400).json({ error: "Missing required data" });
+  if (!campaignData || !contentTypes || !campaignData.name || !campaignData.type) {
+    return res.status(400).json({ error: "Missing required campaign data" });
+  }
+
+  if (!writingStyle || !writingStyle.styleGuide) {
+    return res.status(400).json({ error: "Missing writing style configuration" });
   }
 
   console.log("🚀 Generating content for campaign:", campaignData.name);
@@ -213,8 +216,6 @@ ${data.content}`,
   }
 }
 
-<<<<<<< Updated upstream
-=======
 // Handler for boilerplate generation
 async function handleBoilerplateGeneration(data: any, res: NextApiResponse) {
   try {
@@ -407,42 +408,16 @@ async function handleABTestGenerator(data: any, res: NextApiResponse) {
     try {
       variations = JSON.parse(response.choices[0].message.content || "[]");
     } catch {
-      return res.status(500).json({ error: "Failed to parse AB test variations" });
+      return res.status(500).json({ error: "Failed to parse variations" });
     }
     return res.status(200).json({ variations });
   } catch (error) {
-    console.error("AB Test generator error:", error);
+    console.error("AB test generator error:", error);
     return res.status(500).json({ error: "Failed to generate variations" });
   }
 }
 
-// Handler for prose perfector
-async function handleProsePerfector(data: any, res: NextApiResponse) {
-  try {
-    const { text, options } = data;
-    const prompt = `Improve the following text for clarity, engagement, and style.\n\nText: ${text}\n\nOptions: ${JSON.stringify(options)}\n\nReturn a JSON object with 'enhancedText' and an array 'suggestions' (each with original, suggestion, reason, type).`;
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: "You are a professional editor." },
-        { role: "user", content: prompt },
-      ],
-    });
-    let result;
-    try {
-      result = JSON.parse(response.choices[0].message.content || '{}');
-    } catch {
-      return res.status(500).json({ error: "Failed to parse prose enhancement data" });
-    }
-    return res.status(200).json(result);
-  } catch (error) {
-    console.error("Prose Perfector error:", error);
-    return res.status(500).json({ error: "Failed to enhance prose" });
-  }
-}
-
-// Handler for key messages/value proposition
+// Handler for key messages generation
 async function handleKeyMessages(data: any, res: NextApiResponse) {
   try {
     const { productInfo, competitors, industry, focusAreas, tone, currentFramework } = data;
@@ -624,7 +599,6 @@ Important: Return ONLY the JSON object, no explanations or additional text. Ensu
   }
 }
 
->>>>>>> Stashed changes
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method, body } = req;
@@ -635,11 +609,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { mode, data } = body;
 
-  if (mode === "humanize") {
-    return handleContentHumanizer(data, res);
-  } else if (mode === "enhance") {
-    return handleEnhancedContent(data, res);
-  } else {
-    return res.status(400).json({ error: "Invalid mode" });
+  try {
+    switch (mode) {
+      case "humanize":
+        return handleContentHumanizer(data, res);
+      case "enhance":
+        return handleEnhancedContent(data, res);
+      case "boilerplate":
+        return handleBoilerplateGeneration(data, res);
+      case "adapt-boilerplate":
+        return handleAdaptBoilerplate(data, res);
+      case "tagline":
+        return handleTaglineGeneration(data, res);
+      case "persona":
+        return handlePersonaGenerator(data, res);
+      case "repurpose":
+        return handleContentRepurposer(data, res);
+      case "ab-test":
+        return handleABTestGenerator(data, res);
+      case "key-messages":
+        return handleKeyMessages(data, res);
+      case "competitors":
+        return handleAnalyzeCompetitors(data, res);
+      case "mission-vision":
+        return handleMissionVision(data, res);
+      default:
+        return res.status(400).json({ error: "Invalid mode" });
+    }
+  } catch (error) {
+    console.error("API handler error:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
