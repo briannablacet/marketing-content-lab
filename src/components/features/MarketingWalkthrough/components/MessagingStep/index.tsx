@@ -87,9 +87,6 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     index: number | null;
   }>({ type: null, index: null });
 
-  // Add a state to track missing product info
-  const [missingProductInfo, setMissingProductInfo] = useState(false);
-
   // Update framework when formData changes OR load from localStorage
   useEffect(() => {
     let valueToUse = '';
@@ -217,13 +214,11 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     setIsGenerating(true);
     setError('');
     setAiSuggestions(null);
-    setMissingProductInfo(false);
 
     try {
       // Check for product data
       const savedProduct = safeLocalStorage.getItem('marketingProduct');
       if (!savedProduct) {
-        setMissingProductInfo(true);
         throw new Error('Please enter your product information before generating AI enhancements');
       }
 
@@ -288,23 +283,8 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           'Authorization': `Bearer ${safeLocalStorage.getItem('token')}`
         },
         body: JSON.stringify({
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-          mode: 'keyMessages',
-=======
-          mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-          mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-          mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-          mode: 'key-messages',
->>>>>>> Stashed changes
+          endpoint: 'valueProposition',
+          type: 'valueProposition',
           data: requestBody.data
         }),
         signal: controller.signal
@@ -443,14 +423,14 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     setIsSaving(true);
 
     try {
-      // Validate data
-      if (!framework.valueProposition.trim()) {
+      // Validate data with proper null checks
+      if (!framework.valueProposition || !framework.valueProposition.trim()) {
         showNotification('Please provide a value proposition', 'error');
         setIsSaving(false);
         return;
       }
 
-      if (!framework.keyBenefits.some(b => b.trim())) {
+      if (!framework.keyBenefits || !framework.keyBenefits.some(b => b && b.trim())) {
         showNotification('Please provide at least one benefit', 'error');
         setIsSaving(false);
         return;
@@ -459,7 +439,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       // Clean up empty entries
       const cleanedFramework = {
         ...framework,
-        keyBenefits: framework.keyBenefits.filter(b => b.trim())
+        keyBenefits: framework.keyBenefits.filter(b => b && b.trim())
       };
 
       // Save to localStorage
@@ -961,20 +941,6 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
           >
             <Download className="w-4 h-4 mr-2" />
             Export as Markdown
-          </button>
-        </div>
-      )}
-
-      {/* Missing Product Info Message */}
-      {missingProductInfo && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded">
-          <div className="font-bold mb-2">Product Information Required</div>
-          <div className="mb-2">You must enter your product name and description before generating AI key messages.</div>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={() => router.push('/product')}
-          >
-            Go to Product Info
           </button>
         </div>
       )}

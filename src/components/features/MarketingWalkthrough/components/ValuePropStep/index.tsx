@@ -158,6 +158,19 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                 } catch (error) {
                     console.log('No value proposition found in StrategicDataService');
                 }
+
+                // 7. Load tagline from StrategicDataService as fallback
+                if (!tagline) {
+                    try {
+                        const savedTagline = StrategicDataService.getTagline();
+                        if (savedTagline) {
+                            setTagline(savedTagline);
+                            setFormData(prev => ({ ...prev, tagline: savedTagline } as FormData));
+                        }
+                    } catch (error) {
+                        console.log('No tagline found in StrategicDataService');
+                    }
+                }
             } catch (error) {
                 console.error('Error loading existing data:', error);
                 showNotification('Error loading existing data. Please try again.', 'error');
@@ -206,23 +219,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                    mode: 'keyMessages',
-=======
-                    mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-                    mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-                    mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-                    mode: 'key-messages',
->>>>>>> Stashed changes
+                    type: 'valueProposition',
                     data: {
                         productInfo: {
                             name: productName,
@@ -277,17 +274,17 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
     // SAVE FUNCTION
     const handleSave = async (valueToSave = null) => {
         const finalValue = valueToSave || paragraph || existingValueProp;
-    
+
         if (!finalValue) {
             showNotification('Please enter or generate a value proposition first', 'error');
             return;
         }
-    
+
         setFormData(prev => ({ ...prev, valueProp: finalValue }));
-    
+
         // Save to localStorage
         localStorage.setItem('marketingValueProp', finalValue);
-    
+
         // Save to StrategicDataService
         try {
             if (StrategicDataService.setValueProposition && typeof StrategicDataService.setValueProposition === 'function') {
@@ -301,7 +298,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
             showNotification('Value proposition saved successfully!', 'success');
         }
     };
-    
+
     // NEW: Handle Next button with data saving
     const handleNext = () => {
         const currentValueProp = paragraph || existingValueProp;
@@ -320,9 +317,9 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
             showNotification('Please create a value proposition before continuing', 'error');
         }
     };
-    
+
     const addBenefit = () => {
-        onNext={handleNext}
+        onNext = { handleNext }
     };
     return (
         <div className="w-full max-w-none space-y-6">

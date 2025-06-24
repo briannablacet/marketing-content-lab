@@ -262,23 +262,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             });
 
             const requestBody = {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                mode: 'missionVision',
-=======
-                mode: 'mission-vision',
->>>>>>> Stashed changes
-=======
-                mode: 'mission-vision',
->>>>>>> Stashed changes
-=======
-                mode: 'mission-vision',
->>>>>>> Stashed changes
-=======
-                mode: 'mission-vision',
->>>>>>> Stashed changes
+                type: 'missionVision',
                 data: {
                     companyName,
                     audience,
@@ -362,23 +346,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             console.log('🔍 formData.valueProp:', formData.valueProp);
 
             const requestBody = {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                mode: 'adaptBoilerplate',
-=======
-                mode: 'adapt-boilerplate',
->>>>>>> Stashed changes
-=======
-                mode: 'adapt-boilerplate',
->>>>>>> Stashed changes
-=======
-                mode: 'adapt-boilerplate',
->>>>>>> Stashed changes
-=======
-                mode: 'adapt-boilerplate',
->>>>>>> Stashed changes
+                type: 'adaptBoilerplate',
                 data: {
                     businessName,
                     description,
@@ -436,7 +404,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
     const generateTaglines = async () => {
         console.log('🔍 Starting tagline generation...');
         setIsGenerating(prev => ({ ...prev, taglines: true }));
-
+    
         try {
             console.log('🔍 Inside try block...');
             // Get data from multiple sources
@@ -460,23 +428,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             }
 
             const requestBody = {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                mode: 'tagline',
-=======
-                mode: 'taglines',
->>>>>>> Stashed changes
-=======
-                mode: 'taglines',
->>>>>>> Stashed changes
-=======
-                mode: 'taglines',
->>>>>>> Stashed changes
-=======
-                mode: 'taglines',
->>>>>>> Stashed changes
+                type: 'generateTaglines',
                 data: {
                     businessName,
                     description,
@@ -497,15 +449,15 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
                 },
                 body: JSON.stringify(requestBody),
             });
-
+            
             console.log('🔍 Got response, status:', response.status);
-
+            
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
                 console.error('API Error Response:', errorData);
                 throw new Error(errorData?.message || 'Failed to generate taglines');
             }
-            const result = await response.json();
+            const result = await response.json();  
             console.log('Taglines API Response:', result);
 
             if (Array.isArray(result) && result.length > 0) {

@@ -451,7 +451,7 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
         />
       </div>
 
-      {/* Debug Info 
+      {/* Debug Info */}
       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
         <h3 className="text-sm font-medium mb-2">Debug Info:</h3>
         <div className="text-xs space-y-1">
@@ -461,7 +461,7 @@ const { writingStyle, saveWritingStyle, setWritingStyle } = useWritingStyle();
           <p><strong>Oxford Comma:</strong> {writingStyle?.punctuation?.oxfordComma?.toString()}</p>
           <p><strong>Completed:</strong> {writingStyle?.completed?.toString()}</p>
         </div>
-      </div>*/}
+      </div>
 
       {/* Submit Button */}
       {!isWalkthrough && (

@@ -149,23 +149,7 @@ const TaglineGenerator: React.FC = () => {
             const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                body: JSON.stringify({ mode: 'tagline', data: payload })
-=======
-                body: JSON.stringify({ mode: 'taglines', data: payload })
->>>>>>> Stashed changes
-=======
-                body: JSON.stringify({ mode: 'taglines', data: payload })
->>>>>>> Stashed changes
-=======
-                body: JSON.stringify({ mode: 'taglines', data: payload })
->>>>>>> Stashed changes
-=======
-                body: JSON.stringify({ mode: 'taglines', data: payload })
->>>>>>> Stashed changes
+                body: JSON.stringify({ type: 'generateTaglines', data: payload })
             });
 
             if (!response.ok) {
@@ -201,7 +185,7 @@ const TaglineGenerator: React.FC = () => {
 
         // Save to StrategicDataService
         try {
-            await StrategicDataService.setStrategicDataValue('tagline', finalValue);
+            StrategicDataService.setTagline(finalValue);
             setIsAccepted(true);
         } catch (error) {
             console.error('Error saving tagline to StrategicDataService:', error);

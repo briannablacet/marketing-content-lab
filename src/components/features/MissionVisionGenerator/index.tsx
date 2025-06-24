@@ -60,6 +60,12 @@ const MissionVisionGenerator: React.FC = () => {
                     }
                 }
 
+                // Load tagline
+                const existingTagline = StrategicDataService.getTagline();
+                if (existingTagline) {
+                    setTagline(existingTagline);
+                }
+
                 const existingMission = StrategicDataService.getMission();
                 const existingVision = StrategicDataService.getVision();
 
@@ -90,7 +96,7 @@ const MissionVisionGenerator: React.FC = () => {
         setIsLoading(true);
         try {
             const requestBody = {
-                mode: 'missionVision',
+                type: 'missionVision',
                 data: {
                     companyName,
                     audience,
