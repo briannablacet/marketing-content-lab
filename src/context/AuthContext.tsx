@@ -15,7 +15,6 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
-  authFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -25,26 +24,20 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => { },
   logout: () => { },
   isAuthenticated: false,
-  authFetch: async () => new Response(),
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     // Check for existing session
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    const savedRefreshToken = localStorage.getItem('refreshToken');
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
-    }
-    if (savedRefreshToken) {
-      setRefreshToken(savedRefreshToken);
     }
   }, []);
 
@@ -60,9 +53,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (response.ok) {
-        const { token, refreshToken: newRefreshToken, data } = await response.json();
+        const { token, data } = await response.json();
         const user = data.user;
 
+        // Save token and user data
         setToken(token);
         setUser({
           id: user.id,
@@ -70,10 +64,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: user.email,
           role: user.role,
         });
-        setRefreshToken(newRefreshToken);
+
+        // Save token to localStorage
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('refreshToken', newRefreshToken);
+
+        // Redirect to dashboard or home
         router.push('/');
       } else {
         throw new Error('Login failed');
@@ -96,9 +92,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (response.ok) {
-        const { token, refreshToken: newRefreshToken, data } = await response.json();
+        const { token, data } = await response.json();
         const user = data.user;
 
+        // Save token and user data
         setToken(token);
         setUser({
           id: user.id,
@@ -106,10 +103,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: user.email,
           role: user.role,
         });
-        setRefreshToken(newRefreshToken);
+
+        // Save token to localStorage
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('refreshToken', newRefreshToken);
+
+        // Redirect to dashboard or home
         router.push('/');
       } else {
         throw new Error('Registration failed');
@@ -120,56 +119,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Helper: refresh access token
-  const refreshAccessToken = async () => {
-    const storedRefreshToken = refreshToken || localStorage.getItem('refreshToken');
-    if (!storedRefreshToken) throw new Error('No refresh token');
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/refresh-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: storedRefreshToken })
-    });
-    if (!response.ok) throw new Error('Failed to refresh token');
-    const { token: newToken, refreshToken: newRefreshToken, data } = await response.json();
-    setToken(newToken);
-    setRefreshToken(newRefreshToken);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('refreshToken', newRefreshToken);
-    if (data && data.user) {
-      setUser(data.user);
-      localStorage.setItem('user', JSON.stringify(data.user));
-    }
-    return newToken;
-  };
-
-  // Authenticated fetch with auto-refresh
-  const authFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    let accessToken = token || localStorage.getItem('token');
-    if (!init) init = {};
-    if (!init.headers) init.headers = {};
-    (init.headers as any)['Authorization'] = `Bearer ${accessToken}`;
-    let response = await fetch(input, init);
-    if (response.status === 401 && refreshToken) {
-      try {
-        accessToken = await refreshAccessToken();
-        (init.headers as any)['Authorization'] = `Bearer ${accessToken}`;
-        response = await fetch(input, init);
-      } catch (err) {
-        logout();
-        throw new Error('Session expired. Please log in again.');
-      }
-    }
-    return response;
-  };
-
   // Logout method
   const logout = () => {
     setUser(null);
     setToken(null);
-    setRefreshToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
     router.push('/');
   };
 
@@ -182,7 +137,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         register,
         logout,
         isAuthenticated: !!token,
-        authFetch,
       }}
     >
       {children}

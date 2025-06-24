@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import ScreenTemplate from "@/components/shared/UIComponents"
 import { NotificationProvider } from '@/context/NotificationContext';
-import { WritingStyleProvider } from '@/context/WritingStyleContext';
 import { MessagingProvider } from '@/context/MessagingContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
@@ -196,276 +195,274 @@ const ContentCreatorPage: React.FC = () => {
 
   return (
     <NotificationProvider>
-      <WritingStyleProvider>
-        <MessagingProvider>
-          <ScreenTemplate
-            title="Standalone Content Creator"
-            subtitle="Create a single piece of high-quality content optimized for your goals"
-          >
-            <div className="max-w-7xl mx-auto mb-16">
-              {/* Initial AI Insights Box */}
-              {!selectedType && (
-                <Card className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-100">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start">
-                      <div className="mr-4 mt-1">
-                        <Edit className="w-10 h-10 text-blue-500" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-blue-800 mb-3">Pro Tip!</h3>
-                        <p className="text-blue-700 mb-4">
-                          Select a template from our template gallery to help you get started!
-                          <Link
-                            href="/templates"
-                            className="inline-flex items-center ml-2 text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            Browse templates
-                            <ExternalLink className="w-3 h-3 ml-1" />
-                          </Link>
-                        </p>
-
-                        <h4 className="font-medium text-blue-800 mb-2 flex items-center">
-                          <Sparkles className="w-5 h-5 mr-2" />
-                          AI Content Insights
-                        </h4>
-                        <ul className="space-y-2">
-                          {initialInsights.map((insight, index) => (
-                            <li key={index} className="text-blue-700 flex items-start">
-                              <span className="text-blue-500 mr-2">•</span>
-                              {insight}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+      <MessagingProvider>
+        <ScreenTemplate
+          title="Standalone Content Creator"
+          subtitle="Create a single piece of high-quality content optimized for your goals"
+        >
+          <div className="max-w-7xl mx-auto mb-16">
+            {/* Initial AI Insights Box */}
+            {!selectedType && (
+              <Card className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-100">
+                <CardContent className="pt-6">
+                  <div className="flex items-start">
+                    <div className="mr-4 mt-1">
+                      <Edit className="w-10 h-10 text-blue-500" />
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-800 mb-3">Pro Tip!</h3>
+                      <p className="text-blue-700 mb-4">
+                        Select a template from our template gallery to help you get started!
+                        <Link
+                          href="/templates"
+                          className="inline-flex items-center ml-2 text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Browse templates
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </Link>
+                      </p>
 
-              {/* Content Type Selector */}
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-3">Select Content Type</h2>
-                <button
-                  className="w-full flex items-center justify-between px-4 py-3 border rounded-lg bg-white"
-                  onClick={() => setShowTypeModal(true)}
-                >
-                  <div className="flex items-center">
-                    {selectedTypeDetails ? (
-                      <>
-                        <div className="mr-3">
-                          {selectedTypeDetails.icon}
-                        </div>
-                        <span>{selectedTypeDetails.title}</span>
-                      </>
-                    ) : (
-                      <span className="text-gray-500">Choose a content type...</span>
-                    )}
-                  </div>
-                  <ChevronDown className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Content Type Modal */}
-              {showTypeModal && (
-                <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
-                    <div className="p-4 border-b flex justify-between items-center">
-                      <h3 className="text-lg font-semibold">Select Content Type</h3>
-                      <button
-                        onClick={() => setShowTypeModal(false)}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    <div className="overflow-auto flex-grow">
-                      <ul className="py-2">
-                        {CONTENT_TYPES.map((type) => (
-                          <li
-                            key={type.id}
-                            className={`px-6 py-4 flex items-start hover:bg-gray-50 cursor-pointer ${selectedType === type.id ? 'bg-blue-50' : ''
-                              }`}
-                            onClick={() => {
-                              setSelectedType(type.id);
-                              setShowTypeModal(false);
-                              router.push(`/content-creator/${type.id}`);
-                            }}
-                          >
-                            <div className="mr-4 pt-1 flex-shrink-0">
-                              {type.icon}
-                            </div>
-                            <div>
-                              <div className="font-medium text-lg">{type.title}</div>
-                              <div className="text-gray-600 mt-1">{type.description}</div>
-                            </div>
+                      <h4 className="font-medium text-blue-800 mb-2 flex items-center">
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        AI Content Insights
+                      </h4>
+                      <ul className="space-y-2">
+                        {initialInsights.map((insight, index) => (
+                          <li key={index} className="text-blue-700 flex items-start">
+                            <span className="text-blue-500 mr-2">•</span>
+                            {insight}
                           </li>
                         ))}
                       </ul>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Content Type Selector */}
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold mb-3">Select Content Type</h2>
+              <button
+                className="w-full flex items-center justify-between px-4 py-3 border rounded-lg bg-white"
+                onClick={() => setShowTypeModal(true)}
+              >
+                <div className="flex items-center">
+                  {selectedTypeDetails ? (
+                    <>
+                      <div className="mr-3">
+                        {selectedTypeDetails.icon}
+                      </div>
+                      <span>{selectedTypeDetails.title}</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">Choose a content type...</span>
+                  )}
                 </div>
-              )}
+                <ChevronDown className="w-5 h-5" />
+              </button>
+            </div>
 
-              {selectedTypeDetails && (
-                <>
-                  {/* Selected Content Type Info */}
-                  <Card className="mb-6">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start">
-                        <div className="p-3 bg-gray-50 rounded-lg mr-4 flex-shrink-0">
-                          {selectedTypeDetails.icon}
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold">{selectedTypeDetails.title}</h3>
-                          <p className="text-gray-600">{selectedTypeDetails.description}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                        <div className="flex items-start">
-                          <Sparkles className="w-5 h-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
-                          <div>
-                            <h4 className="font-medium text-blue-800 mb-1">AI Content Tips</h4>
-                            <ul className="space-y-1">
-                              {selectedTypeDetails.tips.map((tip, index) => (
-                                <li key={index} className="text-sm text-blue-700 flex items-start">
-                                  <span className="text-blue-600 mr-2">•</span>
-                                  {tip}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Content Creation Form */}
-                  <Card className="mb-6">
-                    <CardHeader>
-                      <CardTitle>Content Details</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-1" htmlFor="title">
-                            Title/Subject
-                          </label>
-                          <input
-                            id="title"
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="w-full p-2 border rounded-md"
-                            placeholder={`Enter a title for your ${selectedTypeDetails.title}`}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-1" htmlFor="audience">
-                            Target Audience
-                          </label>
-                          <input
-                            id="audience"
-                            type="text"
-                            value={audience}
-                            onChange={(e) => setAudience(e.target.value)}
-                            className="w-full p-2 border rounded-md"
-                            placeholder="Who is this content for? (e.g., Marketing Directors, Small Business Owners)"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-1" htmlFor="objective">
-                            Primary Objective
-                          </label>
-                          <select
-                            id="objective"
-                            value={objective}
-                            onChange={(e) => setObjective(e.target.value)}
-                            className="w-full p-2 border rounded-md"
-                          >
-                            <option value="">Select an objective...</option>
-                            <option value="awareness">Raise Awareness</option>
-                            <option value="education">Educate Audience</option>
-                            <option value="lead_generation">Generate Leads</option>
-                            <option value="conversion">Drive Conversions</option>
-                            <option value="retention">Improve Retention</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-1" htmlFor="keyPoints">
-                            Key Points
-                          </label>
-                          <textarea
-                            id="keyPoints"
-                            value={keyPoints}
-                            onChange={(e) => setKeyPoints(e.target.value)}
-                            rows={4}
-                            className="w-full p-2 border rounded-md"
-                            placeholder="List the main points you want to include (one per line)"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Tone of Voice
-                          </label>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {['professional', 'casual', 'authoritative', 'friendly'].map((toneOption) => (
-                              <button
-                                key={toneOption}
-                                type="button"
-                                onClick={() => setTone(toneOption)}
-                                className={`py-2 px-3 border rounded-md text-sm capitalize ${tone === toneOption
-                                  ? 'bg-blue-100 border-blue-300 text-blue-800'
-                                  : 'bg-white hover:bg-gray-50'
-                                  }`}
-                              >
-                                {toneOption}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <div className="flex justify-between mt-6">
+            {/* Content Type Modal */}
+            {showTypeModal && (
+              <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+                  <div className="p-4 border-b flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Select Content Type</h3>
                     <button
-                      onClick={() => router.back()}
-                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                      onClick={() => setShowTypeModal(false)}
+                      className="text-gray-500 hover:text-gray-700"
                     >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </button>
-
-                    <button
-                      onClick={handleContentGeneration}
-                      disabled={!isFormValid() || isGenerating}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-5 h-5 mr-2" />
-                          Generate Content
-                        </>
-                      )}
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
-                </>
-              )}
-            </div>
-          </ScreenTemplate>
-        </MessagingProvider>
-      </WritingStyleProvider>
+
+                  <div className="overflow-auto flex-grow">
+                    <ul className="py-2">
+                      {CONTENT_TYPES.map((type) => (
+                        <li
+                          key={type.id}
+                          className={`px-6 py-4 flex items-start hover:bg-gray-50 cursor-pointer ${selectedType === type.id ? 'bg-blue-50' : ''
+                            }`}
+                          onClick={() => {
+                            setSelectedType(type.id);
+                            setShowTypeModal(false);
+                            router.push(`/content-creator/${type.id}`);
+                          }}
+                        >
+                          <div className="mr-4 pt-1 flex-shrink-0">
+                            {type.icon}
+                          </div>
+                          <div>
+                            <div className="font-medium text-lg">{type.title}</div>
+                            <div className="text-gray-600 mt-1">{type.description}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedTypeDetails && (
+              <>
+                {/* Selected Content Type Info */}
+                <Card className="mb-6">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start">
+                      <div className="p-3 bg-gray-50 rounded-lg mr-4 flex-shrink-0">
+                        {selectedTypeDetails.icon}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">{selectedTypeDetails.title}</h3>
+                        <p className="text-gray-600">{selectedTypeDetails.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                      <div className="flex items-start">
+                        <Sparkles className="w-5 h-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                        <div>
+                          <h4 className="font-medium text-blue-800 mb-1">AI Content Tips</h4>
+                          <ul className="space-y-1">
+                            {selectedTypeDetails.tips.map((tip, index) => (
+                              <li key={index} className="text-sm text-blue-700 flex items-start">
+                                <span className="text-blue-600 mr-2">•</span>
+                                {tip}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Content Creation Form */}
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle>Content Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1" htmlFor="title">
+                          Title/Subject
+                        </label>
+                        <input
+                          id="title"
+                          type="text"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          className="w-full p-2 border rounded-md"
+                          placeholder={`Enter a title for your ${selectedTypeDetails.title}`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1" htmlFor="audience">
+                          Target Audience
+                        </label>
+                        <input
+                          id="audience"
+                          type="text"
+                          value={audience}
+                          onChange={(e) => setAudience(e.target.value)}
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Who is this content for? (e.g., Marketing Directors, Small Business Owners)"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1" htmlFor="objective">
+                          Primary Objective
+                        </label>
+                        <select
+                          id="objective"
+                          value={objective}
+                          onChange={(e) => setObjective(e.target.value)}
+                          className="w-full p-2 border rounded-md"
+                        >
+                          <option value="">Select an objective...</option>
+                          <option value="awareness">Raise Awareness</option>
+                          <option value="education">Educate Audience</option>
+                          <option value="lead_generation">Generate Leads</option>
+                          <option value="conversion">Drive Conversions</option>
+                          <option value="retention">Improve Retention</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1" htmlFor="keyPoints">
+                          Key Points
+                        </label>
+                        <textarea
+                          id="keyPoints"
+                          value={keyPoints}
+                          onChange={(e) => setKeyPoints(e.target.value)}
+                          rows={4}
+                          className="w-full p-2 border rounded-md"
+                          placeholder="List the main points you want to include (one per line)"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Tone of Voice
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {['professional', 'casual', 'authoritative', 'friendly'].map((toneOption) => (
+                            <button
+                              key={toneOption}
+                              type="button"
+                              onClick={() => setTone(toneOption)}
+                              className={`py-2 px-3 border rounded-md text-sm capitalize ${tone === toneOption
+                                ? 'bg-blue-100 border-blue-300 text-blue-800'
+                                : 'bg-white hover:bg-gray-50'
+                                }`}
+                            >
+                              {toneOption}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="flex justify-between mt-6">
+                  <button
+                    onClick={() => router.back()}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back
+                  </button>
+
+                  <button
+                    onClick={handleContentGeneration}
+                    disabled={!isFormValid() || isGenerating}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        Generate Content
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </ScreenTemplate>
+      </MessagingProvider>
     </NotificationProvider>
   );
 };

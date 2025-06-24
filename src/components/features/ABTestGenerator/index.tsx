@@ -65,7 +65,7 @@ const ABTestGenerator: React.FC = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
-                    mode: 'abTestGenerator',
+                                       
                     data: {
                         contentType: selectedType,
                         contentContext,

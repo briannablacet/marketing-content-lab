@@ -65,9 +65,12 @@ function buildStyleGuideInstructions(writingStyle: any, brandVoice: any, messagi
 async function handleEnhancedContent(requestData: any, res: NextApiResponse) {
   const { campaignData, contentTypes, writingStyle, brandVoice, messaging } = requestData;
 
-  if (!campaignData || !contentTypes || !campaignData.name || contentTypes.length === 0) {
-    console.error("Missing required data:", { campaignData, contentTypes });
-    return res.status(400).json({ error: "Missing required data" });
+  if (!campaignData || !contentTypes || !campaignData.name || !campaignData.type) {
+    return res.status(400).json({ error: "Missing required campaign data" });
+  }
+
+  if (!writingStyle || !writingStyle.styleGuide) {
+    return res.status(400).json({ error: "Missing writing style configuration" });
   }
 
   console.log("🚀 Generating content for campaign:", campaignData.name);
@@ -330,31 +333,35 @@ async function handleTaglineGeneration(data: any, res: NextApiResponse) {
 async function handlePersonaGenerator(data: any, res: NextApiResponse) {
   try {
     const { productName, productType, currentPersona } = data;
-    const prompt = `Generate an ideal customer persona for the following product.\n\nProduct Name: ${productName}\nProduct Type/Description: ${productType}\nCurrent Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}\n\nReturn ONLY a valid JSON array of personas with role, industry, and challenges. Do not include any explanation or formatting.`;
+    const prompt = `Generate 3 ideal customer personas for the following product. Return ONLY a valid JSON array with this exact format:
+
+[
+  {
+    "role": "Job title or role",
+    "industry": "Industry they work in", 
+    "challenges": ["Challenge 1", "Challenge 2", "Challenge 3"]
+  }
+]
+
+Product Name: ${productName}
+Product Type/Description: ${productType}
+Current Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}
+
+Important: Return ONLY the JSON array, no explanations or additional text.`;
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a B2B marketing strategist." },
+        { role: "system", content: "You are a B2B marketing strategist. Always return valid JSON arrays only." },
         { role: "user", content: prompt },
       ],
     });
-    let personasText = response.choices[0].message.content || "[]";
+    const personas = response.choices[0].message.content || "[]";
     let parsed;
     try {
-      parsed = JSON.parse(personasText);
+      parsed = JSON.parse(personas);
     } catch {
-      // Try to extract JSON array from the text
-      const match = personasText.match(/\[.*\]/s);
-      if (match) {
-        try {
-          parsed = JSON.parse(match[0]);
-        } catch {
-          parsed = [{ role: "Sample Role", industry: "Sample Industry", challenges: ["Sample Challenge"] }];
-        }
-      } else {
-        parsed = [{ role: "Sample Role", industry: "Sample Industry", challenges: ["Sample Challenge"] }];
-      }
+      return res.status(500).json({ error: "Failed to parse persona data" });
     }
     return res.status(200).json({ personas: parsed });
   } catch (error) {
@@ -401,25 +408,39 @@ async function handleABTestGenerator(data: any, res: NextApiResponse) {
     try {
       variations = JSON.parse(response.choices[0].message.content || "[]");
     } catch {
-      variations = ["Variation 1", "Variation 2"];
+      return res.status(500).json({ error: "Failed to parse variations" });
     }
     return res.status(200).json({ variations });
   } catch (error) {
-    console.error("AB Test generator error:", error);
+    console.error("AB test generator error:", error);
     return res.status(500).json({ error: "Failed to generate variations" });
   }
 }
 
-// Handler for prose perfector
-async function handleProsePerfector(data: any, res: NextApiResponse) {
+// Handler for key messages generation
+async function handleKeyMessages(data: any, res: NextApiResponse) {
   try {
-    const { text, options } = data;
-    const prompt = `Improve the following text for clarity, engagement, and style.\n\nText: ${text}\n\nOptions: ${JSON.stringify(options)}\n\nReturn a JSON object with 'enhancedText' and an array 'suggestions' (each with original, suggestion, reason, type).`;
+    const { productInfo, competitors, industry, focusAreas, tone, currentFramework } = data;
+    const prompt = `Generate a value proposition, 3 key differentiators, and 5 targeted key messages. Return ONLY a valid JSON object with this exact format:
+
+{
+  "valueProposition": "Your compelling value proposition here",
+  "keyDifferentiators": ["Differentiator 1", "Differentiator 2", "Differentiator 3"],
+  "targetedMessages": ["Message 1", "Message 2", "Message 3", "Message 4", "Message 5"]
+}
+
+Product Info: ${JSON.stringify(productInfo)}
+Industry: ${industry}
+Focus Areas: ${focusAreas}
+Tone: ${tone}
+Current Framework: ${JSON.stringify(currentFramework)}
+
+Important: Return ONLY the JSON object, no explanations or additional text.`;
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a professional editor." },
+        { role: "system", content: "You are a B2B messaging strategist. Always return valid JSON objects only." },
         { role: "user", content: prompt },
       ],
     });
@@ -427,44 +448,7 @@ async function handleProsePerfector(data: any, res: NextApiResponse) {
     try {
       result = JSON.parse(response.choices[0].message.content || '{}');
     } catch {
-      result = { enhancedText: text, suggestions: [] };
-    }
-    return res.status(200).json(result);
-  } catch (error) {
-    console.error("Prose Perfector error:", error);
-    return res.status(500).json({ error: "Failed to enhance prose" });
-  }
-}
-
-// Handler for key messages/value proposition
-async function handleKeyMessages(data: any, res: NextApiResponse) {
-  try {
-    const { productInfo, competitors, industry, focusAreas, tone, currentFramework } = data;
-    const prompt = `Generate a value proposition, 3 key differentiators, and 5 targeted key messages for the following product.\n\nProduct Info: ${JSON.stringify(productInfo)}\nIndustry: ${industry}\nFocus Areas: ${focusAreas}\nTone: ${tone}\nCurrent Framework: ${JSON.stringify(currentFramework)}\n\nReturn ONLY a valid JSON object with valueProposition, keyDifferentiators (array), and targetedMessages (array). Do not include any explanation or formatting.`;
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: "You are a B2B messaging strategist." },
-        { role: "user", content: prompt },
-      ],
-    });
-    let text = response.choices[0].message.content || '{}';
-    let result;
-    try {
-      result = JSON.parse(text);
-    } catch {
-      // Try to extract JSON object from the text
-      const match = text.match(/{[\s\S]*}/);
-      if (match) {
-        try {
-          result = JSON.parse(match[0]);
-        } catch {
-          result = { valueProposition: '', keyDifferentiators: [], targetedMessages: [] };
-        }
-      } else {
-        result = { valueProposition: '', keyDifferentiators: [], targetedMessages: [] };
-      }
+      return res.status(500).json({ error: "Failed to parse key messages data" });
     }
     return res.status(200).json(result);
   } catch (error) {
@@ -474,58 +458,58 @@ async function handleKeyMessages(data: any, res: NextApiResponse) {
 }
 
 // Handler for competitor analysis
-async function handleCompetitiveAnalysis(data: any, res: NextApiResponse) {
+async function handleAnalyzeCompetitors(data: any, res: NextApiResponse) {
   try {
-    const { competitors, productInfo, industry, focusAreas, tone } = data;
-    const prompt = `Analyze the following competitors for the given product.\n\nProduct Info: ${JSON.stringify(productInfo)}\nIndustry: ${industry}\nFocus Areas: ${focusAreas}\nTone: ${tone}\nCompetitors: ${JSON.stringify(competitors)}\n\nReturn ONLY a valid JSON array. Each item should have name, uniquePositioning (array, at least 1), keyThemes (array, at least 1), and gaps (array, at least 1). Do not include any explanation or formatting. Never return empty arrays; always provide at least one insight for each field.`;
+    const { competitors, industry } = data;
+    const prompt = `Analyze the following competitors in the ${industry} industry. For each competitor, provide:
+
+1. Unique positioning (array of strings)
+2. Key themes/messages (array of strings) 
+3. Gaps/opportunities (array of strings)
+
+Competitors: ${JSON.stringify(competitors)}
+Industry: ${industry}
+
+Return ONLY a valid JSON array with this exact format:
+[
+  {
+    "name": "Competitor Name",
+    "uniquePositioning": ["Positioning 1", "Positioning 2"],
+    "keyThemes": ["Theme 1", "Theme 2"],
+    "gaps": ["Gap 1", "Gap 2"]
+  }
+]
+
+Important: Return ONLY the JSON array, no explanations or additional text. Ensure the JSON is valid and properly formatted.`;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
+      temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a marketing strategist." },
-        { role: "user", content: prompt }
+        { role: "system", content: "You are a competitive analysis expert. Always return valid JSON arrays only, no explanations." },
+        { role: "user", content: prompt },
       ],
-      max_tokens: 800,
-      temperature: 0.7
     });
-    let text = response.choices[0].message.content.trim();
-    console.log("[CompetitiveAnalysis] AI raw response:", text);
-    let result;
+
+    let competitorInsights;
     try {
-      result = JSON.parse(text);
-      console.log("[CompetitiveAnalysis] Parsed JSON:", result);
-    } catch (e) {
-      // Try to extract JSON array from the response (ES2018 workaround)
-      const match = text.match(/\[[\s\S]*\]/);
-      if (match) {
-        try {
-          result = JSON.parse(match[0]);
-          console.log("[CompetitiveAnalysis] Extracted JSON array:", result);
-        } catch (e2) {
-          console.error("[CompetitiveAnalysis] Failed to parse extracted JSON array:", e2);
-          result = null;
-        }
-      } else {
-        console.error("[CompetitiveAnalysis] No JSON array found in AI response.");
-        result = null;
+      const content = response.choices[0].message.content || '[]';
+      competitorInsights = JSON.parse(content);
+
+      // Validate the structure
+      if (!Array.isArray(competitorInsights)) {
+        throw new Error('Response is not an array');
       }
+    } catch (parseError) {
+      console.error("Failed to parse competitor analysis data:", parseError);
+      console.error("Raw response:", response.choices[0].message.content);
+      return res.status(500).json({ error: "Failed to parse competitor analysis data" });
     }
-    if (!result || !Array.isArray(result)) {
-      // fallback sample
-      console.warn("[CompetitiveAnalysis] Falling back to sample data.");
-      result = Array.isArray(competitors)
-        ? competitors.map((c: any) => ({
-            name: c.name,
-            uniquePositioning: ["Sample positioning"],
-            keyThemes: ["Sample theme"],
-            gaps: ["Sample gap"]
-          }))
-        : [];
-    }
-    res.status(200).json(result);
+
+    return res.status(200).json({ competitorInsights });
   } catch (error) {
-    const errorMessage = typeof error === 'object' && error && 'message' in error ? (error as any).message : String(error);
-    console.error("[CompetitiveAnalysis] Handler error:", errorMessage);
-    res.status(500).json({ error: errorMessage });
+    console.error("Analyze Competitors error:", error);
+    return res.status(500).json({ error: "Failed to analyze competitors" });
   }
 }
 
@@ -533,29 +517,81 @@ async function handleCompetitiveAnalysis(data: any, res: NextApiResponse) {
 async function handleMissionVision(data: any, res: NextApiResponse) {
   try {
     const { companyName, audience, valueProp, additionalContext } = data;
-    const prompt = `Generate a concise mission statement and a vision statement for the following company.\n\nCompany Name: ${companyName}\nTarget Audience: ${audience}\nValue Proposition: ${valueProp}\nAdditional Context: ${additionalContext}\n\nReturn a JSON object with 'mission' and 'vision' fields. Do not include any explanations.`;
+    const prompt = `Generate a concise mission statement and a vision statement for the following company.
+
+Company Name: ${companyName}
+Target Audience: ${audience}
+Value Proposition: ${valueProp}
+Additional Context: ${additionalContext}
+
+Return ONLY a valid JSON object with this exact format:
+{
+  "mission": "Your mission statement here",
+  "vision": "Your vision statement here"
+}
+
+Important: Return ONLY the JSON object, no explanations or additional text. Ensure the JSON is valid and properly formatted.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a branding strategist." },
+        { role: "system", content: "You are a branding strategist. Always return valid JSON objects only, no explanations." },
         { role: "user", content: prompt },
       ],
     });
+
     let result;
     try {
-      result = JSON.parse(response.choices[0].message.content || '{}');
-    } catch {
-      // Fallback: try to extract mission/vision from text
+      const content = response.choices[0].message.content || '{}';
+      result = JSON.parse(content);
+
+      // Validate the structure
+      if (!result.mission || !result.vision) {
+        throw new Error('Missing mission or vision fields');
+      }
+    } catch (parseError) {
+      console.error("Failed to parse mission/vision data:", parseError);
+      console.error("Raw response:", response.choices[0].message.content);
+
+      // Fallback: try to extract mission/vision from text more carefully
       const text = response.choices[0].message.content || '';
-      const missionMatch = text.match(/mission\s*[:\-]?\s*(.+)/i);
-      const visionMatch = text.match(/vision\s*[:\-]?\s*(.+)/i);
-      result = {
-        mission: missionMatch ? missionMatch[1].trim() : '',
-        vision: visionMatch ? visionMatch[1].trim() : ''
-      };
+
+      // Look for mission and vision in various formats
+      const missionPatterns = [
+        /mission\s*[:\-]?\s*["']?([^"'\n]+)["']?/i,
+        /mission\s*statement\s*[:\-]?\s*["']?([^"'\n]+)["']?/i,
+        /mission\s*[:\-]?\s*([^:\n]+)/i
+      ];
+
+      const visionPatterns = [
+        /vision\s*[:\-]?\s*["']?([^"'\n]+)["']?/i,
+        /vision\s*statement\s*[:\-]?\s*["']?([^"'\n]+)["']?/i,
+        /vision\s*[:\-]?\s*([^:\n]+)/i
+      ];
+
+      let mission = '';
+      let vision = '';
+
+      for (const pattern of missionPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          mission = match[1].trim();
+          break;
+        }
+      }
+
+      for (const pattern of visionPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          vision = match[1].trim();
+          break;
+        }
+      }
+
+      result = { mission, vision };
     }
+
     return res.status(200).json(result);
   } catch (error) {
     console.error("Mission/Vision generation error:", error);
@@ -573,31 +609,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { mode, data } = body;
 
-  if (mode === "humanize") {
-    return handleContentHumanizer(data, res);
-  } else if (mode === "enhance") {
-    return handleEnhancedContent(data, res);
-  } else if (mode === "boilerplate") {
-    return handleBoilerplateGeneration(data, res);
-  } else if (mode === "adaptBoilerplate") {
-    return handleAdaptBoilerplate(data, res);
-  } else if (mode === "tagline") {
-    return handleTaglineGeneration(data, res);
-  } else if (mode === "personaGenerator") {
-    return handlePersonaGenerator(data, res);
-  } else if (mode === "contentRepurposer") {
-    return handleContentRepurposer(data, res);
-  } else if (mode === "abTestGenerator") {
-    return handleABTestGenerator(data, res);
-  } else if (mode === "prosePerfector") {
-    return handleProsePerfector(data, res);
-  } else if (mode === "keyMessages") {
-    return handleKeyMessages(data, res);
-  } else if (mode === "analyzeCompetitors") {
-    return handleCompetitiveAnalysis(data, res);
-  } else if (mode === "missionVision") {
-    return handleMissionVision(data, res);
-  } else {
-    return res.status(400).json({ error: "Invalid mode" });
+  try {
+    switch (mode) {
+      case "humanize":
+        return handleContentHumanizer(data, res);
+      case "enhance":
+        return handleEnhancedContent(data, res);
+      case "boilerplate":
+        return handleBoilerplateGeneration(data, res);
+      case "adapt-boilerplate":
+        return handleAdaptBoilerplate(data, res);
+      case "tagline":
+        return handleTaglineGeneration(data, res);
+      case "persona":
+        return handlePersonaGenerator(data, res);
+      case "repurpose":
+        return handleContentRepurposer(data, res);
+      case "ab-test":
+        return handleABTestGenerator(data, res);
+      case "key-messages":
+        return handleKeyMessages(data, res);
+      case "competitors":
+        return handleAnalyzeCompetitors(data, res);
+      case "mission-vision":
+        return handleMissionVision(data, res);
+      default:
+        return res.status(400).json({ error: "Invalid mode" });
+    }
+  } catch (error) {
+    console.error("API handler error:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }

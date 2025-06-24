@@ -168,7 +168,7 @@ const IdealCustomerGenerator: React.FC = () => {
 
         try {
             const requestBody = {
-                mode: 'personaGenerator',
+                mode: 'persona',
                 data: {
                     productName: productName.trim(),
                     productType: productDescription.trim() || '',

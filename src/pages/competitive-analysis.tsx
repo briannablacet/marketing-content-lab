@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CompetitiveStep from '@/components/features/MarketingWalkthrough/components/CompetitiveStep';
 import ScreenTemplate from '@/components/shared/UIComponents';
-import { WritingStyleProvider } from '@/context/WritingStyleContext';
 import { ContentProvider } from '@/context/ContentContext';
 import { NotificationProvider, useNotification } from '@/context/NotificationContext';
 import { MarketingProvider } from '@/context/MarketingContext';
@@ -201,11 +200,9 @@ const CompetitiveAnalysisPageWithProviders = () => (
   <NotificationProvider>
     <MarketingProvider>
       <ContentProvider>
-        <WritingStyleProvider>
-          <WalkthroughProvider>
-            <CompetitiveAnalysisPage />
-          </WalkthroughProvider>
-        </WritingStyleProvider>
+        <WalkthroughProvider>
+          <CompetitiveAnalysisPage />
+        </WalkthroughProvider>
       </ContentProvider>
     </MarketingProvider>
   </NotificationProvider>

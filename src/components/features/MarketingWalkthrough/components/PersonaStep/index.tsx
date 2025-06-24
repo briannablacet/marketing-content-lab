@@ -98,7 +98,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
 
     try {
       const requestBody = {
-        mode: 'personaGenerator',
+        mode: 'persona',
         data: {
           productName: name,
           productType: type,

@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { Card } from '@/components/ui/card';
 import { Plus, X, Package } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
+import StrategicDataService from '../../../../../services/StrategicDataService';
 
 const ProductStep = () => {
   const { showNotification } = useNotification();
@@ -23,6 +24,14 @@ const ProductStep = () => {
         if (data.type) setProductType(data.type);
         if (data.keyBenefits && Array.isArray(data.keyBenefits) && data.keyBenefits.length > 0) {
           setKeyBenefits(data.keyBenefits);
+        }
+      }
+
+      // Load tagline from StrategicDataService as fallback
+      if (!tagline) {
+        const savedTagline = StrategicDataService.getTagline();
+        if (savedTagline) {
+          setTagline(savedTagline);
         }
       }
     } catch (error) {

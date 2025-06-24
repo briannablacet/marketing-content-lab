@@ -1,5 +1,5 @@
 // src/pages/key-messages.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import MessagingStep from '../components/features/MarketingWalkthrough/components/MessagingStep';
 import { NotificationProvider } from '../context/NotificationContext';
@@ -7,6 +7,17 @@ import ScreenTemplate from '../components/shared/UIComponents';
 
 const KeyMessagesPage = () => {
   const router = useRouter();
+  const [formData, setFormData] = useState({});
+
+  // Load value proposition from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedValueProp = localStorage.getItem('marketingValueProp');
+      if (savedValueProp) {
+        setFormData(prev => ({ ...prev, valueProp: savedValueProp }));
+      }
+    }
+  }, []);
 
   return (
     <NotificationProvider>
@@ -19,7 +30,8 @@ const KeyMessagesPage = () => {
             hideNavigation={true}
           >
             <MessagingStep
-              isWalkthrough={false}
+              formData={formData}
+              setFormData={setFormData}
               onNext={() => router.push('/')}
               onBack={() => router.push('/')}
             />
