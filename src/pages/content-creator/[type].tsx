@@ -1413,21 +1413,6 @@ const ContentCreatorPage = () => {
                   </CardContent>
                 </Card>
 
-                {/* Writing Style Applied Notice */}
-                {isStyleConfigured && (
-                  <Card className="mt-4 p-4 bg-green-50 border border-green-200">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <FileCheck className="w-4 h-4 mr-2 text-green-600" />
-                      <span>
-                        Content created using {writingStyle?.styleGuide?.primary} style guide
-                        {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
-                        {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}
-                        {strategicData?.product?.name && ` for ${strategicData.product.name}`}.
-                      </span>
-                    </div>
-                  </Card>
-                )}
-
                 {/* Chat for content improvements */}
                 <Card className="mt-6">
                   <CardHeader className="border-b">
