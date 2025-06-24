@@ -848,57 +848,6 @@ const ContentCreatorPage = () => {
               </Card>
             )}
 
-            {/* Strategic Data Banner - Show if we have meaningful strategic data */}
-            {hasStrategicData && (
-              <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="flex items-center">
-                    <FileCheck className="w-5 h-5 text-blue-600 mr-2" />
-                    <span>Using Your Marketing Program</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="font-medium text-gray-800 mb-2">
-                        Content will be created using:
-                      </h3>
-                      <ul className="space-y-2">
-                        {strategicData?.product?.name && (
-                          <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                            <span className="text-gray-700">
-                              <strong>Your product:</strong>{" "}
-                              {strategicData.product.name}
-                            </span>
-                          </li>
-                        )}
-
-                        {strategicData?.audiences?.length > 0 && (
-                          <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                            <span className="text-gray-700">
-                              <strong>Your audience:</strong>{" "}
-                              {strategicData.audiences[0].role}
-                            </span>
-                          </li>
-                        )}
-
-                        {strategicData?.messaging?.valueProposition && (
-                          <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                            <span className="text-gray-700">
-                              <strong>Your messaging framework</strong>
-                            </span>
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* No Strategic Data Warning */}
             {!isLoadingStrategicData && !hasStrategicData && !isStyleConfigured && (
               <Card className="mb-6 border-2 border-yellow-200 overflow-hidden">
@@ -1128,6 +1077,28 @@ const ContentCreatorPage = () => {
       case "options":
         return (
           <div className="space-y-6">
+            {/* Restore green info box for Brand Voice if available */}
+            {strategicData?.brandVoice?.brandVoice?.tone && (
+              <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-200">
+                <h3 className="font-medium text-green-800 mb-2 flex items-center">
+                  <FileCheck className="w-5 h-5 mr-2" />
+                  Using Your Brand Voice
+                </h3>
+                <p className="text-sm text-green-700">
+                  We're using your brand voice settings from your marketing program:
+                </p>
+                <div className="mt-2">
+                  <span className="text-sm font-medium text-green-700">Tone: </span>
+                  <span className="text-sm text-green-800">{strategicData.brandVoice.brandVoice.tone}</span>
+                </div>
+                {strategicData.brandVoice.brandVoice.archetype && (
+                  <div>
+                    <span className="text-sm font-medium text-green-700">Archetype: </span>
+                    <span className="text-sm text-green-800">{strategicData.brandVoice.brandVoice.archetype}</span>
+                  </div>
+                )}
+              </div>
+            )}
             <Card className="overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
                 <CardTitle className="flex items-center">
@@ -1137,38 +1108,6 @@ const ContentCreatorPage = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  {/* Strategic Brand Voice Notice */}
-                  {strategicData?.brandVoice?.brandVoice?.tone && (
-                    <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-200">
-                      <h3 className="font-medium text-green-800 mb-2 flex items-center">
-                        <FileCheck className="w-5 h-5 mr-2" />
-                        Using Your Brand Voice
-                      </h3>
-                      <p className="text-sm text-green-700">
-                        We're using your brand voice settings from your
-                        marketing program:
-                      </p>
-                      <div className="mt-2">
-                        <span className="text-sm font-medium text-green-700">
-                          Tone:{" "}
-                        </span>
-                        <span className="text-sm text-green-800">
-                          {strategicData.brandVoice.brandVoice.tone}
-                        </span>
-                      </div>
-                      {strategicData.brandVoice.brandVoice.archetype && (
-                        <div>
-                          <span className="text-sm font-medium text-green-700">
-                            Archetype:{" "}
-                          </span>
-                          <span className="text-sm text-green-800">
-                            {strategicData.brandVoice.brandVoice.archetype}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium mb-2">
@@ -1484,21 +1423,6 @@ const ContentCreatorPage = () => {
                         {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
                         {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}
                         {strategicData?.product?.name && ` for ${strategicData.product.name}`}.
-                      </span>
-                    </div>
-                  </Card>
-                )}
-
-                {/* Strategic Data Attribution */}
-                {hasStrategicData && strategicData && strategicData.product && (
-                  <Card className="mt-4 p-4 bg-gray-50 border border-gray-200">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <FileCheck className="w-4 h-4 mr-2 text-blue-600" />
-                      <span>
-                        Created using your marketing program for {strategicData.product.name || "your product"}.
-                        {strategicData.audiences && Array.isArray(strategicData.audiences) && strategicData.audiences.length > 0
-                          ? ` Targeted for ${strategicData.audiences[0]?.role || ''}.`
-                          : ""}
                       </span>
                     </div>
                   </Card>
