@@ -206,23 +206,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                    mode: 'keyMessages',
-=======
                     mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-                    mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-                    mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-                    mode: 'key-messages',
->>>>>>> Stashed changes
                     data: {
                         productInfo: {
                             name: productName,
@@ -277,17 +261,17 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
     // SAVE FUNCTION
     const handleSave = async (valueToSave = null) => {
         const finalValue = valueToSave || paragraph || existingValueProp;
-    
+
         if (!finalValue) {
             showNotification('Please enter or generate a value proposition first', 'error');
             return;
         }
-    
+
         setFormData(prev => ({ ...prev, valueProp: finalValue }));
-    
+
         // Save to localStorage
         localStorage.setItem('marketingValueProp', finalValue);
-    
+
         // Save to StrategicDataService
         try {
             if (StrategicDataService.setValueProposition && typeof StrategicDataService.setValueProposition === 'function') {
@@ -301,7 +285,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
             showNotification('Value proposition saved successfully!', 'success');
         }
     };
-    
+
     // NEW: Handle Next button with data saving
     const handleNext = () => {
         const currentValueProp = paragraph || existingValueProp;
@@ -320,9 +304,9 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
             showNotification('Please create a value proposition before continuing', 'error');
         }
     };
-    
+
     const addBenefit = () => {
-        onNext={handleNext}
+        onNext = { handleNext }
     };
     return (
         <div className="w-full max-w-none space-y-6">

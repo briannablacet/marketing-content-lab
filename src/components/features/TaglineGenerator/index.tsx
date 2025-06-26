@@ -1,3 +1,6 @@
+// src/components/features/TaglineGenerator/index.tsx
+// FIXED VERSION - Cleans tagline content properly
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Sparkles, Loader2, Plus, X, CheckCircle, Save } from 'lucide-react';
@@ -65,6 +68,30 @@ const TaglineGenerator: React.FC = () => {
     const { brandVoice } = useBrandVoice();
     const router = useRouter();
 
+    // NEW: Function to clean tagline content
+    const cleanTaglineContent = (content: string): string => {
+        if (!content) return content;
+
+        let cleaned = content.trim();
+
+        // Remove unwanted punctuation at the beginning
+        cleaned = cleaned.replace(/^[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,\.\!]+\s*/g, '');
+
+        // Remove unwanted punctuation at the end (except periods, exclamation marks, question marks)
+        cleaned = cleaned.replace(/\s*[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,]+$/g, '');
+
+        // Remove quotes at the beginning and end
+        cleaned = cleaned.replace(/^["']|["']$/g, '');
+
+        // Remove any "Tagline:" prefixes that might sneak in
+        cleaned = cleaned.replace(/^(Tagline|Tag)\s*[:]\s*/i, '');
+
+        // Clean up extra whitespace
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+        return cleaned;
+    };
+
     useEffect(() => {
         const {
             productName,
@@ -84,7 +111,8 @@ const TaglineGenerator: React.FC = () => {
                 setAudiences([idealCustomer]);
             }
         }
-        if (tagline) setCustomTagline(tagline);
+        // Clean tagline when loading from storage
+        if (tagline) setCustomTagline(cleanTaglineContent(tagline));
 
         // Set archetype and tone from brand voice if available
         if (brandVoice?.brandVoice?.archetype) {
@@ -104,8 +132,10 @@ const TaglineGenerator: React.FC = () => {
     useEffect(() => {
         const savedTagline = localStorage.getItem('brandTagline');
         if (savedTagline) {
-            setSelectedTagline(savedTagline);
-            setCustomTagline(savedTagline);
+            // Clean the saved tagline when loading
+            const cleanedTagline = cleanTaglineContent(savedTagline);
+            setSelectedTagline(cleanedTagline);
+            setCustomTagline(cleanedTagline);
         }
     }, []);
 
@@ -157,8 +187,10 @@ const TaglineGenerator: React.FC = () => {
             }
 
             const result = await response.json();
-            setGeneratedTaglines(result);
-            setCustomTagline(result[0] || '');
+            // Clean all generated taglines
+            const cleanedTaglines = result.map((tagline: string) => cleanTaglineContent(tagline));
+            setGeneratedTaglines(cleanedTaglines);
+            setCustomTagline(cleanedTaglines[0] || '');
             setShowPreview(true);
         } catch (error) {
             console.error('Error generating taglines:', error);
@@ -168,13 +200,15 @@ const TaglineGenerator: React.FC = () => {
     };
 
     const handleAcceptGenerated = (tagline: string) => {
-        setCustomTagline(tagline);
+        // Clean the tagline before accepting
+        const cleanedTagline = cleanTaglineContent(tagline);
+        setCustomTagline(cleanedTagline);
         setShowPreview(false);
-        handleSave(tagline);
+        handleSave(cleanedTagline);
     };
 
     const handleSave = async (valueToSave: string | null = null) => {
-        const finalValue = valueToSave || customTagline;
+        const finalValue = cleanTaglineContent(valueToSave || customTagline);
 
         if (!finalValue) {
             return;
@@ -187,9 +221,24 @@ const TaglineGenerator: React.FC = () => {
         try {
             await StrategicDataService.setStrategicDataValue('tagline', finalValue);
             setIsAccepted(true);
+            // Update the displayed tagline with the cleaned version
+            setCustomTagline(finalValue);
         } catch (error) {
             console.error('Error saving tagline to StrategicDataService:', error);
             setIsAccepted(true);
+        }
+    };
+
+    // Handle text area changes with cleaning on blur
+    const handleTaglineChange = (value: string) => {
+        setCustomTagline(value);
+    };
+
+    const handleTaglineBlur = () => {
+        // Clean the tagline when user stops editing
+        const cleaned = cleanTaglineContent(customTagline);
+        if (cleaned !== customTagline) {
+            setCustomTagline(cleaned);
         }
     };
 
@@ -259,7 +308,8 @@ const TaglineGenerator: React.FC = () => {
                             </div>
                             <textarea
                                 value={customTagline}
-                                onChange={(e) => setCustomTagline(e.target.value)}
+                                onChange={(e) => handleTaglineChange(e.target.value)}
+                                onBlur={handleTaglineBlur}
                                 className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                                 rows={4}
                                 placeholder="Edit your tagline here..."
@@ -383,20 +433,7 @@ const TaglineGenerator: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
-                            {/*
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Writing style</label>
-                                <select
-                                    value={style}
-                                    onChange={e => setStyle(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="visionary">Visionary</option>
-                                    <option value="punchy">Punchy</option>
-                                    <option value="straightforward">Straightforward</option>
-                                </select>
-                            </div>
-*/}
+
                             <button
                                 onClick={generateTaglines}
                                 disabled={isGenerating}

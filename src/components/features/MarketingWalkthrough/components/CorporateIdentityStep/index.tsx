@@ -262,23 +262,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             });
 
             const requestBody = {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                mode: 'missionVision',
-=======
                 mode: 'mission-vision',
->>>>>>> Stashed changes
-=======
-                mode: 'mission-vision',
->>>>>>> Stashed changes
-=======
-                mode: 'mission-vision',
->>>>>>> Stashed changes
-=======
-                mode: 'mission-vision',
->>>>>>> Stashed changes
                 data: {
                     companyName,
                     audience,
@@ -362,23 +346,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             console.log('🔍 formData.valueProp:', formData.valueProp);
 
             const requestBody = {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                mode: 'adaptBoilerplate',
-=======
                 mode: 'adapt-boilerplate',
->>>>>>> Stashed changes
-=======
-                mode: 'adapt-boilerplate',
->>>>>>> Stashed changes
-=======
-                mode: 'adapt-boilerplate',
->>>>>>> Stashed changes
-=======
-                mode: 'adapt-boilerplate',
->>>>>>> Stashed changes
                 data: {
                     businessName,
                     description,
@@ -460,23 +428,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             }
 
             const requestBody = {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                mode: 'tagline',
-=======
                 mode: 'taglines',
->>>>>>> Stashed changes
-=======
-                mode: 'taglines',
->>>>>>> Stashed changes
-=======
-                mode: 'taglines',
->>>>>>> Stashed changes
-=======
-                mode: 'taglines',
->>>>>>> Stashed changes
                 data: {
                     businessName,
                     description,
