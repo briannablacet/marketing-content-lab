@@ -6,7 +6,7 @@ import { Card } from '../../ui/card';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
 import StrategicDataService from '../../../services/StrategicDataService';
 import { useRouter } from 'next/router';
-import { Loader2, FileText, CheckCircle, Save, Plus, X } from 'lucide-react';
+import { Loader2, FileText, CheckCircle, Save, Plus, X, Sparkles } from 'lucide-react';
 import PageLayout from '../../shared/PageLayout';
 
 // Update type definitions
@@ -616,7 +616,10 @@ const BoilerplateGenerator: React.FC = () => {
                                             : 'Generating Multiple Length Options...'}
                                     </>
                                 ) : (
-                                    `Generate ${selectedWordCount}-Word Options`
+                                    <>
+                                        <Sparkles className="w-5 h-5 mr-2 text-white" />
+                                        {`Generate ${selectedWordCount}-Word Options`}
+                                    </>
                                 )}
                             </button>
                         </div>
