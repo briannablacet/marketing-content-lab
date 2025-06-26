@@ -4,10 +4,32 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CONTENT_TYPES } from '../../../data/contentTypesData';
 import { useContent } from '../../../context/ContentContext';
 import { PlusCircle, ChevronRight, Sparkles, RefreshCw, Download, CheckCircle, Edit, Save } from 'lucide-react';
+import { useWritingStyle } from '../../../context/WritingStyleContext';
+import { applyWritingStyle, applyHeadingCase } from '../../../utils/StyleGuides';
+
+// Type adapter to fix compatibility between context and StyleGuides WritingStyle
+const adaptWritingStyle = (contextStyle: any) => {
+  if (!contextStyle) return {};
+  
+  return {
+    styleGuide: contextStyle.styleGuide,
+    formatting: {
+      headingCase: contextStyle.formatting?.headingCase as 'upper' | 'lower' | 'sentence' | 'title' | undefined,
+      numberFormat: contextStyle.formatting?.numberFormat as 'numerals' | 'words' | 'mixed' | undefined,
+      dateFormat: contextStyle.formatting?.dateFormat as 'american' | 'international' | 'iso' | undefined,
+      listStyle: contextStyle.formatting?.listStyle as 'bullets' | 'numbers' | undefined,
+    },
+    punctuation: contextStyle.punctuation,
+    terminology: contextStyle.terminology,
+  };
+};
 
 const ContentStrategyModule = ({ onViewChange }) => {
   // Use the content context
   const { selectedContentTypes, setSelectedContentTypes } = useContent();
+  
+  // Add writing style context
+  const { writingStyle } = useWritingStyle();
   
   // State for steps - simplified to just two steps
   const [currentView, setCurrentView] = useState('selection');
@@ -117,23 +139,105 @@ const ContentStrategyModule = ({ onViewChange }) => {
       const metadata = contentMetadata[contentType] || {};
       const keyMessages = metadata.keyMessages || [''];
       
+      // Get the actual selected style guide configuration
+      const selectedStyleGuide = writingStyle?.styleGuide?.primary || 'Chicago Manual of Style';
+      const styleGuideRules = getStyleGuideRules(selectedStyleGuide);
+      
+      // Apply the actual style guide rules, not just simple case transformations
+      const applyStyleGuideRules = (text) => {
+        if (!text) return text;
+        
+        let formattedText = text;
+        
+        // Apply style guide specific rules
+        if (styleGuideRules) {
+          // Apply heading case based on style guide
+          if (styleGuideRules.formatting.headings) {
+            const headingCase = styleGuideRules.formatting.headings;
+            if (headingCase === 'Sentence case') {
+              formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1).toLowerCase();
+            } else if (headingCase === 'Title Case') {
+              formattedText = formattedText.replace(/\w\S*/g, (txt) =>
+                txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+              );
+            } else if (headingCase === 'ALL CAPS') {
+              formattedText = formattedText.toUpperCase();
+            }
+          }
+          
+          // Apply number formatting based on style guide
+          if (styleGuideRules.formatting.numbers) {
+            const numberRule = styleGuideRules.formatting.numbers;
+            if (numberRule === 'Spell out numbers under 10') {
+              formattedText = formattedText.replace(/\b([0-9])\b/g, (match) => {
+                const num = parseInt(match);
+                if (num < 10) {
+                  const wordMap = { 0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine' };
+                  return wordMap[num] || match;
+                }
+                return match;
+              });
+            } else if (numberRule === 'Always use numerals') {
+              const numberMap = { 'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10' };
+              Object.entries(numberMap).forEach(([word, numeral]) => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                formattedText = formattedText.replace(regex, numeral);
+              });
+            }
+          }
+          
+          // Apply punctuation rules
+          if (styleGuideRules.punctuation) {
+            if (styleGuideRules.punctuation.oxfordComma === false) {
+              // Remove Oxford comma
+              formattedText = formattedText.replace(/(\w+), (\w+), and (\w+)/g, '$1, $2 and $3');
+            } else if (styleGuideRules.punctuation.oxfordComma === true) {
+              // Add Oxford comma
+              formattedText = formattedText.replace(/(\w+), (\w+) and (\w+)/g, '$1, $2, and $3');
+            }
+          }
+        }
+        
+        return formattedText;
+      };
+      
+      // Apply heading case based on user's style guide selection
+      const applyHeadingStyle = (text) => {
+        const headingCase = writingStyle?.formatting?.headingCase;
+        if (!headingCase) return text;
+        
+        switch (headingCase) {
+          case 'upper':
+            return text.toUpperCase();
+          case 'lower':
+            return text.toLowerCase();
+          case 'sentence':
+            return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+          case 'title':
+          default:
+            return text.replace(/\w\S*/g, (txt) =>
+              txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+            );
+        }
+      };
+      
       // Generate different content based on content type
       const sampleContent = {
         'Blog Posts': {
-          title: metadata.name || 'Sample Blog Post',
+          title: applyHeadingStyle(metadata.name || 'Sample Blog Post'),
           sections: [
             {
-              heading: 'Introduction',
-              content: 'This is a sample introduction for your blog post about ' + 
-                (metadata.name || contentType) + '.'
+              heading: applyHeadingStyle('Introduction'),
+              content: applyStyleGuideRules('This is a sample introduction for your blog post about ' + 
+                (metadata.name || contentType) + '.')
             },
             {
-              heading: 'Key Points',
-              content: keyMessages.join('\n\n') || 'Key message content would go here.'
+              heading: applyHeadingStyle('Key Points'),
+              content: applyStyleGuideRules(keyMessages.join('\n\n') || 'Key message content would go here.')
             },
             {
-              heading: 'Conclusion',
-              content: 'This concludes our discussion on this topic. For more information, please contact us.'
+              heading: applyHeadingStyle('Conclusion'),
+              content: applyStyleGuideRules('This concludes our discussion on this topic. For more information, please contact us.')
             }
           ]
         },
@@ -142,15 +246,15 @@ const ContentStrategyModule = ({ onViewChange }) => {
             {
               name: 'LinkedIn',
               posts: [
-                (keyMessages[0] || '') + ' #business #professional',
-                'Did you know? ' + (metadata.name || '') + ' is essential for your business growth. Learn more on our website!'
+                applyStyleGuideRules((keyMessages[0] || '') + ' #business #professional'),
+                applyStyleGuideRules('Did you know? ' + (metadata.name || '') + ' is essential for your business growth. Learn more on our website!')
               ]
             },
             {
               name: 'Twitter',
               posts: [
-                keyMessages[0] ? keyMessages[0].substring(0, 180) + ' #tweet' : 'Check out our latest insights!',
-                'New content alert: ' + (metadata.name || '') + ' - read more on our blog!'
+                applyStyleGuideRules(keyMessages[0] ? keyMessages[0].substring(0, 180) + ' #tweet' : 'Check out our latest insights!'),
+                applyStyleGuideRules('New content alert: ' + (metadata.name || '') + ' - read more on our blog!')
               ]
             }
           ]
@@ -158,83 +262,83 @@ const ContentStrategyModule = ({ onViewChange }) => {
         'Email Campaigns': {
           emails: [
             {
-              subject: 'Introducing: ' + (metadata.name || ''),
-              body: 'Dear [Customer],\n\nWe\'re excited to share our latest insights on ' + 
+              subject: applyHeadingStyle('Introducing: ' + (metadata.name || '')),
+              body: applyStyleGuideRules('Dear [Customer],\n\nWe\'re excited to share our latest insights on ' + 
                 (metadata.name || '') + '.\n\n' +
-                (keyMessages.join('\n\n') || '') + '\n\nBest regards,\nYour Company'
+                (keyMessages.join('\n\n') || '') + '\n\nBest regards,\nYour Company')
             },
             {
-              subject: 'Follow-up: ' + (metadata.name || ''),
-              body: 'Dear [Customer],\n\nJust checking in to see if you had a chance to review our information about ' + 
-                (metadata.name || '') + '.\n\nLet us know if you have any questions.\n\nBest regards,\nYour Company'
+              subject: applyHeadingStyle('Follow-up: ' + (metadata.name || '')),
+              body: applyStyleGuideRules('Dear [Customer],\n\nJust checking in to see if you had a chance to review our information about ' + 
+                (metadata.name || '') + '.\n\nLet us know if you have any questions.\n\nBest regards,\nYour Company')
             }
           ]
         },
         'eBooks & White Papers': {
-          title: metadata.name || 'Sample eBook',
+          title: applyHeadingStyle(metadata.name || 'Sample eBook'),
           chapters: [
-            'Introduction to ' + (metadata.name || ''),
-            'Key Concepts and Strategies',
-            'Implementation Guide',
-            'Case Studies and Results',
-            'Conclusion and Next Steps'
+            applyHeadingStyle('Introduction to ' + (metadata.name || '')),
+            applyHeadingStyle('Key Concepts and Strategies'),
+            applyHeadingStyle('Implementation Guide'),
+            applyHeadingStyle('Case Studies and Results'),
+            applyHeadingStyle('Conclusion and Next Steps')
           ],
-          summary: 'This comprehensive guide covers everything you need to know about ' + 
+          summary: applyStyleGuideRules('This comprehensive guide covers everything you need to know about ' + 
             (metadata.name || '') + '. This resource addresses: ' + 
-            (keyMessages.join(', ') || 'key topics in your industry') + '.'
+            (keyMessages.join(', ') || 'key topics in your industry') + '.')
         },
         'Landing Pages': {
-          title: metadata.name || 'Sample Landing Page',
-          headline: keyMessages[0] || 'Transform Your Business Today',
-          subheadline: metadata.name ? `Discover how ${metadata.name} can help you succeed` : 'Discover how our solution can help you succeed',
+          title: applyHeadingStyle(metadata.name || 'Sample Landing Page'),
+          headline: applyHeadingStyle(keyMessages[0] || 'Transform Your Business Today'),
+          subheadline: applyStyleGuideRules(metadata.name ? `Discover how ${metadata.name} can help you succeed` : 'Discover how our solution can help you succeed'),
           sections: [
             {
-              heading: 'Benefits',
-              points: keyMessages.map(msg => msg || 'Key benefit point')
+              heading: applyHeadingStyle('Benefits'),
+              points: keyMessages.map(msg => applyStyleGuideRules(msg || 'Key benefit point'))
             },
             {
-              heading: 'Features',
-              points: ['Feature 1', 'Feature 2', 'Feature 3']
+              heading: applyHeadingStyle('Features'),
+              points: [applyStyleGuideRules('Feature 1'), applyStyleGuideRules('Feature 2'), applyStyleGuideRules('Feature 3')]
             }
           ],
-          cta: 'Get Started Now'
+          cta: applyStyleGuideRules('Get Started Now')
         },
         'Case Studies': {
-          title: metadata.name || 'Sample Case Study',
+          title: applyHeadingStyle(metadata.name || 'Sample Case Study'),
           clientName: 'Acme Corporation',
           industry: 'Technology',
-          challenge: 'Acme was struggling with ' + (keyMessages[0] || 'a specific challenge'),
-          solution: 'We implemented a comprehensive solution that addressed their needs by ' + (keyMessages[1] || 'providing specific capabilities'),
+          challenge: applyStyleGuideRules('Acme was struggling with ' + (keyMessages[0] || 'a specific challenge')),
+          solution: applyStyleGuideRules('We implemented a comprehensive solution that addressed their needs by ' + (keyMessages[1] || 'providing specific capabilities')),
           results: [
-            '35% increase in efficiency',
-            '45% reduction in costs',
-            'Improved customer satisfaction scores'
+            applyStyleGuideRules('35% increase in efficiency'),
+            applyStyleGuideRules('45% reduction in costs'),
+            applyStyleGuideRules('Improved customer satisfaction scores')
           ],
-          testimonial: `"${metadata.name || 'This solution'} has transformed how we operate. We're seeing incredible results across all our KPIs." - CEO, Acme Corp`
+          testimonial: applyStyleGuideRules(`"${metadata.name || 'This solution'} has transformed how we operate. We're seeing incredible results across all our KPIs." - CEO, Acme Corp`)
         },
         'Whitepapers': {
-          title: metadata.name || 'Industry Whitepaper',
-          abstract: keyMessages[0] || 'This whitepaper explores key industry trends and provides actionable insights.',
+          title: applyHeadingStyle(metadata.name || 'Industry Whitepaper'),
+          abstract: applyStyleGuideRules(keyMessages[0] || 'This whitepaper explores key industry trends and provides actionable insights.'),
           sections: [
             {
-              heading: 'Executive Summary',
-              content: 'This whitepaper examines ' + (metadata.name || 'important industry trends') + ' and their impact on business operations.'
+              heading: applyHeadingStyle('Executive Summary'),
+              content: applyStyleGuideRules('This whitepaper examines ' + (metadata.name || 'important industry trends') + ' and their impact on business operations.')
             },
             {
-              heading: 'Industry Challenges',
-              content: (keyMessages[1] || 'Organizations face numerous challenges') + ' in today\'s rapidly evolving landscape.'
+              heading: applyHeadingStyle('Industry Challenges'),
+              content: applyStyleGuideRules((keyMessages[1] || 'Organizations face numerous challenges') + ' in today\'s rapidly evolving landscape.')
             },
             {
-              heading: 'Solution Approach',
-              content: 'A strategic approach combining technology and process optimization can address these challenges effectively.'
+              heading: applyHeadingStyle('Solution Approach'),
+              content: applyStyleGuideRules('A strategic approach combining technology and process optimization can address these challenges effectively.')
             },
             {
-              heading: 'Implementation Framework',
-              content: 'We recommend a phased implementation focusing on key areas of opportunity.'
+              heading: applyHeadingStyle('Implementation Framework'),
+              content: applyStyleGuideRules('We recommend a phased implementation focusing on key areas of opportunity.')
             },
             {
-              heading: 'Conclusion',
-              content: 'By adopting these strategies, organizations can position themselves for success in an increasingly competitive environment.'
+              heading: applyHeadingStyle('Conclusion'),
+              content: applyStyleGuideRules('By adopting these strategies, organizations can position themselves for success in an increasingly competitive environment.')
             }
           ]
         }
@@ -243,22 +347,22 @@ const ContentStrategyModule = ({ onViewChange }) => {
       // For any other content type, create a reasonable structure
       if (!sampleContent[contentType]) {
         sampleContent[contentType] = {
-          title: metadata.name || contentType,
-          description: keyMessages[0] || 'Main content description goes here',
-          mainContent: 'This is the primary content for ' + (metadata.name || contentType) + '. ' + 
-                      'It incorporates key messages and focuses on delivering value to the target audience.',
+          title: applyHeadingStyle(metadata.name || contentType),
+          description: applyStyleGuideRules(keyMessages[0] || 'Main content description goes here'),
+          mainContent: applyStyleGuideRules('This is the primary content for ' + (metadata.name || contentType) + '. ' + 
+                      'It incorporates key messages and focuses on delivering value to the target audience.'),
           sections: [
             {
-              heading: 'Main Section',
-              content: 'This section explores the key aspects of ' + (metadata.name || contentType) + '.'
+              heading: applyHeadingStyle('Main Section'),
+              content: applyStyleGuideRules('This section explores the key aspects of ' + (metadata.name || contentType) + '.')
             },
             {
-              heading: 'Benefits',
-              content: keyMessages.join('\n\n') || 'List of benefits would appear here.'
+              heading: applyHeadingStyle('Benefits'),
+              content: applyStyleGuideRules(keyMessages.join('\n\n') || 'List of benefits would appear here.')
             },
             {
-              heading: 'Conclusion',
-              content: 'Final thoughts and next steps regarding ' + (metadata.name || contentType) + '.'
+              heading: applyHeadingStyle('Conclusion'),
+              content: applyStyleGuideRules('Final thoughts and next steps regarding ' + (metadata.name || contentType) + '.')
             }
           ]
         };
@@ -628,6 +732,22 @@ const ContentStrategyModule = ({ onViewChange }) => {
                   )}
                 </button>
               </div>
+              
+              {/* Style Guide Indicator */}
+              {writingStyle?.styleGuide?.primary && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                    <span>
+                      Content will be generated using <strong>{writingStyle.styleGuide.primary}</strong> style guide
+                      {styleGuideRules?.formatting?.headings && ` with ${styleGuideRules.formatting.headings} headings`}
+                      {styleGuideRules?.formatting?.numbers && ` and ${styleGuideRules.formatting.numbers}`}
+                      {styleGuideRules?.punctuation?.oxfordComma !== undefined && 
+                        ` (Oxford comma: ${styleGuideRules.punctuation.oxfordComma ? 'Yes' : 'No'})`}
+                    </span>
+                  </div>
+                </div>
+              )}
               
               {/* Generated content preview with specialized formatting for each content type */}
               {generatedContent[contentType] && (

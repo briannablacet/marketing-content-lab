@@ -305,8 +305,12 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           tone: "professional",
           currentFramework: framework
         },
-        // Include writing style data for style guide compliance
-        writingStyle: writingStyle
+        // Pass strategic data for comprehensive style guide application
+        strategicData: {
+          writingStyle: writingStyle,
+          brandVoice: null,
+          messaging: null
+        }
       };
 
       // Set up abort controller for timeout
@@ -321,9 +325,9 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           'Authorization': `Bearer ${safeLocalStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          mode: 'keyMessages',
+          mode: 'key-messages',
           data: requestBody.data,
-          writingStyle: writingStyle
+          strategicData: requestBody.strategicData
         }),
         signal: controller.signal
       });

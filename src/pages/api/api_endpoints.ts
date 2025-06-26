@@ -536,7 +536,6 @@ Important: Return ONLY the JSON array, no explanations or additional text.`;
     } catch {
       // Try to extract JSON array from the text
       const match = personasText.match(/\[[\s\S]*\]/);
-      const match = personasText.match(/\[[\s\S]*\]/);
       if (match) {
         try {
           parsed = JSON.parse(match[0]);
