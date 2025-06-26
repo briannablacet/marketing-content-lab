@@ -1,6 +1,8 @@
 // src/components/features/ProsePerfector/index.tsx
 import React, { useState, useRef } from "react";
 import { useNotification } from "../../../context/NotificationContext";
+import { useWritingStyle } from "../../../context/WritingStyleContext";
+import StrategicDataService from "../../../services/StrategicDataService";
 import {
   X,
   Loader,
@@ -28,6 +30,7 @@ const STYLE_GUIDES = [
 // Main component
 const ProsePerfector: React.FC = () => {
   const { showNotification } = useNotification();
+  const { writingStyle } = useWritingStyle();
 
   // Local state
   const [enhancedText, setEnhancedText] = useState("");
@@ -71,6 +74,9 @@ const ProsePerfector: React.FC = () => {
         STYLE_GUIDES.find((sg) => sg.id === options.styleGuide)?.name ||
         "Chicago Manual of Style";
 
+      // Get strategic data
+      const strategicData = await StrategicDataService.getAllStrategicData();
+
       // Call the API endpoint to process the text
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
@@ -86,6 +92,8 @@ const ProsePerfector: React.FC = () => {
               ...options,
               styleGuide: styleGuideName,
             },
+            writingStyle: writingStyle || null,
+            strategicData: strategicData
           },
         }),
       });

@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../ui/card';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
+import { useWritingStyle } from '../../../context/WritingStyleContext';
 import StrategicDataService from '../../../services/StrategicDataService';
 import { useRouter } from 'next/router';
 import { Loader2, FileText, CheckCircle, Save, Plus, X } from 'lucide-react';
@@ -74,6 +75,7 @@ const BoilerplateGenerator: React.FC = () => {
     const [generationStep, setGenerationStep] = useState<'initial' | 'adapting'>('initial');
 
     const { brandVoice } = useBrandVoice();
+    const { writingStyle } = useWritingStyle();
     const router = useRouter();
 
     // Load saved boilerplates when component mounts
@@ -159,7 +161,9 @@ const BoilerplateGenerator: React.FC = () => {
             archetype: brandVoice?.brandVoice?.archetype || '',
             personality: brandVoice?.brandVoice?.personality || [],
             wordCount: selectedWordCount,
-            numOptions: 3  // Request 3 different options
+            numOptions: 3,  // Request 3 different options
+            writingStyle: writingStyle || null,
+            strategicData: await StrategicDataService.getAllStrategicData()
         };
 
         try {
@@ -202,7 +206,9 @@ const BoilerplateGenerator: React.FC = () => {
                     archetype: brandVoice?.brandVoice?.archetype || '',
                     personality: brandVoice?.brandVoice?.personality || [],
                     wordCount: count,
-                    baseBoilerplate  // Pass the selected boilerplate to adapt
+                    baseBoilerplate,  // Pass the selected boilerplate to adapt
+                    writingStyle: writingStyle || null,
+                    strategicData: await StrategicDataService.getAllStrategicData()
                 };
 
                 const response = await fetch('/api/api_endpoints', {

@@ -67,7 +67,7 @@ interface WritingStyleContextType {
       avoidedTerms?: string[];
     };
   };
-  updateWritingStyle: (updates: Partial<WritingStyleData>) => void;
+  updateWritingStyle: (updates: any) => void;
   applyStyleGuideRules: (styleName: string) => void;
   resetToDefaultStyle: () => void;
   isStyleConfigured: boolean;
@@ -82,6 +82,7 @@ interface NotificationType {
 interface ContentState {
   original: string;
   enhanced: string;
+  humanized: string;
   processing: boolean;
   error: string | null;
   progress: number;
@@ -111,6 +112,7 @@ const ContentHumanizer: React.FC = () => {
   const [content, setContent] = useState<ContentState>({
     original: '',
     enhanced: '',
+    humanized: '',
     processing: false,
     error: null,
     progress: 0,
@@ -320,12 +322,6 @@ const ContentHumanizer: React.FC = () => {
       return;
     }
 
-    // Validate content length
-    if (content.original.length > 10000) {
-      showNotification('Content length exceeds maximum limit of 10,000 characters', 'error');
-      return;
-    }
-
     setContent(prev => ({
       ...prev,
       processing: true,
@@ -342,21 +338,28 @@ const ContentHumanizer: React.FC = () => {
         }));
       }, 500);
 
+      // Get strategic data
+      const strategicDataFromService = await StrategicDataService.getAllStrategicData();
+
       // Create the request payload
       const requestData = {
         content: content.original,
         parameters: {
           ...options,
-          styleGuideParameters: writingStyle.styleGuide ? {
-            primary: writingStyle.styleGuide.primary,
-            customRules: writingStyle.styleGuide.customRules
-          } : undefined
+          styleGuideParameters: writingStyle ? {
+            primary: writingStyle.styleGuide?.primary,
+            customRules: writingStyle.styleGuide?.customRules,
+            formatting: writingStyle.formatting,
+            punctuation: writingStyle.punctuation
+          } : undefined,
+          strategicData: strategicDataFromService
         }
       };
 
       // Add strategic data if available
       if (hasStrategicData && strategicData?.isComplete) {
         requestData.parameters.strategicData = {
+          ...requestData.parameters.strategicData,
           product: strategicData.product,
           brandVoice: strategicData.brandVoice,
           writingStyle: strategicData.writingStyle
@@ -395,59 +398,25 @@ const ContentHumanizer: React.FC = () => {
       setViolations(styleViolations);
 
       // If the API doesn't provide changes, generate some samples
-      const changes: Array<{ original: string; modified: string; reason: string }> = responseData.changes || generateSampleChanges(content.original, responseData.content);
+      const changes = responseData.changes || generateSampleChanges(content.original, responseData.content);
 
       setContent(prev => ({
         ...prev,
         enhanced: responseData.content,
-        processing: false,
-        progress: 100,
         changes: changes,
-        statistics: {
-          ...prev.statistics,
-          enhancedLength: responseData.content.length,
-          readabilityScore: responseData.readabilityScore || Math.floor(Math.random() * 20) + 80,
-          styleCompliance: styleViolations.length ?
-            100 - (styleViolations.length * 5) : 100,
-          humanityScore: responseData.humanityScore || Math.floor(Math.random() * 15) + 80
-        }
-      }));
-
-      showNotification('Content humanized successfully', 'success');
-      setShowComparison(true);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to humanize content. Please try again.';
-      showNotification(errorMessage, 'error');
-      setContent(prev => ({
-        ...prev,
-        processing: false,
-        error: errorMessage,
-        progress: 0
-      }));
-
-      // For demonstration/fallback purposes, create a humanized version here
-      // This would be removed once API integration is complete
-      const fallbackHumanized = createFallbackHumanizedContent(content.original);
-
-      setContent(prev => ({
-        ...prev,
-        enhanced: fallbackHumanized.content,
-        changes: fallbackHumanized.changes,
-        statistics: {
-          ...prev.statistics,
-          enhancedLength: fallbackHumanized.content.length,
-          readabilityScore: 85,
-          humanityScore: 88
-        }
-      }));
-
-      setShowComparison(true);
-    } finally {
-      setContent(prev => ({
-        ...prev,
         processing: false,
         progress: 100
       }));
+
+      showNotification('Content humanized successfully! ✨', 'success');
+    } catch (error) {
+      console.error('Error humanizing content:', error);
+      setContent(prev => ({
+        ...prev,
+        processing: false,
+        error: error instanceof Error ? error.message : 'Failed to humanize content'
+      }));
+      showNotification('Failed to humanize content', 'error');
     }
   };
 

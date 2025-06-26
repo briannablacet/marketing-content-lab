@@ -58,6 +58,17 @@ const ABTestGenerator: React.FC = () => {
         setSavedVariations(false);
 
         try {
+            // Get writing style data from localStorage
+            const writingStyleData = localStorage.getItem('marketing-content-lab-writing-style');
+            let writingStyle = null;
+            if (writingStyleData) {
+                try {
+                    writingStyle = JSON.parse(writingStyleData);
+                } catch (e) {
+                    console.error('Error parsing writing style data:', e);
+                }
+            }
+
             const response = await fetch(`/api/api_endpoints`, {
                 method: 'POST',
                 headers: {
@@ -71,7 +82,8 @@ const ABTestGenerator: React.FC = () => {
                         contentContext,
                         targetAudience,
                         numVariations
-                    }
+                    },
+                    writingStyle: writingStyle
                 }),
             });
 

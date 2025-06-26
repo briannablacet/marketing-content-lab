@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
 import { useRouter } from 'next/router';
+import { useWritingStyle } from '../../../../../context/WritingStyleContext';
+import { applyWritingStyle, applyHeadingCase } from '../../../../../utils/StyleGuides';
 
 // Define notification types
 type NotificationType = 'success' | 'error' | 'info' | 'warning';
@@ -46,11 +48,29 @@ const safeLocalStorage = {
   }
 };
 
+// Type adapter to fix compatibility between context and StyleGuides WritingStyle
+const adaptWritingStyle = (contextStyle: any) => {
+  if (!contextStyle) return {};
+  
+  return {
+    styleGuide: contextStyle.styleGuide,
+    formatting: {
+      headingCase: contextStyle.formatting?.headingCase as 'upper' | 'lower' | 'sentence' | 'title' | undefined,
+      numberFormat: contextStyle.formatting?.numberFormat as 'numerals' | 'words' | 'mixed' | undefined,
+      dateFormat: contextStyle.formatting?.dateFormat as 'american' | 'international' | 'iso' | undefined,
+      listStyle: contextStyle.formatting?.listStyle as 'bullets' | 'numbers' | undefined,
+    },
+    punctuation: contextStyle.punctuation,
+    terminology: contextStyle.terminology,
+  };
+};
+
 const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, setFormData }) => {
   console.log("🔍 Checking localStorage:", safeLocalStorage.getItem('marketingValueProp'));
 
   const { showNotification } = useNotification();
   const router = useRouter();
+  const { writingStyle } = useWritingStyle();
 
   const [framework, setFramework] = useState<MessageFramework>(() => {
     // Get value prop from localStorage on initial load
@@ -258,6 +278,17 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
         ? (framework.keyBenefits || []).filter(b => b.trim())
         : productInfo.benefits;
 
+      // Get writing style data from localStorage
+      const writingStyleData = safeLocalStorage.getItem('marketing-content-lab-writing-style');
+      let writingStyle = null;
+      if (writingStyleData) {
+        try {
+          writingStyle = JSON.parse(writingStyleData);
+        } catch (e) {
+          console.error('Error parsing writing style data:', e);
+        }
+      }
+
       // Prepare the request data with all required fields
       const requestBody = {
         type: "valueProposition",
@@ -273,7 +304,9 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           focusAreas: ["user", "business"],
           tone: "professional",
           currentFramework: framework
-        }
+        },
+        // Include writing style data for style guide compliance
+        writingStyle: writingStyle
       };
 
       // Set up abort controller for timeout
@@ -288,24 +321,9 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
           'Authorization': `Bearer ${safeLocalStorage.getItem('token')}`
         },
         body: JSON.stringify({
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
           mode: 'keyMessages',
-=======
-          mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-          mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-          mode: 'key-messages',
->>>>>>> Stashed changes
-=======
-          mode: 'key-messages',
->>>>>>> Stashed changes
-          data: requestBody.data
+          data: requestBody.data,
+          writingStyle: writingStyle
         }),
         signal: controller.signal
       });
@@ -687,7 +705,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
             <div className="relative">
               <div className="p-4 bg-gray-50 rounded-lg border mb-2 text-lg">
                 {framework.valueProposition || safeLocalStorage.getItem('marketingValueProp') ?
-                  (framework.valueProposition || safeLocalStorage.getItem('marketingValueProp')) : (
+                  applyWritingStyle(framework.valueProposition || safeLocalStorage.getItem('marketingValueProp') || '', adaptWritingStyle(writingStyle)) : (
                     <span className="text-gray-400 italic">No value proposition added yet</span>
                   )}
               </div>
@@ -822,7 +840,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                 <div>
                   <h4 className="font-medium mb-2 text-blue-800">Enhanced Value Proposition</h4>
                   <div className="p-3 bg-white rounded-lg border border-blue-100">
-                    {aiSuggestions.valueProposition}
+                    {applyWritingStyle(aiSuggestions.valueProposition, adaptWritingStyle(writingStyle))}
                     <div className="mt-4">
                       <button
                         onClick={() => {
@@ -845,7 +863,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                   {aiSuggestions.pillar1 && (
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 1</div>
-                      {aiSuggestions.pillar1}
+                      {applyWritingStyle(aiSuggestions.pillar1, adaptWritingStyle(writingStyle))}
                       <div className="mt-4">
                         <button
                           onClick={() => {
@@ -862,7 +880,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                   {aiSuggestions.pillar2 && (
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 2</div>
-                      {aiSuggestions.pillar2}
+                      {applyWritingStyle(aiSuggestions.pillar2, adaptWritingStyle(writingStyle))}
                       <div className="mt-4">
                         <button
                           onClick={() => {
@@ -879,7 +897,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                   {aiSuggestions.pillar3 && (
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <div className="font-medium text-sm text-blue-600">Pillar 3</div>
-                      {aiSuggestions.pillar3}
+                      {applyWritingStyle(aiSuggestions.pillar3, adaptWritingStyle(writingStyle))}
                       <div className="mt-4">
                         <button
                           onClick={() => {
@@ -902,7 +920,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                   <ul className="space-y-2">
                     {aiSuggestions.keyBenefits.map((benefit, index) => (
                       <li key={index} className="p-3 bg-white rounded-lg border border-blue-100">
-                        {benefit}
+                        {applyWritingStyle(benefit, adaptWritingStyle(writingStyle))}
                         <div className="mt-4">
                           <button
                             onClick={() => {
