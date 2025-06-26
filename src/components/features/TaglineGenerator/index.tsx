@@ -149,23 +149,7 @@ const TaglineGenerator: React.FC = () => {
             const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                body: JSON.stringify({ mode: 'tagline', data: payload })
-=======
                 body: JSON.stringify({ mode: 'taglines', data: payload })
->>>>>>> Stashed changes
-=======
-                body: JSON.stringify({ mode: 'taglines', data: payload })
->>>>>>> Stashed changes
-=======
-                body: JSON.stringify({ mode: 'taglines', data: payload })
->>>>>>> Stashed changes
-=======
-                body: JSON.stringify({ mode: 'taglines', data: payload })
->>>>>>> Stashed changes
             });
 
             if (!response.ok) {
@@ -357,7 +341,7 @@ const TaglineGenerator: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">What problem are you solving?</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">What is your brand's "promise" to its customers?</label>
                                 <input
                                     type="text"
                                     value={promise}
@@ -399,7 +383,7 @@ const TaglineGenerator: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
-
+{/*
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Writing style</label>
                                 <select
@@ -412,7 +396,7 @@ const TaglineGenerator: React.FC = () => {
                                     <option value="straightforward">Straightforward</option>
                                 </select>
                             </div>
-
+*/}
                             <button
                                 onClick={generateTaglines}
                                 disabled={isGenerating}
@@ -424,7 +408,10 @@ const TaglineGenerator: React.FC = () => {
                                         Generating...
                                     </>
                                 ) : (
-                                    'Generate Taglines'
+                                    <>
+                                        <Sparkles className="w-5 h-5 mr-2 text-white" />
+                                        Generate Taglines
+                                    </>
                                 )}
                             </button>
                         </div>
