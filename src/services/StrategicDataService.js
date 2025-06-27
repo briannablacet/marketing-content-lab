@@ -47,6 +47,91 @@ const setStrategicDataValue = (key, value) => {
     return false;
 };
 
+// FIXED: Add the missing enrichContentRequest function
+const enrichContentRequest = async (requestData) => {
+    try {
+        console.log('🔄 Enriching content request with strategic data...');
+        
+        // Get all strategic data
+        const allStrategicData = StrategicDataService.getAllStrategicData();
+        
+        // Get writing style from localStorage
+        const writingStyleRaw = safeLocalStorage.getItem('marketing-content-lab-writing-style');
+        const writingStyle = writingStyleRaw ? JSON.parse(writingStyleRaw) : null;
+        
+        // Get brand voice from localStorage
+        const brandVoiceRaw = safeLocalStorage.getItem('marketing-content-lab-brand-voice');
+        const brandVoice = brandVoiceRaw ? JSON.parse(brandVoiceRaw) : null;
+        
+        // Get messaging framework
+        const messagingRaw = safeLocalStorage.getItem('messageFramework');
+        const messaging = messagingRaw ? JSON.parse(messagingRaw) : null;
+        
+        console.log('📦 Writing style found:', writingStyle);
+        console.log('📦 Brand voice found:', brandVoice);
+        console.log('📦 Messaging found:', messaging);
+        
+        // Enrich the request data with strategic information
+        const enrichedData = {
+            ...requestData,
+            strategicData: {
+                product: allStrategicData.product || {},
+                audiences: allStrategicData.audiences || [],
+                messaging: messaging || allStrategicData.messaging || {},
+                brandVoice: brandVoice || allStrategicData.brandVoice || {},
+                writingStyle: writingStyle || allStrategicData.styleGuide || {},
+                vision: allStrategicData.vision || '',
+                mission: allStrategicData.mission || '',
+                valueProposition: allStrategicData.valueProposition || '',
+                differentiators: allStrategicData.differentiators || [],
+                persona: allStrategicData.persona || {},
+                tagline: allStrategicData.tagline || '',
+                boilerplates: allStrategicData.boilerplates || {},
+                brandArchetype: allStrategicData.brandArchetype || '',
+                competitiveAnalysis: allStrategicData.competitiveAnalysis || []
+            }
+        };
+        
+        // If the request already has writingStyle, merge it with the strategic data
+        if (requestData.writingStyle && writingStyle) {
+            enrichedData.writingStyle = {
+                ...writingStyle,
+                ...requestData.writingStyle
+            };
+        } else if (writingStyle) {
+            enrichedData.writingStyle = writingStyle;
+        }
+        
+        // If the request already has brandVoice, merge it with the strategic data
+        if (requestData.brandVoice && brandVoice) {
+            enrichedData.brandVoice = {
+                ...brandVoice,
+                ...requestData.brandVoice
+            };
+        } else if (brandVoice) {
+            enrichedData.brandVoice = brandVoice;
+        }
+        
+        // If the request already has messaging, merge it with the strategic data
+        if (requestData.messaging && messaging) {
+            enrichedData.messaging = {
+                ...messaging,
+                ...requestData.messaging
+            };
+        } else if (messaging) {
+            enrichedData.messaging = messaging;
+        }
+        
+        console.log('✅ Enriched request data:', enrichedData);
+        return enrichedData;
+        
+    } catch (error) {
+        console.error('❌ Error enriching content request:', error);
+        // Return original data if enrichment fails
+        return requestData;
+    }
+};
+
 const StrategicDataService = {
     getAllStrategicDataFromStorage: () => {
         const product = JSON.parse(safeLocalStorage.getItem('marketingProduct') || '{}');
@@ -82,6 +167,7 @@ const StrategicDataService = {
 
     get: getStrategicData,
     setStrategicDataValue,
+    enrichContentRequest, // FIXED: Export the enrichContentRequest function
 
     // Product Info
     getProductInfo: () => strategicData.productInfo || {},
@@ -234,7 +320,8 @@ const StrategicDataService = {
             boilerplates: strategicData.boilerplates,
             brandArchetype: strategicData.brandArchetype,
             competitiveAnalysis: strategicData.competitiveAnalysis,
-            styleGuide: strategicData.styleGuide
+            styleGuide: strategicData.styleGuide,
+            writingStyle: null // FIXED: Initialize writingStyle property
         };
 
         // Load writing style from localStorage

@@ -14,6 +14,7 @@ import ContentEditChat from "../../components/features/ContentEditChat";
 import StrategicDataService from "../../services/StrategicDataService";
 import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../utils/exportUtils';
 import ReactMarkdown from 'react-markdown';
+import { parseMarkdownWithStyle, applyHeadingCase } from '../../utils/StyleGuides';
 
 import {
   ArrowLeft,
@@ -730,7 +731,7 @@ const ContentCreatorPage = () => {
 
       // Main title
       if (line.startsWith("# ") && !title) {
-        title = applyHeadingCase(line.substring(2).trim());
+        title = applyHeadingCase(line.substring(2).trim(), writingStyle?.formatting?.headingCase);
         continue;
       }
 
@@ -742,7 +743,7 @@ const ContentCreatorPage = () => {
         // Remove either ## or ###
         const headingText = line.replace(/^##+\s*/, "");
         currentSection = {
-          title: applyHeadingCase(headingText.trim()),
+          title: applyHeadingCase(headingText.trim(), writingStyle?.formatting?.headingCase),
           content: "",
         };
         inIntro = false;
@@ -765,33 +766,13 @@ const ContentCreatorPage = () => {
     return { title, introduction: introduction.trim(), sections };
   };
 
-  // FIXED: Apply heading case formatting based on writing style
-  const applyHeadingCase = (text: string): string => {
-    const headingCase = writingStyle?.formatting?.headingCase || 'title';
-
-    switch (headingCase) {
-      case 'upper':
-        return text.toUpperCase();
-      case 'lower':
-        return text.toLowerCase();
-      case 'sentence':
-        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-      case 'title':
-      default:
-        // Title case
-        return text.replace(/\w\S*/g, (txt) =>
-          txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-        );
-    }
-  };
-
   // If content type is not loaded yet, show loading
   if (!contentType && router.isReady && type) {
     return <div className="p-8 text-center">Loading content type...</div>;
   }
 
-  // Parse the generated content for display
-  const parsedContent = parseMarkdown(generatedContent);
+  // When calling parseMarkdownWithStyle, ensure writingStyle is always defined
+  const parsedContent = parseMarkdownWithStyle(generatedContent, writingStyle || {});
 
   // Render tab contents based on active tab
   const renderTabContent = () => {
@@ -1416,7 +1397,7 @@ const ContentCreatorPage = () => {
                               fontSize: '18pt',
                               fontWeight: 'bold'
                             }}>
-                              {parsedContent.title || generatedTitle}
+                              {applyHeadingCase(parsedContent.title || generatedTitle, writingStyle?.formatting?.headingCase)}
                             </h1>
                           </div>
 
@@ -1453,7 +1434,7 @@ const ContentCreatorPage = () => {
                                 borderBottom: '1px solid #E5E7EB',
                                 paddingBottom: '3pt'
                               }}>
-                                {section.title}
+                                {applyHeadingCase(section.title, writingStyle?.formatting?.headingCase)}
                               </h2>
                               <div style={{ textAlign: 'justify' }}>
                                 {section.content

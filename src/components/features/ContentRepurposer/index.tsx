@@ -8,6 +8,7 @@ import { useBrandVoice } from '../../../context/BrandVoiceContext';
 import { useMessaging } from '../../../context/MessagingContext';
 import { ArrowRight, FileText, Copy, AlertCircle, Upload, X, Sparkles } from 'lucide-react';
 import FileHandler from "@/components/shared/FileHandler";
+import StrategicDataService from "@/services/StrategicDataService";
 
 const ContentRepurposer: React.FC = () => {
   const { showNotification } = useNotification();
@@ -85,6 +86,9 @@ const ContentRepurposer: React.FC = () => {
     setIsProcessing(true);
 
     try {
+      // Get strategic data
+      const strategicData = await StrategicDataService.getAllStrategicData();
+
       // Prepare writing style and messaging parameters
       const styleParameters = {
         styleGuide: writingStyle?.styleGuide?.primary || 'Default',
@@ -114,7 +118,9 @@ const ContentRepurposer: React.FC = () => {
             sourceFormat,
             targetFormat,
             styleGuide: styleParameters,
-            messaging: messagingParameters
+            messaging: messagingParameters,
+            writingStyle: writingStyle || null,
+            strategicData: strategicData
           }
         })
       });
@@ -169,12 +175,12 @@ const ContentRepurposer: React.FC = () => {
             newLength: formattedContent.length,
           });
         }
-        showNotification('Content repurposed successfully', 'success');
+        showNotification('Content repurposed successfully! ✨', 'success');
       } else {
         throw new Error('No content returned from API');
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error repurposing content:', error);
       showNotification(error instanceof Error ? error.message : 'Failed to repurpose content', 'error');
     } finally {
       setIsProcessing(false);
