@@ -262,7 +262,6 @@ const TaglineGenerator: React.FC = () => {
         // Clean the tagline before accepting
         const cleanedTagline = cleanTaglineContent(tagline);
         setCustomTagline(cleanedTagline);
-        setShowPreview(false);
         handleSave(cleanedTagline);
     };
 
@@ -359,7 +358,7 @@ const TaglineGenerator: React.FC = () => {
 
                 <div className="grid gap-4">
                     {/* SAVED TAGLINE DISPLAY */}
-                    {customTagline && !showPreview && (
+                    {customTagline && (
                         <Card className="p-6 bg-white-50 border-gray-200">
                             <div className="flex items-center gap-3 mb-4">
                                 <CheckCircle className="w-6 h-6 text-blue-600" />
