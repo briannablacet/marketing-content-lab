@@ -1,9 +1,6 @@
-<<<<<<< Updated upstream
-=======
 // src/components/features/TaglineGenerator/index.tsx
 // CLEAN VERSION - Simple improvement flow like boilerplate generator
 
->>>>>>> Stashed changes
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Sparkles, Loader2, Plus, X, CheckCircle, Save, Wand2 } from 'lucide-react';
@@ -72,8 +69,6 @@ const TaglineGenerator: React.FC = () => {
     const { brandVoice } = useBrandVoice();
     const router = useRouter();
 
-<<<<<<< Updated upstream
-=======
     // Function to clean tagline content
     const cleanTaglineContent = (content: string): string => {
         if (!content) return content;
@@ -152,7 +147,6 @@ const TaglineGenerator: React.FC = () => {
         setImprovementRequest('');
     };
 
->>>>>>> Stashed changes
     useEffect(() => {
         const {
             productName,
@@ -192,14 +186,9 @@ const TaglineGenerator: React.FC = () => {
     useEffect(() => {
         const savedTagline = localStorage.getItem('brandTagline');
         if (savedTagline) {
-<<<<<<< Updated upstream
-            setSelectedTagline(savedTagline);
-            setCustomTagline(savedTagline);
-=======
             // Clean the saved tagline when loading
             const cleanedTagline = cleanTaglineContent(savedTagline);
             setCustomTagline(cleanedTagline);
->>>>>>> Stashed changes
         }
     }, []);
 
@@ -251,18 +240,12 @@ const TaglineGenerator: React.FC = () => {
             }
 
             const result = await response.json();
-<<<<<<< Updated upstream
-            setGeneratedTaglines(result);
-            setCustomTagline(result[0] || '');
-            setShowPreview(true);
-=======
             // Clean all generated taglines and take just the first one
             const cleanedTaglines = result.map((tagline: string) => cleanTaglineContent(tagline));
             const selectedTagline = cleanedTaglines[0] || '';
 
             setCustomTagline(selectedTagline);
             handleSave(selectedTagline);
->>>>>>> Stashed changes
         } catch (error) {
             console.error('Error generating taglines:', error);
         } finally {
@@ -270,15 +253,6 @@ const TaglineGenerator: React.FC = () => {
         }
     };
 
-<<<<<<< Updated upstream
-    const handleAcceptGenerated = (tagline: string) => {
-        setCustomTagline(tagline);
-        setShowPreview(false);
-        handleSave(tagline);
-    };
-
-=======
->>>>>>> Stashed changes
     const handleSave = async (valueToSave: string | null = null) => {
         const finalValue = valueToSave || customTagline;
 
@@ -356,41 +330,6 @@ const TaglineGenerator: React.FC = () => {
                 <p className="text-gray-600">Create compelling taglines that capture your brand's essence</p>
 
                 <div className="grid gap-4">
-<<<<<<< Updated upstream
-                    {/* SAVED TAGLINE DISPLAY */}
-                    {customTagline && !showPreview && (
-                        <Card className="p-6 bg-white-50 border-gray-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <CheckCircle className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-xl font-semibold text-gray-900">Your Tagline</h2>
-                            </div>
-                            <textarea
-                                value={customTagline}
-                                onChange={(e) => setCustomTagline(e.target.value)}
-                                className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
-                                rows={4}
-                                placeholder="Edit your tagline here..."
-                            />
-                            <div className="mt-4 flex gap-2">
-                                <button
-                                    onClick={() => handleSave()}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-green-700"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    Edit or Save
-                                </button>
-                                {isAccepted && (
-                                    <span className="flex items-center gap-1 text-blue-600 text-sm">
-                                        <CheckCircle className="w-4 h-4" />
-                                        Saved!
-                                    </span>
-                                )}
-                            </div>
-                        </Card>
-                    )}
-
-=======
->>>>>>> Stashed changes
                     {/* MAIN INPUT CARD */}
                     <Card className="p-6">
                         <div className="mb-6">
