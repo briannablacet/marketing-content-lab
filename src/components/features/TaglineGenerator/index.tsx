@@ -1,6 +1,12 @@
+<<<<<<< Updated upstream
+=======
+// src/components/features/TaglineGenerator/index.tsx
+// CLEAN VERSION - Simple improvement flow like boilerplate generator
+
+>>>>>>> Stashed changes
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Sparkles, Loader2, Plus, X, CheckCircle, Save } from 'lucide-react';
+import { Sparkles, Loader2, Plus, X, CheckCircle, Save, Wand2 } from 'lucide-react';
 import PageLayout from '../../shared/PageLayout';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
 import StrategicDataService from '../../../services/StrategicDataService';
@@ -50,21 +56,103 @@ const TaglineGenerator: React.FC = () => {
     const [promise, setPromise] = useState('');
     const [tone, setTone] = useState('');
     const [style, setStyle] = useState('visionary');
-    const [generatedTaglines, setGeneratedTaglines] = useState<string[]>([]);
     const [customTagline, setCustomTagline] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [showWalkthroughPrompt, setShowWalkthroughPrompt] = useState(false);
-    const [boilerplates, setBoilerplates] = useState([]);
     const [archetype, setArchetype] = useState('');
-    const [showPreview, setShowPreview] = useState(false);
     const [isAccepted, setIsAccepted] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [selectedTagline, setSelectedTagline] = useState<string | null>(null);
+
+    // Simple improvement flow state
+    const [improvementRequest, setImprovementRequest] = useState('');
+    const [isImproving, setIsImproving] = useState(false);
+    const [suggestedTagline, setSuggestedTagline] = useState('');
+    const [showSuggestion, setShowSuggestion] = useState(false);
 
     const { brandVoice } = useBrandVoice();
     const router = useRouter();
 
+<<<<<<< Updated upstream
+=======
+    // Function to clean tagline content
+    const cleanTaglineContent = (content: string): string => {
+        if (!content) return content;
+
+        let cleaned = content.trim();
+
+        // Remove unwanted punctuation at the beginning
+        cleaned = cleaned.replace(/^[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,\.\!]+\s*/g, '');
+
+        // Remove unwanted punctuation at the end (except periods, exclamation marks, question marks)
+        cleaned = cleaned.replace(/\s*[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,]+$/g, '');
+
+        // Remove quotes at the beginning and end
+        cleaned = cleaned.replace(/^["']|["']$/g, '');
+
+        // Remove any "Tagline:" prefixes that might sneak in
+        cleaned = cleaned.replace(/^(Tagline|Tag)\s*[:]\s*/i, '');
+
+        // Clean up extra whitespace
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+        return cleaned;
+    };
+
+    // Handle tagline improvement
+    const handleImproveTagline = async () => {
+        if (!improvementRequest.trim()) return;
+
+        setIsImproving(true);
+        try {
+            const response = await fetch('/api/api_endpoints', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'humanize',
+                    data: {
+                        content: customTagline,
+                        instructions: `USER REQUEST: ${improvementRequest}\n\nPlease apply this request to improve the tagline while keeping it concise and impactful. Return only the improved tagline, nothing else.`,
+                        strategicContext: {
+                            productName: businessName,
+                            audience: audiences.filter(a => a.trim()).join(', '),
+                            tone: tone,
+                            archetype: archetype,
+                            promise: promise
+                        }
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to improve tagline');
+            }
+
+            const result = await response.json();
+            const improvedTagline = cleanTaglineContent(result.content || result);
+            setSuggestedTagline(improvedTagline);
+            setShowSuggestion(true);
+        } catch (error) {
+            console.error('Error improving tagline:', error);
+        } finally {
+            setIsImproving(false);
+        }
+    };
+
+    // Accept the suggestion
+    const handleAcceptSuggestion = () => {
+        setCustomTagline(suggestedTagline);
+        handleSave(suggestedTagline);
+        setShowSuggestion(false);
+        setImprovementRequest('');
+    };
+
+    // Reject the suggestion
+    const handleRejectSuggestion = () => {
+        setShowSuggestion(false);
+        setImprovementRequest('');
+    };
+
+>>>>>>> Stashed changes
     useEffect(() => {
         const {
             productName,
@@ -104,8 +192,14 @@ const TaglineGenerator: React.FC = () => {
     useEffect(() => {
         const savedTagline = localStorage.getItem('brandTagline');
         if (savedTagline) {
+<<<<<<< Updated upstream
             setSelectedTagline(savedTagline);
             setCustomTagline(savedTagline);
+=======
+            // Clean the saved tagline when loading
+            const cleanedTagline = cleanTaglineContent(savedTagline);
+            setCustomTagline(cleanedTagline);
+>>>>>>> Stashed changes
         }
     }, []);
 
@@ -157,9 +251,18 @@ const TaglineGenerator: React.FC = () => {
             }
 
             const result = await response.json();
+<<<<<<< Updated upstream
             setGeneratedTaglines(result);
             setCustomTagline(result[0] || '');
             setShowPreview(true);
+=======
+            // Clean all generated taglines and take just the first one
+            const cleanedTaglines = result.map((tagline: string) => cleanTaglineContent(tagline));
+            const selectedTagline = cleanedTaglines[0] || '';
+
+            setCustomTagline(selectedTagline);
+            handleSave(selectedTagline);
+>>>>>>> Stashed changes
         } catch (error) {
             console.error('Error generating taglines:', error);
         } finally {
@@ -167,12 +270,15 @@ const TaglineGenerator: React.FC = () => {
         }
     };
 
+<<<<<<< Updated upstream
     const handleAcceptGenerated = (tagline: string) => {
         setCustomTagline(tagline);
         setShowPreview(false);
         handleSave(tagline);
     };
 
+=======
+>>>>>>> Stashed changes
     const handleSave = async (valueToSave: string | null = null) => {
         const finalValue = valueToSave || customTagline;
 
@@ -250,6 +356,7 @@ const TaglineGenerator: React.FC = () => {
                 <p className="text-gray-600">Create compelling taglines that capture your brand's essence</p>
 
                 <div className="grid gap-4">
+<<<<<<< Updated upstream
                     {/* SAVED TAGLINE DISPLAY */}
                     {customTagline && !showPreview && (
                         <Card className="p-6 bg-white-50 border-gray-200">
@@ -282,6 +389,8 @@ const TaglineGenerator: React.FC = () => {
                         </Card>
                     )}
 
+=======
+>>>>>>> Stashed changes
                     {/* MAIN INPUT CARD */}
                     <Card className="p-6">
                         <div className="mb-6">
@@ -410,38 +519,109 @@ const TaglineGenerator: React.FC = () => {
                                 ) : (
                                     <>
                                         <Sparkles className="w-5 h-5 mr-2 text-white" />
-                                        Generate Taglines
+                                        Generate Tagline
                                     </>
                                 )}
                             </button>
                         </div>
                     </Card>
 
-                    {/* PREVIEW OF GENERATED OPTIONS */}
-                    {showPreview && generatedTaglines.length > 0 && (
-                        <Card className="p-6">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">Generated Tagline Options</h2>
-                            <div className="space-y-4">
-                                {generatedTaglines.map((tagline, i) => (
-                                    <div key={i} className="bg-gray-50 p-4 rounded-lg border space-y-2">
-                                        <strong className="text-gray-900">Option {i + 1}</strong>
-                                        <p className="text-gray-800">{tagline}</p>
-                                        <div className="flex justify-end gap-3">
+                    {/* GENERATED TAGLINE DISPLAY - Now shows BELOW the form where users expect it! */}
+                    {customTagline && (
+                        <Card className="p-6 bg-green-50 border-green-200">
+                            <div className="flex items-center gap-3 mb-4">
+                                <CheckCircle className="w-6 h-6 text-green-600" />
+                                <h2 className="text-xl font-semibold text-gray-900">Your Generated Tagline</h2>
+                            </div>
+
+                            {/* Display the tagline prominently */}
+                            <div className="bg-white border-2 border-green-300 rounded-lg p-6 mb-6">
+                                <div className="text-2xl font-bold text-gray-900 text-center">
+                                    "{customTagline}"
+                                </div>
+                            </div>
+
+                            {/* Save button */}
+                            <div className="flex gap-2 mb-6">
+                                <button
+                                    onClick={() => handleSave()}
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    Save Tagline
+                                </button>
+
+                                {isAccepted && (
+                                    <span className="flex items-center gap-1 text-green-600 text-sm">
+                                        <CheckCircle className="w-4 h-4" />
+                                        Saved!
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Ask for Improvements Section */}
+                            <div className="border-t pt-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Ask for Improvements</h3>
+                                <p className="text-gray-600 mb-4">Want to refine your tagline? Tell us what you'd like to change.</p>
+
+                                <div className="space-y-4">
+                                    <input
+                                        type="text"
+                                        value={improvementRequest}
+                                        onChange={(e) => setImprovementRequest(e.target.value)}
+                                        placeholder="e.g., Make it catchier, Shorter and punchier, More emotional..."
+                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        disabled={isImproving}
+                                    />
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleImproveTagline}
+                                            disabled={isImproving || !improvementRequest.trim()}
+                                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isImproving ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Improving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Wand2 className="w-4 h-4" />
+                                                    Improve Tagline
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Show suggestion with Accept/Reject */}
+                                {showSuggestion && (
+                                    <div className="mt-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                                        <h4 className="font-semibold text-blue-900 mb-3">Suggested Improvement</h4>
+                                        <div className="bg-white border border-blue-300 rounded-lg p-4 mb-4">
+                                            <div className="text-xl font-bold text-gray-900 text-center">
+                                                "{suggestedTagline}"
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3">
                                             <button
-                                                onClick={() => navigator.clipboard.writeText(tagline)}
-                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                                onClick={handleAcceptSuggestion}
+                                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                                             >
-                                                Copy
+                                                <CheckCircle className="w-4 h-4" />
+                                                Accept This Version
                                             </button>
                                             <button
-                                                onClick={() => handleAcceptGenerated(tagline)}
-                                                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                                                onClick={handleRejectSuggestion}
+                                                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                                             >
-                                                Use This Version
+                                                <X className="w-4 h-4" />
+                                                Keep Original
                                             </button>
                                         </div>
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </Card>
                     )}

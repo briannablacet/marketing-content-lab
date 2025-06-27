@@ -1,720 +1,712 @@
-// src/components/features/BoilerplateGenerator/index.tsx
+// src/components/features/ContentEditChat/index.tsx
+// REDESIGNED: Much more elegant interface with better visual feedback and clearer content updates
 
+import React, { useState, useRef, useEffect } from "react";
+import {
+    Send,
+    RefreshCw,
+    CheckCircle,
+    AlertCircle,
+    Sparkles,
+    MessageSquare,
+    Eye,
+    EyeOff,
+    Copy,
+    Check,
+    Wand2,
+    ArrowRight,
+    X,
+    FileText,
+    GitCompare,
+    History
+} from "lucide-react";
+import StrategicDataService from "../../../services/StrategicDataService";
 
-import React, { useState, useEffect } from 'react';
-import { Card } from '../../ui/card';
-import { useBrandVoice } from '../../../context/BrandVoiceContext';
-import StrategicDataService from '../../../services/StrategicDataService';
-import { useRouter } from 'next/router';
-import { Loader2, FileText, CheckCircle, Save, Plus, X, Sparkles } from 'lucide-react';
-import PageLayout from '../../shared/PageLayout';
+const PROMPT_SUGGESTIONS = {
+    "blog-post": [
+        "Make it more engaging",
+        "Add more statistics and facts",
+        "Optimize for SEO",
+        "Add a compelling call-to-action",
+        "Improve the introduction",
+        "Make it more conversational"
+    ],
+    social: [
+        "Make it more concise",
+        "Add hashtags",
+        "Make it more engaging",
+        "Add an emoji",
+        "Make it more shareable",
+        "Add a call-to-action"
+    ],
+    email: [
+        "Improve the subject line",
+        "Make it more personal",
+        "Simplify the language",
+        "Add a stronger call-to-action",
+        "Make it more compelling",
+        "Reduce the length"
+    ],
+    "landing-page": [
+        "Enhance the value proposition",
+        "Make it more persuasive",
+        "Add customer testimonials",
+        "Improve the call-to-action",
+        "Make it more urgent",
+        "Simplify the message"
+    ],
+    default: [
+        "Make it more engaging",
+        "Simplify the language",
+        "Add more specific examples",
+        "Make it more persuasive",
+        "Improve the flow",
+        "Make it more professional"
+    ],
+};
 
-// Update type definitions
-interface ProductInfo {
-    name?: string;
-    product?: string;
-    valueProposition?: string;
-    description?: string;
+interface Message {
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp?: Date;
+    isContentUpdate?: boolean;
 }
 
-interface MessagingFramework {
-    valueProposition?: string;
-    keyDifferentiators?: string[];
-    positioning?: string;
+interface ContentEditChatProps {
+    originalContent: string;
+    originalTitle: string;
+    contentType: string;
+    onContentUpdate: (newContent: string, newTitle: string) => void;
+    strategicContext?: any;
 }
 
-interface Audience {
-    role?: string;
-    industry?: string;
-    description?: string;
-}
-
-const BRAND_ARCHETYPES = [
-    { name: 'The Creator', description: 'Innovative, artistic, striving for authentic self-expression', example: 'Adobe, Lego, Apple', defaultTone: 'Inspirational', defaultPersonality: ['Innovative', 'Empathetic', 'Playful'] },
-    { name: 'The Caregiver', description: 'Nurturing, compassionate, focused on helping others', example: 'Johnson & Johnson, UNICEF, Cleveland Clinic', defaultTone: 'Empathetic', defaultPersonality: ['Empathetic', 'Trustworthy', 'Friendly'] },
-    { name: 'The Ruler', description: 'Authoritative, responsible, providing structure and control', example: 'Microsoft, Mercedes-Benz, American Express', defaultTone: 'Formal', defaultPersonality: ['Authoritative', 'Professional', 'Trustworthy'] },
-    { name: 'The Jester', description: 'Playful, humorous, living in the moment', example: 'Old Spice, Dollar Shave Club, M&Ms', defaultTone: 'Conversational', defaultPersonality: ['Playful', 'Bold', 'Friendly'] },
-    { name: 'The Regular Guy/Gal', description: 'Relatable, authentic, down-to-earth values', example: 'IKEA, Target, Budweiser', defaultTone: 'Neutral', defaultPersonality: ['Friendly', 'Trustworthy', 'Professional'] },
-    { name: 'The Lover', description: 'Passionate, sensual, focused on relationships and experiences', example: "Victoria's Secret, Godiva, Häagen-Dazs", defaultTone: 'Inspirational', defaultPersonality: ['Empathetic', 'Bold', 'Playful'] },
-    { name: 'The Hero', description: 'Brave, determined, overcoming challenges and adversity', example: 'Nike, FedEx, U.S. Army', defaultTone: 'Persuasive', defaultPersonality: ['Bold', 'Authoritative', 'Inspirational'] },
-    { name: 'The Outlaw', description: 'Rebellious, disruptive, challenging the status quo', example: 'Harley-Davidson, Virgin, Red Bull', defaultTone: 'Bold', defaultPersonality: ['Bold', 'Rebellious', 'Playful'] },
-    { name: 'The Magician', description: 'Visionary, transformative, making dreams reality', example: 'Disney, Tesla, Dyson', defaultTone: 'Inspirational', defaultPersonality: ['Innovative', 'Bold', 'Professional'] },
-    { name: 'The Innocent', description: 'Optimistic, pure, honest and straightforward', example: 'Coca-Cola, Dove, Whole Foods', defaultTone: 'Conversational', defaultPersonality: ['Friendly', 'Empathetic', 'Trustworthy'] },
-    { name: 'The Explorer', description: 'Adventurous, independent, seeking discovery and freedom', example: 'Jeep, Patagonia, National Geographic', defaultTone: 'Inspirational', defaultPersonality: ['Bold', 'Professional', 'Empathetic'] },
-    { name: 'The Sage', description: 'Knowledgeable, wise, sharing expertise and insight', example: 'Google, BBC, The Economist', defaultTone: 'Educational', defaultPersonality: ['Professional', 'Authoritative', 'Trustworthy'] }
-];
-
-const TONE_OPTIONS = ['Formal', 'Neutral', 'Conversational', 'Technical', 'Inspirational', 'Educational', 'Persuasive'];
-
-const BoilerplateGenerator: React.FC = () => {
-    const [audiences, setAudiences] = useState<string[]>(['']);
-    const [promise, setPromise] = useState('');
-    const [product, setProduct] = useState('');
-    const [tone, setTone] = useState('');
-    const [businessName, setBusinessName] = useState('');
-    const [description, setDescription] = useState('');
-    const [differentiator, setDifferentiator] = useState('');
-    const [positioning, setPositioning] = useState('');
-    const [style, setStyle] = useState('visionary');
-    const [generatedOptions, setGeneratedOptions] = useState<string[]>([]);
-    const [selectedBoilerplate, setSelectedBoilerplate] = useState<string | null>(null);
-    const [otherLengths, setOtherLengths] = useState<Record<string, string>>({});
-    const [showWalkthroughPrompt, setShowWalkthroughPrompt] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
-    const [isAccepted, setIsAccepted] = useState(false);
-    const [selectedWordCount, setSelectedWordCount] = useState<'20' | '50' | '100'>('20');
-    const [showOtherLengths, setShowOtherLengths] = useState(false);
-    const [archetype, setArchetype] = useState('');
+const ContentEditChat: React.FC<ContentEditChatProps> = ({
+    originalContent,
+    originalTitle,
+    contentType,
+    onContentUpdate,
+    strategicContext = null,
+}) => {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [statusMessage, setStatusMessage] = useState<{ type: string, text: string } | null>(null);
+    const [loadedStrategicData, setLoadedStrategicData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
-    const [editableBoilerplates, setEditableBoilerplates] = useState<{
-        [key: string]: string;
-    }>({});
-    const [generationStep, setGenerationStep] = useState<'initial' | 'adapting'>('initial');
+    const [showPreview, setShowPreview] = useState(false);
+    const [currentContent, setCurrentContent] = useState(originalContent);
+    const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [contentHistory, setContentHistory] = useState<{ before: string, after: string, request: string }[]>([]);
+    const [showChanges, setShowChanges] = useState(true); // Default to showing changes
 
-    const { brandVoice } = useBrandVoice();
-    const router = useRouter();
-
-    // Load saved boilerplates when component mounts
+    // Debug: Log contentHistory changes
     useEffect(() => {
-        const savedBoilerplates = JSON.parse(localStorage.getItem('brandBoilerplates') || '[]');
-        if (savedBoilerplates && savedBoilerplates.length > 0) {
-            // Map saved boilerplates to target lengths (20, 50, 100)
-            const targetLengths = ['20', '50', '100'];
-            const mappedBoilerplates: Record<string, string> = {};
+        console.log("🔍 contentHistory updated, length:", contentHistory.length);
+        console.log("🔍 contentHistory content:", contentHistory);
+    }, [contentHistory]);
 
-            // Only take the first three boilerplates
-            savedBoilerplates.slice(0, 3).forEach((text: string, index: number) => {
-                if (index < targetLengths.length) {
-                    mappedBoilerplates[targetLengths[index]] = text;
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Helper function to highlight differences between two texts
+    const highlightChanges = (before: string, after: string) => {
+        const beforeWords = before.split(/(\s+)/);
+        const afterWords = after.split(/(\s+)/);
+
+        // Simple word-by-word comparison
+        const maxLength = Math.max(beforeWords.length, afterWords.length);
+        const changes = [];
+
+        for (let i = 0; i < maxLength; i++) {
+            const beforeWord = beforeWords[i] || '';
+            const afterWord = afterWords[i] || '';
+
+            if (beforeWord !== afterWord) {
+                if (beforeWord && afterWord) {
+                    changes.push({
+                        type: 'changed',
+                        before: beforeWord,
+                        after: afterWord,
+                        index: i
+                    });
+                } else if (beforeWord && !afterWord) {
+                    changes.push({
+                        type: 'removed',
+                        before: beforeWord,
+                        index: i
+                    });
+                } else if (!beforeWord && afterWord) {
+                    changes.push({
+                        type: 'added',
+                        after: afterWord,
+                        index: i
+                    });
                 }
-            });
-
-            // Set the selected boilerplate based on selectedWordCount
-            if (mappedBoilerplates[selectedWordCount]) {
-                setSelectedBoilerplate(mappedBoilerplates[selectedWordCount]);
             }
-
-            // Set other lengths
-            const otherLengths: Record<string, string> = {};
-            Object.entries(mappedBoilerplates).forEach(([count, text]) => {
-                if (count !== selectedWordCount) {
-                    otherLengths[count] = text;
-                }
-            });
-
-            setOtherLengths(otherLengths);
-            setEditableBoilerplates(mappedBoilerplates);
-            setShowOtherLengths(true);
         }
-    }, [selectedWordCount]);
 
+        return changes;
+    };
+
+    // Load strategic data on mount
     useEffect(() => {
-        const savedBoilerplates = localStorage.getItem('savedBoilerplates');
-        if (savedBoilerplates) {
-            setEditableBoilerplates(JSON.parse(savedBoilerplates));
-        }
+        const loadStrategicData = async () => {
+            try {
+                const data = await StrategicDataService.getAllStrategicData();
+                setLoadedStrategicData(data);
+                console.log("📊 Loaded strategic data for content chat:", data);
+            } catch (error) {
+                console.error("❌ Error loading strategic data:", error);
+            }
+        };
+        loadStrategicData();
     }, []);
 
-    const addAudience = () => {
-        setAudiences([...audiences, '']);
-    };
+    // Auto-scroll to bottom when messages change
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
 
-    const removeAudience = (index: number) => {
-        const newAudiences = audiences.filter((_, i) => i !== index);
-        setAudiences(newAudiences.length > 0 ? newAudiences : ['']);
-    };
+    // Clear error when user starts typing
+    useEffect(() => {
+        if (error && inputValue) setError(null);
+    }, [inputValue, error]);
 
-    const updateAudience = (index: number, value: string) => {
-        const newAudiences = [...audiences];
-        newAudiences[index] = value;
-        setAudiences(newAudiences);
-    };
+    // Auto-clear status messages
+    useEffect(() => {
+        if (statusMessage) {
+            const timer = setTimeout(() => {
+                setStatusMessage(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [statusMessage]);
 
-    const handleReset = () => {
-        setGeneratedOptions([]);
-        setSelectedBoilerplate(null);
-        setOtherLengths({});
-        setEditableBoilerplates({});
-        setShowPreview(false);
-        setShowOtherLengths(false);
-        setGenerationStep('initial');
-        localStorage.removeItem('savedBoilerplates');
-    };
+    const handleSubmit = async (e?: React.FormEvent, customPrompt?: string) => {
+        console.log("🚀 SUBMIT STARTED");
 
-    const generateBoilerplates = async () => {
-        setIsGenerating(true);
-        setGenerationStep('initial');
-        const payload = {
-            businessName,
-            description,
-            product,
-            audiences: audiences.filter(a => a.trim() !== ''),
-            promise,
-            tone,
-            style,
-            differentiator,
-            positioning,
-            archetype: brandVoice?.brandVoice?.archetype || '',
-            personality: brandVoice?.brandVoice?.personality || [],
-            wordCount: selectedWordCount,
-            numOptions: 3  // Request 3 different options
+        if (e) e.preventDefault();
+        const userMessage = customPrompt || inputValue.trim();
+        if (!userMessage) {
+            console.log("❌ NO USER MESSAGE");
+            return;
+        }
+
+        console.log("📝 User message:", userMessage);
+
+        // Add user message
+        const newUserMessage: Message = {
+            role: "user",
+            content: userMessage,
+            timestamp: new Date()
         };
 
+        setMessages((prev) => {
+            console.log("📨 Adding user message, prev length:", prev.length);
+            return [...prev, newUserMessage];
+        });
+
+        setInputValue("");
+        setIsLoading(true);
+        setStatusMessage({ type: "info", text: "AI is analyzing and updating your content..." });
+        setError(null);
+
+        console.log("🔄 Starting API call...");
+        console.log("📄 Current content length:", currentContent.length);
+
         try {
+            const baseRequest = {
+                originalContent: currentContent,
+                originalTitle,
+                userRequest: userMessage,
+                previousMessages: messages.slice(-6),
+                contentType: contentType || "content",
+            };
+
+            if (strategicContext || loadedStrategicData) {
+                const stratContext = strategicContext || {
+                    productName: loadedStrategicData?.product?.name,
+                    valueProposition: loadedStrategicData?.product?.valueProposition,
+                    audience: loadedStrategicData?.audiences?.[0]?.role,
+                    industry: loadedStrategicData?.audiences?.[0]?.industry,
+                    tone: loadedStrategicData?.brandVoice?.brandVoice?.tone,
+                    styleGuide: loadedStrategicData?.writingStyle?.styleGuide?.primary,
+                };
+                baseRequest.strategicContext = stratContext;
+            }
+
+            const requestBody = {
+                mode: 'humanize',
+                data: {
+                    content: currentContent,
+                    instructions: `USER REQUEST: ${userMessage}\n\nPlease apply this request to improve the content while PRESERVING ALL FORMATTING, HEADINGS, STRUCTURE, and MARKDOWN. Do not remove any headings, subheadings, bullet points, or other formatting elements. Only improve the content as requested while maintaining the exact same structure.`,
+                    strategicContext: baseRequest.strategicContext
+                }
+            };
+
+            console.log("📦 Request body:", requestBody);
+
+            // Use the same endpoint as your working content generation
             const response = await fetch('/api/api_endpoints', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: 'boilerplate', data: payload })
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify(requestBody),
             });
+
+            console.log("🌐 Response status:", response.status);
+            console.log("🌐 Response ok:", response.ok);
 
             if (!response.ok) {
-                throw new Error('Failed to generate boilerplates');
+                const errorText = await response.text();
+                console.error("❗ Response not OK:", response.status, errorText);
+                throw new Error(`API error ${response.status}: ${errorText}`);
             }
 
-            const result = await response.json();
-            setGeneratedOptions(result);
-            setShowPreview(true);
-        } catch (error) {
-            console.error('Error generating boilerplates:', error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
+            const responseData = await response.json();
+            console.log("📥 Full API response:", responseData);
 
-    const generateOtherLengths = async (baseBoilerplate: string) => {
-        setIsGenerating(true);
-        const otherCounts = ['20', '50', '100'].filter(count => count !== selectedWordCount);
-
-        try {
-            for (const count of otherCounts) {
-                const payload = {
-                    businessName,
-                    description,
-                    product,
-                    audiences: audiences.filter(a => a.trim() !== ''),
-                    promise,
-                    tone,
-                    style,
-                    differentiator,
-                    positioning,
-                    archetype: brandVoice?.brandVoice?.archetype || '',
-                    personality: brandVoice?.brandVoice?.personality || [],
-                    wordCount: count,
-                    baseBoilerplate  // Pass the selected boilerplate to adapt
-                };
-
-                const response = await fetch('/api/api_endpoints', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'adaptBoilerplate', data: payload })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to generate adapted boilerplate');
-                }
-
-                const result = await response.json();
-                setOtherLengths(prev => ({
-                    ...prev,
-                    [count]: result[0] || ''
-                }));
-            }
-            setShowOtherLengths(true);
-        } catch (error) {
-            console.error('Error generating other lengths:', error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const handleAcceptGenerated = async (boilerplate: string) => {
-        setSelectedBoilerplate(boilerplate);
-        setIsGenerating(true);
-        setGenerationStep('adapting');
-
-        try {
-            // Generate other lengths - only 50 and 100 if we're starting with 20
-            const otherCounts = selectedWordCount === '20' ? ['50', '100'] :
-                selectedWordCount === '50' ? ['20', '100'] :
-                    ['20', '50'];
-
-            const newOtherLengths: { [key: string]: string } = {};
-
-            for (const count of otherCounts) {
-                const payload = {
-                    businessName,
-                    description,
-                    product,
-                    audiences: audiences.filter(a => a.trim() !== ''),
-                    promise,
-                    tone,
-                    style,
-                    differentiator,
-                    positioning,
-                    archetype: brandVoice?.brandVoice?.archetype || '',
-                    personality: brandVoice?.brandVoice?.personality || [],
-                    wordCount: count,
-                    baseBoilerplate: boilerplate
-                };
-
-                const response = await fetch('/api/api_endpoints', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'adaptBoilerplate', data: payload })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to generate adapted boilerplate');
-                }
-
-                const result = await response.json();
-                newOtherLengths[count] = result[0] || '';
+            if (!responseData.content) {
+                console.error("❌ No content in response!");
+                console.error("📋 Response keys:", Object.keys(responseData));
+                throw new Error("No processed content found in response.");
             }
 
-            // Save all versions to editable state
-            const allBoilerplates = {
-                [selectedWordCount]: boilerplate,
-                ...newOtherLengths
+            console.log("✅ Got content, length:", responseData.content.length);
+
+            // Store the change in history for comparison
+            const changeHistory = {
+                before: currentContent,
+                after: responseData.content,
+                request: userMessage
             };
-            setEditableBoilerplates(allBoilerplates);
-            localStorage.setItem('savedBoilerplates', JSON.stringify(allBoilerplates));
 
-            setOtherLengths(newOtherLengths);
-            setShowOtherLengths(true);
-        } catch (error) {
-            console.error('Error generating other lengths:', error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
+            console.log("💾 STORING CHANGE:");
+            console.log("   - before length:", changeHistory.before.length);
+            console.log("   - after length:", changeHistory.after.length);
+            console.log("   - request:", changeHistory.request);
 
-    const handleBoilerplateEdit = (wordCount: string, newText: string) => {
-        const updatedBoilerplates = {
-            ...editableBoilerplates,
-            [wordCount]: newText
-        };
-        setEditableBoilerplates(updatedBoilerplates);
-        localStorage.setItem('savedBoilerplates', JSON.stringify(updatedBoilerplates));
-    };
-
-    const handleSave = async () => {
-        if (!selectedBoilerplate) return;
-
-        // Get the boilerplates in the correct order (20, 50, 100)
-        const orderedBoilerplates = [
-            editableBoilerplates['20'] || '',
-            editableBoilerplates['50'] || '',
-            editableBoilerplates['100'] || ''
-        ].filter(Boolean).slice(0, 3); // Ensure only three versions
-
-        console.log('Saving boilerplates:', {
-            orderedBoilerplates
-        });
-
-        // Save to localStorage as an array
-        localStorage.setItem('brandBoilerplates', JSON.stringify(orderedBoilerplates));
-        console.log('Saved to localStorage:', localStorage.getItem('brandBoilerplates'));
-
-        // Save individual versions to localStorage for backward compatibility
-        Object.entries(editableBoilerplates).forEach(([count, text]) => {
-            localStorage.setItem(`marketingBoilerplate${count}`, text);
-        });
-
-        // Save to StrategicDataService
-        try {
-            await StrategicDataService.setStrategicDataValue('boilerplates', orderedBoilerplates);
-            Object.entries(editableBoilerplates).forEach(async ([count, text]) => {
-                await StrategicDataService.setStrategicDataValue(`boilerplate${count}`, text);
+            setContentHistory(prev => {
+                const newHistory = [...prev, changeHistory];
+                console.log("📚 Updated contentHistory length:", newHistory.length);
+                return newHistory;
             });
-            console.log('Saved to StrategicDataService');
-            setIsAccepted(true);
-        } catch (error) {
-            console.error('Error saving boilerplates:', error);
-            setIsAccepted(true);
+
+            // Calculate what actually changed
+            const beforeWords = currentContent.split(/\s+/).length;
+            const afterWords = responseData.content.split(/\s+/).length;
+            const wordDifference = afterWords - beforeWords;
+
+            console.log("📊 Word analysis:");
+            console.log("   - before words:", beforeWords);
+            console.log("   - after words:", afterWords);
+            console.log("   - difference:", wordDifference);
+
+            // Simple change detection
+            const hasSignificantChange = Math.abs(wordDifference) > 5 ||
+                responseData.content.toLowerCase() !== currentContent.toLowerCase();
+
+            let changeDescription = "Content updated";
+            if (wordDifference > 5) {
+                changeDescription = `Added ~${wordDifference} words`;
+            } else if (wordDifference < -5) {
+                changeDescription = `Removed ~${Math.abs(wordDifference)} words`;
+            } else if (hasSignificantChange) {
+                changeDescription = "Content refined and improved";
+            }
+
+            console.log("📝 Change description:", changeDescription);
+
+            // Add assistant message with specific details and make changes visible
+            const assistantMessage: Message = {
+                role: "assistant",
+                content: `✨ **${changeDescription}**\n\nApplied: "${userMessage}"\n\n📊 **Changes:**\n- Before: ${beforeWords} words\n- After: ${afterWords} words\n- Difference: ${wordDifference >= 0 ? '+' : ''}${wordDifference} words\n\n${hasSignificantChange ? '✅ Significant improvements made!' : '⚠️ Minor changes applied - content may be similar'}\n\n👀 **Check the "Changes" panel** to see exactly what was modified!`,
+                timestamp: new Date(),
+                isContentUpdate: true
+            };
+
+            setMessages((prev) => {
+                console.log("💬 Adding assistant message, prev length:", prev.length);
+                return [...prev, assistantMessage];
+            });
+
+            // Update the current content
+            console.log("🔄 Updating current content...");
+            setCurrentContent(responseData.content);
+
+            // Call the update callback
+            if (onContentUpdate) {
+                console.log("📞 Calling onContentUpdate callback");
+                onContentUpdate(responseData.content, originalTitle);
+            }
+
+            setStatusMessage({
+                type: "success",
+                text: "Content updated successfully! ✨",
+            });
+
+            console.log("✅ SUBMIT COMPLETED SUCCESSFULLY");
+
+        } catch (error: any) {
+            console.error("💥 Error in handleSubmit:", error);
+            console.error("💥 Error stack:", error.stack);
+
+            const errorMessage: Message = {
+                role: "assistant",
+                content: `❌ **Update Failed**\n\nSorry, I couldn't apply that change. ${error.message}\n\nPlease try rephrasing your request or try again.`,
+                timestamp: new Date()
+            };
+
+            setMessages((prev) => [...prev, errorMessage]);
+            setStatusMessage({ type: "error", text: "Failed to update content." });
+            setError(`Error: ${error.message}`);
+        } finally {
+            console.log("🏁 Setting isLoading to false");
+            setIsLoading(false);
         }
     };
 
-    useEffect(() => {
-        const {
-            productName,
-            productDescription,
-            idealCustomer,
-            brandArchetype,
-            boilerplate,
-            valueProposition
-        } = StrategicDataService.getAllStrategicDataFromStorage();
+    const handleSuggestionClick = (suggestion: string) => {
+        console.log("🎯 SUGGESTION CLICKED:", suggestion);
+        setInputValue(suggestion);
+        // Use setTimeout to ensure state updates before calling handleSubmit
+        setTimeout(() => {
+            handleSubmit(undefined, suggestion);
+        }, 100);
+    };
 
-        if (productName) setBusinessName(productName);
-        if (productDescription) setDescription(productDescription);
-        if (idealCustomer) {
-            if (Array.isArray(idealCustomer)) {
-                setAudiences(idealCustomer.length > 0 ? idealCustomer : ['']);
-            } else {
-                setAudiences([idealCustomer]);
-            }
+    const handleCopyMessage = async (messageIndex: number, content: string) => {
+        try {
+            await navigator.clipboard.writeText(content);
+            setCopiedStates(prev => ({ ...prev, [messageIndex]: true }));
+            setTimeout(() => {
+                setCopiedStates(prev => ({ ...prev, [messageIndex]: false }));
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
         }
-        if (boilerplate) setSelectedBoilerplate(boilerplate);
-        if (valueProposition) setPositioning(valueProposition);
+    };
 
-        // Set archetype and tone from brand voice if available
-        if (brandVoice?.brandVoice?.archetype) {
-            setArchetype(brandVoice.brandVoice.archetype);
-            if (brandVoice.brandVoice.tone) {
-                setTone(brandVoice.brandVoice.tone);
-            } else {
-                const selectedArchetype = BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype);
-                if (selectedArchetype) {
-                    setTone(selectedArchetype.defaultTone);
-                }
-            }
-        }
-    }, [brandVoice]);
-
-    const handleArchetypeChange = (value: string) => {
-        setArchetype(value);
-        const selected = BRAND_ARCHETYPES.find(a => a.name === value);
-        if (selected) {
-            setTone(selected.defaultTone);
-        }
+    const formatMessageContent = (content: string) => {
+        // Simple markdown-like formatting
+        return content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>');
     };
 
     return (
-        <PageLayout
-            title=""
-            description=""
-            showHelpPrompt={showWalkthroughPrompt}
-            helpPromptText="Need help? Let AI suggest a boilerplate based on your"
-            helpPromptLink="/brand-personality"
-            helpPromptLinkText="brand voice and strategic data"
-        >
-            <div className="space-y-8 w-full">
+        <div className={`bg-white border border-gray-200 rounded-lg shadow-sm transition-all duration-300 ${isExpanded ? 'fixed inset-4 z-50 max-w-7xl max-h-[90vh] mx-auto' : ''
+            }`}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
                 <div className="flex items-center gap-3">
-                    <FileText className="w-8 h-8 text-blue-600" />
-                    <h1 className="text-3xl font-bold text-gray-900">Craft Your Boilerplate</h1>
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                        <Wand2 className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-gray-900">AI Content Editor</h3>
+                        <p className="text-sm text-gray-600">Ask for specific improvements to make your content better</p>
+                    </div>
                 </div>
-                <p className="text-gray-600">Generate boilerplates shaped by your tone, positioning, and personality</p>
-
-                <div className="grid gap-4">
-                    {/* SAVED BOILERPLATE DISPLAY */}
-                    {selectedBoilerplate && !showPreview && (
-                        <Card className="p-6 bg-white-50 border-gray-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <CheckCircle className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-xl font-semibold text-gray-900">Your Boilerplate</h2>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <h3 className="text-sm font-medium text-gray-700">{selectedWordCount}-Word Version</h3>
-                                    <textarea
-                                        value={selectedBoilerplate}
-                                        onChange={(e) => setSelectedBoilerplate(e.target.value)}
-                                        className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
-                                        rows={4}
-                                    />
-                                </div>
-                                {showOtherLengths && Object.entries(otherLengths)
-                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                    .map(([count, text]) => (
-                                        <div key={count} className="space-y-2">
-                                            <h3 className="text-sm font-medium text-gray-700">{count}-Word Version</h3>
-                                            <textarea
-                                                value={text}
-                                                onChange={(e) => {
-                                                    setOtherLengths(prev => ({
-                                                        ...prev,
-                                                        [count]: e.target.value
-                                                    }));
-                                                }}
-                                                className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
-                                                rows={4}
-                                            />
-                                        </div>
-                                    ))}
-                            </div>
-                            <div className="mt-4 flex gap-2">
-                                <button
-                                    onClick={handleSave}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-green-700"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    Edit and Save
-                                </button>
-                                {isAccepted && (
-                                    <span className="flex items-center gap-1 text-blue-600 text-sm">
-                                        <CheckCircle className="w-4 h-4" />
-                                        Saved!
-                                    </span>
-                                )}
-                            </div>
-                        </Card>
-                    )}
-
-                    {/* MAIN INPUT CARD */}
-                    <Card className="p-6">
-                        <div className="mb-6">
-                            <h2 className="text-2xl font-semibold text-gray-900">Let's create your boilerplate</h2>
-                            <p className="text-gray-600 mt-2">We'll use this information to generate boilerplates that match your brand</p>
-                        </div>
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Business name</label>
-                                <input
-                                    type="text"
-                                    value={businessName}
-                                    onChange={e => setBusinessName(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Business description</label>
-                                <textarea
-                                    value={description}
-                                    onChange={e => setDescription(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    rows={4}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Ideal customers or audiences</label>
-                                <div className="space-y-3">
-                                    {audiences.map((audience, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={audience}
-                                                onChange={e => updateAudience(index, e.target.value)}
-                                                className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                placeholder="Enter ideal customer or audience"
-                                            />
-                                            {audiences.length > 1 && (
-                                                <button
-                                                    onClick={() => removeAudience(index)}
-                                                    className="text-red-500 hover:text-red-700 p-2"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <button
-                                        onClick={addAudience}
-                                        className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        Add another audience
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">What problem are you solving?</label>
-                                <input
-                                    type="text"
-                                    value={promise}
-                                    onChange={e => setPromise(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Key differentiator</label>
-                                <input
-                                    type="text"
-                                    value={differentiator}
-                                    onChange={e => setDifferentiator(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Value Proposition</label>
-                                <input
-                                    type="text"
-                                    value={positioning}
-                                    onChange={e => setPositioning(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="What unique value do you provide to your customers?"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Brand Archetype</label>
-                                <select
-                                    value={archetype}
-                                    onChange={e => handleArchetypeChange(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="">Select archetype</option>
-                                    {BRAND_ARCHETYPES.map(a => (
-                                        <option key={a.name} value={a.name}>{a.name}</option>
-                                    ))}
-                                </select>
-                                {archetype && (
-                                    <p className="text-sm text-gray-600 mt-2">
-                                        {BRAND_ARCHETYPES.find(a => a.name === archetype)?.description}<br />
-                                        <span className="text-gray-500">Examples: {BRAND_ARCHETYPES.find(a => a.name === archetype)?.example}</span>
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">What tone should it reflect?</label>
-                                <select
-                                    value={tone}
-                                    onChange={e => setTone(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="">Select tone</option>
-                                    {TONE_OPTIONS.map(tone => (
-                                        <option key={tone} value={tone}>{tone}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Writing style</label>
-                                <select
-                                    value={style}
-                                    onChange={e => setStyle(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="visionary">Visionary</option>
-                                    <option value="punchy">Punchy</option>
-                                    <option value="straightforward">Straightforward</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Word Count</label>
-                                <select
-                                    value={selectedWordCount}
-                                    onChange={e => setSelectedWordCount(e.target.value as '20' | '50' | '100')}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="20">20 Words (Short)</option>
-                                    <option value="50">50 Words (Standard)</option>
-                                    <option value="100">100 Words (Detailed)</option>
-                                </select>
-                                <p className="mt-2 text-sm text-gray-600">
-                                    Choose your favorite 20-word option and we'll expand it into 50- and 100-word versions.
-                                </p>
-                            </div>
-
-                            <button
-                                onClick={generateBoilerplates}
-                                disabled={isGenerating}
-                                className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        {generationStep === 'initial'
-                                            ? 'Generating Initial Options...'
-                                            : 'Generating Multiple Length Options...'}
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles className="w-5 h-5 mr-2 text-white" />
-                                        {`Generate ${selectedWordCount}-Word Options`}
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </Card>
-
-                    {/* PREVIEW OF GENERATED OPTIONS */}
-                    {showPreview && (
-                        <Card className="p-6">
-                            {!selectedBoilerplate ? (
-                                <>
-                                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Generated Boilerplate Options</h2>
-                                    <p className="text-gray-600 mb-4">
-                                        Choose your favorite option below. We'll automatically generate 50-word and 100-word versions of your selection.
-                                    </p>
-                                    <div className="space-y-4">
-                                        {generatedOptions.map((boilerplate, i) => (
-                                            <div key={i} className="bg-gray-50 p-4 rounded-lg border space-y-2">
-                                                <strong className="text-gray-900">Option {i + 1}</strong>
-                                                <p className="text-gray-800">{boilerplate}</p>
-                                                <div className="flex justify-end gap-3">
-                                                    <button
-                                                        onClick={() => navigator.clipboard.writeText(boilerplate)}
-                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                                    >
-                                                        Copy
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleAcceptGenerated(boilerplate)}
-                                                        className="text-sm text-green-600 hover:text-green-700 font-medium"
-                                                    >
-                                                        Use This Version
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Boilerplate Versions</h2>
-                                    <p className="text-gray-600 mb-4">
-                                        Review and edit all versions of your boilerplate. Click "Save" when you're happy with your changes.
-                                    </p>
-                                    <div className="space-y-4">
-                                        {Object.entries(editableBoilerplates)
-                                            .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                            .map(([count, text]) => (
-                                                <div key={count} className="bg-gray-50 p-4 rounded-lg border space-y-2">
-                                                    <strong className="text-gray-900">{count} Words</strong>
-                                                    <textarea
-                                                        value={text}
-                                                        onChange={(e) => handleBoilerplateEdit(count, e.target.value)}
-                                                        className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
-                                                        rows={4}
-                                                    />
-                                                </div>
-                                            ))}
-                                        <div className="flex justify-end gap-3 mt-4">
-                                            <button
-                                                onClick={handleReset}
-                                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                                            >
-                                                <X className="w-4 h-4" />
-                                                Reset Options
-                                            </button>
-                                            <button
-                                                onClick={generateBoilerplates}
-                                                className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                                Generate Again
-                                            </button>
-                                            <button
-                                                onClick={handleSave}
-                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                            >
-                                                <Save className="w-4 h-4" />
-                                                Save
-                                            </button>
-                                            {isAccepted && (
-                                                <span className="flex items-center gap-1 text-blue-600 text-sm">
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    Saved!
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </Card>
-                    )}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowChanges(!showChanges)}
+                        className={`p-2 rounded-md hover:bg-gray-100 ${showChanges ? 'text-blue-600 bg-blue-50' : 'text-gray-500'}`}
+                        title={showChanges ? "Hide changes" : "Show changes"}
+                    >
+                        <GitCompare className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => setShowPreview(!showPreview)}
+                        className={`p-2 rounded-md hover:bg-gray-100 ${showPreview ? 'text-blue-600 bg-blue-50' : 'text-gray-500'}`}
+                        title={showPreview ? "Hide preview" : "Show preview"}
+                    >
+                        {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="p-2 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
+                        title={isExpanded ? "Minimize" : "Expand"}
+                    >
+                        {isExpanded ? <X className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                    </button>
                 </div>
             </div>
-        </PageLayout>
+
+            {/* Status Bar */}
+            {statusMessage && (
+                <div className={`px-4 py-3 border-b border-gray-200 ${statusMessage.type === "error"
+                        ? "bg-red-50 text-red-800"
+                        : statusMessage.type === "success"
+                            ? "bg-green-50 text-green-800"
+                            : "bg-blue-50 text-blue-800"
+                    }`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            {statusMessage.type === "error" ? (
+                                <AlertCircle className="w-4 h-4" />
+                            ) : statusMessage.type === "success" ? (
+                                <CheckCircle className="w-4 h-4" />
+                            ) : (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                            )}
+                            <span className="text-sm font-medium">{statusMessage.text}</span>
+                        </div>
+                        <button
+                            onClick={() => setStatusMessage(null)}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Strategic Context Notice */}
+            {(strategicContext || loadedStrategicData) && (
+                <div className="px-4 py-2 bg-green-50 border-b border-green-100">
+                    <div className="flex items-center gap-2 text-sm text-green-800">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Using your marketing program's strategic data for personalized improvements</span>
+                    </div>
+                </div>
+            )}
+
+            <div className={`flex ${isExpanded ? 'h-full' : ''}`}>
+                {/* Chat Section */}
+                <div className={`flex flex-col ${contentHistory.length > 0 ? 'w-1/2 border-r border-gray-200' : 'w-full'
+                    }`}>
+                    {/* Messages */}
+                    <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isExpanded ? 'max-h-96' : 'h-80'}`}>
+                        {messages.length === 0 ? (
+                            <div className="text-center py-8">
+                                <div className="p-4 bg-blue-50 rounded-lg max-w-md mx-auto">
+                                    <Sparkles className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                                    <h4 className="font-medium text-gray-900 mb-2">Ready to improve your content!</h4>
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        Ask for specific changes like "make it more engaging" or "add statistics"
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        Click any suggestion below or type your own request
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {messages.map((message, index) => (
+                                    <div
+                                        key={index}
+                                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                                    >
+                                        <div
+                                            className={`max-w-[85%] rounded-xl px-4 py-3 ${message.role === "user"
+                                                    ? "bg-blue-600 text-white"
+                                                    : message.isContentUpdate
+                                                        ? "bg-green-50 border border-green-200 text-green-900"
+                                                        : "bg-gray-100 text-gray-900"
+                                                }`}
+                                        >
+                                            <div
+                                                className="text-sm leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
+                                            />
+                                            {message.timestamp && (
+                                                <div className="flex items-center justify-between mt-2">
+                                                    <div className={`text-xs ${message.role === "user" ? "text-blue-100" : "text-gray-500"
+                                                        }`}>
+                                                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleCopyMessage(index, message.content)}
+                                                        className={`p-1 rounded ${message.role === "user"
+                                                                ? "hover:bg-blue-500 text-blue-100"
+                                                                : "hover:bg-gray-200 text-gray-500"
+                                                            }`}
+                                                        title="Copy message"
+                                                    >
+                                                        {copiedStates[index] ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                <div ref={messagesEndRef} />
+                            </>
+                        )}
+                    </div>
+
+                    {/* Quick Suggestions */}
+                    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+                        <div className="flex items-center gap-2 mb-3">
+                            <MessageSquare className="w-4 h-4 text-gray-600" />
+                            <span className="text-sm font-medium text-gray-700">Quick improvements:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {getPromptSuggestions().slice(0, 6).map((suggestion, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleSuggestionClick(suggestion)}
+                                    disabled={isLoading}
+                                    className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-full hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {suggestion}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Input */}
+                    <form onSubmit={(e) => {
+                        console.log("🎯 FORM SUBMIT TRIGGERED");
+                        handleSubmit(e);
+                    }} className="p-4 border-t border-gray-200">
+                        <div className="flex gap-2">
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                placeholder="Type your improvement request..."
+                                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                disabled={isLoading}
+                            />
+                            <button
+                                type="submit"
+                                onClick={(e) => {
+                                    console.log("🎯 BUTTON CLICK TRIGGERED");
+                                    console.log("🎯 Input value:", inputValue);
+                                    console.log("🎯 Is loading:", isLoading);
+                                    if (!inputValue.trim()) {
+                                        console.log("❌ No input value, preventing submit");
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                }}
+                                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                                disabled={isLoading || !inputValue.trim()}
+                            >
+                                {isLoading ? (
+                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Send className="w-4 h-4" />
+                                )}
+                                <span className="hidden sm:inline">
+                                    {isLoading ? "Updating..." : "Update"}
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {/* DEBUG PANEL - Always show to see what's happening */}
+                <div className="w-full bg-red-100 border-2 border-red-500 p-4 mb-4">
+                    <h3 className="font-bold text-red-800">🐛 DEBUG PANEL</h3>
+                    <div className="text-sm text-red-700 space-y-1">
+                        <div>contentHistory.length: <strong>{contentHistory.length}</strong></div>
+                        <div>currentContent length: <strong>{currentContent.length}</strong></div>
+                        <div>messages.length: <strong>{messages.length}</strong></div>
+                        <div>isLoading: <strong>{isLoading ? 'true' : 'false'}</strong></div>
+                        <div>Latest change: <strong>{contentHistory.length > 0 ? contentHistory[contentHistory.length - 1]?.request : 'none'}</strong></div>
+                    </div>
+                </div>
+
+                {/* Changes Section - ALWAYS show when there are changes */}
+                {contentHistory.length > 0 && (
+                    <div className="w-1/2 flex flex-col bg-yellow-50">
+                        <div className="p-4 border-b border-yellow-200 bg-yellow-100">
+                            <div className="flex items-center gap-2">
+                                <History className="w-4 h-4 text-yellow-700" />
+                                <h4 className="font-medium text-gray-900">What Just Changed</h4>
+                                <span className="px-2 py-1 bg-yellow-300 text-yellow-800 text-xs rounded-full font-medium">
+                                    {contentHistory.length} edit{contentHistory.length !== 1 ? 's' : ''}
+                                </span>
+                            </div>
+                            <p className="text-sm text-yellow-700">Your latest content modifications</p>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {/* Show the most recent change very prominently */}
+                            <div className="border-2 border-blue-300 rounded-lg p-4 bg-white shadow-sm mb-4">
+                                <div className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+                                    <span className="px-3 py-1 bg-blue-200 text-blue-900 text-xs rounded-full font-bold">
+                                        🔥 JUST CHANGED
+                                    </span>
+                                </div>
+
+                                <div className="text-sm font-medium text-gray-800 mb-3 p-2 bg-blue-50 rounded">
+                                    📝 Your request: "{contentHistory[contentHistory.length - 1]?.request}"
+                                </div>
+
+                                <div className="space-y-4">
+                                    {/* BEFORE section */}
+                                    <div>
+                                        <div className="text-xs font-bold text-red-800 mb-2 flex items-center gap-2 p-2 bg-red-100 rounded">
+                                            <span className="w-3 h-3 bg-red-600 rounded-full"></span>
+                                            🔍 BEFORE ({contentHistory[contentHistory.length - 1]?.before.split(/\s+/).length} words)
+                                        </div>
+                                        <div className="text-sm bg-red-50 p-4 rounded-lg border-2 border-red-200 max-h-48 overflow-y-auto">
+                                            <div className="font-mono text-gray-800 whitespace-pre-wrap leading-relaxed">
+                                                {contentHistory[contentHistory.length - 1]?.before.substring(0, 600)}
+                                                {contentHistory[contentHistory.length - 1]?.before.length > 600 && (
+                                                    <span className="text-red-600 font-bold">... (showing first 600 chars)</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Arrow */}
+                                    <div className="flex justify-center py-2">
+                                        <div className="flex items-center gap-2 text-blue-700 bg-blue-100 px-4 py-2 rounded-full">
+                                            <ArrowRight className="w-5 h-5" />
+                                            <span className="text-sm font-bold">TRANSFORMED TO</span>
+                                            <ArrowRight className="w-5 h-5" />
+                                        </div>
+                                    </div>
+
+                                    {/* AFTER section */}
+                                    <div>
+                                        <div className="text-xs font-bold text-green-800 mb-2 flex items-center gap-2 p-2 bg-green-100 rounded">
+                                            <span className="w-3 h-3 bg-green-600 rounded-full"></span>
+                                            ✨ AFTER ({contentHistory[contentHistory.length - 1]?.after.split(/\s+/).length} words)
+                                        </div>
+                                        <div className="text-sm bg-green-50 p-4 rounded-lg border-2 border-green-200 max-h-48 overflow-y-auto">
+                                            <div className="font-mono text-gray-800 whitespace-pre-wrap leading-relaxed">
+                                                {contentHistory[contentHistory.length - 1]?.after.substring(0, 600)}
+                                                {contentHistory[contentHistory.length - 1]?.after.length > 600 && (
+                                                    <span className="text-green-600 font-bold">... (showing first 600 chars)</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Stats */}
+                                    <div className="bg-gray-100 p-3 rounded-lg border">
+                                        <div className="text-sm font-bold text-gray-800 mb-1">📊 Change Summary:</div>
+                                        <div className="text-sm text-gray-700">
+                                            Word difference: <span className="font-bold">
+                                                {contentHistory[contentHistory.length - 1]?.after.split(/\s+/).length - contentHistory[contentHistory.length - 1]?.before.split(/\s+/).length >= 0 ? '+' : ''}
+                                                {contentHistory[contentHistory.length - 1]?.after.split(/\s+/).length - contentHistory[contentHistory.length - 1]?.before.split(/\s+/).length}
+                                            </span> words
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Debug info */}
+                            <div className="text-xs text-gray-500 p-2 bg-gray-100 rounded mt-2">
+                                🐛 Debug: {contentHistory.length} changes stored
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
 
-export default BoilerplateGenerator;
+export default ContentEditChat;

@@ -222,9 +222,7 @@ const ContentCreatorPage = () => {
 
   // FIXED: Get writing style from context instead of using defaults
   const { writingStyle, isStyleConfigured } = useWritingStyle();
-  console.log('🔥 CONTENT CREATOR writingStyle:', writingStyle);
-  console.log('🔥 CONTENT CREATOR primary:', writingStyle?.styleGuide?.primary);
-  console.log('🔥 CONTENT CREATOR headingCase:', writingStyle?.formatting?.headingCase);
+
   // State for content information
   const [contentType, setContentType] = useState<ContentType | null>(null);
 
@@ -276,8 +274,7 @@ const ContentCreatorPage = () => {
 
   // FIXED: Debug writing style context loading
   useEffect(() => {
-    console.log('🎯 Content Creator: Current writing style from context:', writingStyle);
-    console.log('🎯 Content Creator: Is style configured?', isStyleConfigured);
+
   }, [writingStyle, isStyleConfigured]);
 
   // Load content type from URL parameter
