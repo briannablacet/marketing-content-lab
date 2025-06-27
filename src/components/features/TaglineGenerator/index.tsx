@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { Sparkles, Loader2, Plus, X, CheckCircle, Save } from 'lucide-react';
 import PageLayout from '../../shared/PageLayout';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
+import { useWritingStyle } from '../../../context/WritingStyleContext';
 import StrategicDataService from '../../../services/StrategicDataService';
 import { Card } from '../../ui/card';
 
@@ -66,6 +67,7 @@ const TaglineGenerator: React.FC = () => {
     const [selectedTagline, setSelectedTagline] = useState<string | null>(null);
 
     const { brandVoice } = useBrandVoice();
+    const { writingStyle } = useWritingStyle();
     const router = useRouter();
 
     // NEW: Function to clean tagline content
@@ -172,7 +174,9 @@ const TaglineGenerator: React.FC = () => {
             tone,
             style,
             archetype: archetype || brandVoice?.brandVoice?.archetype || '',
-            personality: brandVoice?.brandVoice?.personality || []
+            personality: brandVoice?.brandVoice?.personality || [],
+            writingStyle: writingStyle || null,
+            strategicData: await StrategicDataService.getAllStrategicData()
         };
 
         try {

@@ -23,22 +23,54 @@ function buildStyleGuideInstructions(writingStyle: any, brandVoice: any, messagi
 
   // Handle formatting rules
   if (writingStyle?.formatting) {
+    // Heading style
     if (writingStyle.formatting.headingCase) {
-      if (writingStyle.formatting.headingCase === 'upper') {
-        instructions += `\n- HEADINGS: ALL HEADINGS MUST BE IN COMPLETE UPPERCASE/ALL CAPS.`;
+      if (writingStyle.formatting.headingCase === 'upper' || writingStyle.formatting.headings === 'All caps for main headings') {
+        instructions += `\n- ALL MAIN HEADINGS MUST BE IN ALL CAPS.`;
       } else if (writingStyle.formatting.headingCase === 'lower') {
-        instructions += `\n- HEADINGS: All headings must be in lowercase.`;
-      } else if (writingStyle.formatting.headingCase === 'sentence') {
-        instructions += `\n- HEADINGS: Use sentence case (capitalize only first word).`;
+        instructions += `\n- All headings must be in lowercase.`;
+      } else if (writingStyle.formatting.headingCase === 'sentence' || writingStyle.formatting.headings === 'Sentence case') {
+        instructions += `\n- Use sentence case for all headings (capitalize only the first word).`;
+      } else if (writingStyle.formatting.headingCase === 'title' || writingStyle.formatting.headings === 'Title Case') {
+        instructions += `\n- Use title case for all headings (capitalize major words).`;
+      } else if (writingStyle.formatting.headingCase === 'custom' && writingStyle.formatting.headingCustom) {
+        instructions += `\n- Headings: ${writingStyle.formatting.headingCustom}`;
       }
     }
-
+    // List style
+    if (writingStyle.formatting.listStyle) {
+      if (writingStyle.formatting.listStyle === 'bullets') {
+        instructions += `\n- Use bullet points for all lists.`;
+      } else if (writingStyle.formatting.listStyle === 'numbers') {
+        instructions += `\n- Use numbered lists for all lists.`;
+      } else if (typeof writingStyle.formatting.listStyle === 'string') {
+        instructions += `\n- List style: ${writingStyle.formatting.listStyle}`;
+      }
+    }
+    // Numbers
     if (writingStyle.formatting.numberFormat) {
       if (writingStyle.formatting.numberFormat === 'numerals') {
         instructions += `\n- NUMBERS: Use numerals for ALL numbers (1, 2, 3, 10, 100, etc.).`;
       } else if (writingStyle.formatting.numberFormat === 'words') {
         instructions += `\n- NUMBERS: Spell out all numbers as words (one, two, three, ten, etc.).`;
+      } else if (typeof writingStyle.formatting.numberFormat === 'string') {
+        instructions += `\n- Number format: ${writingStyle.formatting.numberFormat}`;
       }
+    }
+    // Date format
+    if (writingStyle.formatting.dateFormat) {
+      instructions += `\n- DATE FORMAT: Use ${writingStyle.formatting.dateFormat} for all dates.`;
+    }
+    // Paragraph spacing/indentation (if present)
+    if (writingStyle.formatting.paragraphSpacing) {
+      instructions += `\n- Add ${writingStyle.formatting.paragraphSpacing} between paragraphs.`;
+    }
+    if (writingStyle.formatting.paragraphIndent) {
+      instructions += `\n- Indent each paragraph by ${writingStyle.formatting.paragraphIndent}.`;
+    }
+    // Section order/layout (if present)
+    if (writingStyle.formatting.sectionOrder && Array.isArray(writingStyle.formatting.sectionOrder)) {
+      instructions += `\n- SECTION ORDER: The content must follow this exact section order: ${writingStyle.formatting.sectionOrder.join(' > ')}.`;
     }
   }
 
@@ -47,15 +79,34 @@ function buildStyleGuideInstructions(writingStyle: any, brandVoice: any, messagi
     if (writingStyle.punctuation.oxfordComma !== undefined) {
       instructions += `\n- Oxford comma: ${writingStyle.punctuation.oxfordComma ? 'ALWAYS use' : 'NEVER use'}`;
     }
+    if (writingStyle.punctuation.quotationMarks) {
+      instructions += `\n- Use ${writingStyle.punctuation.quotationMarks === 'double' ? 'double' : 'single'} quotation marks for all quotes.`;
+    }
+    if (writingStyle.punctuation.bulletPoints) {
+      instructions += `\n- Bullet points: ${writingStyle.punctuation.bulletPoints}`;
+    }
+    if (writingStyle.punctuation.hyphenation) {
+      instructions += `\n- Hyphenation: ${writingStyle.punctuation.hyphenation}`;
+    }
   }
 
+  // Internal conventions / custom rules
+  if (writingStyle?.styleGuide?.customRules && Array.isArray(writingStyle.styleGuide.customRules)) {
+    writingStyle.styleGuide.customRules.forEach((rule: string) => {
+      instructions += `\n- ${rule}`;
+    });
+  }
+
+  // Add brand voice and messaging
   if (brandVoice?.brandVoice?.tone) {
     instructions += `\n- Tone: ${brandVoice.brandVoice.tone}`;
   }
-
   if (messaging?.valueProposition) {
     instructions += `\n- Value Proposition: ${messaging.valueProposition}`;
   }
+
+  // Strict compliance warning
+  instructions += `\n\n🚨 STRICT COMPLIANCE: If you do not follow ALL the above layout, formatting, and style rules EXACTLY, your output will be rejected. Do NOT add, remove, or reorder sections. Do NOT use any formatting not specified above. Do NOT improvise.`;
 
   return instructions;
 }
@@ -215,27 +266,38 @@ ${(campaignData.keyMessages || []).map((msg: string) => `#${msg.replace(/\s+/g, 
   }
 }
 
-// Handler for content humanizer endpoint
+// Handler for content humanizer
 async function handleContentHumanizer(data: any, res: NextApiResponse) {
   try {
-    if (!data.content || typeof data.content !== "string") {
-      return res.status(400).json({ error: "Missing or invalid content" });
-    }
+    const { content, parameters } = data;
+    const { 
+      styleGuideParameters,
+      strategicData
+    } = parameters || {};
+
+    const styleInstructions = buildStyleGuideInstructions(
+      styleGuideParameters || strategicData?.writingStyle,
+      strategicData?.brandVoice,
+      strategicData?.messaging
+    );
+
+    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
+${styleInstructions}
+
+Humanize the following content to make it more engaging and conversational while maintaining its professional tone and key messages.
+
+Content: ${content}
+
+Make the content more human, relatable, and engaging while preserving all key information and maintaining the specified style guidelines.
+
+Return only the humanized content.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      temperature: 0.65,
+      model: "gpt-4-turbo",
+      temperature: 0.7,
       messages: [
-        {
-          role: "system",
-          content: "You are a smart, savvy magazine editor. Humanize this copy.",
-        },
-        {
-          role: "user",
-          content: `Humanize and improve this content:
-
-${data.content}`,
-        },
+        { role: "system", content: "You are a content humanization expert." },
+        { role: "user", content: prompt },
       ],
     });
 
@@ -244,7 +306,7 @@ ${data.content}`,
     const cleanedHumanizedContent = cleanGeneratedContent(humanizedContent);
     return res.status(200).json({ content: cleanedHumanizedContent });
   } catch (error) {
-    console.error("OpenAI API Error:", error);
+    console.error("Content humanizer error:", error);
     return res.status(500).json({ error: "Failed to humanize content" });
   }
 }
@@ -265,10 +327,36 @@ async function handleBoilerplateGeneration(data: any, res: NextApiResponse) {
       archetype,
       personality,
       wordCount,
-      numOptions = 3
+      numOptions = 3,
+      writingStyle,
+      strategicData
     } = data;
 
-    const prompt = `Write a brand boilerplate for the following business.\n\nBusiness Name: ${businessName}\nDescription: ${description}\nProduct: ${product}\nAudiences: ${(audiences || []).join(", ")}\nPromise: ${promise}\nTone: ${tone}\nStyle: ${style}\nDifferentiator: ${differentiator}\nPositioning: ${positioning}\nArchetype: ${archetype}\nPersonality: ${(personality || []).join(", ")}\nWord Count: ${wordCount}\n\nReturn only the boilerplate text. Do not include explanations.`;
+    const styleInstructions = buildStyleGuideInstructions(
+      writingStyle || strategicData?.writingStyle,
+      strategicData?.brandVoice,
+      strategicData?.messaging
+    );
+
+    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
+${styleInstructions}
+
+Write a brand boilerplate for the following business.
+
+Business Name: ${businessName}
+Description: ${description}
+Product: ${product}
+Audiences: ${(audiences || []).join(", ")}
+Promise: ${promise}
+Tone: ${tone}
+Style: ${style}
+Differentiator: ${differentiator}
+Positioning: ${positioning}
+Archetype: ${archetype}
+Personality: ${(personality || []).join(", ")}
+Word Count: ${wordCount}
+
+Return only the boilerplate text. Do not include explanations.`;
 
     const completions = await Promise.all(
       Array.from({ length: numOptions }).map(() =>
@@ -306,9 +394,38 @@ async function handleAdaptBoilerplate(data: any, res: NextApiResponse) {
       differentiator,
       positioning,
       archetype,
-      personality
+      personality,
+      writingStyle,
+      strategicData
     } = data;
-    const prompt = `Adapt the following brand boilerplate to approximately ${wordCount} words.\n\nBoilerplate: ${baseBoilerplate}\n\nBusiness Name: ${businessName}\nDescription: ${description}\nProduct: ${product}\nAudiences: ${(audiences || []).join(", ")}\nPromise: ${promise}\nTone: ${tone}\nStyle: ${style}\nDifferentiator: ${differentiator}\nPositioning: ${positioning}\nArchetype: ${archetype}\nPersonality: ${(personality || []).join(", ")}\n\nReturn only the adapted boilerplate text. Do not include explanations.`;
+
+    const styleInstructions = buildStyleGuideInstructions(
+      writingStyle || strategicData?.writingStyle,
+      strategicData?.brandVoice,
+      strategicData?.messaging
+    );
+
+    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
+${styleInstructions}
+
+Adapt the following brand boilerplate to approximately ${wordCount} words.
+
+Boilerplate: ${baseBoilerplate}
+
+Business Name: ${businessName}
+Description: ${description}
+Product: ${product}
+Audiences: ${(audiences || []).join(", ")}
+Promise: ${promise}
+Tone: ${tone}
+Style: ${style}
+Differentiator: ${differentiator}
+Positioning: ${positioning}
+Archetype: ${archetype}
+Personality: ${(personality || []).join(", ")}
+
+Return only the adapted boilerplate text. Do not include explanations.`;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -337,10 +454,32 @@ async function handleTaglineGeneration(data: any, res: NextApiResponse) {
       style,
       archetype,
       personality,
-      numOptions = 5
+      numOptions = 5,
+      writingStyle,
+      strategicData
     } = data;
 
-    const prompt = `Write a catchy, brand-appropriate tagline for the following business.\n\nBusiness Name: ${businessName}\nDescription: ${description}\nAudiences: ${(audiences || []).join(", ")}\nPromise: ${promise}\nTone: ${tone}\nStyle: ${style}\nArchetype: ${archetype}\nPersonality: ${(personality || []).join(", ")}\n\nReturn only the tagline. Do not include explanations.`;
+    const styleInstructions = buildStyleGuideInstructions(
+      writingStyle || strategicData?.writingStyle,
+      strategicData?.brandVoice,
+      strategicData?.messaging
+    );
+
+    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
+${styleInstructions}
+
+Write a catchy, brand-appropriate tagline for the following business.
+
+Business Name: ${businessName}
+Description: ${description}
+Audiences: ${(audiences || []).join(", ")}
+Promise: ${promise}
+Tone: ${tone}
+Style: ${style}
+Archetype: ${archetype}
+Personality: ${(personality || []).join(", ")}
+
+Return only the tagline. Do not include explanations.`;
 
     const completions = await Promise.all(
       Array.from({ length: numOptions }).map(() =>
@@ -417,8 +556,27 @@ Important: Return ONLY the JSON array, no explanations or additional text.`;
 // Handler for content repurposer
 async function handleContentRepurposer(data: any, res: NextApiResponse) {
   try {
-    const { content, sourceFormat, targetFormat, styleGuide, messaging } = data;
-    const prompt = `Repurpose the following content from ${sourceFormat} to ${targetFormat}.\n\nContent: ${content}\n\nStyle Guide: ${JSON.stringify(styleGuide)}\nMessaging: ${JSON.stringify(messaging)}\n\nReturn only the repurposed content.`;
+    const { content, sourceFormat, targetFormat, styleGuide, messaging, strategicData } = data;
+    
+    // FIXED: Build style guide instructions using writing style data
+    const styleInstructions = buildStyleGuideInstructions(
+      styleGuide || strategicData?.writingStyle,
+      strategicData?.brandVoice,
+      messaging || strategicData?.messaging
+    );
+
+    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
+${styleInstructions}
+
+Repurpose the following content from ${sourceFormat} to ${targetFormat}.
+
+Content: ${content}
+
+Style Guide: ${JSON.stringify(styleGuide || strategicData?.writingStyle || {})}
+Messaging: ${JSON.stringify(messaging || strategicData?.messaging || {})}
+
+Return only the repurposed content.`;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -439,12 +597,35 @@ async function handleContentRepurposer(data: any, res: NextApiResponse) {
 async function handleABTestGenerator(data: any, res: NextApiResponse) {
   try {
     const { contentType, contentContext, targetAudience, numVariations } = data;
-    const prompt = `Generate ${numVariations} variations for A/B testing.\n\nType: ${contentType}\nContext: ${contentContext}\nTarget Audience: ${targetAudience}\n\nReturn a JSON array of variations.`;
+    
+    // Get strategic data to access writing style
+    const strategicData = getStrategicDataFromRequest({ data });
+    
+    // Build style guide instructions
+    const styleInstructions = buildStyleGuideInstructions(
+      strategicData?.writingStyle || null,
+      strategicData?.brandVoice || null,
+      strategicData?.messaging || null
+    );
+    
+    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
+${styleInstructions}
+
+Generate ${numVariations} variations for A/B testing.
+
+Type: ${contentType}
+Context: ${contentContext}
+Target Audience: ${targetAudience}
+
+IMPORTANT: Follow the style guide rules above EXACTLY. If the style guide specifies heading case formatting, apply it to any headings or titles in your response.
+
+Return a JSON array of variations. Each variation should be a string.`;
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a marketing copywriter." },
+        { role: "system", content: "You are a marketing copywriter who strictly follows style guide rules." },
         { role: "user", content: prompt },
       ],
     });
@@ -464,8 +645,26 @@ async function handleABTestGenerator(data: any, res: NextApiResponse) {
 // Handler for prose perfector
 async function handleProsePerfector(data: any, res: NextApiResponse) {
   try {
-    const { text, options } = data;
-    const prompt = `Improve the following text for clarity, engagement, and style.\n\nText: ${text}\n\nOptions: ${JSON.stringify(options)}\n\nReturn a JSON object with 'enhancedText' and an array 'suggestions' (each with original, suggestion, reason, type).`;
+    const { text, options, writingStyle, strategicData } = data;
+    
+    // FIXED: Build style guide instructions using writing style data
+    const styleInstructions = buildStyleGuideInstructions(
+      writingStyle || strategicData?.writingStyle,
+      strategicData?.brandVoice,
+      strategicData?.messaging
+    );
+
+    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
+${styleInstructions}
+
+Improve the following text for clarity, engagement, and style.
+
+Text: ${text}
+
+Options: ${JSON.stringify(options || {})}
+
+Return a JSON object with 'enhancedText' and an array 'suggestions' (each with original, suggestion, reason, type).`;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -491,12 +690,41 @@ async function handleProsePerfector(data: any, res: NextApiResponse) {
 async function handleKeyMessages(data: any, res: NextApiResponse) {
   try {
     const { productInfo, competitors, industry, focusAreas, tone, currentFramework } = data;
-    const prompt = `Generate a value proposition, 3 key differentiators, and 5 targeted key messages for the following product.\n\nProduct Info: ${JSON.stringify(productInfo)}\nIndustry: ${industry}\nFocus Areas: ${focusAreas}\nTone: ${tone}\nCurrent Framework: ${JSON.stringify(currentFramework)}\n\nReturn ONLY a valid JSON object with valueProposition, keyDifferentiators (array), and targetedMessages (array). Do not include any explanation or formatting.`;
+    
+    // Get strategic data to access writing style
+    const strategicData = getStrategicDataFromRequest({ data });
+    
+    // Also check for writing style passed directly in the request
+    const requestBody = data.requestBody || {};
+    const directWritingStyle = requestBody.writingStyle;
+    
+    // Build style guide instructions - prioritize direct writing style over strategic data
+    const styleInstructions = buildStyleGuideInstructions(
+      directWritingStyle || strategicData?.writingStyle || null,
+      strategicData?.brandVoice || null,
+      strategicData?.messaging || null
+    );
+    
+    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
+${styleInstructions}
+
+Generate a value proposition, 3 key differentiators, and 5 targeted key messages for the following product.
+
+Product Info: ${JSON.stringify(productInfo)}
+Industry: ${industry}
+Focus Areas: ${focusAreas}
+Tone: ${tone}
+Current Framework: ${JSON.stringify(currentFramework)}
+
+IMPORTANT: Follow the style guide rules above EXACTLY. If the style guide specifies heading case formatting, apply it to any headings or titles in your response.
+
+Return ONLY a valid JSON object with valueProposition, keyDifferentiators (array), and targetedMessages (array). Do not include any explanation or formatting.`;
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a B2B messaging strategist." },
+        { role: "system", content: "You are a B2B messaging strategist who strictly follows style guide rules." },
         { role: "user", content: prompt },
       ],
     });
@@ -560,7 +788,7 @@ Important: Return ONLY the JSON array, no explanations or additional text. Ensur
     });
     let text = response.choices[0].message.content.trim();
     console.log("[CompetitiveAnalysis] AI raw response:", text);
-    let result;
+    let result: any = [];
     try {
       result = JSON.parse(text);
       console.log("[CompetitiveAnalysis] Parsed JSON:", result);
@@ -573,11 +801,11 @@ Important: Return ONLY the JSON array, no explanations or additional text. Ensur
           console.log("[CompetitiveAnalysis] Extracted JSON array:", result);
         } catch (e2) {
           console.error("[CompetitiveAnalysis] Failed to parse extracted JSON array:", e2);
-          result = null;
+          result = [];
         }
       } else {
         console.error("[CompetitiveAnalysis] No JSON array found in AI response.");
-        result = null;
+        result = [];
       }
     }
     if (!result || !Array.isArray(result)) {
@@ -592,7 +820,7 @@ Important: Return ONLY the JSON array, no explanations or additional text. Ensur
         }))
         : [];
     }
-    res.status(200).json(result);
+    return res.status(200).json(result);
   } catch (error) {
     const errorMessage = typeof error === 'object' && error && 'message' in error ? (error as any).message : String(error);
     console.error("[CompetitiveAnalysis] Handler error:", errorMessage);
