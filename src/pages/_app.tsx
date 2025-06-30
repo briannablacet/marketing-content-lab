@@ -12,7 +12,7 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { ContentProvider } from '@/context/ContentContext';
 import { DemoModeProvider } from '@/context/DemoModeContext';
 import { MessagingProvider } from '@/context/MessagingContext';
-import { WritingStyleProvider } from '@/context/WritingStyleContext';
+import { WritingStyleProvider } from '../context/WritingStyleContext';
 import { BrandVoiceProvider } from '@/context/BrandVoiceContext';
 import { AuthProvider } from '@/context/AuthContext';
 import Navbar from '@/components/shared/Navbar';

@@ -223,6 +223,7 @@ const ContentCreatorPage = () => {
 
   // FIXED: Get writing style from context instead of using defaults
   const { writingStyle, isStyleConfigured } = useWritingStyle();
+  console.log('🎨 Content Creator re-rendered with writing style:', writingStyle);
 
   // State for content information
   const [contentType, setContentType] = useState<ContentType | null>(null);

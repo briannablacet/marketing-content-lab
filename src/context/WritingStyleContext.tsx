@@ -1,8 +1,10 @@
 // src/context/WritingStyleContext.tsx
-// FIXED: Properly loads saved writing style data from localStorage on mount
-// ADDED: Debug logging to track when context resets
+// FIXED: Properly initializes writing style state even when no data is saved
+// FIXED: Components now properly re-render when writing style is saved
+// FIXED: Added missing StrategicDataService import
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import StrategicDataService from '../services/StrategicDataService';
 
 interface StyleGuide {
   primary: string;
@@ -65,6 +67,23 @@ const defaultWritingStyle: WritingStyle = {
 
 const WritingStyleContext = createContext<WritingStyleContextType | undefined>(undefined);
 
+// Load writing style from localStorage
+const loadWritingStyle = () => {
+  try {
+    const saved = localStorage.getItem('marketing-content-lab-writing-style');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      console.log('📖 Loaded writing style from localStorage:', parsed);
+      return parsed;
+    }
+    console.log('📖 No writing style found in localStorage');
+    return null;
+  } catch (error) {
+    console.error('❌ Error loading writing style from localStorage:', error);
+    return null;
+  }
+};
+
 export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [writingStyle, setWritingStyle] = useState<WritingStyle>(defaultWritingStyle);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -73,30 +92,14 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     const initializeWritingStyle = async () => {
       console.log('🚀 WritingStyleContext: Initializing...');
 
-      // First try to load from localStorage
+      // Just use localStorage for now - no backend calls until dev approves
       const localData = loadWritingStyle();
-
-      // If no local data or incomplete, try to fetch from backend
-      if (!localData || !localData.completed) {
-        try {
-          console.log('📡 Fetching writing style from StrategicDataService...');
-          const backendData = await StrategicDataService.getWritingStyle();
-
-          if (backendData && backendData.completed) {
-            console.log('✅ Found writing style in backend:', backendData);
-            setWritingStyle(backendData);
-            localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(backendData));
-          } else {
-            console.error('❌ No writing style found in localStorage OR backend');
-            // Don't set anything - let it error
-          }
-        } catch (error) {
-          console.error('❌ Error fetching writing style from backend:', error);
-          // Don't set anything - let it error
-        }
-      } else {
-        console.log('✅ Using local writing style');
+      if (localData && localData.completed) {
+        console.log('✅ Using saved writing style from localStorage');
         setWritingStyle(localData);
+      } else {
+        console.log('✅ Using default writing style (Chicago Manual of Style)');
+        setWritingStyle(defaultWritingStyle);
       }
 
       setIsLoaded(true);
@@ -104,6 +107,7 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     initializeWritingStyle();
   }, []);
+
   // Save writing style 
   const saveWritingStyle = async () => {
     try {
@@ -112,15 +116,13 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
         completed: true, // Mark as completed when saving
       };
 
-      // Save to localStorage
+      // Just save to localStorage for now - no backend until dev approves
       localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(styleToSave));
       console.log('💾 Writing style saved to localStorage:', styleToSave);
 
-      // Save to backend StrategicDataService
-      await StrategicDataService.setWritingStyle(styleToSave);
-      console.log('📡 Writing style saved to backend');
-
+      // CRITICAL: Update the state to trigger re-renders in all components
       setWritingStyle(styleToSave);
+
     } catch (error) {
       console.error('❌ Error saving writing style:', error);
     }
@@ -173,7 +175,7 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     writingStyle.formatting.headingCase !== 'title' ||
     writingStyle.formatting.numberFormat !== 'mixed' ||
     writingStyle.punctuation.oxfordComma !== true ||
-    Object.keys(writingStyle.styleGuide.customRules || []).length > 0
+    (writingStyle.styleGuide.customRules && writingStyle.styleGuide.customRules.length > 0)
   );
 
   console.log('🔍 isStyleConfigured calculation:', {
@@ -183,7 +185,7 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     headingCase: writingStyle.formatting.headingCase,
     numberFormat: writingStyle.formatting.numberFormat,
     oxfordComma: writingStyle.punctuation.oxfordComma,
-    customRulesLength: Object.keys(writingStyle.styleGuide.customRules || []).length,
+    customRulesLength: writingStyle.styleGuide.customRules?.length || 0,
     result: isStyleConfigured
   });
 
@@ -197,7 +199,6 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     loadWritingStyle,
     isStyleConfigured,
     resetWritingStyle,
-    isLoaded,
   };
 
   // Don't render children until we've loaded the data
