@@ -1,12 +1,12 @@
 // src/components/features/BoilerplateGenerator/index.tsx
-
+// Fixed with: three separate boxes, individual accept buttons, better auto-population, removed writing style
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../ui/card';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
 import StrategicDataService from '../../../services/StrategicDataService';
 import { useRouter } from 'next/router';
-import { Loader2, FileText, CheckCircle, Save, Plus, X, Sparkles } from 'lucide-react';
+import { Loader2, FileText, CheckCircle, Save, Plus, X, Sparkles, Copy, Users, Target, Lightbulb } from 'lucide-react';
 import PageLayout from '../../shared/PageLayout';
 
 // Update type definitions
@@ -55,67 +55,101 @@ const BoilerplateGenerator: React.FC = () => {
     const [description, setDescription] = useState('');
     const [differentiator, setDifferentiator] = useState('');
     const [positioning, setPositioning] = useState('');
-    const [style, setStyle] = useState('visionary');
-    const [generatedOptions, setGeneratedOptions] = useState<string[]>([]);
-    const [selectedBoilerplate, setSelectedBoilerplate] = useState<string | null>(null);
-    const [otherLengths, setOtherLengths] = useState<Record<string, string>>({});
+
+    // NEW: Simplified state for three versions
+    const [generatedVersions, setGeneratedVersions] = useState<{
+        short: string;
+        medium: string;
+        long: string;
+    }>({ short: '', medium: '', long: '' });
+
+    const [editableVersions, setEditableVersions] = useState<{
+        short: string;
+        medium: string;
+        long: string;
+    }>({ short: '', medium: '', long: '' });
+
+    const [acceptedVersions, setAcceptedVersions] = useState<{
+        short: boolean;
+        medium: boolean;
+        long: boolean;
+    }>({ short: false, medium: false, long: false });
+
     const [showWalkthroughPrompt, setShowWalkthroughPrompt] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
-    const [isAccepted, setIsAccepted] = useState(false);
-    const [selectedWordCount, setSelectedWordCount] = useState<'20' | '50' | '100'>('20');
-    const [showOtherLengths, setShowOtherLengths] = useState(false);
+    const [showResults, setShowResults] = useState(false);
     const [archetype, setArchetype] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [editableBoilerplates, setEditableBoilerplates] = useState<{
-        [key: string]: string;
-    }>({});
-    const [generationStep, setGenerationStep] = useState<'initial' | 'adapting'>('initial');
+    const [copySuccess, setCopySuccess] = useState<string | null>(null);
 
     const { brandVoice } = useBrandVoice();
     const router = useRouter();
 
-    // Load saved boilerplates when component mounts
+    // Enhanced copy functionality
+    const handleCopy = async (text: string, label: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopySuccess(label);
+            setTimeout(() => setCopySuccess(null), 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+    };
+
+    // Enhanced auto-populate with better field detection
     useEffect(() => {
-        const savedBoilerplates = JSON.parse(localStorage.getItem('brandBoilerplates') || '[]');
-        if (savedBoilerplates && savedBoilerplates.length > 0) {
-            // Map saved boilerplates to target lengths (20, 50, 100)
-            const targetLengths = ['20', '50', '100'];
-            const mappedBoilerplates: Record<string, string> = {};
+        const {
+            productName,
+            productDescription,
+            idealCustomer,
+            brandArchetype,
+            valueProposition,
+            messaging
+        } = StrategicDataService.getAllStrategicDataFromStorage();
 
-            // Only take the first three boilerplates
-            savedBoilerplates.slice(0, 3).forEach((text: string, index: number) => {
-                if (index < targetLengths.length) {
-                    mappedBoilerplates[targetLengths[index]] = text;
-                }
-            });
+        // Populate business name
+        if (productName) setBusinessName(productName);
 
-            // Set the selected boilerplate based on selectedWordCount
-            if (mappedBoilerplates[selectedWordCount]) {
-                setSelectedBoilerplate(mappedBoilerplates[selectedWordCount]);
+        // Populate description 
+        if (productDescription) setDescription(productDescription);
+
+        // Populate ideal customer/audiences with better handling
+        if (idealCustomer) {
+            if (Array.isArray(idealCustomer)) {
+                setAudiences(idealCustomer.length > 0 ? idealCustomer : ['']);
+            } else {
+                setAudiences([idealCustomer]);
             }
+        }
 
-            // Set other lengths
-            const otherLengths: Record<string, string> = {};
-            Object.entries(mappedBoilerplates).forEach(([count, text]) => {
-                if (count !== selectedWordCount) {
-                    otherLengths[count] = text;
+        // Populate value proposition from multiple sources
+        if (valueProposition) setPositioning(valueProposition);
+        if (messaging?.valueProposition) setPositioning(messaging.valueProposition);
+
+        // Set archetype and tone from brand voice with fallback
+        if (brandVoice?.brandVoice?.archetype) {
+            setArchetype(brandVoice.brandVoice.archetype);
+            if (brandVoice.brandVoice.tone) {
+                setTone(brandVoice.brandVoice.tone);
+            } else {
+                const selectedArchetype = BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype);
+                if (selectedArchetype) {
+                    setTone(selectedArchetype.defaultTone);
                 }
+            }
+        }
+
+        // Load existing saved boilerplates if they exist
+        const savedBoilerplates = JSON.parse(localStorage.getItem('brandBoilerplates') || '[]');
+        if (savedBoilerplates && savedBoilerplates.length >= 3) {
+            setEditableVersions({
+                short: savedBoilerplates[0] || '',
+                medium: savedBoilerplates[1] || '',
+                long: savedBoilerplates[2] || ''
             });
-
-            setOtherLengths(otherLengths);
-            setEditableBoilerplates(mappedBoilerplates);
-            setShowOtherLengths(true);
+            setShowResults(true);
         }
-    }, [selectedWordCount]);
-
-    useEffect(() => {
-        const savedBoilerplates = localStorage.getItem('savedBoilerplates');
-        if (savedBoilerplates) {
-            setEditableBoilerplates(JSON.parse(savedBoilerplates));
-        }
-    }, []);
+    }, [brandVoice]);
 
     const addAudience = () => {
         setAudiences([...audiences, '']);
@@ -132,246 +166,6 @@ const BoilerplateGenerator: React.FC = () => {
         setAudiences(newAudiences);
     };
 
-    const handleReset = () => {
-        setGeneratedOptions([]);
-        setSelectedBoilerplate(null);
-        setOtherLengths({});
-        setEditableBoilerplates({});
-        setShowPreview(false);
-        setShowOtherLengths(false);
-        setGenerationStep('initial');
-        localStorage.removeItem('savedBoilerplates');
-    };
-
-    const generateBoilerplates = async () => {
-        setIsGenerating(true);
-        setGenerationStep('initial');
-        const payload = {
-            businessName,
-            description,
-            product,
-            audiences: audiences.filter(a => a.trim() !== ''),
-            promise,
-            tone,
-            style,
-            differentiator,
-            positioning,
-            archetype: brandVoice?.brandVoice?.archetype || '',
-            personality: brandVoice?.brandVoice?.personality || [],
-            wordCount: selectedWordCount,
-            numOptions: 3  // Request 3 different options
-        };
-
-        try {
-            const response = await fetch('/api/api_endpoints', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: 'boilerplate', data: payload })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to generate boilerplates');
-            }
-
-            const result = await response.json();
-            setGeneratedOptions(result);
-            setShowPreview(true);
-        } catch (error) {
-            console.error('Error generating boilerplates:', error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const generateOtherLengths = async (baseBoilerplate: string) => {
-        setIsGenerating(true);
-        const otherCounts = ['20', '50', '100'].filter(count => count !== selectedWordCount);
-
-        try {
-            for (const count of otherCounts) {
-                const payload = {
-                    businessName,
-                    description,
-                    product,
-                    audiences: audiences.filter(a => a.trim() !== ''),
-                    promise,
-                    tone,
-                    style,
-                    differentiator,
-                    positioning,
-                    archetype: brandVoice?.brandVoice?.archetype || '',
-                    personality: brandVoice?.brandVoice?.personality || [],
-                    wordCount: count,
-                    baseBoilerplate  // Pass the selected boilerplate to adapt
-                };
-
-                const response = await fetch('/api/api_endpoints', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'adaptBoilerplate', data: payload })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to generate adapted boilerplate');
-                }
-
-                const result = await response.json();
-                setOtherLengths(prev => ({
-                    ...prev,
-                    [count]: result[0] || ''
-                }));
-            }
-            setShowOtherLengths(true);
-        } catch (error) {
-            console.error('Error generating other lengths:', error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const handleAcceptGenerated = async (boilerplate: string) => {
-        setSelectedBoilerplate(boilerplate);
-        setIsGenerating(true);
-        setGenerationStep('adapting');
-
-        try {
-            // Generate other lengths - only 50 and 100 if we're starting with 20
-            const otherCounts = selectedWordCount === '20' ? ['50', '100'] :
-                selectedWordCount === '50' ? ['20', '100'] :
-                    ['20', '50'];
-
-            const newOtherLengths: { [key: string]: string } = {};
-
-            for (const count of otherCounts) {
-                const payload = {
-                    businessName,
-                    description,
-                    product,
-                    audiences: audiences.filter(a => a.trim() !== ''),
-                    promise,
-                    tone,
-                    style,
-                    differentiator,
-                    positioning,
-                    archetype: brandVoice?.brandVoice?.archetype || '',
-                    personality: brandVoice?.brandVoice?.personality || [],
-                    wordCount: count,
-                    baseBoilerplate: boilerplate
-                };
-
-                const response = await fetch('/api/api_endpoints', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'adaptBoilerplate', data: payload })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to generate adapted boilerplate');
-                }
-
-                const result = await response.json();
-                newOtherLengths[count] = result[0] || '';
-            }
-
-            // Save all versions to editable state
-            const allBoilerplates = {
-                [selectedWordCount]: boilerplate,
-                ...newOtherLengths
-            };
-            setEditableBoilerplates(allBoilerplates);
-            localStorage.setItem('savedBoilerplates', JSON.stringify(allBoilerplates));
-
-            setOtherLengths(newOtherLengths);
-            setShowOtherLengths(true);
-        } catch (error) {
-            console.error('Error generating other lengths:', error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const handleBoilerplateEdit = (wordCount: string, newText: string) => {
-        const updatedBoilerplates = {
-            ...editableBoilerplates,
-            [wordCount]: newText
-        };
-        setEditableBoilerplates(updatedBoilerplates);
-        localStorage.setItem('savedBoilerplates', JSON.stringify(updatedBoilerplates));
-    };
-
-    const handleSave = async () => {
-        if (!selectedBoilerplate) return;
-
-        // Get the boilerplates in the correct order (20, 50, 100)
-        const orderedBoilerplates = [
-            editableBoilerplates['20'] || '',
-            editableBoilerplates['50'] || '',
-            editableBoilerplates['100'] || ''
-        ].filter(Boolean).slice(0, 3); // Ensure only three versions
-
-        console.log('Saving boilerplates:', {
-            orderedBoilerplates
-        });
-
-        // Save to localStorage as an array
-        localStorage.setItem('brandBoilerplates', JSON.stringify(orderedBoilerplates));
-        console.log('Saved to localStorage:', localStorage.getItem('brandBoilerplates'));
-
-        // Save individual versions to localStorage for backward compatibility
-        Object.entries(editableBoilerplates).forEach(([count, text]) => {
-            localStorage.setItem(`marketingBoilerplate${count}`, text);
-        });
-
-        // Save to StrategicDataService
-        try {
-            await StrategicDataService.setStrategicDataValue('boilerplates', orderedBoilerplates);
-            Object.entries(editableBoilerplates).forEach(async ([count, text]) => {
-                await StrategicDataService.setStrategicDataValue(`boilerplate${count}`, text);
-            });
-            console.log('Saved to StrategicDataService');
-            setIsAccepted(true);
-        } catch (error) {
-            console.error('Error saving boilerplates:', error);
-            setIsAccepted(true);
-        }
-    };
-
-    useEffect(() => {
-        const {
-            productName,
-            productDescription,
-            idealCustomer,
-            brandArchetype,
-            boilerplate,
-            valueProposition
-        } = StrategicDataService.getAllStrategicDataFromStorage();
-
-        if (productName) setBusinessName(productName);
-        if (productDescription) setDescription(productDescription);
-        if (idealCustomer) {
-            if (Array.isArray(idealCustomer)) {
-                setAudiences(idealCustomer.length > 0 ? idealCustomer : ['']);
-            } else {
-                setAudiences([idealCustomer]);
-            }
-        }
-        if (boilerplate) setSelectedBoilerplate(boilerplate);
-        if (valueProposition) setPositioning(valueProposition);
-
-        // Set archetype and tone from brand voice if available
-        if (brandVoice?.brandVoice?.archetype) {
-            setArchetype(brandVoice.brandVoice.archetype);
-            if (brandVoice.brandVoice.tone) {
-                setTone(brandVoice.brandVoice.tone);
-            } else {
-                const selectedArchetype = BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype);
-                if (selectedArchetype) {
-                    setTone(selectedArchetype.defaultTone);
-                }
-            }
-        }
-    }, [brandVoice]);
-
     const handleArchetypeChange = (value: string) => {
         setArchetype(value);
         const selected = BRAND_ARCHETYPES.find(a => a.name === value);
@@ -380,13 +174,129 @@ const BoilerplateGenerator: React.FC = () => {
         }
     };
 
+    // NEW: Generate all three versions at once
+    const generateBoilerplates = async () => {
+        setIsGenerating(true);
+        setError(null);
+
+        const payload = {
+            businessName,
+            description,
+            product,
+            audiences: audiences.filter(a => a.trim() !== ''),
+            promise,
+            tone,
+            differentiator,
+            positioning,
+            archetype: brandVoice?.brandVoice?.archetype || archetype,
+            personality: brandVoice?.brandVoice?.personality || [],
+        };
+
+        try {
+            // Generate all three versions simultaneously
+            const [shortResponse, mediumResponse, longResponse] = await Promise.all([
+                fetch('/api/api_endpoints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'boilerplate',
+                        data: { ...payload, wordCount: '20', numOptions: 1 }
+                    })
+                }),
+                fetch('/api/api_endpoints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'boilerplate',
+                        data: { ...payload, wordCount: '50', numOptions: 1 }
+                    })
+                }),
+                fetch('/api/api_endpoints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'boilerplate',
+                        data: { ...payload, wordCount: '100', numOptions: 1 }
+                    })
+                })
+            ]);
+
+            if (!shortResponse.ok || !mediumResponse.ok || !longResponse.ok) {
+                throw new Error('Failed to generate boilerplates');
+            }
+
+            const [shortResult, mediumResult, longResult] = await Promise.all([
+                shortResponse.json(),
+                mediumResponse.json(),
+                longResponse.json()
+            ]);
+
+            const newVersions = {
+                short: shortResult[0] || '',
+                medium: mediumResult[0] || '',
+                long: longResult[0] || ''
+            };
+
+            setGeneratedVersions(newVersions);
+            setEditableVersions(newVersions);
+            setShowResults(true);
+            setAcceptedVersions({ short: false, medium: false, long: false });
+
+        } catch (error) {
+            console.error('Error generating boilerplates:', error);
+            setError('Failed to generate boilerplates. Please try again.');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    // NEW: Accept individual versions
+    const acceptVersion = async (version: 'short' | 'medium' | 'long') => {
+        setAcceptedVersions(prev => ({ ...prev, [version]: true }));
+
+        // Save to localStorage and StrategicDataService
+        const orderedBoilerplates = [
+            editableVersions.short,
+            editableVersions.medium,
+            editableVersions.long
+        ];
+
+        localStorage.setItem('brandBoilerplates', JSON.stringify(orderedBoilerplates));
+
+        try {
+            await StrategicDataService.setStrategicDataValue('boilerplates', orderedBoilerplates);
+            await StrategicDataService.setStrategicDataValue('boilerplate20', editableVersions.short);
+            await StrategicDataService.setStrategicDataValue('boilerplate50', editableVersions.medium);
+            await StrategicDataService.setStrategicDataValue('boilerplate100', editableVersions.long);
+        } catch (error) {
+            console.error('Error saving boilerplate:', error);
+        }
+    };
+
+    // NEW: Update individual versions
+    const updateVersion = (version: 'short' | 'medium' | 'long', text: string) => {
+        setEditableVersions(prev => ({ ...prev, [version]: text }));
+        // Reset accepted status when editing
+        setAcceptedVersions(prev => ({ ...prev, [version]: false }));
+    };
+
+    // NEW: Clean reset
+    const handleReset = () => {
+        setGeneratedVersions({ short: '', medium: '', long: '' });
+        setEditableVersions({ short: '', medium: '', long: '' });
+        setAcceptedVersions({ short: false, medium: false, long: false });
+        setShowResults(false);
+        setError(null);
+        localStorage.removeItem('brandBoilerplates');
+    };
+
     return (
         <PageLayout
             title=""
             description=""
             showHelpPrompt={showWalkthroughPrompt}
             helpPromptText="Need help? Let AI suggest a boilerplate based on your"
-            helpPromptLink="/brand-personality"
+            helpPromptLink="/brand-voice"
             helpPromptLinkText="brand voice and strategic data"
         >
             <div className="space-y-8 w-full">
@@ -394,91 +304,49 @@ const BoilerplateGenerator: React.FC = () => {
                     <FileText className="w-8 h-8 text-blue-600" />
                     <h1 className="text-3xl font-bold text-gray-900">Craft Your Boilerplate</h1>
                 </div>
-                <p className="text-gray-600">Generate boilerplates shaped by your tone, positioning, and personality</p>
+                <p className="text-gray-600">Generate three boilerplate versions (20, 50, and 100 words) shaped by your tone, positioning, and personality</p>
 
                 <div className="grid gap-4">
-                    {/* SAVED BOILERPLATE DISPLAY */}
-                    {selectedBoilerplate && !showPreview && (
-                        <Card className="p-6 bg-white-50 border-gray-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <CheckCircle className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-xl font-semibold text-gray-900">Your Boilerplate</h2>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <h3 className="text-sm font-medium text-gray-700">{selectedWordCount}-Word Version</h3>
-                                    <textarea
-                                        value={selectedBoilerplate}
-                                        onChange={(e) => setSelectedBoilerplate(e.target.value)}
-                                        className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
-                                        rows={4}
-                                    />
-                                </div>
-                                {showOtherLengths && Object.entries(otherLengths)
-                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                    .map(([count, text]) => (
-                                        <div key={count} className="space-y-2">
-                                            <h3 className="text-sm font-medium text-gray-700">{count}-Word Version</h3>
-                                            <textarea
-                                                value={text}
-                                                onChange={(e) => {
-                                                    setOtherLengths(prev => ({
-                                                        ...prev,
-                                                        [count]: e.target.value
-                                                    }));
-                                                }}
-                                                className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
-                                                rows={4}
-                                            />
-                                        </div>
-                                    ))}
-                            </div>
-                            <div className="mt-4 flex gap-2">
-                                <button
-                                    onClick={handleSave}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-green-700"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    Edit and Save
-                                </button>
-                                {isAccepted && (
-                                    <span className="flex items-center gap-1 text-blue-600 text-sm">
-                                        <CheckCircle className="w-4 h-4" />
-                                        Saved!
-                                    </span>
-                                )}
-                            </div>
-                        </Card>
-                    )}
-
                     {/* MAIN INPUT CARD */}
                     <Card className="p-6">
                         <div className="mb-6">
                             <h2 className="text-2xl font-semibold text-gray-900">Let's create your boilerplate</h2>
-                            <p className="text-gray-600 mt-2">We'll use this information to generate boilerplates that match your brand</p>
+                            <p className="text-gray-600 mt-2">We'll use this information to generate three versions that match your brand</p>
                         </div>
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Business name</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Business name
+                                </label>
                                 <input
                                     type="text"
                                     value={businessName}
                                     onChange={e => setBusinessName(e.target.value)}
                                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Enter your business name"
                                 />
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Business description</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Business description
+                                    {description && <span className="text-green-600 ml-2">✓ Auto-filled</span>}
+                                </label>
                                 <textarea
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
                                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     rows={4}
+                                    placeholder="Describe what your business does"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Ideal customers or audiences</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <Users className="w-4 h-4 inline mr-1" />
+                                    Ideal customers or audiences
+                                    {audiences.some(a => a.trim()) && <span className="text-green-600 ml-2">✓ Auto-filled</span>}
+                                </label>
                                 <div className="space-y-3">
                                     {audiences.map((audience, index) => (
                                         <div key={index} className="flex gap-2">
@@ -510,27 +378,38 @@ const BoilerplateGenerator: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">What problem are you solving?</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <Target className="w-4 h-4 inline mr-1" />
+                                    What problem are you solving?
+                                </label>
                                 <input
                                     type="text"
                                     value={promise}
                                     onChange={e => setPromise(e.target.value)}
                                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="What key problem does your business solve?"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Key differentiator</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <Lightbulb className="w-4 h-4 inline mr-1" />
+                                    Key differentiator
+                                </label>
                                 <input
                                     type="text"
                                     value={differentiator}
                                     onChange={e => setDifferentiator(e.target.value)}
                                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="What makes you different from competitors?"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Value Proposition</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Value Proposition
+                                    {positioning && <span className="text-green-600 ml-2">✓ Auto-filled</span>}
+                                </label>
                                 <input
                                     type="text"
                                     value={positioning}
@@ -541,7 +420,10 @@ const BoilerplateGenerator: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Brand Archetype</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Brand Archetype
+                                    {archetype && <span className="text-green-600 ml-2">✓ Auto-filled</span>}
+                                </label>
                                 <select
                                     value={archetype}
                                     onChange={e => handleArchetypeChange(e.target.value)}
@@ -561,7 +443,10 @@ const BoilerplateGenerator: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">What tone should it reflect?</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    What tone should it reflect?
+                                    {tone && <span className="text-green-600 ml-2">✓ Auto-filled</span>}
+                                </label>
                                 <select
                                     value={tone}
                                     onChange={e => setTone(e.target.value)}
@@ -574,142 +459,193 @@ const BoilerplateGenerator: React.FC = () => {
                                 </select>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Writing style</label>
-                                <select
-                                    value={style}
-                                    onChange={e => setStyle(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="visionary">Visionary</option>
-                                    <option value="punchy">Punchy</option>
-                                    <option value="straightforward">Straightforward</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Word Count</label>
-                                <select
-                                    value={selectedWordCount}
-                                    onChange={e => setSelectedWordCount(e.target.value as '20' | '50' | '100')}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="20">20 Words (Short)</option>
-                                    <option value="50">50 Words (Standard)</option>
-                                    <option value="100">100 Words (Detailed)</option>
-                                </select>
-                                <p className="mt-2 text-sm text-gray-600">
-                                    Choose your favorite 20-word option and we'll expand it into 50- and 100-word versions.
-                                </p>
-                            </div>
+                            {/* REMOVED: Writing style section as requested */}
 
                             <button
                                 onClick={generateBoilerplates}
-                                disabled={isGenerating}
+                                disabled={isGenerating || !businessName || !description}
                                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isGenerating ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
-                                        {generationStep === 'initial'
-                                            ? 'Generating Initial Options...'
-                                            : 'Generating Multiple Length Options...'}
+                                        Generating Three Versions...
                                     </>
                                 ) : (
                                     <>
-                                        <Sparkles className="w-5 h-5 mr-2 text-white" />
-                                        {`Generate ${selectedWordCount}-Word Options`}
+                                        <Sparkles className="w-5 h-5" />
+                                        Generate Three Boilerplate Versions
                                     </>
                                 )}
                             </button>
+
+                            {error && (
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                                    <p className="text-red-700">{error}</p>
+                                </div>
+                            )}
                         </div>
                     </Card>
 
-                    {/* PREVIEW OF GENERATED OPTIONS */}
-                    {showPreview && (
-                        <Card className="p-6">
-                            {!selectedBoilerplate ? (
-                                <>
-                                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Generated Boilerplate Options</h2>
-                                    <p className="text-gray-600 mb-4">
-                                        Choose your favorite option below. We'll automatically generate 50-word and 100-word versions of your selection.
-                                    </p>
-                                    <div className="space-y-4">
-                                        {generatedOptions.map((boilerplate, i) => (
-                                            <div key={i} className="bg-gray-50 p-4 rounded-lg border space-y-2">
-                                                <strong className="text-gray-900">Option {i + 1}</strong>
-                                                <p className="text-gray-800">{boilerplate}</p>
-                                                <div className="flex justify-end gap-3">
-                                                    <button
-                                                        onClick={() => navigator.clipboard.writeText(boilerplate)}
-                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                                    >
-                                                        Copy
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleAcceptGenerated(boilerplate)}
-                                                        className="text-sm text-green-600 hover:text-green-700 font-medium"
-                                                    >
-                                                        Use This Version
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Boilerplate Versions</h2>
-                                    <p className="text-gray-600 mb-4">
-                                        Review and edit all versions of your boilerplate. Click "Save" when you're happy with your changes.
-                                    </p>
-                                    <div className="space-y-4">
-                                        {Object.entries(editableBoilerplates)
-                                            .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                            .map(([count, text]) => (
-                                                <div key={count} className="bg-gray-50 p-4 rounded-lg border space-y-2">
-                                                    <strong className="text-gray-900">{count} Words</strong>
-                                                    <textarea
-                                                        value={text}
-                                                        onChange={(e) => handleBoilerplateEdit(count, e.target.value)}
-                                                        className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
-                                                        rows={4}
-                                                    />
-                                                </div>
-                                            ))}
-                                        <div className="flex justify-end gap-3 mt-4">
-                                            <button
-                                                onClick={handleReset}
-                                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                                            >
-                                                <X className="w-4 h-4" />
-                                                Reset Options
-                                            </button>
-                                            <button
-                                                onClick={generateBoilerplates}
-                                                className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                                Generate Again
-                                            </button>
-                                            <button
-                                                onClick={handleSave}
-                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                            >
-                                                <Save className="w-4 h-4" />
-                                                Save
-                                            </button>
-                                            {isAccepted && (
-                                                <span className="flex items-center gap-1 text-blue-600 text-sm">
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    Saved!
-                                                </span>
+                    {/* NEW: Three Separate Result Boxes */}
+                    {showResults && (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-2xl font-semibold text-gray-900">Your Boilerplate Versions</h2>
+                                <button
+                                    onClick={handleReset}
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                                >
+                                    <X className="w-4 h-4" />
+                                    Start Over
+                                </button>
+                            </div>
+
+                            {/* 20-Word Version */}
+                            <Card className="p-6 border-l-4 border-l-green-500">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-900">20-Word Version (Short)</h3>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleCopy(editableVersions.short, 'short')}
+                                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                            {copySuccess === 'short' ? 'Copied!' : 'Copy'}
+                                        </button>
+                                        <button
+                                            onClick={() => acceptVersion('short')}
+                                            disabled={acceptedVersions.short}
+                                            className={`px-4 py-2 rounded-md text-sm font-medium ${acceptedVersions.short
+                                                    ? 'bg-green-100 text-green-700 cursor-default'
+                                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                                }`}
+                                        >
+                                            {acceptedVersions.short ? (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 inline mr-1" />
+                                                    Accepted
+                                                </>
+                                            ) : (
+                                                'Accept This Version'
                                             )}
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea
+                                    value={editableVersions.short}
+                                    onChange={(e) => updateVersion('short', e.target.value)}
+                                    className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
+                                    rows={3}
+                                    placeholder="Your 20-word boilerplate will appear here..."
+                                />
+                            </Card>
+
+                            {/* 50-Word Version */}
+                            <Card className="p-6 border-l-4 border-l-blue-500">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-900">50-Word Version (Standard)</h3>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleCopy(editableVersions.medium, 'medium')}
+                                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                            {copySuccess === 'medium' ? 'Copied!' : 'Copy'}
+                                        </button>
+                                        <button
+                                            onClick={() => acceptVersion('medium')}
+                                            disabled={acceptedVersions.medium}
+                                            className={`px-4 py-2 rounded-md text-sm font-medium ${acceptedVersions.medium
+                                                    ? 'bg-green-100 text-green-700 cursor-default'
+                                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                                }`}
+                                        >
+                                            {acceptedVersions.medium ? (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 inline mr-1" />
+                                                    Accepted
+                                                </>
+                                            ) : (
+                                                'Accept This Version'
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea
+                                    value={editableVersions.medium}
+                                    onChange={(e) => updateVersion('medium', e.target.value)}
+                                    className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
+                                    rows={4}
+                                    placeholder="Your 50-word boilerplate will appear here..."
+                                />
+                            </Card>
+
+                            {/* 100-Word Version */}
+                            <Card className="p-6 border-l-4 border-l-purple-500">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-900">100-Word Version (Detailed)</h3>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleCopy(editableVersions.long, 'long')}
+                                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                            {copySuccess === 'long' ? 'Copied!' : 'Copy'}
+                                        </button>
+                                        <button
+                                            onClick={() => acceptVersion('long')}
+                                            disabled={acceptedVersions.long}
+                                            className={`px-4 py-2 rounded-md text-sm font-medium ${acceptedVersions.long
+                                                    ? 'bg-green-100 text-green-700 cursor-default'
+                                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                                }`}
+                                        >
+                                            {acceptedVersions.long ? (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 inline mr-1" />
+                                                    Accepted
+                                                </>
+                                            ) : (
+                                                'Accept This Version'
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea
+                                    value={editableVersions.long}
+                                    onChange={(e) => updateVersion('long', e.target.value)}
+                                    className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
+                                    rows={6}
+                                    placeholder="Your 100-word boilerplate will appear here..."
+                                />
+                            </Card>
+
+                            {/* Summary Status */}
+                            <Card className="p-4 bg-gray-50">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-sm text-gray-600">Status:</span>
+                                        <div className="flex gap-4">
+                                            <span className={`text-sm ${acceptedVersions.short ? 'text-green-600' : 'text-gray-400'}`}>
+                                                {acceptedVersions.short ? '✓' : '○'} Short
+                                            </span>
+                                            <span className={`text-sm ${acceptedVersions.medium ? 'text-green-600' : 'text-gray-400'}`}>
+                                                {acceptedVersions.medium ? '✓' : '○'} Standard
+                                            </span>
+                                            <span className={`text-sm ${acceptedVersions.long ? 'text-green-600' : 'text-gray-400'}`}>
+                                                {acceptedVersions.long ? '✓' : '○'} Detailed
+                                            </span>
                                         </div>
                                     </div>
-                                </>
-                            )}
-                        </Card>
+                                    {(acceptedVersions.short || acceptedVersions.medium || acceptedVersions.long) && (
+                                        <span className="text-sm text-green-600 font-medium">
+                                            Saved to your brand assets!
+                                        </span>
+                                    )}
+                                </div>
+                            </Card>
+                        </div>
                     )}
                 </div>
             </div>
