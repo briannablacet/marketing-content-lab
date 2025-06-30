@@ -1,3 +1,5 @@
+//changes to fix tagline generator 
+
 import { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
 
@@ -270,7 +272,7 @@ ${(campaignData.keyMessages || []).map((msg: string) => `#${msg.replace(/\s+/g, 
 async function handleContentHumanizer(data: any, res: NextApiResponse) {
   try {
     const { content, parameters } = data;
-    const { 
+    const {
       styleGuideParameters,
       strategicData
     } = parameters || {};
@@ -557,7 +559,7 @@ Important: Return ONLY the JSON array, no explanations or additional text.`;
 async function handleContentRepurposer(data: any, res: NextApiResponse) {
   try {
     const { content, sourceFormat, targetFormat, styleGuide, messaging, strategicData } = data;
-    
+
     // FIXED: Build style guide instructions using writing style data
     const styleInstructions = buildStyleGuideInstructions(
       styleGuide || strategicData?.writingStyle,
@@ -597,17 +599,17 @@ Return only the repurposed content.`;
 async function handleABTestGenerator(data: any, res: NextApiResponse) {
   try {
     const { contentType, contentContext, targetAudience, numVariations } = data;
-    
+
     // Get strategic data to access writing style
     const strategicData = getStrategicDataFromRequest({ data });
-    
+
     // Build style guide instructions
     const styleInstructions = buildStyleGuideInstructions(
       strategicData?.writingStyle || null,
       strategicData?.brandVoice || null,
       strategicData?.messaging || null
     );
-    
+
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -620,7 +622,7 @@ Target Audience: ${targetAudience}
 IMPORTANT: Follow the style guide rules above EXACTLY. If the style guide specifies heading case formatting, apply it to any headings or titles in your response.
 
 Return a JSON array of variations. Each variation should be a string.`;
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -646,7 +648,7 @@ Return a JSON array of variations. Each variation should be a string.`;
 async function handleProsePerfector(data: any, res: NextApiResponse) {
   try {
     const { text, options, writingStyle, strategicData } = data;
-    
+
     // FIXED: Build style guide instructions using writing style data
     const styleInstructions = buildStyleGuideInstructions(
       writingStyle || strategicData?.writingStyle,
@@ -690,21 +692,21 @@ Return a JSON object with 'enhancedText' and an array 'suggestions' (each with o
 async function handleKeyMessages(data: any, res: NextApiResponse) {
   try {
     const { productInfo, competitors, industry, focusAreas, tone, currentFramework } = data;
-    
+
     // Get strategic data to access writing style
     const strategicData = getStrategicDataFromRequest({ data });
-    
+
     // Also check for writing style passed directly in the request
     const requestBody = data.requestBody || {};
     const directWritingStyle = requestBody.writingStyle;
-    
+
     // Build style guide instructions - prioritize direct writing style over strategic data
     const styleInstructions = buildStyleGuideInstructions(
       directWritingStyle || strategicData?.writingStyle || null,
       strategicData?.brandVoice || null,
       strategicData?.messaging || null
     );
-    
+
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -719,7 +721,7 @@ Current Framework: ${JSON.stringify(currentFramework)}
 IMPORTANT: Follow the style guide rules above EXACTLY. If the style guide specifies heading case formatting, apply it to any headings or titles in your response.
 
 Return ONLY a valid JSON object with valueProposition, keyDifferentiators (array), and targetedMessages (array). Do not include any explanation or formatting.`;
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
