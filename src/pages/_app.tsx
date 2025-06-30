@@ -2,6 +2,7 @@
  * File: src/pages/_app.tsx
  * 
  * Application wrapper component that provides all necessary contexts
+ * Removed extraneous writing style
  */
 
 import { AppProps } from 'next/app';
