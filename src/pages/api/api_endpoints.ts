@@ -312,7 +312,62 @@ Return only the humanized content.`;
     return res.status(500).json({ error: "Failed to humanize content" });
   }
 }
+// Handler for tagline improvement - keeps it concise and punchy
+async function handleTaglineImprovement(data: any, res: NextApiResponse) {
+  try {
+    if (!data.content || typeof data.content !== "string") {
+      return res.status(400).json({ error: "Missing or invalid tagline content" });
+    }
 
+    const { content, instructions, strategicContext } = data;
+
+    const prompt = `You are a tagline specialist. Improve this tagline based on the user's request.
+
+Current tagline: "${content}"
+
+User request: ${instructions}
+
+Strategic context:
+- Product: ${strategicContext?.productName || 'N/A'}
+- Target audience: ${strategicContext?.audience || 'N/A'}
+- Brand tone: ${strategicContext?.tone || 'N/A'}
+- Brand archetype: ${strategicContext?.archetype || 'N/A'}
+- Brand promise: ${strategicContext?.promise || 'N/A'}
+
+REQUIREMENTS:
+- Return ONLY the improved tagline
+- Keep it under 10 words maximum
+- Make it punchy and memorable
+- No explanations, quotes, or extra text
+- Single line only`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      temperature: 0.7,
+      max_tokens: 30, // Very short to force brevity
+      messages: [
+        {
+          role: "system",
+          content: "You are a tagline expert. Return only the improved tagline, nothing else. Keep it under 10 words."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
+    });
+
+    let improvedTagline = response.choices[0].message.content?.trim() || "";
+
+    // Extra cleaning for taglines
+    improvedTagline = cleanTagline(improvedTagline);
+
+    return res.status(200).json({ content: improvedTagline });
+  } catch (error) {
+    console.error("Tagline improvement error:", error);
+    return res.status(500).json({ error: "Failed to improve tagline" });
+  }
+}
 // Handler for boilerplate generation
 async function handleBoilerplateGeneration(data: any, res: NextApiResponse) {
   try {
@@ -898,6 +953,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleCompetitiveAnalysis(data, res);
   } else if (mode === "mission-vision") {
     return handleMissionVision(data, res);
+  } else if (mode === "improve-tagline") {
+    return handleTaglineImprovement(data, res);
   } else {
     return res.status(400).json({ error: "Invalid mode" });
   }

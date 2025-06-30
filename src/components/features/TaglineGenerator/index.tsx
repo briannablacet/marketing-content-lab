@@ -6,7 +6,6 @@ import { useRouter } from 'next/router';
 import { Sparkles, Loader2, Plus, X, CheckCircle, Save, Wand2 } from 'lucide-react';
 import PageLayout from '../../shared/PageLayout';
 import { useBrandVoice } from '../../../context/BrandVoiceContext';
-import { useWritingStyle } from '../../../context/WritingStyleContext';
 import StrategicDataService from '../../../services/StrategicDataService';
 import { Card } from '../../ui/card';
 
@@ -68,7 +67,6 @@ const TaglineGenerator: React.FC = () => {
     const [showSuggestion, setShowSuggestion] = useState(false);
 
     const { brandVoice } = useBrandVoice();
-    const { writingStyle } = useWritingStyle();
     const router = useRouter();
 
     // Function to clean tagline content
@@ -78,13 +76,13 @@ const TaglineGenerator: React.FC = () => {
         let cleaned = content.trim();
 
         // Remove unwanted punctuation at the beginning
-        cleaned = cleaned.replace(/^[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,\.\!]+\s*/g, '');
+        cleaned = cleaned.replace(/^[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,\.!]+\s*/g, '');
 
         // Remove unwanted punctuation at the end (except periods, exclamation marks, question marks)
         cleaned = cleaned.replace(/\s*[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,]+$/g, '');
 
         // Remove quotes at the beginning and end
-        cleaned = cleaned.replace(/^["']|["']$/g, '');
+        cleaned = cleaned.replace(/^['"]|['"]$/g, '');
 
         // Remove any "Tagline:" prefixes that might sneak in
         cleaned = cleaned.replace(/^(Tagline|Tag)\s*[:]\s*/i, '');
@@ -105,7 +103,7 @@ const TaglineGenerator: React.FC = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    mode: 'humanize',
+                    mode: 'improve-tagline',
                     data: {
                         content: customTagline,
                         instructions: `USER REQUEST: ${improvementRequest}\n\nPlease apply this request to improve the tagline while keeping it concise and impactful. Return only the improved tagline, nothing else.`,
@@ -168,8 +166,7 @@ const TaglineGenerator: React.FC = () => {
                 setAudiences([idealCustomer]);
             }
         }
-        // Clean tagline when loading from storage
-        if (tagline) setCustomTagline(cleanTaglineContent(tagline));
+        if (tagline) setCustomTagline(tagline);
 
         // Set archetype and tone from brand voice if available
         if (brandVoice?.brandVoice?.archetype) {
@@ -228,9 +225,7 @@ const TaglineGenerator: React.FC = () => {
             tone,
             style,
             archetype: archetype || brandVoice?.brandVoice?.archetype || '',
-            personality: brandVoice?.brandVoice?.personality || [],
-            writingStyle: writingStyle || null,
-            strategicData: await StrategicDataService.getAllStrategicData()
+            personality: brandVoice?.brandVoice?.personality || []
         };
 
         try {
@@ -258,15 +253,8 @@ const TaglineGenerator: React.FC = () => {
         }
     };
 
-    const handleAcceptGenerated = (tagline: string) => {
-        // Clean the tagline before accepting
-        const cleanedTagline = cleanTaglineContent(tagline);
-        setCustomTagline(cleanedTagline);
-        handleSave(cleanedTagline);
-    };
-
     const handleSave = async (valueToSave: string | null = null) => {
-        const finalValue = cleanTaglineContent(valueToSave || customTagline);
+        const finalValue = valueToSave || customTagline;
 
         if (!finalValue) {
             return;
@@ -279,24 +267,9 @@ const TaglineGenerator: React.FC = () => {
         try {
             await StrategicDataService.setStrategicDataValue('tagline', finalValue);
             setIsAccepted(true);
-            // Update the displayed tagline with the cleaned version
-            setCustomTagline(finalValue);
         } catch (error) {
             console.error('Error saving tagline to StrategicDataService:', error);
             setIsAccepted(true);
-        }
-    };
-
-    // Handle text area changes with cleaning on blur
-    const handleTaglineChange = (value: string) => {
-        setCustomTagline(value);
-    };
-
-    const handleTaglineBlur = () => {
-        // Clean the tagline when user stops editing
-        const cleaned = cleanTaglineContent(customTagline);
-        if (cleaned !== customTagline) {
-            setCustomTagline(cleaned);
         }
     };
 
@@ -357,39 +330,6 @@ const TaglineGenerator: React.FC = () => {
                 <p className="text-gray-600">Create compelling taglines that capture your brand's essence</p>
 
                 <div className="grid gap-4">
-                    {/* SAVED TAGLINE DISPLAY */}
-                    {customTagline && (
-                        <Card className="p-6 bg-white-50 border-gray-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <CheckCircle className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-xl font-semibold text-gray-900">Your Tagline</h2>
-                            </div>
-                            <textarea
-                                value={customTagline}
-                                onChange={(e) => handleTaglineChange(e.target.value)}
-                                onBlur={handleTaglineBlur}
-                                className="w-full p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
-                                rows={4}
-                                placeholder="Edit your tagline here..."
-                            />
-                            <div className="mt-4 flex gap-2">
-                                <button
-                                    onClick={() => handleSave()}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-green-700"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    Edit or Save
-                                </button>
-                                {isAccepted && (
-                                    <span className="flex items-center gap-1 text-blue-600 text-sm">
-                                        <CheckCircle className="w-4 h-4" />
-                                        Saved!
-                                    </span>
-                                )}
-                            </div>
-                        </Card>
-                    )}
-
                     {/* MAIN INPUT CARD */}
                     <Card className="p-6">
                         <div className="mb-6">
@@ -491,7 +431,20 @@ const TaglineGenerator: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
-
+                            {/*
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Writing style</label>
+                                <select
+                                    value={style}
+                                    onChange={e => setStyle(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    <option value="visionary">Visionary</option>
+                                    <option value="punchy">Punchy</option>
+                                    <option value="straightforward">Straightforward</option>
+                                </select>
+                            </div>
+*/}
                             <button
                                 onClick={generateTaglines}
                                 disabled={isGenerating}
