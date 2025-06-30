@@ -1,5 +1,5 @@
 // src/components/features/MissionVisionGenerator/index.tsx
-// ACTUALLY WIDE VERSION - max-w-7xl
+// FIXED VERSION - Cleans up AI-generated content properly
 
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader, Save, CheckCircle, Target, Eye, AlertCircle } from 'lucide-react';
@@ -24,6 +24,31 @@ const MissionVisionGenerator: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
     const [hasGenerated, setHasGenerated] = useState(false);
+
+    // NEW: Function to clean up AI-generated content
+    const cleanGeneratedContent = (content: string): string => {
+        if (!content) return content;
+
+        // Remove unwanted punctuation at the beginning and end
+        let cleaned = content.trim();
+
+        // Remove leading punctuation (semicolons, colons, dashes, etc.)
+        cleaned = cleaned.replace(/^[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,\.\!]+\s*/g, '');
+
+        // Remove trailing punctuation (except periods, exclamation marks, question marks)
+        cleaned = cleaned.replace(/\s*[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,]+$/g, '');
+
+        // Remove quotes at the beginning and end
+        cleaned = cleaned.replace(/^["']|["']$/g, '');
+
+        // Remove any "Mission:" or "Vision:" prefixes that might sneak in
+        cleaned = cleaned.replace(/^(Mission|Vision)\s*[:]\s*/i, '');
+
+        // Clean up extra whitespace
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+        return cleaned;
+    };
 
     // Load existing data on mount
     useEffect(() => {
@@ -64,11 +89,15 @@ const MissionVisionGenerator: React.FC = () => {
                 const existingVision = StrategicDataService.getVision();
 
                 if (existingMission) {
-                    setMission(existingMission);
+                    // Clean existing mission data when loading
+                    const cleanedMission = cleanGeneratedContent(existingMission);
+                    setMission(cleanedMission);
                     setHasGenerated(true);
                 }
                 if (existingVision) {
-                    setVision(existingVision);
+                    // Clean existing vision data when loading
+                    const cleanedVision = cleanGeneratedContent(existingVision);
+                    setVision(cleanedVision);
                     setHasGenerated(true);
                 }
 
@@ -90,7 +119,7 @@ const MissionVisionGenerator: React.FC = () => {
         setIsLoading(true);
         try {
             const requestBody = {
-                mode: 'missionVision',
+                mode: 'mission-vision', // Fixed: was 'missionVision', should be 'mission-vision'
                 data: {
                     companyName,
                     audience,
@@ -117,8 +146,12 @@ const MissionVisionGenerator: React.FC = () => {
             }
 
             if (result.mission || result.vision) {
-                setMission(result.mission || '');
-                setVision(result.vision || '');
+                // Clean the generated content before setting state
+                const cleanedMission = result.mission ? cleanGeneratedContent(result.mission) : '';
+                const cleanedVision = result.vision ? cleanGeneratedContent(result.vision) : '';
+
+                setMission(cleanedMission);
+                setVision(cleanedVision);
                 setHasGenerated(true);
                 setSaveMessage('Mission and vision generated successfully!');
                 setTimeout(() => setSaveMessage(null), 3000);
@@ -142,10 +175,16 @@ const MissionVisionGenerator: React.FC = () => {
         setIsSaving(true);
         try {
             if (mission) {
-                StrategicDataService.setMission(mission);
+                // Clean before saving
+                const cleanedMission = cleanGeneratedContent(mission);
+                StrategicDataService.setMission(cleanedMission);
+                setMission(cleanedMission); // Update state with cleaned version
             }
             if (vision) {
-                StrategicDataService.setVision(vision);
+                // Clean before saving
+                const cleanedVision = cleanGeneratedContent(vision);
+                StrategicDataService.setVision(cleanedVision);
+                setVision(cleanedVision); // Update state with cleaned version
             }
 
             setSaveMessage('Mission and vision saved successfully!');
@@ -157,6 +196,15 @@ const MissionVisionGenerator: React.FC = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    // Handle text area changes with cleaning
+    const handleMissionChange = (value: string) => {
+        setMission(value);
+    };
+
+    const handleVisionChange = (value: string) => {
+        setVision(value);
     };
 
     return (
@@ -187,9 +235,21 @@ const MissionVisionGenerator: React.FC = () => {
                     </div>
 
                     {saveMessage && (
-                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="text-green-800 text-sm">{saveMessage}</span>
+                        <div className={`mt-4 p-3 rounded-md flex items-center gap-2 ${saveMessage.includes('Failed') || saveMessage.includes('Please')
+                                ? 'bg-red-50 border border-red-200'
+                                : 'bg-green-50 border border-green-200'
+                            }`}>
+                            {saveMessage.includes('Failed') || saveMessage.includes('Please') ? (
+                                <AlertCircle className="w-4 h-4 text-red-600" />
+                            ) : (
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                            )}
+                            <span className={`text-sm ${saveMessage.includes('Failed') || saveMessage.includes('Please')
+                                    ? 'text-red-800'
+                                    : 'text-green-800'
+                                }`}>
+                                {saveMessage}
+                            </span>
                         </div>
                     )}
                 </div>
@@ -298,7 +358,7 @@ const MissionVisionGenerator: React.FC = () => {
                                 <div className="bg-blue-50 p-4 rounded-lg">
                                     <textarea
                                         value={mission}
-                                        onChange={(e) => setMission(e.target.value)}
+                                        onChange={(e) => handleMissionChange(e.target.value)}
                                         rows={3}
                                         className="w-full p-3 bg-transparent border-none resize-none focus:outline-none text-gray-800 text-lg leading-relaxed"
                                         placeholder="Your mission statement will appear here..."
@@ -316,7 +376,7 @@ const MissionVisionGenerator: React.FC = () => {
                                 <div className="bg-purple-50 p-4 rounded-lg">
                                     <textarea
                                         value={vision}
-                                        onChange={(e) => setVision(e.target.value)}
+                                        onChange={(e) => handleVisionChange(e.target.value)}
                                         rows={2}
                                         className="w-full p-3 bg-transparent border-none resize-none focus:outline-none text-gray-800 text-lg leading-relaxed"
                                         placeholder="Your vision statement will appear here..."
