@@ -69,70 +69,57 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [writingStyle, setWritingStyle] = useState<WritingStyle>(defaultWritingStyle);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // FIXED: Load writing style from localStorage on mount
   useEffect(() => {
-    console.log('🔄 WritingStyleContext: Loading from localStorage...');
-    loadWritingStyle();
-  }, []);
+    const initializeWritingStyle = async () => {
+      console.log('🚀 WritingStyleContext: Initializing...');
 
-  // Load writing style from localStorage
-  const loadWritingStyle = () => {
-    console.log('🔄 LoadWritingStyle called!');
-    try {
-      const saved = localStorage.getItem('marketing-content-lab-writing-style');
-      console.log('📦 Raw localStorage in loadWritingStyle:', saved);
+      // First try to load from localStorage
+      const localData = loadWritingStyle();
 
-      if (saved) {
-        console.log('🔍 Found saved data, parsing...');
-        const parsedStyle = JSON.parse(saved);
-        console.log('🔍 Parsed data before merging:', parsedStyle);
+      // If no local data or incomplete, try to fetch from backend
+      if (!localData || !localData.completed) {
+        try {
+          console.log('📡 Fetching writing style from StrategicDataService...');
+          const backendData = await StrategicDataService.getWritingStyle();
 
-        console.log('✅ Loading saved style in loadWritingStyle:', parsedStyle);
-
-        // Merge with defaults to ensure all properties exist
-        const mergedStyle: WritingStyle = {
-          styleGuide: {
-            ...defaultWritingStyle.styleGuide,
-            ...parsedStyle.styleGuide,
-          },
-          formatting: {
-            ...defaultWritingStyle.formatting,
-            ...parsedStyle.formatting,
-          },
-          punctuation: {
-            ...defaultWritingStyle.punctuation,
-            ...parsedStyle.punctuation,
-          },
-          completed: parsedStyle.completed || false,
-        };
-
-        console.log('✅ Merged writing style:', mergedStyle);
-        setWritingStyle(mergedStyle);
-        setIsLoaded(true);
-        console.log('✅ WritingStyleContext: Loading complete with saved data');
+          if (backendData && backendData.completed) {
+            console.log('✅ Found writing style in backend:', backendData);
+            setWritingStyle(backendData);
+            localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(backendData));
+          } else {
+            console.error('❌ No writing style found in localStorage OR backend');
+            // Don't set anything - let it error
+          }
+        } catch (error) {
+          console.error('❌ Error fetching writing style from backend:', error);
+          // Don't set anything - let it error
+        }
       } else {
-        console.log('❌ No saved writing style, using defaults');
-        setWritingStyle(defaultWritingStyle);
-        setIsLoaded(true);
-        console.log('✅ WritingStyleContext: Loading complete with defaults');
+        console.log('✅ Using local writing style');
+        setWritingStyle(localData);
       }
-    } catch (error) {
-      console.error('❌ Error loading writing style:', error);
-      setWritingStyle(defaultWritingStyle);
-      setIsLoaded(true);
-      console.log('✅ WritingStyleContext: Loading complete after error');
-    }
-  };
 
-  // Save writing style to localStorage
-  const saveWritingStyle = () => {
+      setIsLoaded(true);
+    };
+
+    initializeWritingStyle();
+  }, []);
+  // Save writing style 
+  const saveWritingStyle = async () => {
     try {
       const styleToSave = {
         ...writingStyle,
         completed: true, // Mark as completed when saving
       };
+
+      // Save to localStorage
       localStorage.setItem('marketing-content-lab-writing-style', JSON.stringify(styleToSave));
-      console.log('💾 Writing style saved:', styleToSave);
+      console.log('💾 Writing style saved to localStorage:', styleToSave);
+
+      // Save to backend StrategicDataService
+      await StrategicDataService.setWritingStyle(styleToSave);
+      console.log('📡 Writing style saved to backend');
+
       setWritingStyle(styleToSave);
     } catch (error) {
       console.error('❌ Error saving writing style:', error);
