@@ -1,5 +1,5 @@
 // src/components/features/MarketingWalkthrough/components/ValuePropStep/index.tsx
-// EMERGENCY FIX - AI help with preview/edit/save flow restored
+// FIXED: Now pulls tagline and other data from all possible sources like Brand Compass does
 
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader, CheckCircle, Target, Save } from 'lucide-react';
@@ -54,112 +54,136 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
     const [showPreview, setShowPreview] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
-    // Load existing data from StrategicDataService, localStorage, AND walkthrough formData
+    // FIXED: Comprehensive data loading like Brand Compass
     useEffect(() => {
         const loadExistingData = async () => {
             setIsLoading(true);
             try {
-                // 1. First, try to load from walkthrough formData
-                if (formData.productName) {
-                    setProductName(formData.productName);
-                }
-                if (formData.productDescription) {
-                    setProductDescription(formData.productDescription);
-                    setProductType(formData.productDescription);
-                }
-                if (formData.valueProp) {
-                    setExistingValueProp(formData.valueProp);
-                    setParagraph(formData.valueProp);
-                }
-                if (formData.personas && formData.personas.length > 0) {
-                    setTarget(formData.personas[0].role || '');
-                }
-                if (formData.solution) {
-                    setSolution(formData.solution);
-                }
-                if (formData.benefit) {
-                    setBenefit(formData.benefit);
-                }
-                if (formData.proof) {
-                    setProof(formData.proof);
+                console.log('🔍 ValuePropStep: Loading data from all sources...');
+
+                // 1. Get all strategic data like Brand Compass does
+                const allData: any = StrategicDataService.getAllStrategicData();
+                console.log('📊 All strategic data:', allData);
+
+                // 2. Get localStorage data like Brand Compass does
+                const productInfo: any = JSON.parse(localStorage.getItem('marketingProduct') || '{}');
+                const messageFramework: any = JSON.parse(localStorage.getItem('messageFramework') || '{}');
+                console.log('💾 Product info from localStorage:', productInfo);
+                console.log('💾 Message framework from localStorage:', messageFramework);
+
+                // 3. Check ALL possible locations for tagline (like Brand Compass does)
+                const foundTagline = localStorage.getItem('brandTagline') ||
+                    allData.tagline ||
+                    productInfo.tagline ||
+                    StrategicDataService.getTagline() ||
+                    formData.tagline ||
+                    '';
+
+                console.log('🏷️ Found tagline:', foundTagline);
+
+                // 4. Check ALL possible locations for mission and vision
+                const mission = localStorage.getItem('brandMission') ||
+                    allData.mission ||
+                    StrategicDataService.getMission() ||
+                    '';
+
+                const vision = localStorage.getItem('brandVision') ||
+                    allData.vision ||
+                    StrategicDataService.getVision() ||
+                    '';
+
+                // 5. Get product name from all sources
+                const foundProductName = formData.productName ||
+                    productInfo?.name ||
+                    allData.product?.name ||
+                    '';
+
+                // 6. Get product description from all sources
+                const foundProductDescription = formData.productDescription ||
+                    productInfo?.description ||
+                    productInfo?.type ||
+                    allData.product?.description ||
+                    '';
+
+                // 7. Get value proposition from all sources
+                const foundValueProp = formData.valueProp ||
+                    localStorage.getItem('marketingValueProp') ||
+                    messageFramework?.valueProposition ||
+                    allData.messaging?.valueProposition ||
+                    productInfo?.valueProposition ||
+                    '';
+
+                // 8. Get target audience from all sources
+                const idealCustomer = StrategicDataService.getAllStrategicDataFromStorage().idealCustomer;
+                const foundTarget = formData.personas?.[0]?.role ||
+                    (typeof idealCustomer === 'string' ? idealCustomer :
+                        Array.isArray(idealCustomer) ? idealCustomer[0] :
+                            idealCustomer?.role || '') ||
+                    target;
+
+                // 9. Get benefits from all sources
+                const foundBenefits = messageFramework?.keyBenefits ||
+                    allData.messaging?.keyBenefits ||
+                    (keyBenefits.filter(Boolean).length > 1 ? keyBenefits : ['']);
+
+                // 10. Set all the state with found data
+                if (foundTagline) {
+                    console.log('✅ Setting tagline:', foundTagline);
+                    setTagline(foundTagline);
                 }
 
-                // 2. Then try StrategicDataService
-                const productData = await StrategicDataService.getProductInfo() as ProductData;
-                if (productData && (productData.name || productData.description)) {
-                    if (productData.name && !productName) {
-                        setProductName(productData.name);
-                        setFormData({ ...formData, productName: productData.name });
-                    }
-                    if (productData.description && !productDescription) {
-                        setProductDescription(productData.description);
-                        setProductType(productData.description);
-                        setFormData({ ...formData, productDescription: productData.description });
-                    }
-                    if (productData.tagline) {
-                        setTagline(productData.tagline);
-                        setFormData({ ...formData, tagline: productData.tagline });
-                    }
+                if (foundProductName) {
+                    console.log('✅ Setting product name:', foundProductName);
+                    setProductName(foundProductName);
                 }
 
-                // 3. Fallback to localStorage
-                if (!productName || !productDescription) {
-                    const savedProduct = localStorage.getItem('marketingProduct');
-                    if (savedProduct) {
-                        const parsedProduct = JSON.parse(savedProduct) as ProductData;
-                        if (parsedProduct.name && !productName) {
-                            setProductName(parsedProduct.name);
-                            setFormData({ ...formData, productName: parsedProduct.name });
-                        }
-                        if ((parsedProduct.description || parsedProduct.type) && !productDescription) {
-                            const description = parsedProduct.description || parsedProduct.type || '';
-                            setProductDescription(description);
-                            setProductType(description);
-                            setFormData({ ...formData, productDescription: description });
-                        }
-                        if (parsedProduct.tagline) {
-                            setTagline(parsedProduct.tagline);
-                            setFormData({ ...formData, tagline: parsedProduct.tagline });
-                        }
-                    }
+                if (foundProductDescription) {
+                    console.log('✅ Setting product description:', foundProductDescription);
+                    setProductDescription(foundProductDescription);
+                    setProductType(foundProductDescription);
                 }
 
-                // 4. Load value prop from localStorage if not in formData
-                if (!existingValueProp) {
-                    const marketingValueProp = localStorage.getItem('marketingValueProp');
-                    if (marketingValueProp) {
-                        setExistingValueProp(marketingValueProp);
-                        setParagraph(marketingValueProp);
-                        setFormData(prev => ({ ...prev, valueProp: marketingValueProp }));
-                    }
+                if (foundValueProp) {
+                    console.log('✅ Setting value prop:', foundValueProp);
+                    setExistingValueProp(foundValueProp);
+                    setParagraph(foundValueProp);
                 }
 
-                // 5. Load messaging framework
+                if (foundTarget) {
+                    console.log('✅ Setting target:', foundTarget);
+                    setTarget(foundTarget);
+                }
+
+                if (foundBenefits && Array.isArray(foundBenefits)) {
+                    console.log('✅ Setting benefits:', foundBenefits);
+                    setKeyBenefits(foundBenefits.length > 0 ? foundBenefits : ['']);
+                }
+
+                // 11. Load messaging framework data
                 const messagingFramework = await StrategicDataService.getMessagingFramework();
                 if (messagingFramework) {
                     if (messagingFramework.solution && !solution) {
                         setSolution(messagingFramework.solution);
-                        setFormData(prev => ({ ...prev, solution: messagingFramework.solution }));
                     }
                     if (messagingFramework.benefit && !benefit) {
                         setBenefit(messagingFramework.benefit);
-                        setFormData(prev => ({ ...prev, benefit: messagingFramework.benefit }));
                     }
                 }
 
-                // 6. Load value proposition from StrategicDataService
-                try {
-                    const valueProp = await StrategicDataService.getValueProposition();
-                    if (valueProp && !existingValueProp) {
-                        setExistingValueProp(valueProp);
-                        setParagraph(valueProp);
-                        setFormData(prev => ({ ...prev, valueProp }));
-                    }
-                } catch (error) {
-                    console.log('No value proposition found in StrategicDataService');
-                }
+                // 12. Update formData with all found values
+                setFormData(prev => ({
+                    ...prev,
+                    productName: foundProductName || prev.productName,
+                    productDescription: foundProductDescription || prev.productDescription,
+                    tagline: foundTagline || prev.tagline,
+                    valueProp: foundValueProp || prev.valueProp,
+                    solution: messagingFramework?.solution || prev.solution,
+                    benefit: messagingFramework?.benefit || prev.benefit
+                }));
+
+                console.log('🎉 ValuePropStep: Data loading complete');
             } catch (error) {
-                console.error('Error loading existing data:', error);
+                console.error('❌ Error loading existing data:', error);
                 showNotification('Error loading existing data. Please try again.', 'error');
             } finally {
                 setIsLoading(false);
@@ -167,7 +191,7 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
         };
 
         loadExistingData();
-    }, [formData]);
+    }, []); // Only run once on mount
 
     // Update formData when local state changes
     useEffect(() => {
@@ -179,9 +203,10 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
             solution,
             benefit,
             proof,
-            valueProp: existingValueProp || paragraph
+            valueProp: existingValueProp || paragraph,
+            tagline
         }));
-    }, [productName, productDescription, target, solution, benefit, proof, existingValueProp, paragraph]);
+    }, [productName, productDescription, target, solution, benefit, proof, existingValueProp, paragraph, tagline]);
 
     // FIXED AI HELP FUNCTION with preview
     const handleAIHelp = async () => {
@@ -192,8 +217,8 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
 
         setIsGenerating(true);
         try {
-            console.log('Calling AI for value proposition generation...');
-            console.log('Request data:', {
+            console.log('🤖 Calling AI for value proposition generation...');
+            console.log('📝 Request data:', {
                 productName,
                 productDescription: productDescription || productType,
                 target,
@@ -222,27 +247,27 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                 }),
             });
 
-            console.log('API response status:', response.status);
+            console.log('📡 API response status:', response.status);
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error('API error response:', errorData);
+                console.error('❌ API error response:', errorData);
                 throw new Error(errorData.message || `API error: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log('API result:', result);
+            console.log('✅ AI result:', result);
 
             if (result.valueProposition) {
                 setGeneratedValueProp(result.valueProposition);
                 setShowPreview(true);
                 showNotification('Value proposition generated successfully!', 'success');
             } else {
-                console.error('No value proposition in response:', result);
+                console.error('❌ No value proposition in response:', result);
                 throw new Error('No value proposition in response');
             }
         } catch (error) {
-            console.error('Error generating value prop:', error);
+            console.error('❌ Error generating value prop:', error);
             showNotification(error instanceof Error ? error.message : 'Failed to generate value proposition. Please try again.', 'error');
         } finally {
             setIsGenerating(false);
@@ -280,13 +305,13 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
             setIsAccepted(true);
             showNotification('Value proposition saved successfully!', 'success');
         } catch (error) {
-            console.error('Error saving value proposition to StrategicDataService:', error);
+            console.error('❌ Error saving value proposition to StrategicDataService:', error);
             setIsAccepted(true);
             showNotification('Value proposition saved successfully!', 'success');
         }
     };
 
-    // NEW: Handle Next button with data saving
+    // FIXED: Handle Next button with data saving
     const handleNext = () => {
         const currentValueProp = paragraph || existingValueProp;
         if (currentValueProp) {
@@ -294,7 +319,8 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                 ...prev,
                 valueProp: currentValueProp,
                 productName,
-                productDescription
+                productDescription,
+                tagline
             }));
             // Small delay to ensure state is updated
             setTimeout(() => {
@@ -305,9 +331,11 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
         }
     };
 
+    // FIXED: Add benefit function
     const addBenefit = () => {
-        onNext = { handleNext }
+        setKeyBenefits([...keyBenefits, '']);
     };
+
     return (
         <div className="w-full max-w-none space-y-6">
             {/* SAVED VALUE PROP DISPLAY (shows at top when saved) */}
@@ -368,7 +396,10 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                         <input
                             type="text"
                             value={tagline}
-                            onChange={(e) => setTagline(e.target.value)}
+                            onChange={(e) => {
+                                setTagline(e.target.value);
+                                setFormData(prev => ({ ...prev, tagline: e.target.value }));
+                            }}
                             placeholder="e.g., No more crappy content"
                             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
@@ -377,7 +408,10 @@ const ValuePropStep: React.FC<ValuePropStepProps> = ({ onNext, onBack, formData,
                         <label className="block text-sm font-medium text-gray-700 mb-2">Share a description of your business. Don't worry if it's not perfect.</label>
                         <textarea
                             value={productType}
-                            onChange={(e) => setProductType(e.target.value)}
+                            onChange={(e) => {
+                                setProductType(e.target.value);
+                                setProductDescription(e.target.value);
+                            }}
                             placeholder="Describe the services or products you offer."
                             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             rows={4}

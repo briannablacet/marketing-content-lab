@@ -1,4 +1,7 @@
+
 // src/components/features/MarketingWalkthrough/components/CorporateIdentityStep/index.tsx
+// FIXED: Now pulls boilerplates and other data from all possible sources like Brand Compass does
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import {
@@ -121,64 +124,138 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
         }
     };
 
-    // Load existing data on mount
+    // FIXED: Comprehensive data loading like Brand Compass and ValuePropStep
     useEffect(() => {
         loadExistingData();
     }, []);
 
     const loadExistingData = async () => {
         try {
-            // First check formData for all values
-            if (formData.tagline) {
-                setCurrentTagline(formData.tagline);
-            }
-            if (formData.mission) {
-                setMission(formData.mission);
-            }
-            if (formData.vision) {
-                setVision(formData.vision);
-            }
+            console.log('🔍 CorporateIdentityStep: Loading data from all sources...');
+
+            // 1. Get all strategic data like Brand Compass does
+            const allData: any = StrategicDataService.getAllStrategicData();
+            console.log('📊 All strategic data:', allData);
+
+            // 2. Get localStorage data like Brand Compass does
+            const productInfo: any = JSON.parse(localStorage.getItem('marketingProduct') || '{}');
+            const messageFramework: any = JSON.parse(localStorage.getItem('messageFramework') || '{}');
+            console.log('💾 Product info from localStorage:', productInfo);
+
+            // 3. Check ALL possible locations for tagline (like Brand Compass does)
+            const foundTagline = formData.tagline ||
+                localStorage.getItem('brandTagline') ||
+                allData.tagline ||
+                productInfo.tagline ||
+                StrategicDataService.getTagline() ||
+                '';
+
+            console.log('🏷️ Found tagline:', foundTagline);
+
+            // 4. Check ALL possible locations for mission
+            const foundMission = formData.mission ||
+                localStorage.getItem('brandMission') ||
+                allData.mission ||
+                StrategicDataService.getMission() ||
+                '';
+
+            console.log('💝 Found mission:', foundMission);
+
+            // 5. Check ALL possible locations for vision
+            const foundVision = formData.vision ||
+                localStorage.getItem('brandVision') ||
+                allData.vision ||
+                StrategicDataService.getVision() ||
+                '';
+
+            console.log('🎯 Found vision:', foundVision);
+
+            // 6. FIXED: Check ALL possible locations for boilerplates (like Brand Compass)
+            let foundBoilerplates = {
+                short: '',
+                medium: '',
+                long: ''
+            };
+
+            // First check formData
             if (formData.boilerplates) {
-                setBoilerplates({
+                console.log('📝 Found boilerplates in formData:', formData.boilerplates);
+                foundBoilerplates = {
                     short: formData.boilerplates.short || '',
                     medium: formData.boilerplates.medium || '',
                     long: formData.boilerplates.long || ''
-                });
-            }
+                };
+            } else {
+                // Check localStorage brandBoilerplates (array format like Brand Compass)
+                const localStorageBoilerplates = JSON.parse(localStorage.getItem('brandBoilerplates') || '[]');
+                console.log('💾 Found boilerplates in localStorage (brandBoilerplates):', localStorageBoilerplates);
 
-            // Only load from StrategicDataService if not already set from formData
-            if (!formData.mission) {
-                const existingMission = StrategicDataService.getMission();
-                if (existingMission) setMission(existingMission);
-            }
-            if (!formData.vision) {
-                const existingVision = StrategicDataService.getVision();
-                if (existingVision) setVision(existingVision);
-            }
-            if (!formData.tagline) {
-                const existingTagline = StrategicDataService.getTagline();
-                if (existingTagline) setCurrentTagline(existingTagline);
-            }
-            if (!formData.boilerplates) {
-                const existingBoilerplates = StrategicDataService.getBoilerplates() as BoilerplateData | string[] | null;
-                if (existingBoilerplates) {
-                    if (typeof existingBoilerplates === 'object' && !Array.isArray(existingBoilerplates)) {
-                        setBoilerplates({
-                            short: existingBoilerplates['20word'] || existingBoilerplates['short'] || '',
-                            medium: existingBoilerplates['50word'] || existingBoilerplates['medium'] || '',
-                            long: existingBoilerplates['100word'] || existingBoilerplates['long'] || ''
-                        });
-                    } else if (Array.isArray(existingBoilerplates) && existingBoilerplates.length > 0) {
-                        setBoilerplates({
-                            short: existingBoilerplates[0] || '',
-                            medium: existingBoilerplates[1] || '',
-                            long: existingBoilerplates[2] || ''
-                        });
+                if (Array.isArray(localStorageBoilerplates) && localStorageBoilerplates.length > 0) {
+                    foundBoilerplates = {
+                        short: localStorageBoilerplates[0] || '',
+                        medium: localStorageBoilerplates[1] || '',
+                        long: localStorageBoilerplates[2] || ''
+                    };
+                    console.log('✅ Using boilerplates from localStorage array:', foundBoilerplates);
+                } else {
+                    // Check StrategicDataService
+                    const strategicBoilerplates = StrategicDataService.getBoilerplates() as BoilerplateData | string[] | null;
+                    console.log('📊 Found boilerplates in StrategicDataService:', strategicBoilerplates);
+
+                    if (strategicBoilerplates) {
+                        if (typeof strategicBoilerplates === 'object' && !Array.isArray(strategicBoilerplates)) {
+                            foundBoilerplates = {
+                                short: strategicBoilerplates['20word'] || strategicBoilerplates['short'] || '',
+                                medium: strategicBoilerplates['50word'] || strategicBoilerplates['medium'] || '',
+                                long: strategicBoilerplates['100word'] || strategicBoilerplates['long'] || ''
+                            };
+                            console.log('✅ Using boilerplates from StrategicDataService object:', foundBoilerplates);
+                        } else if (Array.isArray(strategicBoilerplates) && strategicBoilerplates.length > 0) {
+                            foundBoilerplates = {
+                                short: strategicBoilerplates[0] || '',
+                                medium: strategicBoilerplates[1] || '',
+                                long: strategicBoilerplates[2] || ''
+                            };
+                            console.log('✅ Using boilerplates from StrategicDataService array:', foundBoilerplates);
+                        }
+                    }
+
+                    // Also check individual localStorage entries (legacy support)
+                    if (!foundBoilerplates.short && !foundBoilerplates.medium && !foundBoilerplates.long) {
+                        foundBoilerplates = {
+                            short: localStorage.getItem('marketingBoilerplate20') || '',
+                            medium: localStorage.getItem('marketingBoilerplate50') || '',
+                            long: localStorage.getItem('marketingBoilerplate100') || ''
+                        };
+                        console.log('💾 Using individual localStorage boilerplates:', foundBoilerplates);
                     }
                 }
             }
+
+            // 7. Set all the state with found data
+            if (foundTagline) {
+                console.log('✅ Setting tagline:', foundTagline);
+                setCurrentTagline(foundTagline);
+            }
+
+            if (foundMission) {
+                console.log('✅ Setting mission:', foundMission);
+                setMission(foundMission);
+            }
+
+            if (foundVision) {
+                console.log('✅ Setting vision:', foundVision);
+                setVision(foundVision);
+            }
+
+            if (foundBoilerplates.short || foundBoilerplates.medium || foundBoilerplates.long) {
+                console.log('✅ Setting boilerplates:', foundBoilerplates);
+                setBoilerplates(foundBoilerplates);
+            }
+
+            console.log('🎉 CorporateIdentityStep: Data loading complete');
         } catch (error) {
-            console.error('Error loading corporate identity data:', error);
+            console.error('❌ Error loading corporate identity data:', error);
         }
     };
 
@@ -197,16 +274,22 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
                 });
             }
 
-            // Also save to localStorage for redundancy
+            // FIXED: Save to localStorage in the same format as Brand Compass expects
             if (mission) localStorage.setItem('brandMission', mission);
             if (vision) localStorage.setItem('brandVision', vision);
             if (currentTagline) localStorage.setItem('brandTagline', currentTagline);
             if (boilerplates.short || boilerplates.medium || boilerplates.long) {
+                // Save as array like Brand Compass expects
                 localStorage.setItem('brandBoilerplates', JSON.stringify([
                     boilerplates.short || '',
                     boilerplates.medium || '',
                     boilerplates.long || ''
                 ]));
+                
+                // Also save individual entries for legacy support
+                if (boilerplates.short) localStorage.setItem('marketingBoilerplate20', boilerplates.short);
+                if (boilerplates.medium) localStorage.setItem('marketingBoilerplate50', boilerplates.medium);
+                if (boilerplates.long) localStorage.setItem('marketingBoilerplate100', boilerplates.long);
             }
 
             // Update parent's formData
@@ -346,12 +429,12 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
             console.log('🔍 formData.valueProp:', formData.valueProp);
 
             const requestBody = {
-                mode: 'adapt-boilerplate',
+                mode: 'boilerplate',
                 data: {
                     businessName,
                     description,
                     product: description,
-                    audience,
+                    audiences: [audience],
                     promise: valueProp,
                     tone: formData.brandVoice?.tone || 'professional',
                     style: 'clear and compelling',
@@ -433,7 +516,7 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
                     businessName,
                     description,
                     product: description,
-                    audience,
+                    audiences: [audience],
                     promise: valueProp,
                     tone: formData.brandVoice?.tone || 'professional',
                     style: 'clear and compelling',
@@ -670,246 +753,246 @@ const CorporateIdentityStep: React.FC<CorporateIdentityStepProps> = ({
                             <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
                                 <span>Word count: {countWords(boilerplates.short)} words</span>
                                 {countWords(boilerplates.short) >= 18 && countWords(boilerplates.short) <= 22 && (
-                                    <span className="text-green-600 font-medium">✓ Perfect length</span>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                <span className="text-green-600 font-medium">✓ Perfect length</span>
+                               )}
+                           </div>
+                       )}
+                   </div>
 
-                    {/* 50-Word Boilerplate */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <div>
-                                <h3 className="text-lg font-medium text-gray-900">50-Word Boilerplate</h3>
-                                <p className="text-sm text-gray-500">Ideal for website about pages and marketing materials</p>
-                            </div>
-                            <button
-                                onClick={() => generateBoilerplate('medium')}
-                                disabled={boilerplateLoading.medium}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                {boilerplateLoading.medium ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Wand2 className="w-4 h-4" />
-                                )}
-                                {boilerplateLoading.medium ? 'Generating...' : 'Generate'}
-                            </button>
-                        </div>
+                   {/* 50-Word Boilerplate */}
+                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                       <div className="flex items-center justify-between mb-3">
+                           <div>
+                               <h3 className="text-lg font-medium text-gray-900">50-Word Boilerplate</h3>
+                               <p className="text-sm text-gray-500">Ideal for website about pages and marketing materials</p>
+                           </div>
+                           <button
+                               onClick={() => generateBoilerplate('medium')}
+                               disabled={boilerplateLoading.medium}
+                               className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                           >
+                               {boilerplateLoading.medium ? (
+                                   <Loader2 className="w-4 h-4 animate-spin" />
+                               ) : (
+                                   <Wand2 className="w-4 h-4" />
+                               )}
+                               {boilerplateLoading.medium ? 'Generating...' : 'Generate'}
+                           </button>
+                       </div>
 
-                        <div className="relative">
-                            <textarea
-                                value={boilerplates.medium}
-                                onChange={(e) => updateBoilerplate('medium', e.target.value)}
-                                placeholder="Your detailed 50-word company description will appear here..."
-                                className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                rows={3}
-                            />
+                       <div className="relative">
+                           <textarea
+                               value={boilerplates.medium}
+                               onChange={(e) => updateBoilerplate('medium', e.target.value)}
+                               placeholder="Your detailed 50-word company description will appear here..."
+                               className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               rows={3}
+                           />
 
-                            {boilerplates.medium && (
-                                <button
-                                    onClick={() => copyToClipboard(boilerplates.medium, 'medium')}
-                                    className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
-                                    title="Copy to clipboard"
-                                >
-                                    {copied.medium ? (
-                                        <CheckCircle className="w-4 h-4 text-green-600" />
-                                    ) : (
-                                        <Copy className="w-4 h-4" />
-                                    )}
-                                </button>
-                            )}
-                        </div>
+                           {boilerplates.medium && (
+                               <button
+                                   onClick={() => copyToClipboard(boilerplates.medium, 'medium')}
+                                   className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                                   title="Copy to clipboard"
+                               >
+                                   {copied.medium ? (
+                                       <CheckCircle className="w-4 h-4 text-green-600" />
+                                   ) : (
+                                       <Copy className="w-4 h-4" />
+                                   )}
+                               </button>
+                           )}
+                       </div>
 
-                        {boilerplates.medium && (
-                            <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                                <span>Word count: {countWords(boilerplates.medium)} words</span>
-                                {countWords(boilerplates.medium) >= 45 && countWords(boilerplates.medium) <= 55 && (
-                                    <span className="text-green-600 font-medium">✓ Perfect length</span>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                       {boilerplates.medium && (
+                           <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+                               <span>Word count: {countWords(boilerplates.medium)} words</span>
+                               {countWords(boilerplates.medium) >= 45 && countWords(boilerplates.medium) <= 55 && (
+                                   <span className="text-green-600 font-medium">✓ Perfect length</span>
+                               )}
+                           </div>
+                       )}
+                   </div>
 
-                    {/* 100-Word Boilerplate */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <div>
-                                <h3 className="text-lg font-medium text-gray-900">100-Word Boilerplate</h3>
-                                <p className="text-sm text-gray-500">Great for press releases and comprehensive overviews</p>
-                            </div>
-                            <button
-                                onClick={() => generateBoilerplate('long')}
-                                disabled={boilerplateLoading.long}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                {boilerplateLoading.long ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Wand2 className="w-4 h-4" />
-                                )}
-                                {boilerplateLoading.long ? 'Generating...' : 'Generate'}
-                            </button>
-                        </div>
+                   {/* 100-Word Boilerplate */}
+                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                       <div className="flex items-center justify-between mb-3">
+                           <div>
+                               <h3 className="text-lg font-medium text-gray-900">100-Word Boilerplate</h3>
+                               <p className="text-sm text-gray-500">Great for press releases and comprehensive overviews</p>
+                           </div>
+                           <button
+                               onClick={() => generateBoilerplate('long')}
+                               disabled={boilerplateLoading.long}
+                               className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                           >
+                               {boilerplateLoading.long ? (
+                                   <Loader2 className="w-4 h-4 animate-spin" />
+                               ) : (
+                                   <Wand2 className="w-4 h-4" />
+                               )}
+                               {boilerplateLoading.long ? 'Generating...' : 'Generate'}
+                           </button>
+                       </div>
 
-                        <div className="relative">
-                            <textarea
-                                value={boilerplates.long}
-                                onChange={(e) => updateBoilerplate('long', e.target.value)}
-                                placeholder="Your comprehensive 100-word company description will appear here..."
-                                className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                rows={4}
-                            />
+                       <div className="relative">
+                           <textarea
+                               value={boilerplates.long}
+                               onChange={(e) => updateBoilerplate('long', e.target.value)}
+                               placeholder="Your comprehensive 100-word company description will appear here..."
+                               className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               rows={4}
+                           />
 
-                            {boilerplates.long && (
-                                <button
-                                    onClick={() => copyToClipboard(boilerplates.long, 'long')}
-                                    className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
-                                    title="Copy to clipboard"
-                                >
-                                    {copied.long ? (
-                                        <CheckCircle className="w-4 h-4 text-green-600" />
-                                    ) : (
-                                        <Copy className="w-4 h-4" />
-                                    )}
-                                </button>
-                            )}
-                        </div>
+                           {boilerplates.long && (
+                               <button
+                                   onClick={() => copyToClipboard(boilerplates.long, 'long')}
+                                   className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                                   title="Copy to clipboard"
+                               >
+                                   {copied.long ? (
+                                       <CheckCircle className="w-4 h-4 text-green-600" />
+                                   ) : (
+                                       <Copy className="w-4 h-4" />
+                                   )}
+                               </button>
+                           )}
+                       </div>
 
-                        {boilerplates.long && (
-                            <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                                <span>Word count: {countWords(boilerplates.long)} words</span>
-                                {countWords(boilerplates.long) >= 95 && countWords(boilerplates.long) <= 105 && (
-                                    <span className="text-green-600 font-medium">✓ Perfect length</span>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                       {boilerplates.long && (
+                           <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+                               <span>Word count: {countWords(boilerplates.long)} words</span>
+                               {countWords(boilerplates.long) >= 95 && countWords(boilerplates.long) <= 105 && (
+                                   <span className="text-green-600 font-medium">✓ Perfect length</span>
+                               )}
+                           </div>
+                       )}
+                   </div>
+               </div>
 
-                {/* Auto-save indicator for boilerplates */}
-                {(boilerplates.short || boilerplates.medium || boilerplates.long) && (
-                    <div className="mt-4 flex items-center gap-2 text-green-600 text-sm">
-                        <CheckCircle className="w-4 h-4" />
-                        All boilerplates saved automatically
-                    </div>
-                )}
-            </Card>
+               {/* Auto-save indicator for boilerplates */}
+               {(boilerplates.short || boilerplates.medium || boilerplates.long) && (
+                   <div className="mt-4 flex items-center gap-2 text-green-600 text-sm">
+                       <CheckCircle className="w-4 h-4" />
+                       All boilerplates saved automatically
+                   </div>
+               )}
+           </Card>
 
-            {/* Taglines Section */}
-            <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <Hash className="w-6 h-6 text-yellow-500" />
-                        <div>
-                            <h2 className="text-xl font-semibold text-gray-900">Brand Tagline</h2>
-                            <p className="text-sm text-gray-600">A memorable phrase that captures your brand essence</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={generateTaglines}
-                        disabled={isGenerating.taglines}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-                    >
-                        {isGenerating.taglines ? (
-                            <>
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles className="w-4 h-4" />
-                                Generate Options
-                            </>
-                        )}
-                    </button>
-                </div>
+           {/* Taglines Section */}
+           <Card className="p-6">
+               <div className="flex items-center justify-between mb-4">
+                   <div className="flex items-center gap-3">
+                       <Hash className="w-6 h-6 text-yellow-500" />
+                       <div>
+                           <h2 className="text-xl font-semibold text-gray-900">Brand Tagline</h2>
+                           <p className="text-sm text-gray-600">A memorable phrase that captures your brand essence</p>
+                       </div>
+                   </div>
+                   <button
+                       onClick={generateTaglines}
+                       disabled={isGenerating.taglines}
+                       className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                   >
+                       {isGenerating.taglines ? (
+                           <>
+                               <RefreshCw className="w-4 h-4 animate-spin" />
+                               Generating...
+                           </>
+                       ) : (
+                           <>
+                               <Sparkles className="w-4 h-4" />
+                               Generate Options
+                           </>
+                       )}
+                   </button>
+               </div>
 
-                <input
-                    type="text"
-                    value={currentTagline}
-                    onChange={(e) => setCurrentTagline(e.target.value)}
-                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-800 bg-white"
-                    placeholder="Enter your tagline or click Generate Options to see suggestions..."
-                />
+               <input
+                   type="text"
+                   value={currentTagline}
+                   onChange={(e) => setCurrentTagline(e.target.value)}
+                   className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-800 bg-white"
+                   placeholder="Enter your tagline or click Generate Options to see suggestions..."
+               />
 
-                {currentTagline && (
-                    <div className="mt-2 flex items-center gap-2 text-green-600 text-sm">
-                        <CheckCircle className="w-4 h-4" />
-                        Tagline saved automatically
-                    </div>
-                )}
+               {currentTagline && (
+                   <div className="mt-2 flex items-center gap-2 text-green-600 text-sm">
+                       <CheckCircle className="w-4 h-4" />
+                       Tagline saved automatically
+                   </div>
+               )}
 
-                {/* Tagline Options */}
-                {showTaglineOptions && taglineOptions.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                        <h3 className="text-sm font-medium text-gray-700">Choose your favorite:</h3>
-                        {taglineOptions.map((tagline, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                                <span className="text-gray-800">{tagline}</span>
-                                <button
-                                    onClick={() => chooseTagline(tagline)}
-                                    className="text-sm bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700"
-                                >
-                                    Choose This
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </Card>
+               {/* Tagline Options */}
+               {showTaglineOptions && taglineOptions.length > 0 && (
+                   <div className="mt-4 space-y-2">
+                       <h3 className="text-sm font-medium text-gray-700">Choose your favorite:</h3>
+                       {taglineOptions.map((tagline, index) => (
+                           <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                               <span className="text-gray-800">{tagline}</span>
+                               <button
+                                   onClick={() => chooseTagline(tagline)}
+                                   className="text-sm bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700"
+                               >
+                                   Choose This
+                               </button>
+                           </div>
+                       ))}
+                   </div>
+               )}
+           </Card>
 
-            {/* Progress Summary */}
-            <Card className="p-6 bg-gray-50">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Corporate Identity Progress</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="flex items-center gap-2">
-                        <Heart className="w-4 h-4 text-red-500" />
-                        <span className={`text-sm ${mission ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                            Mission {mission ? '✓' : '○'}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Target className="w-4 h-4 text-blue-500" />
-                        <span className={`text-sm ${vision ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                            Vision {vision ? '✓' : '○'}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-green-500" />
-                        <span className={`text-sm ${(boilerplates.short || boilerplates.medium || boilerplates.long) ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                            Boilerplates {(boilerplates.short || boilerplates.medium || boilerplates.long) ? '✓' : '○'}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Hash className="w-4 h-4 text-yellow-500" />
-                        <span className={`text-sm ${currentTagline ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                            Tagline {currentTagline ? '✓' : '○'}
-                        </span>
-                    </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-4">
-                    All sections are optional. Complete only the ones you need for your brand.
-                </p>
-            </Card>
+           {/* Progress Summary */}
+           <Card className="p-6 bg-gray-50">
+               <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Corporate Identity Progress</h3>
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                   <div className="flex items-center gap-2">
+                       <Heart className="w-4 h-4 text-red-500" />
+                       <span className={`text-sm ${mission ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                           Mission {mission ? '✓' : '○'}
+                       </span>
+                   </div>
+                   <div className="flex items-center gap-2">
+                       <Target className="w-4 h-4 text-blue-500" />
+                       <span className={`text-sm ${vision ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                           Vision {vision ? '✓' : '○'}
+                       </span>
+                   </div>
+                   <div className="flex items-center gap-2">
+                       <FileText className="w-4 h-4 text-green-500" />
+                       <span className={`text-sm ${(boilerplates.short || boilerplates.medium || boilerplates.long) ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                           Boilerplates {(boilerplates.short || boilerplates.medium || boilerplates.long) ? '✓' : '○'}
+                       </span>
+                   </div>
+                   <div className="flex items-center gap-2">
+                       <Hash className="w-4 h-4 text-yellow-500" />
+                       <span className={`text-sm ${currentTagline ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                           Tagline {currentTagline ? '✓' : '○'}
+                       </span>
+                   </div>
+               </div>
+               <p className="text-xs text-gray-500 mt-4">
+                   All sections are optional. Complete only the ones you need for your brand.
+               </p>
+           </Card>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-8">
-                <button
-                    onClick={onBack}
-                    className="px-6 py-3 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                    Back
-                </button>
-                <button
-                    onClick={onNext}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                    Continue
-                </button>
-            </div>
-        </div>
-    );
+           {/* Navigation Buttons */}
+           <div className="flex justify-between pt-8">
+               <button
+                   onClick={onBack}
+                   className="px-6 py-3 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+               >
+                   Back
+               </button>
+               <button
+                   onClick={onNext}
+                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+               >
+                   Complete Walkthrough
+               </button>
+           </div>
+       </div>
+   );
 };
 
 export default CorporateIdentityStep;
