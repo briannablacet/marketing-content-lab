@@ -889,27 +889,41 @@ Important: Return ONLY the JSON array, no explanations or additional text. Ensur
 async function handleMissionVision(data: any, res: NextApiResponse) {
   try {
     const { companyName, audience, valueProp, additionalContext } = data;
-    const prompt = `Generate a concise mission statement and a vision statement for the following company.\n\nCompany Name: ${companyName}\nTarget Audience: ${audience}\nValue Proposition: ${valueProp}\nAdditional Context: ${additionalContext}\n\nReturn a JSON object with 'mission' and 'vision' fields. Do not include any explanations.`;
+    const prompt = `Generate a concise mission statement and a vision statement for the following company.
+
+Company Name: ${companyName}
+Target Audience: ${audience}
+Value Proposition: ${valueProp}
+Additional Context: ${additionalContext}
+
+Return ONLY a JSON object with 'mission' and 'vision' fields. Do not include any explanations, labels, or extra text.
+
+Example format:
+{
+  "mission": "Your mission statement here",
+  "vision": "Your vision statement here"
+}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a branding strategist." },
+        { role: "system", content: "You are a branding strategist. Return only valid JSON with mission and vision fields. No explanations." },
         { role: "user", content: prompt },
       ],
     });
+
     let result;
     try {
       result = JSON.parse(response.choices[0].message.content || '{}');
     } catch {
-      // Fallback: try to extract mission/vision from text
+      // Better fallback parsing
       const text = response.choices[0].message.content || '';
-      const missionMatch = text.match(/mission\s*[:\-]?\s*(.+)/i);
-      const visionMatch = text.match(/vision\s*[:\-]?\s*(.+)/i);
+      const missionMatch = text.match(/mission["\s:]*["']?([^"',\n]+)["']?[,\s]*/i);
+      const visionMatch = text.match(/vision["\s:]*["']?([^"',\n]+)["']?[,\s]*/i);
       result = {
-        mission: missionMatch && missionMatch[1] ? missionMatch[1].trim() : '',
-        vision: visionMatch && visionMatch[1] ? visionMatch[1].trim() : ''
+        mission: missionMatch && missionMatch[1] ? missionMatch[1].trim().replace(/,$/, '') : '',
+        vision: visionMatch && visionMatch[1] ? visionMatch[1].trim().replace(/,$/, '') : ''
       };
     }
     return res.status(200).json(result);
@@ -918,7 +932,6 @@ async function handleMissionVision(data: any, res: NextApiResponse) {
     return res.status(500).json({ error: "Failed to generate mission and vision" });
   }
 }
-
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method, body } = req;
