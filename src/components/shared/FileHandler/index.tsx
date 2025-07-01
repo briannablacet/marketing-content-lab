@@ -27,17 +27,17 @@ const FileHandler: React.FC<FileHandlerProps> = ({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
+
       // Validate file size
       if (file.size > maxSizeMB * 1024 * 1024) {
         setError(`File size must be less than ${maxSizeMB}MB`);
         return;
       }
-      
+
       setUploadedFile(file);
       setIsLoading(true);
       setError('');
-      
+
       try {
         const parsedContent = await parseFile(file);
         onContentLoaded(parsedContent);
@@ -55,11 +55,11 @@ const FileHandler: React.FC<FileHandlerProps> = ({
       setError('No content to export');
       return;
     }
-    
-    const filename = uploadedFile 
-      ? uploadedFile.name.split('.')[0] + '-processed' 
+
+    const filename = uploadedFile
+      ? uploadedFile.name.split('.')[0] + '-processed'
       : 'processed-content';
-    
+
     switch (format) {
       case 'txt':
         exportToText(content, `${filename}.txt`);
@@ -86,7 +86,7 @@ const FileHandler: React.FC<FileHandlerProps> = ({
     <div className="space-y-4">
       {/* File Upload Section */}
       <div>
-        <p className="text-sm text-gray-500 mb-2">Upload a document:</p>
+        <p className="text-sm text-gray-600 mb-2"><strong>Upload a document:</strong><br /></p>
         <div className="flex items-center gap-2">
           <label className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100">
             <Upload className="w-5 h-5 mr-2" />
@@ -102,7 +102,7 @@ const FileHandler: React.FC<FileHandlerProps> = ({
             <div className="flex items-center p-2 bg-gray-50 rounded">
               <FileText className="w-4 h-4 text-gray-500 mr-2" />
               <span className="text-sm text-gray-600">{uploadedFile.name}</span>
-              <button 
+              <button
                 onClick={handleRemoveFile}
                 className="ml-2 text-gray-400 hover:text-red-600"
               >
@@ -118,41 +118,41 @@ const FileHandler: React.FC<FileHandlerProps> = ({
           Supports various formats including text, markdown, Word, CSV, and Excel (max {maxSizeMB}MB)
         </p>
       </div>
-      
+
       {/* Error Message */}
       {error && (
         <div className="text-sm text-red-600">
           {error}
         </div>
       )}
-      
+
       {/* Export Buttons */}
       {showExport && content && (
         <div className="mt-4">
           <p className="text-sm text-gray-500 mb-2">Export options:</p>
           <div className="flex space-x-2">
-            <button 
+            <button
               onClick={() => handleExport('txt')}
               className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
             >
               <Download className="w-4 h-4 mr-1" />
               Text
             </button>
-            <button 
+            <button
               onClick={() => handleExport('md')}
               className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
             >
               <Download className="w-4 h-4 mr-1" />
               Markdown
             </button>
-            <button 
+            <button
               onClick={() => handleExport('html')}
               className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
             >
               <Download className="w-4 h-4 mr-1" />
               HTML
             </button>
-            <button 
+            <button
               onClick={() => handleExport('pdf')}
               className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
             >

@@ -1,15 +1,30 @@
 // src/components/features/ProsePerfector/index.tsx
+// FIXED: Better content display, editing interface, changes summary, and ContentEditChat integration
+
 import React, { useState, useRef } from "react";
 import { useNotification } from "../../../context/NotificationContext";
 import { useWritingStyle } from "../../../context/WritingStyleContext";
 import StrategicDataService from "../../../services/StrategicDataService";
+import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../../utils/exportUtils';
+import { parseMarkdownWithStyle, applyHeadingCase } from '../../../utils/StyleGuides';
+import ContentEditChat from "../ContentEditChat";
 import {
   X,
   Loader,
   Sparkles,
   Copy,
+  Download,
+  FileText,
+  CheckCircle,
+  Edit,
+  Save,
+  RefreshCw,
+  MessageSquare,
+  TrendingUp,
+  ArrowRight
 } from "lucide-react";
 import FileHandler from "@/components/shared/FileHandler";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface ImprovementSuggestion {
   original: string;
@@ -30,31 +45,82 @@ const STYLE_GUIDES = [
 // Main component
 const ProsePerfector: React.FC = () => {
   const { showNotification } = useNotification();
-  const { writingStyle } = useWritingStyle();
+  const { writingStyle, isStyleConfigured } = useWritingStyle();
 
   // Local state
   const [enhancedText, setEnhancedText] = useState("");
+  const [originalText, setOriginalText] = useState(""); // Track original for comparison
   const [suggestions, setSuggestions] = useState<ImprovementSuggestion[]>([]);
+  const [appliedSuggestions, setAppliedSuggestions] = useState<ImprovementSuggestion[]>([]); // Track applied changes
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [content, setContent] = useState("");
   const [uploadedContent, setUploadedContent] = useState<string>("");
+  
+  // Edit mode and dropdown states
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedContent, setEditedContent] = useState("");
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
 
-  // Processing options
-  const [options, setOptions] = useState({
-    improveClarity: true,
-    enhanceEngagement: true,
-    adjustFormality: false,
-    formalityLevel: "neutral", // 'formal', 'neutral', 'casual'
-    styleGuide: "chicago", // Default to Chicago style
+  // Initialize options with writing style from context
+  const [options, setOptions] = useState(() => {
+    console.log('🎨 Initializing ProsePerfector with writing style:', writingStyle);
+    
+    let defaultStyleGuide = "chicago";
+    if (writingStyle?.styleGuide?.primary) {
+      const styleGuideMapping: { [key: string]: string } = {
+        "Chicago Manual of Style": "chicago",
+        "AP Style": "ap",
+        "APA Style": "apa",
+        "MLA Style": "mla"
+      };
+      defaultStyleGuide = styleGuideMapping[writingStyle.styleGuide.primary] || "chicago";
+    }
+    
+    return {
+      improveClarity: true,
+      enhanceEngagement: true,
+      adjustFormality: false,
+      formalityLevel: "neutral",
+      styleGuide: defaultStyleGuide,
+    };
   });
 
-  // Update handleFileContent
-  const handleFileContent = (content: string | object) => {
-    if (typeof content === "string") {
-      setContent(content);
+  // Update options when writing style changes
+  React.useEffect(() => {
+    if (isStyleConfigured && writingStyle?.styleGuide?.primary) {
+      console.log('✅ Updating style guide from writing style context:', writingStyle.styleGuide.primary);
+      
+      const styleGuideMapping: { [key: string]: string } = {
+        "Chicago Manual of Style": "chicago",
+        "AP Style": "ap", 
+        "APA Style": "apa",
+        "MLA Style": "mla"
+      };
+      
+      const mappedStyleGuide = styleGuideMapping[writingStyle.styleGuide.primary] || "chicago";
+      
+      setOptions(prev => ({
+        ...prev,
+        styleGuide: mappedStyleGuide
+      }));
+    }
+  }, [writingStyle, isStyleConfigured]);
+
+  // Update edited content when enhanced text changes
+  React.useEffect(() => {
+    if (enhancedText) {
+      setEditedContent(enhancedText);
+    }
+  }, [enhancedText]);
+
+  const handleFileContent = (fileContent: string | object) => {
+    if (typeof fileContent === "string") {
+      setContent(fileContent);
+      showNotification("File content loaded successfully", "success");
     } else {
-      setUploadedContent(JSON.stringify(content, null, 2));
+      const jsonContent = JSON.stringify(fileContent, null, 2);
+      setContent(jsonContent);
       showNotification("Structured content loaded successfully", "success");
     }
   };
@@ -62,40 +128,44 @@ const ProsePerfector: React.FC = () => {
   // Process text for improvement
   const processText = async () => {
     if (!content.trim()) {
-      showNotification("error", "Please enter or upload text to enhance");
+      showNotification("Please enter or upload text to enhance", "error");
       return;
     }
 
     setIsProcessing(true);
+    setOriginalText(content); // Store original for comparison
 
     try {
-      // Map the styleGuide ID to the full name
+      console.log('🚀 Processing text with writing style:', writingStyle);
+      
       const styleGuideName =
         STYLE_GUIDES.find((sg) => sg.id === options.styleGuide)?.name ||
         "Chicago Manual of Style";
 
-      // Get strategic data
       const strategicData = await StrategicDataService.getAllStrategicData();
 
-      // Call the API endpoint to process the text
+      const requestData = {
+        mode: 'prose',
+        data: {
+          text: content,
+          options: {
+            ...options,
+            styleGuide: styleGuideName,
+          },
+          writingStyle: writingStyle || null,
+          strategicData: strategicData
+        },
+      };
+
+      console.log('📤 Sending request with writing style:', requestData);
+
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({
-          mode: 'prosePerfector',
-          data: {
-            text: content,
-            options: {
-              ...options,
-              styleGuide: styleGuideName,
-            },
-            writingStyle: writingStyle || null,
-            strategicData: strategicData
-          },
-        }),
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
@@ -104,28 +174,25 @@ const ProsePerfector: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("API Response:", data); // Helpful for debugging
+      console.log("✅ API Response:", data);
 
-      // Set the enhanced text from the API response
       setEnhancedText(data.enhancedText);
 
-      // Map the suggestions from the API to match our expected format
-      const mappedSuggestions = (data.suggestions || []).map((suggestion) => ({
+      const mappedSuggestions = (data.suggestions || []).map((suggestion: any) => ({
         original: suggestion.original,
         suggestion: suggestion.suggestion,
         reason: suggestion.reason,
-        type: suggestion.type || "clarity", // Default to clarity if type is not provided
+        type: suggestion.type || "clarity",
       }));
 
       setSuggestions(mappedSuggestions);
-
-      // Set impr
-      showNotification("success", "Text enhanced successfully");
+      setAppliedSuggestions([]); // Reset applied suggestions
+      showNotification("Text enhanced successfully", "success");
     } catch (error) {
-      console.error("Error processing text:", error);
+      console.error("❌ Error processing text:", error);
       showNotification(
-        "error",
-        error.message || "Failed to enhance text. Please try again."
+        error instanceof Error ? error.message : "Failed to enhance text. Please try again.",
+        "error"
       );
     } finally {
       setIsProcessing(false);
@@ -136,68 +203,176 @@ const ProsePerfector: React.FC = () => {
   const handleClear = () => {
     setContent("");
     setEnhancedText("");
+    setOriginalText("");
     setSuggestions([]);
+    setAppliedSuggestions([]);
+    setEditedContent("");
+    setIsEditMode(false);
   };
 
-  // Apply individual suggestion
+  // Apply individual suggestion with tracking
   const applySuggestion = (index: number) => {
     const suggestion = suggestions[index];
 
-    // Simple replacement (in a real app, you'd need more sophisticated text manipulation)
-    const updatedText = enhancedText.replace(
+    // Apply to the current edited content
+    const updatedText = (isEditMode ? editedContent : enhancedText).replace(
       suggestion.original,
       suggestion.suggestion
     );
-    setEnhancedText(updatedText);
+    
+    if (isEditMode) {
+      setEditedContent(updatedText);
+    } else {
+      setEnhancedText(updatedText);
+    }
 
-    // Remove the applied suggestion
+    // Move suggestion to applied list
+    setAppliedSuggestions(prev => [...prev, suggestion]);
+
+    // Remove from pending suggestions
     const updatedSuggestions = [...suggestions];
     updatedSuggestions.splice(index, 1);
     setSuggestions(updatedSuggestions);
+    
+    showNotification("Suggestion applied successfully", "success");
   };
 
   // Apply all suggestions at once
   const applyAllSuggestions = () => {
     if (suggestions.length === 0) return;
 
-    let text = enhancedText;
+    let text = isEditMode ? editedContent : enhancedText;
+    const newlyApplied = [...suggestions];
+    
     for (const suggestion of suggestions) {
       text = text.replace(suggestion.original, suggestion.suggestion);
     }
 
-    setEnhancedText(text);
+    if (isEditMode) {
+      setEditedContent(text);
+    } else {
+      setEnhancedText(text);
+    }
+    
+    setAppliedSuggestions(prev => [...prev, ...newlyApplied]);
     setSuggestions([]);
-    showNotification("success", "All suggestions applied");
+    showNotification("All suggestions applied", "success");
+  };
+
+  // Save content edits
+  const saveContentEdits = () => {
+    setEnhancedText(editedContent);
+    setIsEditMode(false);
+    showNotification("Content updated successfully", "success");
+  };
+
+  // FIXED: Handle content updates from ContentEditChat
+  const handleContentUpdate = (newContent: string, newTitle?: string) => {
+    if (isEditMode) {
+      setEditedContent(newContent);
+    } else {
+      setEnhancedText(newContent);
+    }
+    showNotification("Content updated successfully", "success");
   };
 
   // Copy enhanced text to clipboard
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(enhancedText);
-    showNotification("success", "Enhanced text copied to clipboard");
+    const textToCopy = isEditMode ? editedContent : enhancedText;
+    navigator.clipboard.writeText(textToCopy);
+    showNotification("Enhanced text copied to clipboard", "success");
   };
+
+  // Export functionality
+  const handleExport = (format: 'txt' | 'markdown' | 'html' | 'pdf' | 'docx') => {
+    const textToExport = isEditMode ? editedContent : enhancedText;
+    
+    if (!textToExport) {
+      showNotification("No enhanced text to export", "error");
+      return;
+    }
+
+    const fileName = `enhanced-text-${new Date().toISOString().slice(0, 10)}`;
+    
+    try {
+      switch (format) {
+        case 'txt':
+          exportToText(textToExport, `${fileName}.txt`);
+          break;
+        case 'markdown':
+          exportToMarkdown(textToExport, `${fileName}.md`);
+          break;
+        case 'html':
+          exportToHTML(textToExport, `${fileName}.html`);
+          break;
+        case 'pdf':
+          exportToPDF(textToExport, `${fileName}.pdf`);
+          break;
+        case 'docx':
+          exportToDocx(textToExport, `${fileName}.docx`);
+          break;
+        default:
+          exportToText(textToExport, `${fileName}.txt`);
+      }
+      
+      showNotification(`Text exported as ${format.toUpperCase()}`, "success");
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      showNotification("Export failed. Please try again.", "error");
+    }
+  };
+
+  // Parse content for display
+  const parsedContent = parseMarkdownWithStyle(enhancedText, writingStyle || {});
 
   return (
     <div className="space-y-8">
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Enhance Your Writing
-        </h2>
-        <p className="text-sm text-gray-600 mb-6">
-          Upload a document or paste your text to improve clarity, engagement,
-          and style. Choose your preferred style guide and enhancement options
-          below.
-        </p>
+      {/* Writing Style Status Banner */}
+      {isStyleConfigured && (
+        <Card className="border-2 border-green-200">
+          <CardHeader className="bg-green-50">
+            <CardTitle className="flex items-center">
+              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+              <span>Using Your Writing Style Settings</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="text-sm text-green-700">
+              Style Guide: {writingStyle?.styleGuide?.primary} • 
+              Headings: {writingStyle?.formatting?.headingCase === 'upper' ? 'ALL CAPS' : 
+                        writingStyle?.formatting?.headingCase === 'lower' ? 'lowercase' :
+                        writingStyle?.formatting?.headingCase === 'sentence' ? 'Sentence case' : 'Title Case'}
+              {writingStyle?.punctuation?.oxfordComma !== undefined && 
+                ` • Oxford Comma: ${writingStyle.punctuation.oxfordComma ? 'Used' : 'Omitted'}`}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        <div className="space-y-6">
+      {/* Input Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Sparkles className="w-6 h-6 text-blue-600 mr-2" />
+            Enhance Your Writing
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-sm text-gray-600">
+            Upload a document or paste your text to improve clarity, engagement, and style.
+          </p>
+
           <div>
             <label className="block text-sm font-medium mb-2">
-              Style Guide
+              Style guide: Use the pre-filled style guide below or choose another using the dropdown.
+              {isStyleConfigured && (
+                <span className="text-green-600 text-xs ml-2">&nbsp;</span>
+              )}
             </label>
             <select
               value={options.styleGuide}
-              onChange={(e) =>
-                setOptions({ ...options, styleGuide: e.target.value })
-              }
+              onChange={(e) => setOptions({ ...options, styleGuide: e.target.value })}
               className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
             >
               {STYLE_GUIDES.map((guide) => (
@@ -209,68 +384,44 @@ const ProsePerfector: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <label className="block text-sm font-medium mb-2">
-              Enhancement Options
-            </label>
+            <label className="block text-sm font-medium mb-2">Enhancement Options</label>
             <div className="space-y-2">
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={options.improveClarity}
-                  onChange={(e) =>
-                    setOptions({ ...options, improveClarity: e.target.checked })
-                  }
+                  onChange={(e) => setOptions({ ...options, improveClarity: e.target.checked })}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">
-                  Improve clarity and readability
-                </span>
+                <span className="text-sm text-gray-700">Improve clarity and readability</span>
               </label>
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={options.enhanceEngagement}
-                  onChange={(e) =>
-                    setOptions({
-                      ...options,
-                      enhanceEngagement: e.target.checked,
-                    })
-                  }
+                  onChange={(e) => setOptions({ ...options, enhanceEngagement: e.target.checked })}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">
-                  Enhance engagement and impact
-                </span>
+                <span className="text-sm text-gray-700">Enhance engagement and impact</span>
               </label>
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={options.adjustFormality}
-                  onChange={(e) =>
-                    setOptions({
-                      ...options,
-                      adjustFormality: e.target.checked,
-                    })
-                  }
+                  onChange={(e) => setOptions({ ...options, adjustFormality: e.target.checked })}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">
-                  Adjust formality level
-                </span>
+                <span className="text-sm text-gray-700">Adjust formality level</span>
               </label>
             </div>
           </div>
 
           {options.adjustFormality && (
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Formality Level
-              </label>
+              <label className="block text-sm font-medium mb-2">Formality Level</label>
               <select
                 value={options.formalityLevel}
-                onChange={(e) =>
-                  setOptions({ ...options, formalityLevel: e.target.value })
-                }
+                onChange={(e) => setOptions({ ...options, formalityLevel: e.target.value })}
                 className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm"
               >
                 <option value="formal">Formal</option>
@@ -279,55 +430,21 @@ const ProsePerfector: React.FC = () => {
               </select>
             </div>
           )}
+
           {/* File Upload */}
           <div className="border-t pt-6">
-            <p className="text-sm text-gray-700 mb-4">
-              Upload Document to Enhance your prose:
-            </p>
-            <FileHandler
-              onContentLoaded={handleFileContent}
-              content={uploadedContent}
-            />
-
-            {uploadedContent && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium text-sm">
-                    Uploaded Content Preview
-                  </h4>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setPromptText(uploadedContent); // Set the promptText
-                        setActiveTab("keywords"); // Proceed to next step
-                      }}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Use This
-                    </button>
-                    <button
-                      onClick={() => setUploadedContent("")}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <pre className="text-xs text-gray-600 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">
-                  {uploadedContent}
-                </pre>
-              </div>
-            )}
+           
+            <FileHandler onContentLoaded={handleFileContent} content="" /> 
           </div>
+
           {/* Text Input */}
           <div>
             <label className="block text-sm font-medium mb-2">Content</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-
               className="w-full h-64 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Paste or type your content here..."
+              placeholder="Paste or type your content here, or upload a file above..."
             />
           </div>
 
@@ -356,88 +473,354 @@ const ProsePerfector: React.FC = () => {
               )}
             </button>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {enhancedText && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Enhanced Text
-          </h2>
-          <div className="space-y-4">
-            <textarea
-              value={enhancedText}
-              readOnly
-              className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm bg-gray-50"
-              rows={6}
-            />
-            <div className="flex justify-end">
-              <button
-                onClick={copyToClipboard}
-                className="inline-flex items-center px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy to Clipboard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {suggestions.length > 0 && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Improvement Suggestions
-          </h2>
-          <div className="space-y-4">
-            {suggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="p-4 rounded-md border border-gray-200"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    {suggestion.type}
-                  </span>
-                  <button
-                    onClick={() => applySuggestion(index)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Apply
-                  </button>
+      {/* FIXED: Changes Summary - Show what was improved */}
+      {(appliedSuggestions.length > 0 || originalText) && enhancedText && (
+        <Card className="border-2 border-blue-200">
+          <CardHeader className="bg-blue-50">
+            <CardTitle className="flex items-center">
+              <TrendingUp className="w-5 h-5 text-blue-600 mr-2" />
+              <span>Enhancement Summary</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {originalText ? originalText.split(/\s+/).length : 0}
                 </div>
-                <p className="text-sm text-gray-600 mb-2">
-                  {suggestion.reason}
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Original</p>
-                    <p className="text-sm text-gray-700">
-                      {suggestion.original}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Suggestion</p>
-                    <p className="text-sm text-gray-700">
-                      {suggestion.suggestion}
-                    </p>
-                  </div>
+                <div className="text-sm text-gray-600">Original Words</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {enhancedText.split(/\s+/).length}
+                </div>
+                <div className="text-sm text-gray-600">Enhanced Words</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {appliedSuggestions.length}
+                </div>
+                <div className="text-sm text-gray-600">Improvements Applied</div>
+              </div>
+            </div>
+            
+            {appliedSuggestions.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-800 mb-2">Recent Improvements:</h4>
+                <div className="space-y-2">
+                  {appliedSuggestions.slice(-3).map((suggestion, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs capitalize">
+                        {suggestion.type}
+                      </span>
+                      <ArrowRight className="w-3 h-3 text-gray-400" />
+                      <span className="text-gray-700">{suggestion.reason}</span>
+                    </div>
+                  ))}
+                  {appliedSuggestions.length > 3 && (
+                    <div className="text-xs text-gray-500">
+                      +{appliedSuggestions.length - 3} more improvements applied
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-            <div className="flex justify-end">
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Enhanced Text Display */}
+      {enhancedText && (
+        <Card>
+          <CardHeader className="border-b flex justify-between items-center">
+            <CardTitle>Enhanced Text</CardTitle>
+            <div className="flex space-x-2">
+              {/* Toggle Edit Mode Button */}
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`px-3 py-1 text-sm border rounded-md flex items-center ${
+                  isEditMode
+                    ? "bg-blue-100 border-blue-500 text-blue-700"
+                    : "border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                {isEditMode ? "View Mode" : "Edit Mode"}
+              </button>
+
+              {/* Save button when in edit mode */}
+              {isEditMode && (
+                <button
+                  onClick={saveContentEdits}
+                  className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                >
+                  <Save className="w-4 h-4 mr-1" />
+                  Save Edits
+                </button>
+              )}
+
+              {/* Export Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportDropdown(!showExportDropdown)}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Export
+                </button>
+                {showExportDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
+                    <button
+                      onClick={() => handleExport('txt')}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Plain Text (.txt)
+                    </button>
+                    <button
+                      onClick={() => handleExport('markdown')}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Markdown (.md)
+                    </button>
+                    <button
+                      onClick={() => handleExport('html')}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      HTML (.html)
+                    </button>
+                    <button
+                      onClick={() => handleExport('pdf')}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      PDF (.pdf)
+                    </button>
+                    <button
+                      onClick={() => handleExport('docx')}
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Word (.docx)
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={copyToClipboard}
+                className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
+              >
+                <Copy className="w-4 h-4 mr-1" />
+                Copy
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="p-6">
+              {isEditMode ? (
+                /* Edit Mode - Show textarea */
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-blue-800">Editing Content</h3>
+                  <p className="text-sm text-gray-600">
+                    Make direct edits to your enhanced text below. Use markdown formatting for structure.
+                  </p>
+                  <textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="w-full p-4 border border-gray-300 rounded-lg min-h-[400px] font-mono"
+                    placeholder="Edit your enhanced content here..."
+                  />
+                </div>
+              ) : (
+                /* View Mode - Show formatted content */
+                <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
+                  fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                  lineHeight: '1.6',
+                  fontSize: '11pt',
+                  color: '#333'
+                }}>
+                  {/* Document Title */}
+                  {parsedContent.title && (
+                    <div className="text-center mb-6">
+                      <h1 className="text-2xl font-bold mb-2" style={{
+                        color: '#2B579A',
+                        fontFamily: 'Calibri, sans-serif',
+                        fontSize: '18pt',
+                        fontWeight: 'bold'
+                      }}>
+                        {applyHeadingCase(parsedContent.title, writingStyle?.formatting?.headingCase)}
+                      </h1>
+                    </div>
+                  )}
+
+                  {/* Introduction */}
+                  {parsedContent.introduction && (
+                    <div className="mb-6" style={{ textAlign: 'justify' }}>
+                      {parsedContent.introduction.split("\n").map((para, idx) => (
+                        <p key={idx} className={idx > 0 ? "mt-4" : ""} style={{
+                          margin: idx > 0 ? '12pt 0' : '0',
+                          textIndent: '0pt',
+                          lineHeight: '1.6'
+                        }}>
+                          {para}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Content Sections */}
+                  {parsedContent.sections.map((section, idx) => (
+                    <div key={idx} className="mb-6">
+                      <h2 className="font-semibold mb-3" style={{
+                        color: '#2B579A',
+                        fontSize: '14pt',
+                        fontWeight: 'bold',
+                        marginTop: idx > 0 ? '18pt' : '12pt',
+                        marginBottom: '6pt',
+                        borderBottom: '1px solid #E5E7EB',
+                        paddingBottom: '3pt'
+                      }}>
+                        {applyHeadingCase(section.title, writingStyle?.formatting?.headingCase)}
+                      </h2>
+                      <div style={{ textAlign: 'justify' }}>
+                        {section.content.split("\n").filter(p => p.trim()).map((para, pIdx) => (
+                          <p key={pIdx} style={{
+                            margin: pIdx > 0 ? '12pt 0' : '0 0 12pt 0',
+                            textIndent: '0pt',
+                            lineHeight: '1.6'
+                          }}>
+                            {para}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* If no sections, show the raw content formatted */}
+                  {parsedContent.sections.length === 0 && !parsedContent.introduction && (
+                    <div style={{ textAlign: 'justify' }}>
+                      {enhancedText.split("\n").filter(p => p.trim()).map((para, idx) => (
+                        <p key={idx} style={{
+                          margin: idx > 0 ? '12pt 0' : '0 0 12pt 0',
+                          textIndent: '0pt',
+                          lineHeight: '1.6'
+                        }}>
+                          {para}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Word count display */}
+                  <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-gray-500">
+                    <span>Word count: {enhancedText.split(/\s+/).length}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Improvement Suggestions - Better visibility and interaction */}
+      {suggestions.length > 0 && (
+        <Card>
+          <CardHeader className="border-b">
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center">
+                <RefreshCw className="w-5 h-5 text-blue-600 mr-2" />
+                Improvement Suggestions ({suggestions.length})
+              </CardTitle>
               <button
                 onClick={applyAllSuggestions}
-                className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Apply All Suggestions
               </button>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+          </CardHeader>
+          <CardContent className="p-6">
+            <p className="text-sm text-gray-600 mb-4">
+              Click "Apply" to make individual changes, or "Apply All" to implement all suggestions at once.
+            </p>
+            <div className="space-y-4">
+              {suggestions.map((suggestion, index) => (
+                <div key={index} className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full capitalize">
+                        {suggestion.type}
+                      </span>
+                      <span className="text-sm text-gray-600">{suggestion.reason}</span>
+                    </div>
+                    <button
+                      onClick={() => applySuggestion(index)}
+                      className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                     <p className="text-xs font-medium text-red-700 mb-1">Original</p>
+                     <p className="text-sm text-red-800">{suggestion.original}</p>
+                   </div>
+                   <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                     <p className="text-xs font-medium text-green-700 mb-1">Suggested</p>
+                     <p className="text-sm text-green-800">{suggestion.suggestion}</p>
+                   </div>
+                 </div>
+               </div>
+             ))}
+           </div>
+         </CardContent>
+       </Card>
+     )}
+
+     {/* FIXED: ContentEditChat Integration - Like Content Creator */}
+     {enhancedText && (
+       <Card>
+         <CardHeader className="border-b">
+           <CardTitle className="flex items-center">
+             <MessageSquare className="w-5 h-5 mr-2" />
+             Ask for Additional Improvements
+           </CardTitle>
+         </CardHeader>
+         <CardContent className="p-0">
+           <ContentEditChat
+             originalContent={enhancedText}
+             originalTitle="Enhanced Text"
+             contentType="enhanced-text"
+             onContentUpdate={handleContentUpdate}
+             // Pass strategic context if available
+             strategicContext={{
+               productName: "Enhanced Content",
+               valueProposition: "Improved clarity and engagement",
+               audience: "general audience",
+               tone: options.formalityLevel
+             }}
+           />
+         </CardContent>
+       </Card>
+     )}
+
+     {/* Writing Style Applied Notice */}
+     {isStyleConfigured && enhancedText && (
+       <Card className="p-4 bg-green-50 border border-green-200">
+         <div className="flex items-center text-sm text-gray-600">
+           <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+           <span>
+             Content enhanced using {writingStyle?.styleGuide?.primary} style guide
+             {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
+             {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}.
+           </span>
+         </div>
+       </Card>
+     )}
+   </div>
+ );
 };
 
 export default ProsePerfector;
