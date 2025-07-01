@@ -122,7 +122,7 @@ const BrandCompass: React.FC = () => {
                 keyBenefits: messageFramework?.keyBenefits || allData.messaging?.keyBenefits || [],
                 targetAudiences: formattedAudiences,
                 brandVoice: allData.brandVoice?.brandVoice || allData.brandVoice,
-                brandArchetype: allData.brandArchetype,
+                brandArchetype: allData.brandVoice?.brandVoice?.archetype || allData.brandArchetype,
                 boilerplates: boilerplates,
                 differentiators: allData.differentiators || [],
                 competitiveAnalysis: allData.competitiveAnalysis || []
