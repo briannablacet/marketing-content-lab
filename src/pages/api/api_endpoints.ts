@@ -136,11 +136,10 @@ function cleanGeneratedContent(content: string): string {
 function cleanTagline(tagline: string): string {
   if (!tagline) return tagline;
 
-  // Remove leading and trailing quotation marks (both single and double)
   let cleaned = tagline.trim();
-  cleaned = cleaned.replace(/^["']|["']$/g, '');
-
-  // Remove extra whitespace
+  // Remove multiple layers of quotes
+  cleaned = cleaned.replace(/^["']+|["']+$/g, '');
+  cleaned = cleaned.replace(/^["']+|["']+$/g, ''); // Run it twice for nested quotes
   cleaned = cleaned.trim();
 
   return cleaned;

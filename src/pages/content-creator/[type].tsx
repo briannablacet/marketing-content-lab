@@ -842,55 +842,71 @@ const ContentCreatorPage = () => {
             )}
 
             {/* Strategic Data Banner - Show if we have meaningful strategic data */}
-            {hasStrategicData && (
-              <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
-                <CardHeader className="bg-blue-50 border-b">
-                  <CardTitle className="flex items-center">
-                    <FileCheck className="w-5 h-5 text-blue-600 mr-2" />
-                    <span>Using Your Marketing Program</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="font-medium text-gray-800 mb-2">
-                        Content will be created using:
-                      </h3>
-                      <ul className="space-y-2">
-                        {strategicData?.product?.name && (
-                          <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                            <span className="text-gray-700">
-                              <strong>Your product:</strong>{" "}
-                              {strategicData.product.name}
-                            </span>
-                          </li>
-                        )}
-
-                        {strategicData?.audiences?.length > 0 && (
-                          <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                            <span className="text-gray-700">
-                              <strong>Your audience:</strong>{" "}
-                              {strategicData.audiences[0].role}
-                            </span>
-                          </li>
-                        )}
-
-                        {strategicData?.messaging?.valueProposition && (
-                          <li className="flex items-start">
-                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                            <span className="text-gray-700">
-                              <strong>Your messaging framework</strong>
-                            </span>
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        {/* Strategic Data Banner - Show if we have meaningful strategic data */}
+{hasStrategicData && (
+  <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
+    <CardHeader className="bg-blue-50 border-b">
+      <CardTitle className="flex items-center">
+        <FileCheck className="w-5 h-5 text-blue-600 mr-2" />
+        <span>Using Your Marketing Program</span>
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 className="font-medium text-gray-800 mb-2">
+            Content will be created using:
+          </h3>
+          <ul className="space-y-2">
+            {/* EXISTING ITEMS */}
+            {strategicData?.product?.name && (
+              <li className="flex items-start">
+                <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-gray-700">
+                  <strong>Your product:</strong>{" "}
+                  {strategicData.product.name}
+                </span>
+              </li>
             )}
+
+            {strategicData?.audiences?.length > 0 && (
+              <li className="flex items-start">
+                <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-gray-700">
+                  <strong>Your audience:</strong>{" "}
+                  {strategicData.audiences[0].role}
+                </span>
+              </li>
+            )}
+
+            {strategicData?.messaging?.valueProposition && (
+              <li className="flex items-start">
+                <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-gray-700">
+                  <strong>Your messaging framework</strong>
+                </span>
+              </li>
+            )}
+
+            {/* ADD THIS NEW BRAND VOICE ITEM */}
+            {(strategicData?.brandVoice?.brandVoice?.archetype || strategicData?.brandVoice?.brandVoice?.tone) && (
+              <li className="flex items-start">
+                <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-gray-700">
+                  <strong>Your brand voice:</strong>{" "}
+                  {strategicData.brandVoice.brandVoice.archetype && strategicData.brandVoice.brandVoice.tone 
+                    ? `${strategicData.brandVoice.brandVoice.archetype} - ${strategicData.brandVoice.brandVoice.tone}`
+                    : strategicData.brandVoice.brandVoice.archetype || strategicData.brandVoice.brandVoice.tone
+                  }
+                </span>
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+)}
 
             {/* No Strategic Data Warning */}
             {!isLoadingStrategicData && !hasStrategicData && !isStyleConfigured && (
