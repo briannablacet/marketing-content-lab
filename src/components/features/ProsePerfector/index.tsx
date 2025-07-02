@@ -379,10 +379,10 @@ const ProsePerfector: React.FC = () => {
       {/* Writing Style Status Banner */}
       {isStyleConfigured && (
         <Card className="border-2 border-green-200">
-          <CardHeader className="bg-green-50">
+          <CardHeader className="bg-green-50 pb-6">
             <CardTitle className="flex items-center">
               <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-              <span>Using Your Writing Style Settings</span>
+              <span>Using Your Style Guide Selections</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
@@ -403,19 +403,17 @@ const ProsePerfector: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Sparkles className="w-6 h-6 text-blue-600 mr-2" />
-            Enhance Your Writing
+            Select Your Settings (Optional)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="text-gray-600">
-            Upload a document or paste your text below. We'll enhance it for clarity, grammar, and engagement.
-          </p>
+
 
           <div>
             <label className="block text-sm font-medium mb-2">
               Style Guide
               {isStyleConfigured && (
-                <span className="text-green-600 text-xs ml-2">(from your settings)</span>
+                <span className="text-green-600 text-medium ml-2">(loaded from your settings)</span>
               )}
             </label>
             <select
@@ -540,7 +538,7 @@ const ProsePerfector: React.FC = () => {
         <div ref={resultsRef} className="space-y-8">
           {/* Summary Card */}
           <Card className="border-2 border-green-300">
-            <CardHeader className="bg-green-50">
+            <CardHeader className="bg-green-50 pb-6">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
@@ -629,7 +627,7 @@ const ProsePerfector: React.FC = () => {
 
           {/* Enhanced Text */}
           <Card className="border-2 border-blue-300">
-            <CardHeader className="bg-blue-50">
+            <CardHeader className="bg-blue-50 pb-6">
               <CardTitle className="flex justify-between items-center">
                 <span>🎉 Your Enhanced Text</span>
                 <div className="flex space-x-2">
@@ -756,10 +754,10 @@ const ProsePerfector: React.FC = () => {
 
           {/* Need More Changes */}
           <Card className="border-2 border-purple-200">
-            <CardHeader className="bg-purple-50">
+            <CardHeader className="bg-purple-50 pb-6">
               <CardTitle className="flex items-center">
                 <Sparkles className="w-5 h-5 text-purple-600 mr-2" />
-                <span>Need More Changes?</span>
+                <span>Want to Make Further Changes?</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
