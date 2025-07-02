@@ -1,7 +1,9 @@
 // src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
+// Enhanced competitive analysis with better URL support and error handling
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
-import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw } from 'lucide-react';
+import { Sparkles, AlertCircle, PlusCircle, X, RefreshCw, ExternalLink, Globe, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useNotification } from '../../../../../context/NotificationContext';
 
@@ -15,6 +17,12 @@ interface Competitor {
   strengths: string[];
   weaknesses: string[];
   isLoading?: boolean;
+  error?: string;
+  metadata?: {
+    searchPerformed?: boolean;
+    isUrl?: boolean;
+    analysisTimestamp?: string;
+  };
 }
 
 interface CompetitiveStepProps {
@@ -55,8 +63,19 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   // Add state for current competitor being analyzed
   const [currentCompetitor, setCurrentCompetitor] = useState('');
 
-  // Add state for competitor insights
-  const [competitorInsights, setCompetitorInsights] = useState<{ name: string; uniquePositioning: string[]; keyThemes: string[]; gaps: string[] }[]>([]);
+  // Add state for controlling which competitor analysis is expanded
+  const [expandedCompetitor, setExpandedCompetitor] = useState<number | null>(null);
+
+  // Helper function to detect if input looks like a URL
+  const isURL = (input: string): boolean => {
+    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    return urlPattern.test(input.toLowerCase()) ||
+      input.toLowerCase().includes('.com') ||
+      input.toLowerCase().includes('.org') ||
+      input.toLowerCase().includes('.net') ||
+      input.toLowerCase().includes('www.') ||
+      input.toLowerCase().includes('http');
+  };
 
   // Load competitors from localStorage when component mounts
   useEffect(() => {
@@ -81,11 +100,11 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         clearTimeout(analyzeTimer);
       }
 
-      // Set a new timer for 800ms debounce
+      // Set a new timer for 1200ms debounce (longer for URLs)
       const timer = setTimeout(() => {
         handleAnalyzeCompetitor(competitorToAnalyze.name);
         setCompetitorToAnalyze(null);
-      }, 800);
+      }, 1200);
 
       setAnalyzeTimer(timer);
     }
@@ -140,75 +159,154 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         description: '',
         knownMessages: [],
         strengths: [],
-        weaknesses: []
+        weaknesses: [],
+        error: undefined,
+        metadata: undefined
       } : comp
     ));
+    // Close the accordion when clearing
+    if (expandedCompetitor === index) {
+      setExpandedCompetitor(null);
+    }
   };
 
-  // FIXED: Proper API call using the same pattern as other components
+  // ENHANCED: Proper API call with better error handling and URL support
   const handleAnalyzeCompetitor = async (competitorName: string) => {
     if (!competitorName.trim()) {
-      showNotification('Please enter a competitor name', 'error');
+      showNotification('error', 'Please enter a competitor name or URL');
       return;
     }
 
     setIsAnalyzing(true);
     setCurrentCompetitor(competitorName);
+    setError(''); // Clear any previous errors
 
     try {
-      console.log(`Starting analysis for competitor: ${competitorName}`);
+      console.log(`🎯 Starting enhanced analysis for: ${competitorName}`);
 
-      // FIXED: Use the correct API structure that matches your API endpoints
+      // Determine if input is a URL
+      const inputIsUrl = isURL(competitorName);
+      console.log(`🔍 Input type: ${inputIsUrl ? 'URL' : 'Company Name'}`);
+
+      // Show different notification based on input type
+      if (inputIsUrl) {
+        showNotification('info', `Analyzing website: ${competitorName}`);
+      } else {
+        showNotification('info', `Researching company: ${competitorName}`);
+      }
+
+      // Use the enhanced API structure
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          mode: 'competitors', // This matches your API endpoint
+          mode: 'competitors',
           data: {
             competitors: [{ name: competitorName }],
-            industry: 'food'
+            industry: 'technology' // You could make this dynamic based on user's industry
           }
         }),
       });
 
-      console.log(`API response status: ${response.status}`);
+      console.log(`📡 API response status: ${response.status}`);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`❌ API error: ${response.status} - ${errorText}`);
+        throw new Error(`Analysis failed (${response.status}): ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('API response:', result);
+      console.log('✅ API response received:', result);
 
-      let insights = [];
-      if (Array.isArray(result)) {
-        insights = result;
-      } else if (result.competitorInsights && Array.isArray(result.competitorInsights)) {
-        insights = result.competitorInsights;
-      }
+      // Handle the enhanced response format
+      if (Array.isArray(result) && result.length > 0) {
+        const analysisResult = result[0];
 
-      if (insights.length > 0) {
-        const insight = insights[0];
+        // Check if this specific competitor had an error
+        if (analysisResult.error) {
+          throw new Error(analysisResult.error);
+        }
+
+        // Validate that we have meaningful data
+        if (!analysisResult.uniquePositioning ||
+          !analysisResult.keyThemes ||
+          !analysisResult.gaps ||
+          (analysisResult.uniquePositioning.length === 0 &&
+            analysisResult.keyThemes.length === 0 &&
+            analysisResult.gaps.length === 0)) {
+          throw new Error(`No analysis data found for ${competitorName}. This might be a very small company or the URL might not be accessible.`);
+        }
+
         // Update the competitor in the state with the analysis
         setCompetitors(prev => prev.map(comp =>
           comp.name === competitorName ? {
             ...comp,
-            description: insight.uniquePositioning.join('. '),
-            knownMessages: insight.keyThemes || [],
-            strengths: insight.uniquePositioning || [],
-            weaknesses: insight.gaps || []
+            description: analysisResult.uniquePositioning.length > 0
+              ? analysisResult.uniquePositioning.join('. ')
+              : 'No positioning information found',
+            knownMessages: analysisResult.keyThemes || [],
+            strengths: analysisResult.uniquePositioning || [],
+            weaknesses: analysisResult.gaps || [],
+            error: undefined,
+            metadata: analysisResult.metadata || {
+              searchPerformed: true,
+              isUrl: inputIsUrl,
+              analysisTimestamp: new Date().toISOString()
+            }
           } : comp
         ));
-        showNotification(`Analysis complete for ${competitorName}`, 'success');
+
+        // Auto-expand the newly analyzed competitor
+        const competitorIndex = competitors.findIndex(comp => comp.name === competitorName);
+        if (competitorIndex !== -1) {
+          setExpandedCompetitor(competitorIndex);
+        }
+
+        // Show success with details about what we found
+        const foundData = [
+          analysisResult.uniquePositioning?.length > 0 && 'positioning',
+          analysisResult.keyThemes?.length > 0 && 'messaging',
+          analysisResult.gaps?.length > 0 && 'opportunities'
+        ].filter(Boolean);
+
+        if (foundData.length > 0) {
+          showNotification('success', `Analysis complete! Found: ${foundData.join(', ')}`);
+        } else {
+          showNotification('warning', 'Analysis complete, but limited data was found');
+        }
+
       } else {
-        throw new Error('No insights returned from analysis');
+        throw new Error('No analysis results returned from the API');
       }
+
     } catch (error) {
-      console.error('Error analyzing competitor:', error);
-      showNotification(`Failed to analyze ${competitorName}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
-      setError(`Failed to analyze ${competitorName}. Please try again.`);
+      console.error('❌ Error analyzing competitor:', error);
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+      // Update the competitor with error information
+      setCompetitors(prev => prev.map(comp =>
+        comp.name === competitorName ? {
+          ...comp,
+          error: errorMessage,
+          description: '',
+          knownMessages: [],
+          strengths: [],
+          weaknesses: []
+        } : comp
+      ));
+
+      // Show specific error message
+      if (errorMessage.includes('No analysis data found')) {
+        showNotification('warning', `Limited data available for ${competitorName}. Try a larger competitor or check the URL.`);
+      } else {
+        showNotification('error', `Analysis failed: ${errorMessage}`);
+      }
+
+      setError(`Failed to analyze ${competitorName}: ${errorMessage}`);
     } finally {
       setIsAnalyzing(false);
       setCurrentCompetitor('');
@@ -217,10 +315,10 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
   const handleNameChange = (index: number, name: string) => {
     setCompetitors(prev => prev.map((comp, i) =>
-      i === index ? { ...comp, name } : comp
+      i === index ? { ...comp, name, error: undefined } : comp
     ));
 
-    // Set the competitor to analyze after a delay
+    // Set the competitor to analyze after a delay (only if substantial input)
     if (name.trim().length > 2) {
       setCompetitorToAnalyze({ index, name });
     }
@@ -233,6 +331,11 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     }
   };
 
+  // Toggle function for accordion
+  const toggleCompetitorExpanded = (index: number) => {
+    setExpandedCompetitor(expandedCompetitor === index ? null : index);
+  };
+
   // Check if we have any valid competitors (with names)
   const hasValidCompetitors = competitors.some(comp => comp.name.trim() !== '');
 
@@ -242,14 +345,14 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     if (hasValidCompetitors) {
       localStorage.setItem('marketingCompetitors',
         JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
-      showNotification('Competitor analysis saved', 'success');
+      showNotification('success', 'Competitor analysis saved');
 
       // Navigate to next step if in walkthrough
       if (onNext) {
         onNext();
       }
     } else {
-      showNotification('No competitors added. You can come back to this step later.', 'info');
+      showNotification('info', 'No competitors added. You can come back to this step later.');
       // Allow skipping this step
       if (onNext) {
         onNext();
@@ -259,22 +362,74 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* AI Analysis Card */}
+      {/* Enhanced AI Analysis Card */}
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 mb-8">
-        <div className="flex flex-col items-center text-center">
-          <Sparkles className="w-10 h-10 text-blue-600 mb-4" />
-          <h3 className="text-xl font-semibold mb-2">AI Competitor Analysis</h3>
-          <p className="text-gray-600 mb-4">
-            Let AI analyze your competitors and provide strategic insights
-          </p>
-          <div className="text-sm text-gray-600 space-y-2">
-            <p>Here's how it works:</p>
-            <ul className="list-disc text-left pl-4 space-y-1">
-              <li>Enter a competitor's name or website URL</li>
-              <li>Click the "Analyze" button to start the analysis</li>
-              <li>You'll see insights about their positioning, messages, and gaps</li>
-              <li>Add more competitors to build a complete analysis</li>
-            </ul>
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">AI Competitor Analysis</h3>
+            <p className="text-gray-600 mb-6">
+              Advanced competitive intelligence with URL analysis and web research capabilities.
+            </p>
+
+            {/* Two-column layout for features */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* What's New Section */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                  <span className="text-blue-600">✨</span>
+                  Enhanced Features
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-1">•</span>
+                    <span><strong>URL Analysis:</strong> Paste competitor websites for direct analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-1">•</span>
+                    <span><strong>Smart Research:</strong> Better data for smaller and niche companies</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-1">•</span>
+                    <span><strong>Detailed Insights:</strong> Positioning, messaging, and opportunities</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-1">•</span>
+                    <span><strong>Real Analysis:</strong> No generic placeholders or fallback data</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Pro Tips Section */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                  <span className="text-orange-500">💡</span>
+                  Best Practices
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>Use main website URLs (e.g., "competitor.com")</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>Company names work best for well-known brands</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>Analysis takes 10-15 seconds for thorough research</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>Try multiple competitors for comprehensive insights</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </Card>
@@ -284,7 +439,17 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         <Card className="p-4 bg-blue-50 border-blue-200">
           <div className="flex items-center gap-3">
             <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
-            <span className="text-blue-800">Analyzing {currentCompetitor}...</span>
+            <div className="flex-1">
+              <span className="text-blue-800 font-medium">
+                {isURL(currentCompetitor) ? 'Analyzing website:' : 'Researching company:'} {currentCompetitor}
+              </span>
+              <p className="text-blue-600 text-sm mt-1">
+                {isURL(currentCompetitor)
+                  ? 'Examining website content and positioning...'
+                  : 'Gathering competitive intelligence...'
+                }
+              </p>
+            </div>
           </div>
         </Card>
       )}
@@ -293,24 +458,38 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       {competitors.map((competitor, index) => (
         <Card key={index} className="p-6">
           <div className="space-y-6">
-            {/* Name Input */}
+            {/* Name Input with Enhanced Visual Cues */}
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <input
-                  // Add ref to the most recently added competitor
                   ref={index === competitors.length - 1 ? newCompetitorRef : null}
                   type="text"
                   value={competitor.name}
                   onChange={(e) => handleNameChange(index, e.target.value)}
-                  placeholder="Enter competitor name..."
-                  className="w-full p-3 border rounded-lg pr-12"
+                  placeholder="Enter competitor name or website URL (e.g., competitor.com)..."
+                  className={`w-full p-3 border rounded-lg pr-12 ${competitor.error ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    } ${isURL(competitor.name) ? 'text-blue-700 font-medium' : ''
+                    }`}
                 />
+
+                {/* Visual indicator for URL vs company name */}
+                {competitor.name && (
+                  <div className="absolute right-12 top-3">
+                    {isURL(competitor.name) ? (
+                      <Globe className="w-5 h-5 text-blue-500" title="Website URL detected" />
+                    ) : (
+                      <ExternalLink className="w-5 h-5 text-gray-400" title="Company name" />
+                    )}
+                  </div>
+                )}
+
                 {competitor.isLoading && (
                   <div className="absolute right-2 top-2 bg-blue-50 rounded-full p-2">
                     <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
                   </div>
                 )}
               </div>
+
               <button
                 onClick={() => handleSubmitCompetitor(index)}
                 disabled={isAnalyzing || competitor.name.trim().length < 2}
@@ -318,6 +497,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
               >
                 {isAnalyzing && currentCompetitor === competitor.name ? 'Analyzing...' : 'Analyze'}
               </button>
+
               {competitors.length > 1 && (
                 <button
                   onClick={() => removeCompetitor(index)}
@@ -328,66 +508,198 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
               )}
             </div>
 
-            {/* AI Generated Content */}
-            {competitor.name && !competitor.isLoading && (competitor.description || competitor.knownMessages.length > 0) && (
-              <div className="space-y-6 bg-gray-50 p-4 rounded-lg">
-                {competitor.description && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Key Positioning</h4>
-                    <p className="text-gray-600">{competitor.description}</p>
+            {/* Error Display for Individual Competitor */}
+            {competitor.error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-red-900">Analysis Error</h4>
+                    <p className="text-red-700 text-sm mt-1">{competitor.error}</p>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => handleAnalyzeCompetitor(competitor.name)}
+                        disabled={isAnalyzing}
+                        className="text-red-700 text-sm hover:text-red-800 underline"
+                      >
+                        Try Again
+                      </button>
+                      <button
+                        onClick={() => clearCompetitorAnalysis(index)}
+                        className="text-red-700 text-sm hover:text-red-800 underline ml-4"
+                      >
+                        Clear
+                      </button>
+                    </div>
                   </div>
-                )}
-
-                {competitor.knownMessages.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Key Messages</h4>
-                    <ul className="space-y-2">
-                      {competitor.knownMessages.map((message, i) => (
-                        <li key={i} className="bg-white p-3 rounded text-gray-600">
-                          {message}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {competitor.strengths.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Strengths</h4>
-                    <ul className="space-y-2">
-                      {competitor.strengths.map((strength, i) => (
-                        <li key={i} className="bg-white p-3 rounded text-gray-600">
-                          {strength}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {competitor.weaknesses.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Gaps</h4>
-                    <ul className="space-y-2">
-                      {competitor.weaknesses.map((weakness, i) => (
-                        <li key={i} className="bg-white p-3 rounded text-gray-600">
-                          {weakness}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Add a button to clear the analysis */}
-                <div className="flex justify-end mt-4">
-                  <button
-                    onClick={() => clearCompetitorAnalysis(index)}
-                    className="text-sm font-medium text-blue-600 hover:text-red-600 underline py-1 px-2"
-                  >
-                    Clear analysis
-                  </button>
                 </div>
               </div>
             )}
+
+            {/* AI Generated Content - Enhanced Display with Accordion */}
+            {competitor.name && !competitor.isLoading && !competitor.error &&
+              (competitor.description || competitor.knownMessages.length > 0) && (
+                <div className="border rounded-lg bg-gray-50">
+                  {/* Accordion Header */}
+                  <button
+                    onClick={() => toggleCompetitorExpanded(index)}
+                    className="w-full p-4 flex items-center justify-between hover:bg-gray-100 transition-colors rounded-t-lg"
+                  >
+                    <div className="flex items-center gap-3 text-left">
+                      <div className="flex items-center gap-2">
+                        {competitor.metadata?.isUrl ? (
+                          <Globe className="w-4 h-4 text-blue-600" />
+                        ) : (
+                          <ExternalLink className="w-4 h-4 text-gray-600" />
+                        )}
+                        <span className="font-medium text-gray-900">
+                          Analysis Results
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        {competitor.description && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                            Positioning
+                          </span>
+                        )}
+                        {competitor.knownMessages.length > 0 && (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                            {competitor.knownMessages.length} Messages
+                          </span>
+                        )}
+                        {competitor.weaknesses.length > 0 && (
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                            {competitor.weaknesses.length} Opportunities
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">
+                        {expandedCompetitor === index ? 'Hide Details' : 'View Details'}
+                      </span>
+                      {expandedCompetitor === index ? (
+                        <ChevronUp className="w-5 h-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Accordion Content */}
+                  {expandedCompetitor === index && (
+                    <div className="px-4 pb-4 space-y-6 border-t border-gray-200">
+                      {/* Analysis Metadata */}
+                      {competitor.metadata && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500 pt-4">
+                          <div className="flex items-center gap-1">
+                            {competitor.metadata.isUrl ? (
+                              <>
+                                <Globe className="w-3 h-3" />
+                                <span>Website Analysis</span>
+                              </>
+                            ) : (
+                              <>
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Company Research</span>
+                              </>
+                            )}
+                          </div>
+                          {competitor.metadata.analysisTimestamp && (
+                            <span>• {new Date(competitor.metadata.analysisTimestamp).toLocaleString()}</span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Key Positioning */}
+                      {competitor.description && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium text-gray-700">🎯 Key Positioning</h4>
+                          </div>
+                          <p className="text-gray-600 bg-white p-3 rounded border-l-4 border-blue-400">
+                            {competitor.description}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Key Messages */}
+                      {competitor.knownMessages.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium text-gray-700">📢 Key Messages</h4>
+                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
+                              {competitor.knownMessages.length} found
+                            </span>
+                          </div>
+                          <ul className="space-y-2">
+                            {competitor.knownMessages.map((message, i) => (
+                              <li key={i} className="bg-white p-3 rounded border-l-4 border-green-400 text-gray-600">
+                                {message}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Strengths */}
+                      {competitor.strengths.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium text-gray-700">💪 Competitive Strengths</h4>
+                            <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">
+                              {competitor.strengths.length} identified
+                            </span>
+                          </div>
+                          <ul className="space-y-2">
+                            {competitor.strengths.map((strength, i) => (
+                              <li key={i} className="bg-white p-3 rounded border-l-4 border-emerald-400 text-gray-600">
+                                {strength}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Gaps/Opportunities */}
+                      {competitor.weaknesses.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium text-gray-700">🎯 Opportunities & Gaps</h4>
+                            <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded">
+                              {competitor.weaknesses.length} found
+                            </span>
+                          </div>
+                          <ul className="space-y-2">
+                            {competitor.weaknesses.map((weakness, i) => (
+                              <li key={i} className="bg-white p-3 rounded border-l-4 border-orange-400 text-gray-600">
+                                {weakness}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                        <button
+                          onClick={() => handleAnalyzeCompetitor(competitor.name)}
+                          disabled={isAnalyzing}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-700 underline py-1 px-2 disabled:opacity-50"
+                        >
+                          🔄 Re-analyze
+                        </button>
+                        <button
+                          onClick={() => clearCompetitorAnalysis(index)}
+                          className="text-sm font-medium text-red-600 hover:text-red-700 underline py-1 px-2"
+                        >
+                          🗑️ Clear analysis
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
         </Card>
       ))}
@@ -401,7 +713,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         Add Another Competitor
       </button>
 
-      {/* Error Display */}
+      {/* Global Error Display */}
       {error && (
         <Card className="border-red-200 bg-red-50 mt-4">
           <div className="flex items-center gap-3 p-4">
@@ -415,6 +727,28 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
               >
                 Dismiss
               </button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Summary Card - Show when we have successful analyses */}
+      {competitors.some(comp => comp.description && !comp.error) && (
+        <Card className="bg-green-50 border-green-200 p-6">
+          <div className="flex items-start gap-3">
+            <Sparkles className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="font-semibold text-green-900 mb-2">Analysis Complete! 🎉</h3>
+              <p className="text-green-700 text-sm mb-3">
+                You now have competitive intelligence on {competitors.filter(comp => comp.description && !comp.error).length} competitor(s).
+                Use this data to:
+              </p>
+              <ul className="text-green-700 text-sm space-y-1 list-disc list-inside">
+                <li>Identify messaging gaps in your market</li>
+                <li>Differentiate your positioning</li>
+                <li>Discover new market opportunities</li>
+                <li>Refine your value proposition</li>
+              </ul>
             </div>
           </div>
         </Card>

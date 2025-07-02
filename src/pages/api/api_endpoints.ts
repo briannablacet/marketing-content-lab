@@ -829,78 +829,196 @@ Return ONLY a valid JSON object with valueProposition, keyDifferentiators (array
 }
 
 // Handler for competitor analysis
+// REPLACE ONLY the handleCompetitiveAnalysis function in your existing api_endpoints.ts file
+// Find the existing function and replace it with this enhanced version
+
+// Helper functions for URL detection (add these at the top of your file, after your existing helper functions)
+function isURL(input: string): boolean {
+  try {
+    new URL(input);
+    return true;
+  } catch {
+    return input.toLowerCase().includes('.com') || 
+           input.toLowerCase().includes('.org') || 
+           input.toLowerCase().includes('.net') || 
+           input.toLowerCase().includes('www.') ||
+           input.toLowerCase().includes('http');
+  }
+}
+
+function extractDomain(input: string): string {
+  try {
+    if (!input.startsWith('http')) {
+      input = 'https://' + input;
+    }
+    const url = new URL(input);
+    return url.hostname.replace('www.', '');
+  } catch {
+    return input.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+  }
+}
+
+// ENHANCED Handler for competitor analysis - REPLACE your existing handleCompetitiveAnalysis function with this
 async function handleCompetitiveAnalysis(data: any, res: NextApiResponse) {
   try {
     const { competitors, industry } = data;
-    const prompt = `Analyze the following competitors in the ${industry} industry. For each competitor, provide:
+    
+    if (!competitors || !Array.isArray(competitors) || competitors.length === 0) {
+      return res.status(400).json({ 
+        error: "No competitors provided for analysis" 
+      });
+    }
 
-1. Unique positioning (array of strings)
-2. Key themes/messages (array of strings)
-3. Gaps/opportunities (array of strings)
+    console.log("🎯 Starting enhanced competitive analysis for:", competitors.map(c => c.name));
 
-Competitors: ${JSON.stringify(competitors)}
-Industry: ${industry}
+    const analysisResults = [];
 
-Return ONLY a valid JSON array with this exact format:
-[
-  {
-    "name": "Competitor Name",
-    "uniquePositioning": ["Positioning 1", "Positioning 2"],
-    "keyThemes": ["Theme 1", "Theme 2"],
-    "gaps": ["Gap 1", "Gap 2"]
-  }
-]
+    for (const competitor of competitors) {
+      if (!competitor.name || competitor.name.trim() === '') {
+        continue;
+      }
 
-Important: Return ONLY the JSON array, no explanations or additional text. Ensure the JSON is valid and properly formatted.`;
+      try {
+        console.log(`🔍 Analyzing competitor: ${competitor.name}`);
+        
+        // Determine if input is a URL
+        const inputIsUrl = isURL(competitor.name);
+        
+        // Create enhanced prompt based on input type
+        const basePrompt = inputIsUrl 
+          ? `Analyze the company at this website: ${competitor.name}`
+          : `Analyze this competitor company: ${competitor.name}`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      messages: [
-        { role: "system", content: "You are a marketing strategist." },
-        { role: "user", content: prompt }
-      ],
-      max_tokens: 800,
-      temperature: 0.7
-    });
-    let text = response.choices[0].message.content.trim();
-    console.log("[CompetitiveAnalysis] AI raw response:", text);
-    let result: any = [];
-    try {
-      result = JSON.parse(text);
-      console.log("[CompetitiveAnalysis] Parsed JSON:", result);
-    } catch (e) {
-      // Try to extract JSON array from the response
-      const match = text.match(/\[[\s\S]*\]/);
-      if (match) {
+        const prompt = `${basePrompt}
+
+Industry Context: ${industry || 'Technology/SaaS'}
+
+Please provide a detailed competitive analysis with the following structure:
+
+1. UNIQUE POSITIONING (3-5 key points about how they position themselves)
+2. KEY THEMES/MESSAGES (4-6 main marketing messages they use)  
+3. GAPS/OPPORTUNITIES (3-4 areas where they could be vulnerable or where competitors could differentiate)
+
+${inputIsUrl ? `
+Since this is a website URL, focus on:
+- Their homepage messaging and value propositions
+- About page positioning statements  
+- Product/service descriptions
+- Any unique angles they take in their marketing
+` : `
+For this company, research and analyze:
+- Their known market positioning
+- Common messaging themes in their marketing
+- Competitive advantages they claim
+- Areas where they might be weak or overextended
+`}
+
+Be specific and actionable. Avoid generic business advice.
+
+Return ONLY a JSON object with this exact format:
+{
+  "name": "${competitor.name}",
+  "uniquePositioning": ["positioning point 1", "positioning point 2", ...],
+  "keyThemes": ["theme 1", "theme 2", ...],
+  "gaps": ["opportunity 1", "opportunity 2", ...]
+}`;
+
+        // Get AI analysis with better parameters
+        const response = await openai.chat.completions.create({
+          model: "gpt-4-turbo",
+          messages: [
+            { 
+              role: "system", 
+              content: "You are a competitive intelligence analyst with deep knowledge of business strategy and marketing. Provide detailed, specific analysis based on real market knowledge. Return only valid JSON with no explanations." 
+            },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 1000,
+          temperature: 0.3 // Lower temperature for more consistent, factual responses
+        });
+
+        const aiResponse = response.choices[0].message.content?.trim() || '';
+        console.log(`📊 AI response for ${competitor.name}:`, aiResponse.substring(0, 100) + "...");
+
+        // Parse the response
+        let parsedResult;
         try {
-          result = JSON.parse(match[0]);
-          console.log("[CompetitiveAnalysis] Extracted JSON array:", result);
-        } catch (e2) {
-          console.error("[CompetitiveAnalysis] Failed to parse extracted JSON array:", e2);
-          result = [];
+          parsedResult = JSON.parse(aiResponse);
+        } catch (parseError) {
+          console.error(`❌ Failed to parse JSON for ${competitor.name}:`, parseError);
+          
+          // Try to extract JSON from the response
+          const match = aiResponse.match(/\{[\s\S]*\}/);
+          if (match) {
+            try {
+              parsedResult = JSON.parse(match[0]);
+            } catch (secondParseError) {
+              console.error(`❌ Second parse attempt failed for ${competitor.name}`);
+              throw new Error(`Could not analyze ${competitor.name} - please try again`);
+            }
+          } else {
+            throw new Error(`No valid analysis data found for ${competitor.name}`);
+          }
         }
-      } else {
-        console.error("[CompetitiveAnalysis] No JSON array found in AI response.");
-        result = [];
+
+        // Validate the structure
+        if (!parsedResult.uniquePositioning || !Array.isArray(parsedResult.uniquePositioning)) {
+          throw new Error(`Invalid analysis structure for ${competitor.name}`);
+        }
+
+        // Check if we got meaningful content
+        const totalInsights = parsedResult.uniquePositioning.length + 
+                             (parsedResult.keyThemes?.length || 0) + 
+                             (parsedResult.gaps?.length || 0);
+
+        if (totalInsights === 0) {
+          throw new Error(`No competitive insights found for ${competitor.name}. This may be a very small company or limited public information is available.`);
+        }
+
+        // Add metadata about our analysis
+        parsedResult.metadata = {
+          searchPerformed: true,
+          isUrl: inputIsUrl,
+          analysisTimestamp: new Date().toISOString(),
+          totalInsights: totalInsights
+        };
+
+        analysisResults.push(parsedResult);
+        
+        console.log(`✅ Successfully analyzed ${competitor.name} with ${totalInsights} insights`);
+        
+      } catch (competitorError) {
+        console.error(`❌ Error analyzing ${competitor.name}:`, competitorError);
+        
+        // Return an error for this specific competitor instead of fallback data
+        analysisResults.push({
+          name: competitor.name,
+          error: `Failed to analyze ${competitor.name}: ${competitorError.message}`,
+          uniquePositioning: [],
+          keyThemes: [],
+          gaps: []
+        });
       }
     }
-    if (!result || !Array.isArray(result)) {
-      // fallback sample
-      console.warn("[CompetitiveAnalysis] Falling back to sample data.");
-      result = Array.isArray(competitors)
-        ? competitors.map((c: any) => ({
-          name: c.name || "Unknown Competitor",
-          uniquePositioning: ["Sample positioning"],
-          keyThemes: ["Sample theme"],
-          gaps: ["Sample gap"]
-        }))
-        : [];
+
+    // Return results
+    if (analysisResults.length === 0) {
+      return res.status(400).json({ 
+        error: "Could not analyze any of the provided competitors" 
+      });
     }
-    return res.status(200).json(result);
+
+    const successfulAnalyses = analysisResults.filter(result => !result.error);
+    console.log(`🎉 Completed analysis: ${successfulAnalyses.length}/${analysisResults.length} successful`);
+    
+    return res.status(200).json(analysisResults);
+
   } catch (error) {
     const errorMessage = typeof error === 'object' && error && 'message' in error ? (error as any).message : String(error);
-    console.error("[CompetitiveAnalysis] Handler error:", errorMessage);
-    res.status(500).json({ error: errorMessage });
+    console.error("❌ Competitive analysis handler error:", errorMessage);
+    res.status(500).json({ 
+      error: `Analysis failed: ${errorMessage}` 
+    });
   }
 }
 
