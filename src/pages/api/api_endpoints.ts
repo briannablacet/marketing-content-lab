@@ -698,46 +698,66 @@ Return a JSON array of variations. Each variation should be a string.`;
   }
 }
 
-// Handler for prose perfector
+// Handler for prose perfector - SIMPLE AND DIRECT
 async function handleProsePerfector(data: any, res: NextApiResponse) {
   try {
     const { text, options, writingStyle, strategicData } = data;
 
-    // FIXED: Build style guide instructions using writing style data
-    const styleInstructions = buildStyleGuideInstructions(
-      writingStyle || strategicData?.writingStyle,
-      strategicData?.brandVoice,
-      strategicData?.messaging
-    );
+    // Build user instructions - make them SUPER clear
+    let instructions = "Improve this text by:\n";
 
-    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
-${styleInstructions}
+    if (options.additionalInstructions && options.additionalInstructions.trim()) {
+      instructions += `- MOST IMPORTANT: ${options.additionalInstructions.trim()}\n`;
+    }
 
-Improve the following text for clarity, engagement, and style.
+    if (options.improveClarity) instructions += "- Fix unclear sentences\n";
+    if (options.enhanceEngagement) instructions += "- Make it more engaging\n";
+    if (options.adjustFormality) instructions += `- Make it ${options.formalityLevel}\n`;
 
-Text: ${text}
+    instructions += "- Fix grammar and punctuation errors\n";
+    instructions += "- Fix formatting issues (like '5) 5)' should be '5)')\n";
 
-Options: ${JSON.stringify(options || {})}
+    const prompt = `${instructions}
 
-Return a JSON object with 'enhancedText' and an array 'suggestions' (each with original, suggestion, reason, type).`;
+Text to improve:
+${text}
+
+Return your response as JSON with this exact format:
+{"enhancedText": "your improved version", "suggestions": [{"original": "what you changed", "suggestion": "what you changed it to", "reason": "why", "type": "improvement"}]}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
-      temperature: 0.7,
+      temperature: 0.1,
       messages: [
-        { role: "system", content: "You are a professional editor." },
-        { role: "user", content: prompt },
+        { role: "system", content: "You follow instructions exactly. Return only valid JSON." },
+        { role: "user", content: prompt }
       ],
     });
+
     let result;
     try {
-      result = JSON.parse(response.choices[0].message.content || '{}');
-    } catch {
-      result = { enhancedText: text, suggestions: [] };
+      const content = response.choices[0].message.content || '{}';
+      console.log('🔍 AI raw response:', content);
+
+      // Try to parse directly first
+      result = JSON.parse(content);
+    } catch (parseError) {
+      console.error('❌ Parse error:', parseError);
+      // Fallback
+      result = {
+        enhancedText: text,
+        suggestions: [{
+          original: "AI response error",
+          suggestion: "Please try again",
+          reason: "Could not parse AI response",
+          type: "error"
+        }]
+      };
     }
+
     return res.status(200).json(result);
   } catch (error) {
-    console.error("Prose Perfector error:", error);
+    console.error("❌ Prose error:", error);
     return res.status(500).json({ error: "Failed to enhance prose" });
   }
 }

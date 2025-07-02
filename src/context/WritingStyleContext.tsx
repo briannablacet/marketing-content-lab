@@ -1,9 +1,7 @@
 // src/context/WritingStyleContext.tsx
-// FIXED: Properly initializes writing style state even when no data is saved
-// FIXED: Components now properly re-render when writing style is saved
-// FIXED: Added missing StrategicDataService import
+// FIXED: Eliminated infinite render loop by memoizing isStyleConfigured calculation
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import StrategicDataService from '../services/StrategicDataService';
 
 interface StyleGuide {
@@ -106,7 +104,7 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     };
 
     initializeWritingStyle();
-  }, []);
+  }, []); // Empty dependency array - only run once
 
   // Save writing style 
   const saveWritingStyle = async () => {
@@ -168,28 +166,37 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     console.log('🔄 Writing style reset to defaults');
   };
 
-  // Check if style is configured (not using defaults)
-  const isStyleConfigured = isLoaded && (
-    writingStyle.completed === true ||
-    writingStyle.styleGuide.primary !== 'Chicago Manual of Style' ||
-    writingStyle.formatting.headingCase !== 'title' ||
-    writingStyle.formatting.numberFormat !== 'mixed' ||
-    writingStyle.punctuation.oxfordComma !== true ||
-    (writingStyle.styleGuide.customRules && writingStyle.styleGuide.customRules.length > 0)
-  );
+  // FIXED: Memoize isStyleConfigured to prevent recalculation on every render
+  const isStyleConfigured = useMemo(() => {
+    const result = isLoaded && (
+      writingStyle.completed === true ||
+      writingStyle.styleGuide.primary !== 'Chicago Manual of Style' ||
+      writingStyle.formatting.headingCase !== 'title' ||
+      writingStyle.formatting.numberFormat !== 'mixed' ||
+      writingStyle.punctuation.oxfordComma !== true ||
+      (writingStyle.styleGuide.customRules && writingStyle.styleGuide.customRules.length > 0)
+    );
 
-  console.log('🔍 isStyleConfigured calculation:', {
+    // Only log when the result actually changes
+    console.log('🔍 isStyleConfigured calculated:', {
+      isLoaded,
+      completed: writingStyle.completed,
+      primary: writingStyle.styleGuide.primary,
+      result
+    });
+
+    return result;
+  }, [
     isLoaded,
-    completed: writingStyle.completed,
-    primary: writingStyle.styleGuide.primary,
-    headingCase: writingStyle.formatting.headingCase,
-    numberFormat: writingStyle.formatting.numberFormat,
-    oxfordComma: writingStyle.punctuation.oxfordComma,
-    customRulesLength: writingStyle.styleGuide.customRules?.length || 0,
-    result: isStyleConfigured
-  });
+    writingStyle.completed,
+    writingStyle.styleGuide.primary,
+    writingStyle.formatting.headingCase,
+    writingStyle.formatting.numberFormat,
+    writingStyle.punctuation.oxfordComma,
+    writingStyle.styleGuide.customRules?.length
+  ]);
 
-  const value: WritingStyleContextType = {
+  const value: WritingStyleContextType = useMemo(() => ({
     writingStyle,
     setWritingStyle,
     updateStyleGuide,
@@ -199,7 +206,10 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     loadWritingStyle,
     isStyleConfigured,
     resetWritingStyle,
-  };
+  }), [
+    writingStyle,
+    isStyleConfigured
+  ]);
 
   // Don't render children until we've loaded the data
   if (!isLoaded) {
@@ -207,7 +217,7 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     return <div>Loading writing style...</div>;
   }
 
-  console.log('🎯 WritingStyleContext: Providing context with style:', writingStyle);
+  console.log('🎯 WritingStyleContext: Providing context');
   return (
     <WritingStyleContext.Provider value={value}>
       {children}
