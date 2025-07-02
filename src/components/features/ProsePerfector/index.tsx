@@ -403,7 +403,7 @@ const ProsePerfector: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Sparkles className="w-6 h-6 text-blue-600 mr-2" />
-            Select Your Settings (Optional)
+            Specify Your Settings (Optional)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
