@@ -1,21 +1,36 @@
 // src/components/features/StyleCompliance/index.tsx
-import React, { useState, useEffect } from 'react';
+// Simplified, clean version focused on what actually matters
+
+import React, { useState, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useWritingStyle } from '../../../context/WritingStyleContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { CheckCircle, AlertTriangle, RefreshCw, FileText, Wand2 } from 'lucide-react';
-import { callApiWithStrategicData } from '../../../services/ApiStrategicConnector';
+import { CheckCircle, AlertTriangle, RefreshCw, FileText, Wand2, Copy, Download } from 'lucide-react';
+import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../../utils/exportUtils';
+import FileHandler from '@/components/shared/FileHandler';
+
+interface ComplianceResult {
+  compliance: number;
+  issues: Array<{
+    type: string;
+    text: string;
+    suggestion: string;
+    severity: 'high' | 'medium' | 'low';
+  }>;
+  strengths: string[];
+}
 
 const StyleComplianceChecker: React.FC = () => {
   const { writingStyle } = useWritingStyle();
   const { showNotification } = useNotification();
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const [content, setContent] = useState('');
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<ComplianceResult | null>(null);
+  const [fixedContent, setFixedContent] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isFixing, setIsFixing] = useState(false);
-  const [error, setError] = useState('');
-  const [fixedContent, setFixedContent] = useState('');
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
 
   // Check if style guide has been configured
   const hasStyleGuide = Boolean(
@@ -24,6 +39,59 @@ const StyleComplianceChecker: React.FC = () => {
     (writingStyle.punctuation && Object.keys(writingStyle.punctuation).length > 0)
   );
 
+  // Clear all content
+  const handleClear = () => {
+    setContent('');
+    setResults(null);
+    setFixedContent('');
+  };
+
+  // Use this version - move fixed content to main editor
+  const handleUseThisVersion = () => {
+    setContent(fixedContent);
+    setFixedContent('');
+    setResults(null);
+    showNotification('success', 'Style-compliant content is now in your editor - ready for further editing or export');
+  };
+
+  // Handle file upload
+  const handleFileContent = (fileContent: string | object) => {
+    if (typeof fileContent === "string") {
+      setContent(fileContent);
+      showNotification('success', 'File content loaded successfully');
+    } else {
+      const jsonContent = JSON.stringify(fileContent, null, 2);
+      setContent(jsonContent);
+      showNotification('success', 'Structured content loaded successfully');
+    }
+  };
+
+  // Filter out "fixes" that are identical to original text OR are generic/nonsensical
+  const filterRealIssues = (issues: any[]) => {
+    return issues.filter(issue => {
+      const original = issue.text?.trim().toLowerCase();
+      const suggestion = issue.suggestion?.trim().toLowerCase();
+
+      // Remove if identical
+      if (original === suggestion) return false;
+
+      // Remove if suggestion is empty
+      if (!suggestion || suggestion.length === 0) return false;
+
+      // Remove generic/nonsensical feedback
+      const isGeneric =
+        original.includes('no specific example') ||
+        original.includes('no example given') ||
+        original.includes('not applicable') ||
+        suggestion.startsWith('ensure') ||
+        suggestion.startsWith('make sure') ||
+        suggestion.startsWith('consider') ||
+        (original.length < 10 && suggestion.length > 50); // Tiny "issue" with long generic advice
+
+      return !isGeneric;
+    });
+  };
+
   const analyzeContent = async () => {
     if (!content.trim()) {
       showNotification('error', 'Please enter content to analyze');
@@ -31,36 +99,112 @@ const StyleComplianceChecker: React.FC = () => {
     }
 
     setIsAnalyzing(true);
-    setError('');
     setResults(null);
     setFixedContent('');
 
     try {
-      // Prepare the payload
-      const payload = {
-        content: content,
-        styleGuide: {
-          guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
-          formatting: writingStyle.formatting || {},
-          punctuation: writingStyle.punctuation || {},
-          prohibited: writingStyle.prohibited || [],
-          required: writingStyle.required || []
+      // Step 1: Analyze the content
+      const analyzeResponse = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mode: 'styleChecker',
+          data: {
+            content: content,
+            styleGuide: {
+              guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
+              formatting: writingStyle.formatting || {},
+              punctuation: writingStyle.punctuation || {},
+              prohibited: writingStyle.prohibited || [],
+              required: writingStyle.required || []
+            }
+          }
+        }),
+      });
+
+      if (!analyzeResponse.ok) {
+        const errorData = await analyzeResponse.json();
+        throw new Error(errorData.error || 'Failed to analyze content');
+      }
+
+      const analysisResult = await analyzeResponse.json();
+
+      if (analysisResult && analysisResult.compliance !== undefined) {
+        // Filter out identical "fixes"
+        const realIssues = filterRealIssues(analysisResult.issues || []);
+
+        if (realIssues.length === 0) {
+          showNotification('success', `${analysisResult.compliance}% compliant - no issues found!`);
+          setResults({
+            ...analysisResult,
+            issues: realIssues
+          });
+        } else {
+          // Step 2: Automatically fix the issues
+          try {
+            const fixResponse = await fetch('/api/api_endpoints', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                mode: 'styleFixer',
+                data: {
+                  content: content,
+                  issues: realIssues,
+                  styleGuide: {
+                    guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
+                    formatting: writingStyle.formatting || {},
+                    punctuation: writingStyle.punctuation || {},
+                    prohibited: writingStyle.prohibited || [],
+                    required: writingStyle.required || []
+                  }
+                }
+              }),
+            });
+
+            if (!fixResponse.ok) {
+              throw new Error('Failed to fix content');
+            }
+
+            const fixResult = await fixResponse.json();
+
+            if (fixResult && fixResult.fixedContent) {
+              setFixedContent(fixResult.fixedContent);
+              setResults({
+                ...analysisResult,
+                issues: realIssues
+              });
+              showNotification('success', `Fixed ${realIssues.length} issue${realIssues.length === 1 ? '' : 's'} automatically!`);
+            } else {
+              throw new Error('No fixed content returned');
+            }
+          } catch (fixError) {
+            console.error('Fix error:', fixError);
+            // If fixing fails, just show the analysis
+            setResults({
+              ...analysisResult,
+              issues: realIssues
+            });
+            showNotification('warning', `Found ${realIssues.length} issues but couldn't auto-fix them`);
+          }
         }
-      };
 
-      // Call the API using callApiWithStrategicData
-      const data = await callApiWithStrategicData('styleChecker', payload);
-
-      if (data && data.compliance !== undefined) {
-        setResults(data);
-        showNotification('success', 'Content analyzed successfully');
+        // Auto-scroll to results
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }, 300);
       } else {
         throw new Error('Invalid response from the API');
       }
     } catch (err) {
       console.error('Error analyzing content:', err);
-      setError(err.message || 'Failed to analyze content');
-      showNotification('error', 'Failed to analyze content');
+      showNotification('error', err.message || 'Failed to analyze content');
       setResults(null);
     } finally {
       setIsAnalyzing(false);
@@ -68,272 +212,340 @@ const StyleComplianceChecker: React.FC = () => {
   };
 
   const fixContent = async () => {
-    if (!results || !content.trim()) {
-      showNotification('error', 'Please analyze the content first');
+    if (!results || !results.issues.length) {
+      showNotification('error', 'No issues to fix');
       return;
     }
 
     setIsFixing(true);
-    setError('');
-    setFixedContent('');
 
     try {
-      // Prepare the payload for fixing
-      const payload = {
-        content: content,
-        issues: results.issues,
-        styleGuide: {
-          guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
-          formatting: writingStyle.formatting || {},
-          punctuation: writingStyle.punctuation || {},
-          prohibited: writingStyle.prohibited || [],
-          required: writingStyle.required || []
-        }
-      };
+      const response = await fetch('/api/api_endpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mode: 'styleFixer',
+          data: {
+            content: content,
+            issues: results.issues,
+            styleGuide: {
+              guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
+              formatting: writingStyle.formatting || {},
+              punctuation: writingStyle.punctuation || {},
+              prohibited: writingStyle.prohibited || [],
+              required: writingStyle.required || []
+            }
+          }
+        }),
+      });
 
-      // Call the API to fix the content
-      const data = await callApiWithStrategicData('styleFixer', payload);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fix content');
+      }
 
-      if (data && data.fixedContent) {
-        setFixedContent(data.fixedContent);
+      const result = await response.json();
+
+      if (result && result.fixedContent) {
+        setFixedContent(result.fixedContent);
         showNotification('success', 'Content fixed successfully');
       } else {
         throw new Error('Invalid response from the API');
       }
     } catch (err) {
       console.error('Error fixing content:', err);
-      setError(err.message || 'Failed to fix content');
-      showNotification('error', 'Failed to fix content');
+      showNotification('error', err.message || 'Failed to fix content');
     } finally {
       setIsFixing(false);
     }
   };
 
+  // Copy text to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showNotification('success', 'Text copied to clipboard');
+  };
+
+  // Export functionality
+  const handleExport = (format: 'txt' | 'markdown' | 'html' | 'pdf' | 'docx') => {
+    const contentToExport = fixedContent || content;
+    if (!contentToExport) {
+      showNotification('error', 'No content to export');
+      return;
+    }
+
+    const fileName = `style-compliant-content-${new Date().toISOString().slice(0, 10)}`;
+
+    try {
+      switch (format) {
+        case 'txt':
+          exportToText(contentToExport, `${fileName}.txt`);
+          break;
+        case 'markdown':
+          exportToMarkdown(contentToExport, `${fileName}.md`);
+          break;
+        case 'html':
+          exportToHTML(contentToExport, `${fileName}.html`);
+          break;
+        case 'pdf':
+          exportToPDF(contentToExport, `${fileName}.pdf`);
+          break;
+        case 'docx':
+          exportToDocx(contentToExport, `${fileName}.docx`);
+          break;
+        default:
+          exportToText(contentToExport, `${fileName}.txt`);
+      }
+
+      showNotification('success', `Content exported as ${format.toUpperCase()}`);
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      showNotification('error', 'Export failed. Please try again.');
+    }
+  };
+
   return (
-    <Card className="max-w-7xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          Style Compliance Checker
-          {results && (
-            <span className={`ml-2 text-sm px-2 py-1 rounded-full ${results.compliance >= 80
-              ? 'bg-green-100 text-green-800'
-              : results.compliance >= 60
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-red-100 text-red-800'
-              }`}>
-              {results.compliance}% Compliant
-            </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {!hasStyleGuide ? (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start">
-            <AlertTriangle className="text-yellow-500 w-5 h-5 mr-2 flex-shrink-0" />
-            <div>
-              <p className="text-yellow-700 font-medium">No style guide configured</p>
-              <p className="text-sm text-yellow-600 mt-1">
-                Please select a style guide or configure your formatting preferences first.
-              </p>
+    <div className="space-y-6">
+      {/* Style Guide Status */}
+      {hasStyleGuide && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center text-sm text-green-700">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              <span>
+                Using {writingStyle?.styleGuide?.primary} style guide
+                {writingStyle?.formatting?.headingCase && ` • ${writingStyle.formatting.headingCase} headings`}
+                {writingStyle?.punctuation?.oxfordComma !== undefined &&
+                  ` • Oxford comma ${writingStyle.punctuation.oxfordComma ? 'required' : 'omitted'}`}
+              </span>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Content to Check
-              </label>
-              <div className="relative">
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Input Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileText className="w-5 h-5 text-blue-600 mr-2" />
+            Upload or Paste Content
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!hasStyleGuide ? (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start">
+              <AlertTriangle className="text-yellow-500 w-5 h-5 mr-2 flex-shrink-0" />
+              <div>
+                <p className="text-yellow-700 font-medium">No style guide configured</p>
+                <p className="text-sm text-yellow-600 mt-1">
+                  Please configure your style guide in Settings first.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* File Upload - hide ALL export options from FileHandler */}
+              <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 bg-blue-50">
+                <div className="text-center mb-4">
+                  <FileText className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                  <h3 className="font-medium text-gray-900 mb-1">
+                    Upload Document
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Supports Word docs, PDFs, text files, and more
+                  </p>
+                </div>
+                {/* Use FileHandler with export options disabled */}
+                <FileHandler
+                  onContentLoaded={handleFileContent}
+                  content={content}
+                  showExport={false}
+                />
+              </div>
+
+              {/* Content Input - keep original only */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Your Original Content
+                </label>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full p-3 border rounded-lg h-48 font-mono text-sm"
-                  placeholder="Enter or paste your content here to check against your style guide..."
+                  className="w-full h-80 p-4 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Or paste your content here..."
                 />
-                {!content && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-gray-400 flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
-                      <span>Enter or paste your content here</span>
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
 
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={analyzeContent}
-                disabled={isAnalyzing || !content.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 flex items-center gap-2 transition-colors"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Analyzing Content...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Check Compliance</span>
-                  </>
-                )}
-              </button>
-              {results && results.issues && results.issues.length > 0 && (
+              <div className="flex justify-between">
                 <button
-                  onClick={fixContent}
-                  disabled={isFixing}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 flex items-center gap-2 transition-colors"
+                  onClick={handleClear}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-700"
                 >
-                  {isFixing ? (
+                  Clear
+                </button>
+                <button
+                  onClick={analyzeContent}
+                  disabled={isAnalyzing || !content.trim()}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 flex items-center gap-2"
+                >
+                  {isAnalyzing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Fixing Content...</span>
+                      Analyzing...
                     </>
                   ) : (
                     <>
-                      <Wand2 className="w-4 h-4" />
-                      <span>Fix It For Me</span>
+                      <CheckCircle className="w-4 h-4" />
+                      Check Style
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      {results && (
+        <div ref={resultsRef} className="space-y-6">
+          {/* Compliance Score - only show if no fixed content yet */}
+        {/* Fixed Content with clean table of changes */}
+        {fixedContent && (
+            <div className="space-y-6">
+              {/* Green success box with EDITABLE fixed content */}
+              <Card className="border-2 border-green-300">
+                <CardHeader className="bg-green-50">
+                  <CardTitle className="flex justify-between items-center">
+                    <div>
+                      <span>✅ Content Fixed</span>
+                      <p className="text-sm font-normal text-green-700 mt-1">
+                        Fixed {results.issues.length} issue{results.issues.length === 1 ? '' : 's'}: {results.issues.map(i => i.type).join(', ')}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowExportDropdown(!showExportDropdown)}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          Export
+                        </button>
+                        {showExportDropdown && (
+                          <div className="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-lg z-10">
+                            {['txt', 'markdown', 'html', 'pdf', 'docx'].map(format => (
+                              <button
+                                key={format}
+                                onClick={() => handleExport(format as any)}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 capitalize"
+                              >
+                                {format === 'txt' ? 'Text' : format}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(fixedContent)}
+                        className="px-3 py-1 text-sm text-green-600 hover:text-green-700 flex items-center"
+                      >
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copy
+                      </button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {/* EDITABLE textarea for fixed content */}
+                  <textarea
+                    value={fixedContent}
+                    onChange={(e) => setFixedContent(e.target.value)}
+                    className="w-full h-96 p-4 border rounded-lg resize-none focus:ring-2 focus:ring-green-500 bg-white text-gray-800"
+                    style={{ fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif', lineHeight: '1.6', fontSize: '11pt' }}
+                  />
+                 <div className="mt-4 flex justify-between items-center">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setFixedContent('');
+                          setResults(null);
+                          showNotification('info', 'Cleared fixed content');
+                        }}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-700"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        onClick={() => {
+                          showNotification('success', 'Content saved!');
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Save
+                      </button>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Edit directly in this box, then export or copy when ready
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Clean table of what was fixed and why */}
+              {results.issues.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-gray-800">What Was Fixed</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">Issue Type</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">Original Text</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">Fixed To</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">Why</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {results.issues.map((issue, index) => (
+                            <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                  {issue.type}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600 max-w-xs">
+                                <div className="truncate" title={issue.text}>
+                                  "{issue.text}"
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-800 max-w-xs">
+                                <div className="truncate" title={issue.suggestion}>
+                                  "{issue.suggestion}"
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                Style guide compliance
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
-
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                <AlertTriangle className="text-red-500 w-5 h-5 mr-2 flex-shrink-0" />
-                <div>
-                  <p className="text-red-700 font-medium">Analysis Failed</p>
-                  <p className="text-sm text-red-600 mt-1">{error}</p>
-                </div>
-              </div>
-            )}
-
-            {isAnalyzing && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-                  <p className="text-blue-700">Analyzing your content against the style guide...</p>
-                </div>
-              </div>
-            )}
-
-            {results && !isAnalyzing && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Analysis Results</h3>
-                  <div className="bg-slate-50 p-6 rounded-lg space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <div className="w-full bg-slate-200 rounded-full h-2.5">
-                          <div
-                            className={`h-2.5 rounded-full transition-all duration-500 ${results.compliance >= 80
-                              ? 'bg-green-500'
-                              : results.compliance >= 60
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
-                              }`}
-                            style={{ width: `${results.compliance}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <span className="text-lg font-semibold min-w-[4rem] text-right">
-                        {results.compliance}%
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-medium text-red-600 mb-3 flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4" />
-                          Issues Found
-                        </h4>
-                        {results.issues && results.issues.length > 0 ? (
-                          <ul className="space-y-3">
-                            {results.issues.map((issue, index) => (
-                              <li key={index} className="p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
-                                <div className="flex items-start gap-2">
-                                  <span className={`px-2 py-1 text-xs rounded-full ${issue.severity === 'high'
-                                    ? 'bg-red-100 text-red-800'
-                                    : issue.severity === 'medium'
-                                      ? 'bg-yellow-100 text-yellow-800'
-                                      : 'bg-blue-100 text-blue-800'
-                                    }`}>
-                                    {issue.type}
-                                  </span>
-                                </div>
-                                <p className="text-sm mt-2">
-                                  <span className="font-medium">Found:</span> "{issue.text}"
-                                </p>
-                                <p className="text-sm text-slate-600 mt-1">
-                                  {issue.suggestion}
-                                </p>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-green-600 flex items-center gap-2 p-4 bg-white rounded-lg border border-green-200">
-                            <CheckCircle className="w-5 h-5" />
-                            No issues found
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <h4 className="font-medium text-green-600 mb-3 flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4" />
-                          Strengths
-                        </h4>
-                        {results.strengths && results.strengths.length > 0 ? (
-                          <ul className="space-y-2">
-                            {results.strengths.map((strength, index) => (
-                              <li key={index} className="flex items-start gap-2 p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
-                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                <span className="text-sm">{strength}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-slate-600 p-4 bg-white rounded-lg border border-slate-200">
-                            No specific strengths identified
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {fixedContent && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-4">Fixed Content</h3>
-                    <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
-                      <div className="prose max-w-none">
-                        {fixedContent}
-                      </div>
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          onClick={() => {
-                            setContent(fixedContent);
-                            setFixedContent('');
-                            setResults(null);
-                            showNotification('success', 'Fixed content applied');
-                          }}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Accept Changes
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
