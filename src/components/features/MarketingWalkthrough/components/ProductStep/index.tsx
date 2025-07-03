@@ -1,10 +1,11 @@
 // src/components/features/MarketingWalkthrough/components/ProductStep/index.tsx
-// Fixed version with wide layout matching other pages
+// DB-COMPATIBLE VERSION - Uses StrategicDataService for persistence
 
 import React, { useState, useEffect } from "react";
 import { Card } from '@/components/ui/card';
 import { Plus, X, Package } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
+import StrategicDataService from '../../../../../services/StrategicDataService';
 
 const ProductStep = () => {
   const { showNotification } = useNotification();
@@ -12,46 +13,152 @@ const ProductStep = () => {
   const [tagline, setTagline] = useState("");
   const [productType, setProductType] = useState("");
   const [keyBenefits, setKeyBenefits] = useState([""]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load data from database on component mount
   useEffect(() => {
-    try {
-      const savedData = localStorage.getItem('marketingProduct');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        if (data.name) setProductName(data.name);
-        if (data.tagline) setTagline(data.tagline);
-        if (data.type) setProductType(data.type);
-        if (data.keyBenefits && Array.isArray(data.keyBenefits) && data.keyBenefits.length > 0) {
-          setKeyBenefits(data.keyBenefits);
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+
+        // Get all strategic data from the database
+        const {
+          productName: savedProductName,
+          productDescription: savedProductType,
+          tagline: savedTagline,
+          keyBenefits: savedKeyBenefits
+        } = StrategicDataService.getAllStrategicDataFromStorage();
+
+        // Set the values if they exist
+        if (savedProductName) setProductName(savedProductName);
+        if (savedProductType) setProductType(savedProductType);
+        if (savedTagline) setTagline(savedTagline);
+        if (savedKeyBenefits && Array.isArray(savedKeyBenefits) && savedKeyBenefits.length > 0) {
+          setKeyBenefits(savedKeyBenefits);
         }
+
+        // Also check localStorage as a fallback for any legacy data
+        try {
+          const localData = localStorage.getItem('marketingProduct');
+          if (localData) {
+            const data = JSON.parse(localData);
+            // Only use localStorage data if we don't have DB data
+            if (!savedProductName && data.name) setProductName(data.name);
+            if (!savedTagline && data.tagline) setTagline(data.tagline);
+            if (!savedProductType && data.type) setProductType(data.type);
+            if ((!savedKeyBenefits || savedKeyBenefits.length === 0) && data.keyBenefits?.length > 0) {
+              setKeyBenefits(data.keyBenefits);
+            }
+          }
+
+          // Check for tagline from tagline generator
+          if (!savedTagline) {
+            const brandTagline = localStorage.getItem('brandTagline');
+            if (brandTagline) {
+              setTagline(brandTagline);
+            }
+          }
+        } catch (localStorageError) {
+          console.error("Error reading localStorage fallback:", localStorageError);
+        }
+
+      } catch (error) {
+        console.error("Error loading data from database:", error);
+        showNotification?.("Error loading saved data", "error");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading saved data:", error);
-    }
-  }, []);
+    };
 
+    loadData();
+  }, [showNotification]);
+
+  // Auto-save to database with debouncing
   useEffect(() => {
-    if (!productName && !tagline && !productType && keyBenefits.length === 1 && !keyBenefits[0]) {
-      return;
-    }
+    if (isLoading) return; // Don't auto-save during initial load
 
-    try {
-      const productData = {
-        name: productName,
-        tagline: tagline,
-        type: productType,
-        keyBenefits: keyBenefits.filter(b => b.trim())
-      };
+    const timeoutId = setTimeout(async () => {
+      try {
+        // Save each field to the database
+        if (productName.trim()) {
+          await StrategicDataService.setStrategicDataValue('productName', productName);
+        }
 
-      localStorage.setItem('marketingProduct', JSON.stringify(productData));
-    } catch (error) {
-      console.error("Error auto-saving:", error);
-    }
-  }, [productName, tagline, productType, keyBenefits]);
+        if (tagline.trim()) {
+          await StrategicDataService.setStrategicDataValue('tagline', tagline);
+        }
+
+        if (productType.trim()) {
+          await StrategicDataService.setStrategicDataValue('productDescription', productType);
+        }
+
+        const filteredBenefits = keyBenefits.filter(b => b.trim());
+        if (filteredBenefits.length > 0) {
+          await StrategicDataService.setStrategicDataValue('keyBenefits', filteredBenefits);
+        }
+
+        // Also save to localStorage for immediate access by other components
+        const productData = {
+          name: productName,
+          tagline: tagline,
+          type: productType,
+          keyBenefits: filteredBenefits
+        };
+        localStorage.setItem('marketingProduct', JSON.stringify(productData));
+
+        if (tagline.trim()) {
+          localStorage.setItem('brandTagline', tagline);
+        }
+
+      } catch (error) {
+        console.error("Error auto-saving to database:", error);
+      }
+    }, 1000); // Debounce for 1 second
+
+    return () => clearTimeout(timeoutId);
+  }, [productName, tagline, productType, keyBenefits, isLoading]);
 
   const addBenefit = () => {
     setKeyBenefits([...keyBenefits, ""]);
   };
+
+  // Handle tagline changes with immediate sync
+  const handleTaglineChange = async (newTagline: string) => {
+    setTagline(newTagline);
+
+    // Immediately save to localStorage for cross-component compatibility
+    if (newTagline.trim()) {
+      localStorage.setItem('brandTagline', newTagline);
+    }
+  };
+
+  // Manual save function (if you want a save button later)
+  const handleManualSave = async () => {
+    try {
+      await Promise.all([
+        StrategicDataService.setStrategicDataValue('productName', productName),
+        StrategicDataService.setStrategicDataValue('tagline', tagline),
+        StrategicDataService.setStrategicDataValue('productDescription', productType),
+        StrategicDataService.setStrategicDataValue('keyBenefits', keyBenefits.filter(b => b.trim()))
+      ]);
+
+      showNotification?.("Product information saved successfully!", "success");
+    } catch (error) {
+      console.error("Error saving to database:", error);
+      showNotification?.("Error saving product information", "error");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Package className="w-8 h-8 text-blue-600 mx-auto mb-2 animate-spin" />
+          <p className="text-gray-600">Loading your product information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -61,6 +168,7 @@ const ProductStep = () => {
           <Card className="p-6">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Business Details</h2>
+              <p className="text-sm text-gray-500 mt-1">Changes are automatically saved to your account</p>
             </div>
             <div className="space-y-6">
               {/* Business Name */}
@@ -80,7 +188,7 @@ const ProductStep = () => {
                 <input
                   type="text"
                   value={tagline}
-                  onChange={(e) => setTagline(e.target.value)}
+                  onChange={(e) => handleTaglineChange(e.target.value)}
                   placeholder="e.g., No more crappy content"
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />

@@ -1,5 +1,5 @@
 // src/components/features/TaglineGenerator/index.tsx
-// CLEAN VERSION - Simple improvement flow like boilerplate generator
+// DEBUGGING VERSION - Let's figure out what's happening!
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
@@ -59,6 +59,10 @@ const TaglineGenerator: React.FC = () => {
     const [archetype, setArchetype] = useState('');
     const [isAccepted, setIsAccepted] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaved, setIsSaved] = useState(false); // Simple flag for saved status
+    const [taglineOptions, setTaglineOptions] = useState<string[]>([]); // Multiple options
+    const [selectedTaglineIndex, setSelectedTaglineIndex] = useState(0); // Which one is selected
 
     // Simple improvement flow state
     const [improvementRequest, setImprovementRequest] = useState('');
@@ -69,27 +73,27 @@ const TaglineGenerator: React.FC = () => {
     const { brandVoice } = useBrandVoice();
     const router = useRouter();
 
+    // DEBUG: Log state changes
+    useEffect(() => {
+        console.log('🔍 State Debug:', {
+            customTagline,
+            isSaved,
+            isAccepted,
+            showAtTop: customTagline && isSaved,
+            showAtBottom: customTagline && !isSaved
+        });
+    }, [customTagline, isSaved, isAccepted]);
+
     // Function to clean tagline content
     const cleanTaglineContent = (content: string): string => {
         if (!content) return content;
 
         let cleaned = content.trim();
-
-        // Remove unwanted punctuation at the beginning
         cleaned = cleaned.replace(/^[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,\.!]+\s*/g, '');
-
-        // Remove unwanted punctuation at the end (except periods, exclamation marks, question marks)
         cleaned = cleaned.replace(/\s*[;:\-\*\•\►\→\▸\‣\⁃\–\—\"\'\`\,]+$/g, '');
-
-        // Remove quotes at the beginning and end
         cleaned = cleaned.replace(/^['"]|['"]$/g, '');
-
-        // Remove any "Tagline:" prefixes that might sneak in
         cleaned = cleaned.replace(/^(Tagline|Tag)\s*[:]\s*/i, '');
-
-        // Clean up extra whitespace
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
-
         return cleaned;
     };
 
@@ -135,10 +139,31 @@ const TaglineGenerator: React.FC = () => {
 
     // Accept the suggestion
     const handleAcceptSuggestion = () => {
+        console.log('🎯 Accepting suggestion:', suggestedTagline);
         setCustomTagline(suggestedTagline);
-        handleSave(suggestedTagline);
+        setTaglineOptions([suggestedTagline]); // Replace options with just the suggestion
+        setSelectedTaglineIndex(0);
+        setIsSaved(false); // New tagline, not saved yet
         setShowSuggestion(false);
         setImprovementRequest('');
+    };
+
+    // Handle selecting a different tagline option
+    const handleSelectTagline = (index: number) => {
+        setSelectedTaglineIndex(index);
+        setCustomTagline(taglineOptions[index]);
+    };
+
+    // Handle manual tagline editing
+    const handleManualEdit = (newTagline: string) => {
+        setCustomTagline(newTagline);
+        setIsSaved(false); // Manual edit means it's not saved yet
+    };
+
+    // Generate new taglines (for "Generate Again" button)
+    const handleGenerateAgain = () => {
+        setIsSaved(false); // Reset to generation mode
+        generateTaglines();
     };
 
     // Reject the suggestion
@@ -147,53 +172,99 @@ const TaglineGenerator: React.FC = () => {
         setImprovementRequest('');
     };
 
+    // Load data from database on component mount
     useEffect(() => {
-        const {
-            productName,
-            productDescription,
-            idealCustomer,
-            brandArchetype,
-            tagline
-        } = StrategicDataService.getAllStrategicDataFromStorage();
+        const loadData = async () => {
+            try {
+                setIsLoading(true);
+                
+                const {
+                    productName,
+                    productDescription,
+                    idealCustomer,
+                    brandArchetype,
+                    tagline
+                } = StrategicDataService.getAllStrategicDataFromStorage();
 
-        if (productName) setBusinessName(productName);
-        if (productDescription) setDescription(productDescription);
-        if (idealCustomer) {
-            // Handle both string and array of ideal customers
-            if (Array.isArray(idealCustomer)) {
-                setAudiences(idealCustomer.length > 0 ? idealCustomer : ['']);
-            } else {
-                setAudiences([idealCustomer]);
-            }
-        }
-        if (tagline) setCustomTagline(tagline);
-
-        // Set archetype and tone from brand voice if available
-        if (brandVoice?.brandVoice?.archetype) {
-            setArchetype(brandVoice.brandVoice.archetype);
-            if (brandVoice.brandVoice.tone) {
-                setTone(brandVoice.brandVoice.tone);
-            } else {
-                const selectedArchetype = BRAND_ARCHETYPES.find(a => a.name === brandVoice.brandVoice.archetype);
-                if (selectedArchetype) {
-                    setTone(selectedArchetype.defaultTone);
+                if (productName) setBusinessName(productName);
+                if (productDescription) setDescription(productDescription);
+                if (tagline) {
+                    console.log('🔍 Loading tagline from DB:', tagline);
+                    setCustomTagline(tagline);
+                    setIsSaved(true); // If from DB, consider it saved
                 }
+
+                if (idealCustomer) {
+                    if (Array.isArray(idealCustomer)) {
+                        setAudiences(idealCustomer.length > 0 ? idealCustomer : ['']);
+                    } else {
+                        setAudiences([idealCustomer]);
+                    }
+                }
+
+                let savedArchetype = '';
+                if (brandArchetype) {
+                    savedArchetype = brandArchetype;
+                } else if (brandVoice?.brandVoice?.archetype) {
+                    savedArchetype = brandVoice.brandVoice.archetype;
+                } else {
+                    try {
+                        const storedArchetype = localStorage.getItem('brandArchetype');
+                        if (storedArchetype) {
+                            savedArchetype = storedArchetype;
+                        }
+                    } catch (localStorageError) {
+                        console.error('Error loading archetype from localStorage:', localStorageError);
+                    }
+                }
+
+                if (savedArchetype) {
+                    setArchetype(savedArchetype);
+                    const selectedArchetype = BRAND_ARCHETYPES.find(a => a.name === savedArchetype);
+                    if (selectedArchetype && !tone) {
+                        setTone(selectedArchetype.defaultTone);
+                    }
+                }
+
+                if (!tone && brandVoice?.brandVoice?.tone) {
+                    setTone(brandVoice.brandVoice.tone);
+                }
+
+                try {
+                    if (!tagline) {
+                        const savedTagline = localStorage.getItem('brandTagline');
+                        if (savedTagline) {
+                            console.log('🔍 Loading tagline from localStorage:', savedTagline);
+                            const cleanedTagline = cleanTaglineContent(savedTagline);
+                            setCustomTagline(cleanedTagline);
+                            setIsSaved(true); // If from localStorage, consider it saved
+                        }
+                    }
+                } catch (localStorageError) {
+                    console.error('Error loading tagline from localStorage:', localStorageError);
+                }
+
+            } catch (error) {
+                console.error("Error loading data from database:", error);
+            } finally {
+                setIsLoading(false);
             }
-        }
-    }, [brandVoice]);
+        };
 
-    // Load saved tagline when component mounts
-    useEffect(() => {
-        const savedTagline = localStorage.getItem('brandTagline');
-        if (savedTagline) {
-            // Clean the saved tagline when loading
-            const cleanedTagline = cleanTaglineContent(savedTagline);
-            setCustomTagline(cleanedTagline);
-        }
-    }, []);
+        loadData();
+    }, [brandVoice, tone]);
 
-    const handleArchetypeChange = (value: string) => {
+    // Handle archetype change with database save
+    const handleArchetypeChange = async (value: string) => {
         setArchetype(value);
+        
+        try {
+            await StrategicDataService.setStrategicDataValue('brandArchetype', value);
+            localStorage.setItem('brandArchetype', value);
+        } catch (error) {
+            console.error('Error saving archetype to database:', error);
+        }
+        
         const selected = BRAND_ARCHETYPES.find(a => a.name === value);
         if (selected) {
             setTone(selected.defaultTone);
@@ -216,6 +287,7 @@ const TaglineGenerator: React.FC = () => {
     };
 
     const generateTaglines = async () => {
+        console.log('🚀 Generating tagline...');
         setIsGenerating(true);
         const payload = {
             businessName,
@@ -226,6 +298,7 @@ const TaglineGenerator: React.FC = () => {
             style,
             archetype: archetype || brandVoice?.brandVoice?.archetype || '',
             personality: brandVoice?.brandVoice?.personality || []
+            // REMOVED: numOptions, temperature, requestVariety - let API handle it naturally
         };
 
         try {
@@ -240,12 +313,14 @@ const TaglineGenerator: React.FC = () => {
             }
 
             const result = await response.json();
-            // Clean all generated taglines and take just the first one
             const cleanedTaglines = result.map((tagline: string) => cleanTaglineContent(tagline));
-            const selectedTagline = cleanedTaglines[0] || '';
-
-            setCustomTagline(selectedTagline);
-            handleSave(selectedTagline);
+            
+            console.log('✅ Generated taglines:', cleanedTaglines);
+            setTaglineOptions(cleanedTaglines);
+            setSelectedTaglineIndex(0);
+            setCustomTagline(cleanedTaglines[0] || '');
+            setIsSaved(false); // Newly generated, not saved yet
+            setIsAccepted(false);
         } catch (error) {
             console.error('Error generating taglines:', error);
         } finally {
@@ -253,23 +328,26 @@ const TaglineGenerator: React.FC = () => {
         }
     };
 
+    // Save tagline to database
     const handleSave = async (valueToSave: string | null = null) => {
         const finalValue = valueToSave || customTagline;
+        console.log('💾 Saving tagline:', finalValue);
 
         if (!finalValue) {
             return;
         }
 
-        // Save to localStorage with the correct key
-        localStorage.setItem('brandTagline', finalValue);
-
-        // Save to StrategicDataService
         try {
             await StrategicDataService.setStrategicDataValue('tagline', finalValue);
+            localStorage.setItem('brandTagline', finalValue);
+            
             setIsAccepted(true);
+            setIsSaved(true); // Mark as saved - this should move it to top!
+            console.log('✅ Tagline saved! Should move to top now.');
         } catch (error) {
-            console.error('Error saving tagline to StrategicDataService:', error);
+            console.error('Error saving tagline to database:', error);
             setIsAccepted(true);
+            setIsSaved(true);
         }
     };
 
@@ -310,8 +388,23 @@ const TaglineGenerator: React.FC = () => {
             }
         };
 
-        fetchData();
-    }, [brandVoice, businessName, audiences, promise]);
+        if (!isLoading) {
+            fetchData();
+        }
+    }, [brandVoice, businessName, audiences, promise, isLoading]);
+
+    if (isLoading) {
+        return (
+            <PageLayout title="" description="">
+                <div className="flex items-center justify-center min-h-96">
+                    <div className="text-center">
+                        <Sparkles className="w-8 h-8 text-blue-600 mx-auto mb-2 animate-spin" />
+                        <p className="text-gray-600">Loading your tagline information...</p>
+                    </div>
+                </div>
+            </PageLayout>
+        );
+    }
 
     return (
         <PageLayout
@@ -329,12 +422,63 @@ const TaglineGenerator: React.FC = () => {
                 </div>
                 <p className="text-gray-600">Create compelling taglines that capture your brand's essence</p>
 
+                {/* 🎯 SAVED TAGLINE AT TOP - Only shows when saved */}
+                {customTagline && isSaved && (
+                    <Card className="p-6 bg-green-50 border-green-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <CheckCircle className="w-6 h-6 text-green-600" />
+                                <h2 className="text-xl font-semibold text-gray-900">Your Saved Tagline</h2>
+                            </div>
+                            <button
+                                onClick={handleGenerateAgain}
+                                className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                Generate Again
+                            </button>
+                        </div>
+
+                        <div className="bg-white border-2 border-green-300 rounded-lg p-6 mb-6">
+                            <input
+                                type="text"
+                                value={customTagline}
+                                onChange={(e) => {
+                                    handleManualEdit(e.target.value);
+                                    handleSave(e.target.value); // Auto-save on edit
+                                }}
+                                className="w-full text-2xl font-bold text-gray-900 text-center bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-2"
+                                placeholder="Enter your tagline..."
+                            />
+                        </div>
+
+                        <div className="flex gap-2 mb-4">
+                            <span className="flex items-center gap-1 text-green-600 text-sm">
+                                <CheckCircle className="w-4 h-4" />
+                                Saved to your account
+                            </span>
+                        </div>
+
+                        {/* Need further changes button */}
+                        <div className="border-t pt-4">
+                            <button
+                                onClick={() => setIsSaved(false)}
+                                className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+                            >
+                                <Wand2 className="w-4 h-4" />
+                                Need further changes?
+                            </button>
+                        </div>
+                    </Card>
+                )}
+
                 <div className="grid gap-4">
                     {/* MAIN INPUT CARD */}
                     <Card className="p-6">
                         <div className="mb-6">
                             <h2 className="text-2xl font-semibold text-gray-900">Let's create your tagline</h2>
                             <p className="text-gray-600 mt-2">We'll use this information to generate taglines that match your brand</p>
+                            <p className="text-sm text-gray-500 mt-1">Changes are automatically saved to your account</p>
                         </div>
                         <div className="space-y-6">
                             <div>
@@ -352,7 +496,8 @@ const TaglineGenerator: React.FC = () => {
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
                                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    rows={4}
+                                    rows={2}
+                                    placeholder="Brief description of your business or services"
                                 />
                             </div>
 
@@ -389,16 +534,6 @@ const TaglineGenerator: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">What is your brand's "promise" to its customers?</label>
-                                <input
-                                    type="text"
-                                    value={promise}
-                                    onChange={e => setPromise(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-
-                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Brand Archetype</label>
                                 <select
                                     value={archetype}
@@ -431,20 +566,7 @@ const TaglineGenerator: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
-                            {/*
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Writing style</label>
-                                <select
-                                    value={style}
-                                    onChange={e => setStyle(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="visionary">Visionary</option>
-                                    <option value="punchy">Punchy</option>
-                                    <option value="straightforward">Straightforward</option>
-                                </select>
-                            </div>
-*/}
+                            
                             <button
                                 onClick={generateTaglines}
                                 disabled={isGenerating}
@@ -465,43 +587,90 @@ const TaglineGenerator: React.FC = () => {
                         </div>
                     </Card>
 
-                    {/* GENERATED TAGLINE DISPLAY - Now shows BELOW the form where users expect it! */}
-                    {customTagline && (
-                        <Card className="p-6 bg-green-50 border-green-200">
+                    {/* 🎯 NEW/UNSAVED TAGLINE AT BOTTOM */}
+                    {customTagline && !isSaved && (
+                        <Card className="p-6 bg-blue-50 border-blue-200">
                             <div className="flex items-center gap-3 mb-4">
-                                <CheckCircle className="w-6 h-6 text-green-600" />
-                                <h2 className="text-xl font-semibold text-gray-900">Your Generated Tagline</h2>
+                                <Sparkles className="w-6 h-6 text-blue-600" />
+                                <h2 className="text-xl font-semibold text-gray-900">Choose Your Tagline</h2>
                             </div>
 
-                            {/* Display the tagline prominently */}
-                            <div className="bg-white border-2 border-green-300 rounded-lg p-6 mb-6">
+                            {/* Multiple tagline options with manual editing */}
+                            {taglineOptions.length > 1 && (
+                                <div className="mb-6">
+                                    <p className="text-sm text-gray-600 mb-3">Select and edit your favorite option:</p>
+                                    <div className="space-y-3">
+                                        {taglineOptions.map((option, index) => (
+                                            <div 
+                                                key={index}
+                                                className={`p-4 border-2 rounded-lg transition-all ${
+                                                    selectedTaglineIndex === index 
+                                                        ? 'border-blue-500 bg-blue-50' 
+                                                        : 'border-gray-200 hover:border-blue-300'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => handleSelectTagline(index)}
+                                                        className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+                                                            selectedTaglineIndex === index 
+                                                                ? 'border-blue-500 bg-blue-500' 
+                                                                : 'border-gray-300'
+                                                        }`}
+                                                    >
+                                                        {selectedTaglineIndex === index && (
+                                                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                                                        )}
+                                                    </button>
+                                                    <input
+                                                        type="text"
+                                                        value={selectedTaglineIndex === index ? customTagline : option}
+                                                        onChange={(e) => {
+                                                            if (selectedTaglineIndex === index) {
+                                                                setCustomTagline(e.target.value);
+                                                            } else {
+                                                                // If editing a non-selected option, select it first
+                                                                handleSelectTagline(index);
+                                                                setCustomTagline(e.target.value);
+                                                            }
+                                                        }}
+                                                        className="flex-1 text-lg font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
+                                                        placeholder="Edit this tagline..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Selected tagline display */}
+                            <div className="bg-white border-2 border-blue-300 rounded-lg p-6 mb-6">
                                 <div className="text-2xl font-bold text-gray-900 text-center">
                                     "{customTagline}"
                                 </div>
                             </div>
 
-                            {/* Save button */}
                             <div className="flex gap-2 mb-6">
                                 <button
                                     onClick={() => handleSave()}
                                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                 >
                                     <Save className="w-4 h-4" />
-                                    Save Tagline
+                                    Save This Tagline
                                 </button>
-
-                                {isAccepted && (
-                                    <span className="flex items-center gap-1 text-green-600 text-sm">
-                                        <CheckCircle className="w-4 h-4" />
-                                        Saved!
-                                    </span>
-                                )}
+                                <button
+                                    onClick={handleGenerateAgain}
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    Generate New Options
+                                </button>
                             </div>
 
-                            {/* Ask for Improvements Section */}
                             <div className="border-t pt-6">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Ask for Improvements</h3>
-                                <p className="text-gray-600 mb-4">Want to refine your tagline? Tell us what you'd like to change.</p>
+                                <p className="text-gray-600 mb-4">Want to refine your selected tagline? Tell us what you'd like to change.</p>
 
                                 <div className="space-y-4">
                                     <input
@@ -527,18 +696,17 @@ const TaglineGenerator: React.FC = () => {
                                             ) : (
                                                 <>
                                                     <Wand2 className="w-4 h-4" />
-                                                    Improve Tagline
+                                                    Improve Selected Tagline
                                                 </>
                                             )}
                                         </button>
                                     </div>
                                 </div>
 
-                                {/* Show suggestion with Accept/Reject */}
                                 {showSuggestion && (
-                                    <div className="mt-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                                        <h4 className="font-semibold text-blue-900 mb-3">Suggested Improvement</h4>
-                                        <div className="bg-white border border-blue-300 rounded-lg p-4 mb-4">
+                                    <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
+                                        <h4 className="font-semibold text-yellow-900 mb-3">Suggested Improvement</h4>
+                                        <div className="bg-white border border-yellow-300 rounded-lg p-4 mb-4">
                                             <div className="text-xl font-bold text-gray-900 text-center">
                                                 "{suggestedTagline}"
                                             </div>
