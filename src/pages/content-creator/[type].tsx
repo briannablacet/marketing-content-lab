@@ -1552,8 +1552,6 @@ const ContentCreatorPage = () => {
   // Render the tabs and active tab content
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* TEST: Manual force-bold heading for diagnostics */}
-      <div className="force-bold">TEST BOLD HEADING</div>
       <div className="mb-8">
         <Link href="/content-creator">
           <button className="text-blue-600 hover:text-blue-800 flex items-center mb-4">
