@@ -216,6 +216,44 @@ const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
   <Check className={className || "h-5 w-5"} />
 );
 
+// Add this helper function near the top (after imports or with other helpers)
+function renderPlainTextWithHeadings(text: string, writingStyle) {
+  const lines = text.split('\n');
+  return lines.map((line, idx) => {
+    const trimmed = line.trim();
+    const nextLine = lines[idx + 1] ? lines[idx + 1].trim() : '';
+    // Heuristic: short line, starts with capital, next line is a paragraph
+    const isLikelyHeading =
+      trimmed &&
+      trimmed.length < 80 &&
+      /^[A-Z]/.test(trimmed) &&
+      nextLine &&
+      nextLine.length > 40 &&
+      /^[A-Z]/.test(nextLine);
+
+    if (isLikelyHeading) {
+      console.log('Detected heading:', trimmed);
+      return (
+        <div
+          key={idx}
+          className="force-bold text-lg my-4 text-gray-900"
+          style={{ lineHeight: '1.3' }}
+        >
+          {applyHeadingCase(trimmed, writingStyle?.formatting?.headingCase)}
+        </div>
+      );
+    }
+    if (trimmed) {
+      return (
+        <p key={idx} style={{ margin: '0 0 12pt 0' }}>
+          {line}
+        </p>
+      );
+    }
+    return <br key={idx} />;
+  });
+}
+
 const ContentCreatorPage = () => {
   const router = useRouter();
   const { type } = router.query;
@@ -842,71 +880,71 @@ const ContentCreatorPage = () => {
             )}
 
             {/* Strategic Data Banner - Show if we have meaningful strategic data */}
-        {/* Strategic Data Banner - Show if we have meaningful strategic data */}
-{hasStrategicData && (
-  <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
-    <CardHeader className="bg-blue-50 border-b">
-      <CardTitle className="flex items-center">
-        <FileCheck className="w-5 h-5 text-blue-600 mr-2" />
-        <span>Using Your Marketing Program</span>
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="font-medium text-gray-800 mb-2">
-            Content will be created using:
-          </h3>
-          <ul className="space-y-2">
-            {/* EXISTING ITEMS */}
-            {strategicData?.product?.name && (
-              <li className="flex items-start">
-                <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                <span className="text-gray-700">
-                  <strong>Your product:</strong>{" "}
-                  {strategicData.product.name}
-                </span>
-              </li>
-            )}
+            {/* Strategic Data Banner - Show if we have meaningful strategic data */}
+            {hasStrategicData && (
+              <Card className="mb-6 border-2 border-blue-200 overflow-hidden">
+                <CardHeader className="bg-blue-50 border-b">
+                  <CardTitle className="flex items-center">
+                    <FileCheck className="w-5 h-5 text-blue-600 mr-2" />
+                    <span>Using Your Marketing Program</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-medium text-gray-800 mb-2">
+                        Content will be created using:
+                      </h3>
+                      <ul className="space-y-2">
+                        {/* EXISTING ITEMS */}
+                        {strategicData?.product?.name && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your product:</strong>{" "}
+                              {strategicData.product.name}
+                            </span>
+                          </li>
+                        )}
 
-            {strategicData?.audiences?.length > 0 && (
-              <li className="flex items-start">
-                <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                <span className="text-gray-700">
-                  <strong>Your audience:</strong>{" "}
-                  {strategicData.audiences[0].role}
-                </span>
-              </li>
-            )}
+                        {strategicData?.audiences?.length > 0 && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your audience:</strong>{" "}
+                              {strategicData.audiences[0].role}
+                            </span>
+                          </li>
+                        )}
 
-            {strategicData?.messaging?.valueProposition && (
-              <li className="flex items-start">
-                <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                <span className="text-gray-700">
-                  <strong>Your messaging framework</strong>
-                </span>
-              </li>
-            )}
+                        {strategicData?.messaging?.valueProposition && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your messaging framework</strong>
+                            </span>
+                          </li>
+                        )}
 
-            {/* ADD THIS NEW BRAND VOICE ITEM */}
-            {(strategicData?.brandVoice?.brandVoice?.archetype || strategicData?.brandVoice?.brandVoice?.tone) && (
-              <li className="flex items-start">
-                <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
-                <span className="text-gray-700">
-                  <strong>Your brand voice:</strong>{" "}
-                  {strategicData.brandVoice.brandVoice.archetype && strategicData.brandVoice.brandVoice.tone 
-                    ? `${strategicData.brandVoice.brandVoice.archetype} - ${strategicData.brandVoice.brandVoice.tone}`
-                    : strategicData.brandVoice.brandVoice.archetype || strategicData.brandVoice.brandVoice.tone
-                  }
-                </span>
-              </li>
+                        {/* ADD THIS NEW BRAND VOICE ITEM */}
+                        {(strategicData?.brandVoice?.brandVoice?.archetype || strategicData?.brandVoice?.brandVoice?.tone) && (
+                          <li className="flex items-start">
+                            <CheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                            <span className="text-gray-700">
+                              <strong>Your brand voice:</strong>{" "}
+                              {strategicData.brandVoice.brandVoice.archetype && strategicData.brandVoice.brandVoice.tone
+                                ? `${strategicData.brandVoice.brandVoice.archetype} - ${strategicData.brandVoice.brandVoice.tone}`
+                                : strategicData.brandVoice.brandVoice.archetype || strategicData.brandVoice.brandVoice.tone
+                              }
+                            </span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-          </ul>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-)}
 
             {/* No Strategic Data Warning */}
             {!isLoadingStrategicData && !hasStrategicData && !isStyleConfigured && (
@@ -1401,79 +1439,12 @@ const ContentCreatorPage = () => {
                       ) : (
                         /* FIXED: View Mode - Show properly formatted content with style guide rules applied */
                         <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
-                          fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                          fontFamily: 'Calibri, \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif',
                           lineHeight: '1.6',
                           fontSize: '11pt',
                           color: '#333'
                         }}>
-                          {/* Document Title - Word style with proper formatting */}
-                          <div className="text-center mb-6">
-                            <h1 className="text-2xl font-bold mb-2" style={{
-                              color: '#2B579A',
-                              fontFamily: 'Calibri, sans-serif',
-                              fontSize: '18pt',
-                              fontWeight: 'bold'
-                            }}>
-                              {applyHeadingCase(parsedContent.title || generatedTitle, writingStyle?.formatting?.headingCase)}
-                            </h1>
-                          </div>
-
-                          {/* Introduction */}
-                          {parsedContent.introduction && (
-                            <div className="mb-6" style={{ textAlign: 'justify' }}>
-                              {parsedContent.introduction
-                                .split("\n")
-                                .map((para, idx) => (
-                                  <p
-                                    key={idx}
-                                    className={idx > 0 ? "mt-4" : ""}
-                                    style={{
-                                      margin: idx > 0 ? '12pt 0' : '0',
-                                      textIndent: '0pt',
-                                      lineHeight: '1.6'
-                                    }}
-                                  >
-                                    {para}
-                                  </p>
-                                ))}
-                            </div>
-                          )}
-
-                          {/* Content Sections with PROPERLY APPLIED style guide formatting */}
-                          {parsedContent.sections.map((section, idx) => (
-                            <div key={idx} className="mb-6">
-                              <h2 className="font-semibold mb-3" style={{
-                                color: '#2B579A',
-                                fontSize: '14pt',
-                                fontWeight: 'bold',
-                                marginTop: idx > 0 ? '18pt' : '12pt',
-                                marginBottom: '6pt',
-                                borderBottom: '1px solid #E5E7EB',
-                                paddingBottom: '3pt'
-                              }}>
-                                {applyHeadingCase(section.title, writingStyle?.formatting?.headingCase)}
-                              </h2>
-                              <div style={{ textAlign: 'justify' }}>
-                                {section.content
-                                  .split("\n")
-                                  .filter((p) => p.trim())
-                                  .map((para, pIdx) => (
-                                    <p
-                                      key={pIdx}
-                                      style={{
-                                        margin: pIdx > 0 ? '12pt 0' : '0 0 12pt 0',
-                                        textIndent: '0pt',
-                                        lineHeight: '1.6'
-                                      }}
-                                    >
-                                      {para}
-                                    </p>
-                                  ))}
-                              </div>
-                            </div>
-                          ))}
-
-                          {/* Word count display */}
+                          {renderPlainTextWithHeadings(generatedContent, writingStyle)}
                           <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-gray-500">
                             <span>Word count: {generatedContent.split(/\s+/).length}</span>
                           </div>
@@ -1581,6 +1552,8 @@ const ContentCreatorPage = () => {
   // Render the tabs and active tab content
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* TEST: Manual force-bold heading for diagnostics */}
+      <div className="force-bold">TEST BOLD HEADING</div>
       <div className="mb-8">
         <Link href="/content-creator">
           <button className="text-blue-600 hover:text-blue-800 flex items-center mb-4">

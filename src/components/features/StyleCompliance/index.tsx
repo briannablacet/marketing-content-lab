@@ -1,5 +1,5 @@
 // src/components/features/StyleCompliance/index.tsx
-// Simplified, clean version focused on what actually matters
+// Simplified, clean version focused on what actually matters - WITH DEBUG
 
 import React, { useState, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -32,12 +32,37 @@ const StyleComplianceChecker: React.FC = () => {
   const [isFixing, setIsFixing] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
 
-  // Check if style guide has been configured
+  // Get the actual style guide name
+  const getStyleGuideName = () => {
+    return writingStyle?.styleGuide?.primary || 
+           writingStyle?.guide || 
+           writingStyle?.primary || 
+           'Chicago Manual of Style';
+  };
+
+  // Check if style guide has been configured (including defaults)
   const hasStyleGuide = Boolean(
-    writingStyle.styleGuide?.primary ||
-    (writingStyle.formatting && Object.keys(writingStyle.formatting).length > 0) ||
-    (writingStyle.punctuation && Object.keys(writingStyle.punctuation).length > 0)
+    writingStyle?.styleGuide?.primary ||
+    writingStyle?.guide ||
+    writingStyle?.primary ||
+    (writingStyle?.formatting && Object.keys(writingStyle.formatting).length > 0) ||
+    (writingStyle?.punctuation && Object.keys(writingStyle.punctuation).length > 0) ||
+    // Always true if WritingStyleContext is providing defaults
+    true
   );
+
+  // DEBUG: Log the writing style object in detail
+  React.useEffect(() => {
+    console.log('🔍 StyleCompliance Debug - FULL writingStyle object:');
+    console.log(JSON.stringify(writingStyle, null, 2));
+    console.log('🔍 StyleCompliance Debug - All possible style guide paths:');
+    console.log('- writingStyle.styleGuide?.primary:', writingStyle?.styleGuide?.primary);
+    console.log('- writingStyle.guide:', writingStyle?.guide);
+    console.log('- writingStyle.primary:', writingStyle?.primary);
+    console.log('- writingStyle.styleGuide:', writingStyle?.styleGuide);
+    console.log('🔍 StyleCompliance Debug - Final style guide name:', getStyleGuideName());
+    console.log('🔍 StyleCompliance Debug - hasStyleGuide result:', hasStyleGuide);
+  }, [writingStyle, hasStyleGuide]);
 
   // Clear all content
   const handleClear = () => {
@@ -114,11 +139,11 @@ const StyleComplianceChecker: React.FC = () => {
           data: {
             content: content,
             styleGuide: {
-              guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
-              formatting: writingStyle.formatting || {},
-              punctuation: writingStyle.punctuation || {},
-              prohibited: writingStyle.prohibited || [],
-              required: writingStyle.required || []
+              guide: getStyleGuideName(),
+              formatting: writingStyle?.formatting || {},
+              punctuation: writingStyle?.punctuation || {},
+              prohibited: writingStyle?.prohibited || [],
+              required: writingStyle?.required || []
             }
           }
         }),
@@ -155,11 +180,11 @@ const StyleComplianceChecker: React.FC = () => {
                   content: content,
                   issues: realIssues,
                   styleGuide: {
-                    guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
-                    formatting: writingStyle.formatting || {},
-                    punctuation: writingStyle.punctuation || {},
-                    prohibited: writingStyle.prohibited || [],
-                    required: writingStyle.required || []
+                    guide: getStyleGuideName(),
+                    formatting: writingStyle?.formatting || {},
+                    punctuation: writingStyle?.punctuation || {},
+                    prohibited: writingStyle?.prohibited || [],
+                    required: writingStyle?.required || []
                   }
                 }
               }),
@@ -231,11 +256,11 @@ const StyleComplianceChecker: React.FC = () => {
             content: content,
             issues: results.issues,
             styleGuide: {
-              guide: writingStyle.styleGuide?.primary || 'Chicago Manual of Style',
-              formatting: writingStyle.formatting || {},
-              punctuation: writingStyle.punctuation || {},
-              prohibited: writingStyle.prohibited || [],
-              required: writingStyle.required || []
+              guide: getStyleGuideName(),
+              formatting: writingStyle?.formatting || {},
+              punctuation: writingStyle?.punctuation || {},
+              prohibited: writingStyle?.prohibited || [],
+              required: writingStyle?.required || []
             }
           }
         }),
@@ -316,7 +341,7 @@ const StyleComplianceChecker: React.FC = () => {
             <div className="flex items-center text-sm text-green-700">
               <CheckCircle className="w-4 h-4 mr-2" />
               <span>
-                Using {writingStyle?.styleGuide?.primary} style guide
+                Using {getStyleGuideName()} style guide
                 {writingStyle?.formatting?.headingCase && ` • ${writingStyle.formatting.headingCase} headings`}
                 {writingStyle?.punctuation?.oxfordComma !== undefined &&
                   ` • Oxford comma ${writingStyle.punctuation.oxfordComma ? 'required' : 'omitted'}`}
@@ -412,9 +437,8 @@ const StyleComplianceChecker: React.FC = () => {
       {/* Results */}
       {results && (
         <div ref={resultsRef} className="space-y-6">
-          {/* Compliance Score - only show if no fixed content yet */}
-        {/* Fixed Content with clean table of changes */}
-        {fixedContent && (
+          {/* Fixed Content with clean table of changes */}
+          {fixedContent && (
             <div className="space-y-6">
               {/* Green success box with EDITABLE fixed content */}
               <Card className="border-2 border-green-300">
@@ -467,7 +491,7 @@ const StyleComplianceChecker: React.FC = () => {
                     className="w-full h-96 p-4 border rounded-lg resize-none focus:ring-2 focus:ring-green-500 bg-white text-gray-800"
                     style={{ fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif', lineHeight: '1.6', fontSize: '11pt' }}
                   />
-                 <div className="mt-4 flex justify-between items-center">
+                  <div className="mt-4 flex justify-between items-center">
                     <div className="flex gap-2">
                       <button
                         onClick={() => {

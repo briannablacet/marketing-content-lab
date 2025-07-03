@@ -1,5 +1,3 @@
-//changes to fix tagline generator 
-
 import { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
 
@@ -110,6 +108,7 @@ function buildStyleGuideInstructions(writingStyle: any, brandVoice: any, messagi
   // Strict compliance warning
   instructions += `\n\n🚨 STRICT COMPLIANCE: If you do not follow ALL the above layout, formatting, and style rules EXACTLY, your output will be rejected. Do NOT add, remove, or reorder sections. Do NOT use any formatting not specified above. Do NOT improvise.`;
 
+  console.log("🔍 FULL STYLE INSTRUCTIONS BEING SENT:", instructions);
   return instructions;
 }
 
@@ -117,19 +116,35 @@ function buildStyleGuideInstructions(writingStyle: any, brandVoice: any, messagi
 function cleanGeneratedContent(content: string): string {
   if (!content) return content;
 
-  // Split into lines and clean each line
-  const lines = content.split('\n');
-  const cleanedLines = lines.map(line => {
-    // Remove semicolon at the beginning of lines (but keep them in the middle)
-    let cleaned = line.replace(/^;\s*/, '');
-    // Remove other common unwanted characters at line beginnings
-    cleaned = cleaned.replace(/^[:\\-\\*]\s*/, '');
-    // Remove extra whitespace at the beginning
-    cleaned = cleaned.replace(/^\s+/, '');
-    return cleaned;
-  });
+  // Remove code blocks
+  let cleaned = content.replace(/```[\s\S]*?```/g, '');
 
-  return cleanedLines.join('\n');
+  // Remove markdown headings (e.g., # Heading)
+  cleaned = cleaned.replace(/^#+\s?/gm, '');
+
+  // Remove bold/italic markdown, but KEEP bold at line start (for headings)
+  // Remove bold NOT at line start
+  cleaned = cleaned.replace(/(?!^)(\*\*|__)(.*?)\1/g, '$2'); // Remove bold not at line start
+  // Remove italic everywhere
+  cleaned = cleaned.replace(/(\*|_)(.*?)\1/g, '$2');
+
+  // Remove inline code
+  cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
+
+  // Remove bullet points and numbered lists
+  cleaned = cleaned.replace(/^\s*[-*+]\s+/gm, '');
+  cleaned = cleaned.replace(/^\s*\d+\.\s+/gm, '');
+
+  // Remove extra whitespace at the beginning of lines
+  cleaned = cleaned.replace(/^\s+/gm, '');
+
+  // Remove any remaining asterisks at line start (except for bold)
+  cleaned = cleaned.replace(/^(?!\*\*).*\*\s*/gm, '');
+
+  // Remove extra blank lines
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+  return cleaned.trim();
 }
 
 // Function to clean taglines by removing unnecessary quotation marks
@@ -159,20 +174,25 @@ async function handleEnhancedContent(requestData: any, res: NextApiResponse) {
   console.log("🎨 Writing style received:", writingStyle);
 
   const strategicData = getStrategicDataFromRequest(requestData);
-  const styleInstructions = buildStyleGuideInstructions(
-    writingStyle || strategicData.writingStyle,
-    brandVoice || strategicData.brandVoice,
-    messaging || strategicData.messaging
-  );
+  const styleInstructions = "";
+  // writingStyle || strategicData.writingStyle,
+  //brandVoice || strategicData.brandVoice,
+  //messaging || strategicData.messaging
+  //);
 
   console.log("📋 Style instructions being sent to AI:", styleInstructions);
 
   let prompt = "";
   if (contentTypes.includes("blog-post") || contentTypes.includes("Blog Posts")) {
+    console.log("🔍 FULL PROMPT BEING SENT TO AI:");
+    console.log("Prompt exists:", !!prompt);
+    console.log("Prompt length:", prompt ? prompt.length : 0);
+    console.log("Prompt content:", prompt);
+
     prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
-⚠️ HEADING ENFORCEMENT: All headings and subheadings must use markdown syntax (e.g., # Title, ## Section, ### Subsection).
+⚠️ HEADING ENFORCEMENT: Use clear headings and subheadings in plain text format.
 
 You are a professional magazine writer. Write a compelling 1,500-word article about: "${campaignData.name}"
 
@@ -184,8 +204,9 @@ STRUCTURE:
 TARGET AUDIENCE: ${campaignData.targetAudience}
 Avoid cliches, such as "Imagine this"
 
-Use markdown formatting for all headings, subheadings, and lists. Do NOT use HTML. Paragraphs should be separated by blank lines. Your editor is strict—follow the style guide to the letter.`;
+Use clear formatting with proper headings, subheadings, and lists. Paragraphs should be separated by blank lines. Your editor is strict—follow the style guide to the letter.`;
   } else {
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -209,7 +230,7 @@ Remember: Adhere to all style rules.`;
       model: model,
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a seasoned copywriter." },
+        { role: "system", content: "You are a professional writer. Write in plain text format without any markdown, asterisks, or special formatting." },
         { role: "user", content: prompt },
       ],
     });
@@ -281,7 +302,6 @@ async function handleContentHumanizer(data: any, res: NextApiResponse) {
       strategicData?.brandVoice,
       strategicData?.messaging
     );
-
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -292,7 +312,7 @@ Content: ${content}
 Make the content more human, relatable, and engaging while preserving all key information and maintaining the specified style guidelines.
 
 Return only the humanized content.`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -393,7 +413,6 @@ async function handleBoilerplateGeneration(data: any, res: NextApiResponse) {
       strategicData?.brandVoice,
       strategicData?.messaging
     );
-
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -413,7 +432,7 @@ Personality: ${(personality || []).join(", ")}
 Word Count: ${wordCount}
 
 Return only the boilerplate text. Do not include explanations.`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const completions = await Promise.all(
       Array.from({ length: numOptions }).map(() =>
         openai.chat.completions.create({
@@ -460,7 +479,6 @@ async function handleAdaptBoilerplate(data: any, res: NextApiResponse) {
       strategicData?.brandVoice,
       strategicData?.messaging
     );
-
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -481,7 +499,7 @@ Archetype: ${archetype}
 Personality: ${(personality || []).join(", ")}
 
 Return only the adapted boilerplate text. Do not include explanations.`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -520,7 +538,6 @@ async function handleTaglineGeneration(data: any, res: NextApiResponse) {
       strategicData?.brandVoice,
       strategicData?.messaging
     );
-
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -536,7 +553,7 @@ Archetype: ${archetype}
 Personality: ${(personality || []).join(", ")}
 
 Return only the tagline. Do not include explanations.`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const completions = await Promise.all(
       Array.from({ length: numOptions }).map(() =>
         openai.chat.completions.create({
@@ -620,7 +637,6 @@ async function handleContentRepurposer(data: any, res: NextApiResponse) {
       strategicData?.brandVoice,
       messaging || strategicData?.messaging
     );
-
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -632,7 +648,7 @@ Style Guide: ${JSON.stringify(styleGuide || strategicData?.writingStyle || {})}
 Messaging: ${JSON.stringify(messaging || strategicData?.messaging || {})}
 
 Return only the repurposed content.`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -663,7 +679,6 @@ async function handleABTestGenerator(data: any, res: NextApiResponse) {
       strategicData?.brandVoice || null,
       strategicData?.messaging || null
     );
-
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -676,7 +691,7 @@ Target Audience: ${targetAudience}
 IMPORTANT: Follow the style guide rules above EXACTLY. If the style guide specifies heading case formatting, apply it to any headings or titles in your response.
 
 Return a JSON array of variations. Each variation should be a string.`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -724,7 +739,7 @@ ${text}
 
 Return your response as JSON with this exact format:
 {"enhancedText": "your improved version", "suggestions": [{"original": "what you changed", "suggestion": "what you changed it to", "reason": "why", "type": "improvement"}]}`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.1,
@@ -780,7 +795,6 @@ async function handleKeyMessages(data: any, res: NextApiResponse) {
       strategicData?.brandVoice || null,
       strategicData?.messaging || null
     );
-
     const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
@@ -795,7 +809,7 @@ Current Framework: ${JSON.stringify(currentFramework)}
 IMPORTANT: Follow the style guide rules above EXACTLY. If the style guide specifies heading case formatting, apply it to any headings or titles in your response.
 
 Return ONLY a valid JSON object with valueProposition, keyDifferentiators (array), and targetedMessages (array). Do not include any explanation or formatting.`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.7,
@@ -922,7 +936,7 @@ Return ONLY a JSON object with this exact format:
   "keyThemes": ["theme 1", "theme 2", ...],
   "gaps": ["opportunity 1", "opportunity 2", ...]
 }`;
-
+        console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
         // Get AI analysis with better parameters
         const response = await openai.chat.completions.create({
           model: "gpt-4-turbo",
@@ -993,7 +1007,7 @@ Return ONLY a JSON object with this exact format:
         // Return an error for this specific competitor instead of fallback data
         analysisResults.push({
           name: competitor.name,
-          error: `Failed to analyze ${competitor.name}: ${competitorError.message}`,
+          error: `Failed to analyze ${competitor.name}: ${competitorError && typeof competitorError === 'object' && 'message' in competitorError ? (competitorError as any).message : String(competitorError)}`,
           uniquePositioning: [],
           keyThemes: [],
           gaps: []
@@ -1130,7 +1144,7 @@ Analyze this content and return ONLY a JSON object with this exact format:
 }
 
 Be conservative - if you're not sure it's a real error, don't flag it. Only suggest changes for obvious problems.`;
-
+    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       temperature: 0.2,
@@ -1270,13 +1284,12 @@ Return ONLY the corrected content with no explanations.`;
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method, body } = req;
-
   if (method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   const { mode, data } = body;
-
+  console.log("🔍 API called with mode:", mode);
   if (mode === "humanize") {
     return handleContentHumanizer(data, res);
   } else if (mode === "enhance") {
