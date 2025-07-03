@@ -123,7 +123,7 @@ function cleanGeneratedContent(content: string): string {
     // Remove semicolon at the beginning of lines (but keep them in the middle)
     let cleaned = line.replace(/^;\s*/, '');
     // Remove other common unwanted characters at line beginnings
-    cleaned = cleaned.replace(/^[:\*\-]\s*/, '');
+    cleaned = cleaned.replace(/^[:\\-\\*]\s*/, '');
     // Remove extra whitespace at the beginning
     cleaned = cleaned.replace(/^\s+/, '');
     return cleaned;
@@ -838,11 +838,11 @@ function isURL(input: string): boolean {
     new URL(input);
     return true;
   } catch {
-    return input.toLowerCase().includes('.com') ||
-      input.toLowerCase().includes('.org') ||
-      input.toLowerCase().includes('.net') ||
-      input.toLowerCase().includes('www.') ||
-      input.toLowerCase().includes('http');
+    return input.toLowerCase().includes('.com') || 
+           input.toLowerCase().includes('.org') || 
+           input.toLowerCase().includes('.net') || 
+           input.toLowerCase().includes('www.') ||
+           input.toLowerCase().includes('http');
   }
 }
 
@@ -862,10 +862,10 @@ function extractDomain(input: string): string {
 async function handleCompetitiveAnalysis(data: any, res: NextApiResponse) {
   try {
     const { competitors, industry } = data;
-
+    
     if (!competitors || !Array.isArray(competitors) || competitors.length === 0) {
-      return res.status(400).json({
-        error: "No competitors provided for analysis"
+      return res.status(400).json({ 
+        error: "No competitors provided for analysis" 
       });
     }
 
@@ -880,12 +880,12 @@ async function handleCompetitiveAnalysis(data: any, res: NextApiResponse) {
 
       try {
         console.log(`🔍 Analyzing competitor: ${competitor.name}`);
-
+        
         // Determine if input is a URL
         const inputIsUrl = isURL(competitor.name);
-
+        
         // Create enhanced prompt based on input type
-        const basePrompt = inputIsUrl
+        const basePrompt = inputIsUrl 
           ? `Analyze the company at this website: ${competitor.name}`
           : `Analyze this competitor company: ${competitor.name}`;
 
@@ -927,9 +927,9 @@ Return ONLY a JSON object with this exact format:
         const response = await openai.chat.completions.create({
           model: "gpt-4-turbo",
           messages: [
-            {
-              role: "system",
-              content: "You are a competitive intelligence analyst with deep knowledge of business strategy and marketing. Provide detailed, specific analysis based on real market knowledge. Return only valid JSON with no explanations."
+            { 
+              role: "system", 
+              content: "You are a competitive intelligence analyst with deep knowledge of business strategy and marketing. Provide detailed, specific analysis based on real market knowledge. Return only valid JSON with no explanations." 
             },
             { role: "user", content: prompt }
           ],
@@ -946,7 +946,7 @@ Return ONLY a JSON object with this exact format:
           parsedResult = JSON.parse(aiResponse);
         } catch (parseError) {
           console.error(`❌ Failed to parse JSON for ${competitor.name}:`, parseError);
-
+          
           // Try to extract JSON from the response
           const match = aiResponse.match(/\{[\s\S]*\}/);
           if (match) {
@@ -967,9 +967,9 @@ Return ONLY a JSON object with this exact format:
         }
 
         // Check if we got meaningful content
-        const totalInsights = parsedResult.uniquePositioning.length +
-          (parsedResult.keyThemes?.length || 0) +
-          (parsedResult.gaps?.length || 0);
+        const totalInsights = parsedResult.uniquePositioning.length + 
+                             (parsedResult.keyThemes?.length || 0) + 
+                             (parsedResult.gaps?.length || 0);
 
         if (totalInsights === 0) {
           throw new Error(`No competitive insights found for ${competitor.name}. This may be a very small company or limited public information is available.`);
@@ -984,16 +984,16 @@ Return ONLY a JSON object with this exact format:
         };
 
         analysisResults.push(parsedResult);
-
+        
         console.log(`✅ Successfully analyzed ${competitor.name} with ${totalInsights} insights`);
-
+        
       } catch (competitorError) {
         console.error(`❌ Error analyzing ${competitor.name}:`, competitorError);
-
+        
         // Return an error for this specific competitor instead of fallback data
         analysisResults.push({
           name: competitor.name,
-          error: `Failed to analyze ${competitor.name}: ${competitorError instanceof Error ? competitorError.message : String(competitorError)}`,
+          error: `Failed to analyze ${competitor.name}: ${competitorError.message}`,
           uniquePositioning: [],
           keyThemes: [],
           gaps: []
@@ -1003,21 +1003,21 @@ Return ONLY a JSON object with this exact format:
 
     // Return results
     if (analysisResults.length === 0) {
-      return res.status(400).json({
-        error: "Could not analyze any of the provided competitors"
+      return res.status(400).json({ 
+        error: "Could not analyze any of the provided competitors" 
       });
     }
 
     const successfulAnalyses = analysisResults.filter(result => !result.error);
     console.log(`🎉 Completed analysis: ${successfulAnalyses.length}/${analysisResults.length} successful`);
-
+    
     return res.status(200).json(analysisResults);
 
   } catch (error) {
     const errorMessage = typeof error === 'object' && error && 'message' in error ? (error as any).message : String(error);
     console.error("❌ Competitive analysis handler error:", errorMessage);
-    res.status(500).json({
-      error: `Analysis failed: ${errorMessage}`
+    res.status(500).json({ 
+      error: `Analysis failed: ${errorMessage}` 
     });
   }
 }
@@ -1069,204 +1069,6 @@ Example format:
     return res.status(500).json({ error: "Failed to generate mission and vision" });
   }
 }
-
-//handler for style checker
-
-async function handleStyleChecker(data: any, res: NextApiResponse) {
-  try {
-    const { content, styleGuide } = data;
-
-    if (!content || typeof content !== "string") {
-      return res.status(400).json({ error: "Missing or invalid content" });
-    }
-
-    console.log("🎯 Starting style compliance check");
-
-    // Build style guide instructions
-    const styleInstructions = buildStyleGuideInstructions(
-      { styleGuide, formatting: styleGuide.formatting, punctuation: styleGuide.punctuation },
-      null, // brandVoice
-      null  // messaging
-    );
-
-    const prompt = `You are a professional style guide compliance checker. Analyze the following content for compliance with the specified style guide rules.
-
-STYLE GUIDE RULES:
-${styleInstructions}
-
-CONTENT TO ANALYZE:
-${content}
-
-IMPORTANT: Only flag ACTUAL violations, not preferences. Do not suggest changes unless there are clear errors or violations.
-
-Look specifically for:
-- Grammar errors (spelling, punctuation mistakes)
-- Clear style guide violations (if Oxford comma is required but missing)
-- Inconsistent formatting within the document
-- Obvious errors that need fixing
-
-DO NOT flag:
-- Personal writing style choices
-- Content that is already well-formatted
-- Holiday names or common expressions
-- Paragraph text that you think "should" be bullets
-- Minor stylistic preferences that don't violate rules
-
-Analyze this content and return ONLY a JSON object with this exact format:
-{
-  "compliance": 95,
-  "issues": [
-    {
-      "type": "Grammar",
-      "text": "actual error found",
-      "suggestion": "corrected version",
-      "severity": "medium"
-    }
-  ],
-  "strengths": [
-    "Consistent formatting",
-    "Clear writing style"
-  ]
-}
-
-Be conservative - if you're not sure it's a real error, don't flag it. Only suggest changes for obvious problems.`;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      temperature: 0.2,
-      messages: [
-        {
-          role: "system",
-          content: "You are a meticulous style guide compliance expert. Return only valid JSON with no explanations."
-        },
-        { role: "user", content: prompt }
-      ],
-    });
-
-    const aiResponse = response.choices[0].message.content?.trim() || '';
-    console.log("📊 Style check response:", aiResponse.substring(0, 200) + "...");
-
-    // Parse the response
-    let result;
-    try {
-      result = JSON.parse(aiResponse);
-    } catch (parseError) {
-      console.error("❌ Failed to parse style check JSON:", parseError);
-
-      // Try to extract JSON from the response
-      const match = aiResponse.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          result = JSON.parse(match[0]);
-        } catch (secondParseError) {
-          throw new Error("Could not parse style compliance analysis");
-        }
-      } else {
-        throw new Error("No valid JSON found in style analysis");
-      }
-    }
-
-    // Validate the structure
-    if (typeof result.compliance !== 'number' ||
-      !Array.isArray(result.issues) ||
-      !Array.isArray(result.strengths)) {
-      throw new Error("Invalid style analysis structure");
-    }
-
-    // Ensure compliance is within valid range
-    result.compliance = Math.max(0, Math.min(100, result.compliance));
-
-    console.log(`✅ Style compliance check complete: ${result.compliance}% compliant`);
-    return res.status(200).json(result);
-
-  } catch (error) {
-    console.error("❌ Style compliance check error:", error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    res.status(500).json({
-      error: `Style compliance check failed: ${errorMessage}`
-    });
-  }
-}
-
-// Handler for fixing style compliance issues
-async function handleStyleFixer(data: any, res: NextApiResponse) {
-  try {
-    const { content, issues, styleGuide } = data;
-
-    if (!content || typeof content !== "string") {
-      return res.status(400).json({ error: "Missing or invalid content" });
-    }
-
-    if (!issues || !Array.isArray(issues)) {
-      return res.status(400).json({ error: "Missing or invalid issues array" });
-    }
-
-    console.log("🔧 Starting style compliance fix");
-
-    // Build style guide instructions
-    const styleInstructions = buildStyleGuideInstructions(
-      { styleGuide, formatting: styleGuide.formatting, punctuation: styleGuide.punctuation },
-      null, // brandVoice
-      null  // messaging
-    );
-
-    // Create a detailed list of issues to fix
-    const issuesList = issues.map((issue, index) =>
-      `${index + 1}. ${issue.type}: "${issue.text}" → ${issue.suggestion}`
-    ).join('\n');
-
-    const prompt = `You are a professional editor. Fix the following content to address the specific issues identified.
-
-STYLE GUIDE RULES:
-${styleInstructions}
-
-SPECIFIC ISSUES TO FIX:
-${issuesList}
-
-ORIGINAL CONTENT:
-${content}
-
-INSTRUCTIONS:
-- Fix ONLY the specific issues listed above
-- Do NOT make other changes to the content
-- Maintain the original structure, tone, and style
-- Return the corrected content with minimal changes
-
-CRITICAL: Return the COMPLETE corrected content. Do not truncate, summarize, or shorten the text in any way. The output must be the same length as the input with only the specific issues fixed. Include ALL paragraphs, sentences, and content from the original.
-
-Return ONLY the corrected content with no explanations.`;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      temperature: 0.1,
-      messages: [
-        {
-          role: "system",
-          content: "You are a professional editor who fixes style guide violations. Return only the corrected content with no explanations."
-        },
-        { role: "user", content: prompt }
-      ],
-    });
-
-    const fixedContent = response.choices[0].message.content?.trim() || content;
-
-    // Clean the fixed content (remove any unwanted formatting)
-    const cleanedContent = cleanGeneratedContent(fixedContent);
-
-    console.log("✅ Style compliance fix complete");
-    return res.status(200).json({
-      fixedContent: cleanedContent
-    });
-
-  } catch (error) {
-    console.error("❌ Style compliance fix error:", error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    res.status(500).json({
-      error: `Style compliance fix failed: ${errorMessage}`
-    });
-  }
-}
-
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method, body } = req;
@@ -1303,10 +1105,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleMissionVision(data, res);
   } else if (mode === "improve-tagline") {
     return handleTaglineImprovement(data, res);
-  } else if (mode === "styleChecker") {
-    return handleStyleChecker(data, res);
-  } else if (mode === "styleFixer") {
-    return handleStyleFixer(data, res);
   } else {
     return res.status(400).json({ error: "Invalid mode" });
   }
