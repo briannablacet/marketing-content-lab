@@ -1,4 +1,6 @@
 // src/components/shared/KeywordSuggestions.tsx
+// FIXED: Clean, simple keyword suggestions for ContentCreator
+
 import React, { useState, useEffect } from 'react';
 import { Sparkles, X, Plus, Clipboard } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
@@ -8,13 +10,15 @@ interface KeywordSuggestionsProps {
     contentType?: string;
     initialKeywords?: string;
     onKeywordsChange?: (keywords: string) => void;
+    showSelectionInstructions?: boolean;
 }
 
 const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
     contentTopic,
     contentType = 'blog-post',
     initialKeywords = '',
-    onKeywordsChange
+    onKeywordsChange,
+    showSelectionInstructions = false
 }) => {
     const { showNotification } = useNotification();
     const [isLoading, setIsLoading] = useState(false);
@@ -46,22 +50,20 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
         setError('');
 
         try {
+            console.log('🔍 Generating keywords for:', contentTopic);
+
             // FIXED: Use the correct local API endpoint
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/keywords`, {
+            const response = await fetch('/api/api_endpoints', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
-                    endpoint: 'generateKeywords',
+                    mode: 'keywords',
                     data: {
-                        context: {
-                            topic: contentTopic,
-                            contentType: contentType,
-                            messages: [contentTopic],
-                            personas: ['Content marketer']
-                        }
+                        contentTopic: contentTopic,
+                        contentType: contentType
                     }
                 })
             });
@@ -71,59 +73,29 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
             }
 
             const result = await response.json();
-            console.log('Full API response:', result);
+            console.log('✅ Keywords API response:', result);
 
-            // Extract the keyword data from the response structure
-            // The API returns the data directly, no need for .document
-            const keywordData = result.document;
+            // The result should have { keywords: ["keyword1", "keyword2", ...] }
+            const extractedKeywords = result.keywords || [];
 
-            console.log('Extracted keyword data:', keywordData);
+            console.log('📝 Extracted keywords:', extractedKeywords);
 
-            // Extract keywords from the response
-            let extractedKeywords: string[] = [];
+            // Filter out keywords that are already selected
+            const filteredKeywords = extractedKeywords.filter((kw: string) =>
+                kw && kw.trim() && !selectedKeywords.includes(kw.trim())
+            );
 
-            // Get primary keywords
-            if (keywordData.primaryKeywords && Array.isArray(keywordData.primaryKeywords)) {
-                extractedKeywords = extractedKeywords.concat(
-                    keywordData.primaryKeywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
-                );
-            }
-
-            // Add secondary keywords
-            if (keywordData.secondaryKeywords && Array.isArray(keywordData.secondaryKeywords)) {
-                extractedKeywords = extractedKeywords.concat(
-                    keywordData.secondaryKeywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
-                );
-            }
-
-            // Add keywords from groups
-            if (keywordData.keywordGroups && Array.isArray(keywordData.keywordGroups)) {
-                keywordData.keywordGroups.forEach((group: any) => {
-                    if (group.keywords && Array.isArray(group.keywords)) {
-                        extractedKeywords = extractedKeywords.concat(
-                            group.keywords.filter((kw: string) => typeof kw === 'string' && kw.trim())
-                        );
-                    }
-                });
-            }
-
-            // Process the keywords
-            const filteredKeywords = [...new Set(extractedKeywords)]
-                .filter(kw => kw.trim() && !selectedKeywords.includes(kw))
-                .sort((a, b) => a.localeCompare(b)); // Optional: sort alphabetically
-
-            console.log('Final filtered keywords:', filteredKeywords);
             setSuggestedKeywords(filteredKeywords);
-            showNotification('success', 'Keywords generated successfully');
+            showNotification('Keywords generated successfully', 'success');
 
         } catch (err) {
-            console.error('Error generating keywords:', err);
+            console.error('❌ Error generating keywords:', err);
             setError('Failed to generate keyword suggestions');
 
-            // Improved fallback keywords
+            // Improved fallback keywords based on topic
             const topicWords = contentTopic.toLowerCase()
                 .split(/\s+/)
-                .filter(word => word.length > 3 && !['create', 'blog', 'post'].includes(word));
+                .filter(word => word.length > 3 && !['create', 'blog', 'post', 'content'].includes(word));
 
             const fallbackKeywords = [
                 ...topicWords,
@@ -137,9 +109,11 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
             ].filter(kw => kw.trim() && kw.length > 3);
 
             const filteredFallbacks = [...new Set(fallbackKeywords)]
-                .filter(kw => !selectedKeywords.includes(kw));
+                .filter(kw => !selectedKeywords.includes(kw))
+                .slice(0, 15);
 
-            setSuggestedKeywords(filteredFallbacks.slice(0, 15)); // Limit fallback suggestions
+            setSuggestedKeywords(filteredFallbacks);
+            showNotification('Using fallback keywords due to API error', 'warning');
         } finally {
             setIsLoading(false);
         }
@@ -163,7 +137,7 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
             onKeywordsChange(newSelectedKeywords.join(', '));
         }
 
-        showNotification('success', `Added "${keyword}" to your keywords`);
+        showNotification(`Added "${keyword}" to your keywords`, 'success');
     };
 
     // Add a custom keyword
@@ -196,7 +170,7 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
             setSuggestedKeywords([...suggestedKeywords, keyword]);
         }
 
-        showNotification('info', `Removed "${keyword}" from your keywords`);
+        showNotification(`Removed "${keyword}" from your keywords`, 'info');
     };
 
     // Copy all keywords to clipboard
@@ -204,7 +178,7 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
         if (selectedKeywords.length === 0) return;
 
         navigator.clipboard.writeText(selectedKeywords.join(', '));
-        showNotification('success', 'Keywords copied to clipboard');
+        showNotification('Keywords copied to clipboard', 'success');
     };
 
     return (
@@ -215,6 +189,14 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
                     Keywords for Your Content
                 </h3>
             </div>
+
+            {showSelectionInstructions && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                        <strong>Click on a keyword to add it</strong> to your content. Selected keywords will be highlighted and can be removed by clicking the X.
+                    </p>
+                </div>
+            )}
 
             <p className="text-sm text-gray-600 mb-4">
                 Select keywords to optimize your content. These will help search engines understand what your content is about.
@@ -310,7 +292,7 @@ const KeywordSuggestions: React.FC<KeywordSuggestionsProps> = ({
                             <button
                                 key={keyword}
                                 onClick={() => addKeyword(keyword)}
-                                className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center hover:bg-gray-200"
+                                className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center hover:bg-gray-200 transition-colors"
                             >
                                 <Plus className="w-3 h-3 mr-1" />
                                 {keyword}

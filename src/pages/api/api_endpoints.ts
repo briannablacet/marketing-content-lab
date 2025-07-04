@@ -841,7 +841,33 @@ Return ONLY a valid JSON object with valueProposition, keyDifferentiators (array
     return res.status(500).json({ error: "Failed to generate key messages" });
   }
 }
+// Handler for keyword suggestions (for ContentCreator)
+async function handleKeywordSuggestions(data: any, res: NextApiResponse) {
+  try {
+    const { contentTopic, contentType } = data;
 
+    const prompt = `Generate 15-20 relevant SEO keywords for this content topic: "${contentTopic}"
+Content Type: ${contentType || 'blog-post'}
+
+Return ONLY a JSON array of keyword strings: ["keyword1", "keyword2", "keyword3"]
+No explanations, just the array.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      temperature: 0.3,
+      messages: [
+        { role: "system", content: "You are an SEO expert. Return only valid JSON arrays." },
+        { role: "user", content: prompt }
+      ],
+    });
+
+    const keywords = JSON.parse(response.choices[0].message.content?.trim() || '[]');
+    return res.status(200).json({ keywords });
+  } catch (error) {
+    console.error("Keyword suggestions error:", error);
+    return res.status(500).json({ error: "Failed to generate keyword suggestions" });
+  }
+}
 // Handler for competitor analysis
 // REPLACE ONLY the handleCompetitiveAnalysis function in your existing api_endpoints.ts file
 // Find the existing function and replace it with this enhanced version
@@ -1360,6 +1386,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleStyleFixer(data, res);
   } else if (mode === "improve-tagline") {
     return handleTaglineImprovement(data, res);
+  } else if (mode === "keywords") {
+    return handleKeywordSuggestions(data, res);
   } else {
     return res.status(400).json({ error: "Invalid mode" });
   }

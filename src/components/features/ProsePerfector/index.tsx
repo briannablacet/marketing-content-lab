@@ -1,5 +1,5 @@
 // src/components/features/ProsePerfector/index.tsx
-// REDESIGNED: Much cleaner workflow - immediate results with summary
+// FIXED: Clean change clearing - no more accumulating confusion
 
 import React, { useState, useRef } from "react";
 import { useNotification } from "../../../context/NotificationContext";
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import FileHandler from "@/components/shared/FileHandler";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import ChangeDisplay from "../../shared/ChangeDisplay";
 
 interface ChangeSummary {
   grammarFixed: boolean;
@@ -65,7 +66,6 @@ const ProsePerfector: React.FC = () => {
   const [content, setContent] = useState("");
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   // State for additional refinements
   const [additionalChanges, setAdditionalChanges] = useState("");
@@ -228,18 +228,16 @@ const ProsePerfector: React.FC = () => {
     setEnhancementResult(null);
     setAdditionalChanges("");
     setShowOriginal(false);
-    setShowDetails(false);
   };
 
   // Revert to original
   const handleRevert = () => {
     setEnhancementResult(null);
     setShowOriginal(false);
-    setShowDetails(false);
     showNotification("Reverted to original text", "info");
   };
 
-  // NEW: Function to refine text with additional changes
+  // FIXED: Function to refine text with clean change clearing
   const refineText = async () => {
     if (!additionalChanges.trim()) {
       showNotification("Please enter what additional changes you'd like", "error");
@@ -290,33 +288,34 @@ const ProsePerfector: React.FC = () => {
 
       const data = await response.json();
 
-      // Update the enhancement result with new changes
+      // FIXED: Clean change clearing - REPLACE old changes instead of accumulating
       const newWordCount = (data.enhancedText || enhancementResult.enhancedText).split(/\s+/).length;
       const originalWordCount = originalText.split(/\s+/).length;
 
       const updatedResult: EnhancementResult = {
         enhancedText: data.enhancedText || enhancementResult.enhancedText,
         summary: {
-          ...enhancementResult.summary,
+          grammarFixed: true,
+          spellingFixed: true,
+          punctuationFixed: true,
+          flowImproved: true,
           wordCountChange: newWordCount - originalWordCount,
-          mainChanges: [
-            ...enhancementResult.summary.mainChanges,
-            additionalChanges
-          ].slice(0, 4) // Keep to 4 max
+          mainChanges: [additionalChanges] // ✅ CLEAN: Only show the latest change request
         },
-        changeDetails: [
-          ...enhancementResult.changeDetails,
-          ...(data.suggestions || []).map((suggestion: any) => ({
-            original: suggestion.original,
-            suggestion: suggestion.suggestion,
-            reason: suggestion.reason,
-            type: suggestion.type || "refinement",
-          }))
-        ]
+        // ✅ CLEAN: Replace old changeDetails with new ones (no accumulation)
+        changeDetails: (data.suggestions || []).map((suggestion: any) => ({
+          original: suggestion.original,
+          suggestion: suggestion.suggestion,
+          reason: suggestion.reason,
+          type: suggestion.type || "refinement",
+        }))
       };
 
       setEnhancementResult(updatedResult);
+
+      // ✅ CLEAN: Clear the additional changes input for fresh start
       setAdditionalChanges("");
+
       showNotification(`✨ Text refined successfully!`, "success");
 
     } catch (error) {
@@ -407,7 +406,6 @@ const ProsePerfector: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-
 
           <div>
             <label className="block text-sm font-medium mb-2">
@@ -565,7 +563,7 @@ const ProsePerfector: React.FC = () => {
             <CardContent className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-medium text-gray-800 mb-2">What We Fixed:</h3>
+                  <h3 className="font-medium text-gray-800 mb-2">What I Fixed:</h3>
                   <ul className="space-y-1 text-sm text-gray-700">
                     <li className="flex items-center">
                       <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
@@ -708,49 +706,13 @@ const ProsePerfector: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Change Details (Collapsible) */}
-          {enhancementResult.changeDetails.length > 0 && (
-            <Card className="border-2 border-green-300 mb-8">
-              <CardHeader className="bg-green-50 pb-6">
-                <CardTitle className="flex items-center justify-between">
-                  <span>🎯 What I Changed</span>
-                  <button
-                    onClick={() => setShowDetails(!showDetails)}
-                    className="flex items-center text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    {showDetails ? 'Hide Details' : 'Click to see the specifics'}
-                    <ArrowDown className={`w-4 h-4 ml-1 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
-                  </button>
-                </CardTitle>
-              </CardHeader>
-              {showDetails && (
-                <CardContent className="p-4">
-                  <div className="space-y-4">
-                    {enhancementResult.changeDetails.map((change, index) => (
-                      <div key={index} className="p-4 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full capitalize">
-                            {change.type}
-                          </span>
-                          <span className="text-sm text-gray-600">{change.reason}</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                            <p className="text-xs font-medium text-red-700 mb-1">Original</p>
-                            <p className="text-sm text-red-800">{change.original}</p>
-                          </div>
-                          <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                            <p className="text-xs font-medium text-green-700 mb-1">Enhanced</p>
-                            <p className="text-sm text-green-800">{change.suggestion}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          )}
+          {/* ✅ Use the shared ChangeDisplay component */}
+          <ChangeDisplay
+            changes={enhancementResult.changeDetails}
+            title="🎯 What I Changed"
+            showByDefault={false}
+            className="mb-8"
+          />
 
           {/* Need More Changes */}
           <Card className="border-2 border-purple-200">
