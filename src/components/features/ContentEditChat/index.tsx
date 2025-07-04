@@ -128,11 +128,14 @@ const ContentEditChat: React.FC<ContentEditChatProps> = ({
     }
 
     // Show if significant content was added
-    const lengthDiff = suggested.length - original.length;
-    if (lengthDiff > 200) {
+    const originalWords = original.split(/\s+/).length;
+    const suggestedWords = suggested.split(/\s+/).length;
+    const wordDiff = suggestedWords - originalWords;
+
+    if (wordDiff > 50) {
       changes.push({
-        original: `${original.length} characters of content`,
-        suggested: `${suggested.length} characters (+${lengthDiff} characters of new content)`,
+        original: `${originalWords} words of content`,
+        suggested: `${suggestedWords} words (+${wordDiff} words added)`,
         type: 'expanded'
       });
     }
