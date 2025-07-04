@@ -146,15 +146,19 @@ const ContentEditChat: React.FC<ContentEditChatProps> = ({
     return changes;
   };
 
-  // Handle improvement request
   const handleImproveContent = async () => {
     if (!improvementRequest.trim()) {
       setError("Please enter what you'd like to improve");
       return;
     }
-
+  
+    // ✅ CLEAR old suggestions when starting new improvement
+    setShowSuggestion(false);
+    setSuggestedContent('');
+    
     setIsImproving(true);
     setError(null);
+    
 
     try {
       console.log('🔧 Improving content with request:', improvementRequest);
