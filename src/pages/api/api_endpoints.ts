@@ -1281,6 +1281,44 @@ Return ONLY the corrected content with no explanations.`;
   }
 }
 
+// Handler for ContentEditChat targeted improvements
+async function handleContentImprove(data: any, res: NextApiResponse) {
+  try {
+    const { content, instructions, strategicContext } = data;
+
+    const prompt = `You are a professional editor.
+ONLY do what the USER INSTRUCTION says.
+Do NOT make any other changes, do NOT humanize, do NOT rewrite, do NOT improve anything else.
+Preserve ALL formatting, headings, structure, and markdown.
+Do not remove or change any headings, subheadings, bullet points, or other formatting elements unless the instruction specifically says to.
+If the instruction is to 'add a stat', ONLY add a stat and change nothing else.
+
+USER INSTRUCTION: ${instructions}
+
+CONTENT TO IMPROVE:
+${content}
+
+Return only the improved content.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      temperature: 0.7,
+      messages: [
+        { role: "system", content: "You are a professional editor who follows instructions exactly." },
+        { role: "user", content: prompt },
+      ],
+    });
+
+    const improvedContent = response.choices[0].message.content || "";
+    // Clean the improved content to remove unwanted formatting
+    const cleanedContent = cleanGeneratedContent(improvedContent);
+    return res.status(200).json({ content: cleanedContent });
+  } catch (error) {
+    console.error("Content improve error:", error);
+    return res.status(500).json({ error: "Failed to improve content" });
+  }
+}
+
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method, body } = req;
@@ -1292,6 +1330,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   console.log("🔍 API called with mode:", mode);
   if (mode === "humanize") {
     return handleContentHumanizer(data, res);
+  } else if (mode === "improve") {
+    return handleContentImprove(data, res);
   } else if (mode === "enhance") {
     return handleEnhancedContent(data, res);
   } else if (mode === "boilerplate") {
