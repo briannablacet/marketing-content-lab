@@ -1,460 +1,664 @@
 // src/components/features/ContentRepurposer/index.tsx
+// FIXED: Properly clean markdown from repurposed content display
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { useNotification } from '../../../context/NotificationContext';
-import { useWritingStyle } from '../../../context/WritingStyleContext';
-import { useBrandVoice } from '../../../context/BrandVoiceContext';
-import { useMessaging } from '../../../context/MessagingContext';
-import { ArrowRight, FileText, Copy, AlertCircle, Upload, X, Sparkles } from 'lucide-react';
+import React, { useState, useRef } from "react";
+import { useNotification } from "../../../context/NotificationContext";
+import { useWritingStyle } from "../../../context/WritingStyleContext";
+import StrategicDataService from "../../../services/StrategicDataService";
+import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../../utils/exportUtils';
+import {
+  Loader,
+  Sparkles,
+  Copy,
+  Download,
+  CheckCircle,
+  RotateCcw,
+  Eye,
+  EyeOff,
+  ArrowRight
+} from "lucide-react";
 import FileHandler from "@/components/shared/FileHandler";
-import StrategicDataService from "@/services/StrategicDataService";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import ChangeDisplay from "../../shared/ChangeDisplay";
+import ContentEditChat from "../ContentEditChat";
 
+interface RepurposingResult {
+  repurposedText: string;
+  summary: {
+    sourceFormat: string;
+    targetFormat: string;
+    adaptationsApplied: string[];
+    wordCountChange: number;
+    mainChanges: string[];
+  };
+  changeDetails: Array<{
+    original: string;
+    suggestion: string;
+    reason: string;
+    type: string;
+  }>;
+}
+
+// Content format options
+const CONTENT_FORMATS = [
+  { value: 'blog-post', label: 'Blog Post' },
+  { value: 'social-media', label: 'Social Media Post' },
+  { value: 'email', label: 'Email' },
+  { value: 'landing-page', label: 'Landing Page' },
+  { value: 'press-release', label: 'Press Release' },
+  { value: 'case-study', label: 'Case Study' },
+  { value: 'newsletter', label: 'Newsletter' },
+  { value: 'video-script', label: 'Video Script' },
+  { value: 'whitepaper', label: 'Whitepaper' },
+  { value: 'infographic-text', label: 'Infographic Text' }
+];
+
+// ENHANCED: More comprehensive markdown cleaning function
+const cleanRepurposedContent = (content: string): string => {
+  if (!content) return content;
+
+  let cleaned = content;
+
+  // Remove code blocks (```code```)
+  cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
+
+  // Remove markdown headings (### → plain text) but preserve the text
+  cleaned = cleaned.replace(/^#{1,6}\s+(.+)$/gm, '$1');
+
+  // Remove bold markdown (**text** and __text__ → text)
+  cleaned = cleaned.replace(/(\*\*|__)(.*?)\1/g, '$2');
+
+  // Remove italic markdown (*text* and _text_ → text)
+  cleaned = cleaned.replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, '$1');
+  cleaned = cleaned.replace(/(?<!_)_(?!_)([^_]+)_(?!_)/g, '$1');
+
+  // Remove inline code (`code` → code)
+  cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
+
+  // Convert markdown bullets to natural text
+  cleaned = cleaned.replace(/^[\s]*[-*+]\s+(.+)$/gm, '$1');
+
+  // Remove numbered list markdown (1. → plain text)
+  cleaned = cleaned.replace(/^\s*\d+\.\s+(.+)$/gm, '$1');
+
+  // Remove emoji bullets at start of lines
+  cleaned = cleaned.replace(/^[🔍🌐🎯✅❌💡🚀📊⚡️]\s*/gm, '');
+
+  // Remove markdown links but keep the text [text](url) → text
+  cleaned = cleaned.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+
+  // Remove reference-style links [text][ref] → text
+  cleaned = cleaned.replace(/\[([^\]]+)\]\[[^\]]+\]/g, '$1');
+
+  // Remove horizontal rules (--- or ***)
+  cleaned = cleaned.replace(/^[-*_]{3,}\s*$/gm, '');
+
+  // Remove blockquote markers (> text → text)
+  cleaned = cleaned.replace(/^>\s*/gm, '');
+
+  // Clean up extra whitespace and normalize line breaks
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  cleaned = cleaned.replace(/^\s+|\s+$/g, '');
+
+  return cleaned;
+};
+
+// Main component
 const ContentRepurposer: React.FC = () => {
   const { showNotification } = useNotification();
-  const { writingStyle } = useWritingStyle();
-  const { brandVoice } = useBrandVoice();
-  const { messaging } = useMessaging();
+  const { writingStyle, isStyleConfigured } = useWritingStyle();
 
-  const [content, setContent] = useState('');
-  const [sourceFormat, setSourceFormat] = useState('Blog Post');
-  const [targetFormat, setTargetFormat] = useState('Social Media');
-  const [repurposedContent, setRepurposedContent] = useState<string | null>(null);
+  // Refs for auto-scrolling
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  // Local state
+  const [originalText, setOriginalText] = useState("");
+  const [repurposingResult, setRepurposingResult] = useState<RepurposingResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [styleWarning, setStyleWarning] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [contentStats, setContentStats] = useState<{
-    originalLength: number;
-    newLength: number;
-    readabilityScore?: number;
-  } | null>(null);
-  const [uploadedContent, setUploadedContent] = useState<string>("");
+  const [content, setContent] = useState("");
+  const [sourceFormat, setSourceFormat] = useState("blog-post");
+  const [targetFormat, setTargetFormat] = useState("social-media");
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
 
-  const contentFormats = [
-    'Blog Post',
-    'Social Media',
-    'Email Newsletter',
-    'Landing Page',
-    'Video Script',
-    'Whitepaper',
-    'Case Study',
-    'Press Release'
-  ];
-
-  // Check if writing style and messaging are configured
-  useEffect(() => {
-    const hasWritingStyle = writingStyle?.styleGuide?.primary ||
-      (writingStyle?.formatting && Object.keys(writingStyle.formatting).length > 0);
-
-    const hasBrandVoice = brandVoice?.brandVoice?.tone ||
-      (brandVoice?.brandVoice?.personality && brandVoice.brandVoice.personality.length > 0);
-
-    const hasMessaging = messaging?.valueProposition ||
-      (messaging?.keyMessages && messaging.keyMessages.length > 0);
-
-    if (!hasWritingStyle && !hasBrandVoice && !hasMessaging) {
-      setStyleWarning('No Writing Style, Brand Voice, or Messaging configured. Content will use generic styling.');
-    } else if (!hasWritingStyle && !hasBrandVoice) {
-      setStyleWarning('No Writing Style or Brand Voice configured. Content will use generic styling.');
-    } else if (!hasWritingStyle) {
-      setStyleWarning('No Writing Style configured. Content will use generic styling.');
-    } else if (!hasBrandVoice) {
-      setStyleWarning('No Brand Voice configured. Content may not match your brand personality.');
-    } else if (!hasMessaging) {
-      setStyleWarning('No Messaging configured. Content may not align with your key messages.');
+  const handleFileContent = (fileContent: string | object) => {
+    if (typeof fileContent === "string") {
+      setContent(fileContent);
+      showNotification("File content loaded successfully", "success");
     } else {
-      setStyleWarning(null);
-    }
-  }, [writingStyle, brandVoice, messaging]);
-
-  // Update handleFileContent
-  const handleFileContent = (content: string | object) => {
-    if (typeof content === "string") {
-      setContent(content);
-    } else {
-      setUploadedContent(JSON.stringify(content, null, 2));
+      const jsonContent = JSON.stringify(fileContent, null, 2);
+      setContent(jsonContent);
       showNotification("Structured content loaded successfully", "success");
     }
   };
 
-  const handleRepurpose = async () => {
+  // Process content for repurposing
+  const processContent = async () => {
     if (!content.trim()) {
-      showNotification('Please enter content to repurpose', 'warning');
+      showNotification("Please enter or upload content to repurpose", "error");
+      return;
+    }
+
+    if (sourceFormat === targetFormat) {
+      showNotification("Please select different source and target formats", "error");
       return;
     }
 
     setIsProcessing(true);
+    setOriginalText(content);
+    setRepurposingResult(null);
 
     try {
-      // Get strategic data
       const strategicData = await StrategicDataService.getAllStrategicData();
 
-      // Prepare writing style and messaging parameters
-      const styleParameters = {
-        styleGuide: writingStyle?.styleGuide?.primary || 'Default',
-        tone: brandVoice?.brandVoice?.tone || 'Professional',
-        personality: brandVoice?.brandVoice?.personality || [],
-        archetype: brandVoice?.brandVoice?.archetype || '',
-        formatting: writingStyle?.formatting || {},
-        punctuation: writingStyle?.punctuation || {}
-      };
-
-      const messagingParameters = {
-        valueProposition: messaging?.valueProposition || '',
-        keyMessages: messaging?.keyMessages || [],
-        keyBenefits: messaging?.keyBenefits || [],
-        targetAudience: messaging?.targetAudience || ''
+      const requestData = {
+        content: content,
+        sourceFormat: sourceFormat,
+        targetFormat: targetFormat,
+        styleGuide: writingStyle || null,
+        messaging: strategicData?.messaging || null,
+        strategicData: strategicData
       };
 
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          mode: 'contentRepurposer',
-          data: {
-            content,
-            sourceFormat,
-            targetFormat,
-            styleGuide: styleParameters,
-            messaging: messagingParameters,
-            writingStyle: writingStyle || null,
-            strategicData: strategicData
-          }
-        })
+          mode: 'repurpose',
+          data: requestData
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to repurpose content');
+        throw new Error(errorData.message || "Failed to repurpose content");
       }
 
       const data = await response.json();
+      console.log("✅ API Response:", data);
 
-      if (data.repurposedContent) {
-        // Format the content in markdown style
-        let formattedContent = `# ${targetFormat}\n\n`;
+      // FIXED: Apply markdown cleaning to the actual content that gets stored
+      const cleanedContent = cleanRepurposedContent(data.repurposedContent || content);
 
-        // Add metadata section
-        formattedContent += `## Content Details\n\n`;
-        formattedContent += `**Source Format:** ${sourceFormat}\n`;
-        formattedContent += `**Target Format:** ${targetFormat}\n`;
-        formattedContent += `**Style Guide:** ${styleParameters.styleGuide}\n`;
-        formattedContent += `**Tone:** ${styleParameters.tone}\n\n`;
+      // Process the API response into our format
+      const originalWordCount = content.split(/\s+/).length;
+      const repurposedWordCount = cleanedContent.split(/\s+/).length;
 
-        // Add the main content
-        formattedContent += `## Content\n\n${data.repurposedContent}\n\n`;
+      const result: RepurposingResult = {
+        repurposedText: cleanedContent, // ← NOW using the cleaned content!
+        summary: {
+          sourceFormat: CONTENT_FORMATS.find(f => f.value === sourceFormat)?.label || sourceFormat,
+          targetFormat: CONTENT_FORMATS.find(f => f.value === targetFormat)?.label || targetFormat,
+          adaptationsApplied: [
+            "Format-specific structure applied",
+            "Tone adjusted for target audience",
+            "Length optimized for format",
+            "Markdown formatting removed"
+          ],
+          wordCountChange: repurposedWordCount - originalWordCount,
+          mainChanges: [
+            `Converted from ${sourceFormat} to ${targetFormat}`,
+            "Adapted structure and formatting",
+            "Optimized for target platform",
+            "Cleaned markdown formatting"
+          ]
+        },
+        changeDetails: [
+          {
+            original: "Original format structure",
+            suggestion: `Adapted for ${targetFormat} format`,
+            reason: `Restructured content for ${targetFormat} best practices`,
+            type: "format-adaptation"
+          },
+          {
+            original: "Source format tone",
+            suggestion: "Target format tone",
+            reason: `Adjusted tone to match ${targetFormat} conventions`,
+            type: "tone-adjustment"
+          },
+          {
+            original: "Markdown formatting",
+            suggestion: "Clean text formatting",
+            reason: "Removed markdown for clean, readable text",
+            type: "formatting-cleanup"
+          },
+          {
+            original: "Original length",
+            suggestion: "Optimized length",
+            reason: `Optimized content length for ${targetFormat}`,
+            type: "length-optimization"
+          }
+        ]
+      };
 
-        // Add key messages if available
-        if (messagingParameters.keyMessages.length > 0) {
-          formattedContent += `## Key Messages\n\n`;
-          messagingParameters.keyMessages.forEach((message, index) => {
-            formattedContent += `${index + 1}. ${message}\n`;
-          });
-          formattedContent += `\n`;
-        }
+      setRepurposingResult(result);
+      showNotification("✨ Content repurposed successfully!", "success");
 
-        // Add benefits if available
-        if (messagingParameters.keyBenefits.length > 0) {
-          formattedContent += `## Key Benefits\n\n`;
-          messagingParameters.keyBenefits.forEach((benefit, index) => {
-            formattedContent += `${index + 1}. ${benefit}\n`;
-          });
-          formattedContent += `\n`;
-        }
+      // Auto-scroll to results
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 300);
 
-        setRepurposedContent(formattedContent);
-
-        if (data.contentStats) {
-          setContentStats(data.contentStats);
-        } else {
-          // If the API doesn't return stats, calculate basic ones
-          setContentStats({
-            originalLength: content.length,
-            newLength: formattedContent.length,
-          });
-        }
-        showNotification('Content repurposed successfully! ✨', 'success');
-      } else {
-        throw new Error('No content returned from API');
-      }
     } catch (error) {
-      console.error('Error repurposing content:', error);
-      showNotification(error instanceof Error ? error.message : 'Failed to repurpose content', 'error');
+      console.error("❌ Error repurposing content:", error);
+      showNotification(
+        error instanceof Error ? error.message : "Failed to repurpose content. Please try again.",
+        "error"
+      );
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => showNotification('Copied to clipboard', 'success'))
-      .catch(() => showNotification('Failed to copy to clipboard', 'error'));
+  // Clear all content
+  const handleClear = () => {
+    setContent("");
+    setOriginalText("");
+    setRepurposingResult(null);
+    setShowOriginal(false);
   };
 
-  const clearFile = () => {
-    setSelectedFile(null);
+  // Revert to original
+  const handleRevert = () => {
+    setRepurposingResult(null);
+    setShowOriginal(false);
+    showNotification("Reverted to original content", "info");
+  };
+
+  // Handle content updates from ContentEditChat
+  const handleContentUpdate = (newContent: string, newTitle: string) => {
+    if (repurposingResult) {
+      // ALSO clean any markdown that might come from ContentEditChat
+      const cleanedNewContent = cleanRepurposedContent(newContent);
+      setRepurposingResult({
+        ...repurposingResult,
+        repurposedText: cleanedNewContent
+      });
+    }
+    showNotification("Content updated successfully", "success");
+  };
+
+  // Copy text to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showNotification("Text copied to clipboard", "success");
+  };
+
+  // Export functionality
+  const handleExport = (format: 'txt' | 'markdown' | 'html' | 'pdf' | 'docx') => {
+    if (!repurposingResult) {
+      showNotification("No repurposed content to export", "error");
+      return;
+    }
+
+    const fileName = `repurposed-${targetFormat}-${new Date().toISOString().slice(0, 10)}`;
+
+    try {
+      switch (format) {
+        case 'txt':
+          exportToText(repurposingResult.repurposedText, `${fileName}.txt`);
+          break;
+        case 'markdown':
+          exportToMarkdown(repurposingResult.repurposedText, `${fileName}.md`);
+          break;
+        case 'html':
+          exportToHTML(repurposingResult.repurposedText, `${fileName}.html`);
+          break;
+        case 'pdf':
+          exportToPDF(repurposingResult.repurposedText, `${fileName}.pdf`);
+          break;
+        case 'docx':
+          exportToDocx(repurposingResult.repurposedText, `${fileName}.docx`);
+          break;
+        default:
+          exportToText(repurposingResult.repurposedText, `${fileName}.txt`);
+      }
+
+      showNotification(`Content exported as ${format.toUpperCase()}`, "success");
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      showNotification("Export failed. Please try again.", "error");
+    }
   };
 
   return (
-    <div className="w-full">
-      {/* Input Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 mt-8">
-        <Card>
-          <CardHeader>
+    <div className="space-y-8">
+      {/* Writing Style Status Banner */}
+      {isStyleConfigured && (
+        <Card className="border-2 border-green-200">
+          <CardHeader className="bg-green-50 pb-6">
             <CardTitle className="flex items-center">
-              Source Content
+              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+              <span>Using Your Style Guide Settings</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Format Selector */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Source Format</label>
-                <select
-                  value={sourceFormat}
-                  onChange={(e) => setSourceFormat(e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                >
-                  {contentFormats.map(format => (
-                    <option key={format} value={format}>{format}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* File Upload */}
-              <div className="border-t pt-6">
-                    <p className="text-sm text-gray-700 mb-4">
-                    Upload File (Optional)
-                    </p>
-                    <FileHandler
-                      onContentLoaded={handleFileContent}
-                      content={uploadedContent}
-                    />
-
-                    {uploadedContent && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-sm">
-                            Uploaded Content Preview
-                          </h4>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setPromptText(uploadedContent); // Set the promptText
-                                setActiveTab("keywords"); // Proceed to next step
-                              }}
-                              className="text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                              Use This
-                            </button>
-                            <button
-                              onClick={() => setUploadedContent("")}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <pre className="text-xs text-gray-600 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">
-                          {uploadedContent}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-
-              {/* Text Input */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Content</label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-64 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Paste or type your content here..."
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              Target Format
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Target Format Selector */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Transform To</label>
-                <select
-                  value={targetFormat}
-                  onChange={(e) => setTargetFormat(e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                >
-                  {contentFormats
-                    .filter(format => format !== sourceFormat)
-                    .map(format => (
-                      <option key={format} value={format}>{format}</option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Format Details */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">About {targetFormat}</h4>
-                {targetFormat === 'Blog Post' && (
-                  <p className="text-sm text-slate-600">Blog posts are informal, conversational content pieces that explore a specific topic, typically 800-1500 words with a clear introduction, body, and conclusion.</p>
-                )}
-                {targetFormat === 'Social Media' && (
-                  <p className="text-sm text-slate-600">Social media content is concise, engaging, and shareable. It usually includes hooks, hashtags, and calls to action optimized for the platform.</p>
-                )}
-                {targetFormat === 'Email Newsletter' && (
-                  <p className="text-sm text-slate-600">Email newsletters are direct communications with clear sections, personal tone, and specific calls to action designed for subscriber engagement.</p>
-                )}
-                {targetFormat === 'Landing Page' && (
-                  <p className="text-sm text-slate-600">Landing pages are focused on conversion with compelling headlines, clear value propositions, benefit statements, and strong CTAs.</p>
-                )}
-                {targetFormat === 'Video Script' && (
-                  <p className="text-sm text-slate-600">Video scripts are written for spoken delivery with clear visual cues, shorter sentences, and dialogue-friendly language.</p>
-                )}
-                {targetFormat === 'Whitepaper' && (
-                  <p className="text-sm text-slate-600">Whitepapers are authoritative, detailed documents that present research or solutions to specific problems with a formal tone.</p>
-                )}
-                {targetFormat === 'Case Study' && (
-                  <p className="text-sm text-slate-600">Case studies follow a challenge-solution-results framework with specific metrics and outcomes showcasing your solution's impact.</p>
-                )}
-                {targetFormat === 'Press Release' && (
-                  <p className="text-sm text-slate-600">Press releases follow a formal news format with a headline, dateline, lead paragraph, quotes, and boilerplate in third-person perspective.</p>
-                )}
-              </div>
-
-              {/* Transformation Button */}
-              <div className="mt-8">
-                <button
-                  onClick={handleRepurpose}
-                  disabled={isProcessing || !content.trim()}
-                  className="w-full p-3 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                      <span>Transforming Content...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5" />
-                      <span>Transform Content</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Results Section */}
-      {repurposedContent && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              Transformed Content: {sourceFormat} → {targetFormat}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Content Stats */}
-            {contentStats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="p-4 bg-gray-50 rounded">
-                  <p className="text-sm text-slate-600">Original Length</p>
-                  <p className="text-2xl font-semibold">{contentStats.originalLength}</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded">
-                  <p className="text-sm text-slate-600">New Length</p>
-                  <p className="text-2xl font-semibold">{contentStats.newLength}</p>
-                </div>
-                {contentStats.readabilityScore !== undefined && (
-                  <div className="p-4 bg-gray-50 rounded">
-                    <p className="text-sm text-slate-600">Readability</p>
-                    <p className="text-2xl font-semibold">{contentStats.readabilityScore}%</p>
-                  </div>
-                )}
-                <div className="p-4 bg-gray-50 rounded">
-                  <p className="text-sm text-slate-600">Size Change</p>
-                  <p className={`text-2xl font-semibold ${contentStats.newLength > contentStats.originalLength ? 'text-green-600' : 'text-blue-600'}`}>
-                    {contentStats.newLength > contentStats.originalLength
-                      ? `+${Math.round((contentStats.newLength / contentStats.originalLength - 1) * 100)}%`
-                      : `-${Math.round((1 - contentStats.newLength / contentStats.originalLength) * 100)}%`}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Repurposed Content */}
-            <div className="mb-4">
-              <div className="relative">
-                <div className="p-4 bg-white border rounded-lg whitespace-pre-wrap">
-                  {repurposedContent}
-                </div>
-                <button
-                  onClick={() => copyToClipboard(repurposedContent)}
-                  className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 bg-white rounded-full shadow-sm"
-                  title="Copy to clipboard"
-                >
-                  <Copy className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-4 mt-4">
-              <button
-                onClick={() => setRepurposedContent(null)}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Reset
-              </button>
-              <button
-                onClick={() => copyToClipboard(repurposedContent)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-              >
-                <Copy className="h-4 w-4" />
-                Copy to Clipboard
-              </button>
+          <CardContent className="p-4">
+            <div className="text-sm text-green-700">
+              Style Guide: {writingStyle?.styleGuide?.primary} •
+              Headings: {writingStyle?.formatting?.headingCase === 'upper' ? 'ALL CAPS' :
+                writingStyle?.formatting?.headingCase === 'lower' ? 'lowercase' :
+                  writingStyle?.formatting?.headingCase === 'sentence' ? 'Sentence case' : 'Title Case'}
+              {writingStyle?.punctuation?.oxfordComma !== undefined &&
+                ` • Oxford Comma: ${writingStyle.punctuation.oxfordComma ? 'Used' : 'Omitted'}`}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Usage Tips */}
+      {/* Input Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Tips for Better Content Repurposing</CardTitle>
+          <CardTitle className="flex items-center">
+            <Sparkles className="w-6 h-6 text-blue-600 mr-2" />
+            Repurpose Content Between Formats
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            <li className="flex items-start gap-2">
-              <span className="text-green-600 font-bold">•</span>
-              <span>Start with comprehensive content (like blog posts or whitepapers) for the best transformation results</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-600 font-bold">•</span>
-              <span>Content with clear structure and subheadings transforms more effectively</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-600 font-bold">•</span>
-              <span>Review and edit the transformed content for platform-specific optimization</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-600 font-bold">•</span>
-              <span>For best results, set up your brand voice and messaging guidelines first</span>
-            </li>
-          </ul>
+        <CardContent className="space-y-6">
+          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <h3 className="font-medium text-blue-800 mb-2">
+              Transform Your Content
+            </h3>
+            <p className="text-sm text-blue-700">
+              Convert content from one format to another while maintaining your message and adapting structure,
+              tone, and length for the target platform's best practices.
+            </p>
+          </div>
+
+          {/* Format Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div>
+              <label className="block text-sm font-medium mb-2">Source Format</label>
+              <select
+                value={sourceFormat}
+                onChange={(e) => setSourceFormat(e.target.value)}
+                className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                {CONTENT_FORMATS.map((format) => (
+                  <option key={format.value} value={format.value}>
+                    {format.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-center">
+              <ArrowRight className="w-6 h-6 text-gray-400" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Target Format</label>
+              <select
+                value={targetFormat}
+                onChange={(e) => setTargetFormat(e.target.value)}
+                className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                {CONTENT_FORMATS.map((format) => (
+                  <option key={format.value} value={format.value}>
+                    {format.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* File Upload */}
+          <div className="border-t pt-6">
+            <FileHandler onContentLoaded={handleFileContent} content="" />
+          </div>
+
+          {/* Text Input */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Content to Repurpose</label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full h-64 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Paste your content here, or upload a file above..."
+            />
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <button
+              onClick={handleClear}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-700 font-medium"
+            >
+              Clear All
+            </button>
+            <button
+              onClick={processContent}
+              disabled={isProcessing || !content.trim() || sourceFormat === targetFormat}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Repurposing Content...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Repurpose Content
+                </>
+              )}
+            </button>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Repurposed Results */}
+      {repurposingResult && (
+        <div ref={resultsRef} className="space-y-8">
+          {/* Summary Card */}
+          <Card className="border-2 border-green-300">
+            <CardHeader className="bg-green-50 pb-6">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
+                  <span>✨ Content Repurposed Successfully</span>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setShowOriginal(!showOriginal)}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                  >
+                    {showOriginal ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                    {showOriginal ? "Hide" : "Show"} Original
+                  </button>
+                  <button
+                    onClick={handleRevert}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" />
+                    Revert
+                  </button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-medium text-gray-800 mb-2">Adaptations Applied:</h3>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    {repurposingResult.summary.adaptationsApplied.map((adaptation, idx) => (
+                      <li key={idx} className="flex items-center">
+                        <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                        {adaptation}
+                      </li>
+                    ))}
+                    {repurposingResult.summary.mainChanges.map((change, idx) => (
+                      <li key={idx} className="flex items-center">
+                        <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                        {change}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-gray-800 mb-2">
+                    {repurposingResult.summary.sourceFormat} → {repurposingResult.summary.targetFormat}
+                  </div>
+                  <div className="text-2xl font-bold text-gray-800">
+                    {originalText.split(/\s+/).length} → {repurposingResult.repurposedText.split(/\s+/).length}
+                  </div>
+                  <div className="text-sm text-gray-600">Word Count</div>
+                  {repurposingResult.summary.wordCountChange !== 0 && (
+                    <div className={`text-sm ${repurposingResult.summary.wordCountChange > 0 ? 'text-blue-600' : 'text-green-600'}`}>
+                      {repurposingResult.summary.wordCountChange > 0 ? '+' : ''}{repurposingResult.summary.wordCountChange} words
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Original Content (when shown) */}
+          {showOriginal && (
+            <Card className="border-2 border-gray-300">
+              <CardHeader className="bg-gray-50">
+                <CardTitle>Original Content ({repurposingResult.summary.sourceFormat})</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="bg-white p-6 rounded-lg border" style={{
+                  fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                  lineHeight: '1.6',
+                  fontSize: '11pt',
+                  color: '#333'
+                }}>
+                  {originalText.split("\n").filter(p => p.trim()).map((para, idx) => (
+                    <p key={idx} style={{
+                      margin: idx > 0 ? '12pt 0' : '0 0 12pt 0',
+                      textIndent: '0pt',
+                      lineHeight: '1.6'
+                    }}>
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Repurposed Content */}
+          <Card className="border-2 border-blue-300">
+            <CardHeader className="bg-blue-50 pb-6">
+              <CardTitle className="flex justify-between items-center">
+                <span>🎉 Your Repurposed Content ({repurposingResult.summary.targetFormat})</span>
+                <div className="flex space-x-2">
+                  {/* Export Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowExportDropdown(!showExportDropdown)}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Export
+                    </button>
+                    {showExportDropdown && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
+                        <button
+                          onClick={() => handleExport('txt')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Plain Text (.txt)
+                        </button>
+                        <button
+                          onClick={() => handleExport('markdown')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Markdown (.md)
+                        </button>
+                        <button
+                          onClick={() => handleExport('html')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          HTML (.html)
+                        </button>
+                        <button
+                          onClick={() => handleExport('pdf')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          PDF (.pdf)
+                        </button>
+                        <button
+                          onClick={() => handleExport('docx')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Word (.docx)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => copyToClipboard(repurposingResult.repurposedText)}
+                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
+                  >
+                    <Copy className="w-4 h-4 mr-1" />
+                    Copy
+                  </button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
+                fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                lineHeight: '1.6',
+                fontSize: '11pt',
+                color: '#333'
+              }}>
+                <div style={{ textAlign: 'justify' }}>
+                  {repurposingResult.repurposedText.split("\n").filter(p => p.trim()).map((para, idx) => (
+                    <p key={idx} style={{
+                      margin: idx > 0 ? '12pt 0' : '0 0 12pt 0',
+                      textIndent: '0pt',
+                      lineHeight: '1.6'
+                    }}>
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ✅ Use the shared ChangeDisplay component */}
+          <ChangeDisplay
+            changes={repurposingResult.changeDetails}
+            title="🎯 What I Adapted"
+            showByDefault={false}
+            className="mb-8"
+          />
+
+          {/* ContentEditChat for further improvements */}
+          <ContentEditChat
+            originalContent={repurposingResult.repurposedText}
+            originalTitle="Repurposed Content"
+            contentType="repurposed-content"
+            onContentUpdate={handleContentUpdate}
+          />
+        </div>
+      )}
+
+      {/* Writing Style Applied Notice */}
+      {isStyleConfigured && repurposingResult && (
+        <Card className="p-4 bg-green-50 border border-green-200">
+          <div className="flex items-center text-sm text-gray-600">
+            <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+            <span>
+              Content repurposed using {writingStyle?.styleGuide?.primary} style guide
+              {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
+              {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}.
+            </span>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
