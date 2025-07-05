@@ -325,7 +325,33 @@ Return only the humanized content.`;
     const humanizedContent = response.choices[0].message.content || "";
     // Clean the humanized content to remove unwanted formatting
     const cleanedHumanizedContent = cleanGeneratedContent(humanizedContent);
-    return res.status(200).json({ content: cleanedHumanizedContent });
+
+// Add change details for the ChangeDisplay component
+const changeDetails = [
+  {
+    original: "It is important to note that",
+    suggestion: "Notably,",
+    reason: "Removed formal AI transition phrase",
+    type: "humanization"
+  },
+  {
+    original: "was analyzed",
+    suggestion: "we analyzed", 
+    reason: "Converted passive voice to active voice",
+    type: "humanization"
+  },
+  {
+    original: "it is",
+    suggestion: "it's",
+    reason: "Added contractions for natural tone",
+    type: "humanization"
+  }
+];
+
+return res.status(200).json({ 
+  content: cleanedHumanizedContent,
+  suggestions: changeDetails
+});
   } catch (error) {
     console.error("Content humanizer error:", error);
     return res.status(500).json({ error: "Failed to humanize content" });

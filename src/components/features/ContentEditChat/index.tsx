@@ -1,5 +1,5 @@
 // src/components/features/ContentEditChat/index.tsx
-// SIMPLIFIED: Clean improvement flow with elegant change display
+// SIMPLIFIED: Clean improvement flow with elegant change display - FIXED
 
 import React, { useState } from "react";
 import {
@@ -151,14 +151,13 @@ const ContentEditChat: React.FC<ContentEditChatProps> = ({
       setError("Please enter what you'd like to improve");
       return;
     }
-  
+
     // ✅ CLEAR old suggestions when starting new improvement
     setShowSuggestion(false);
     setSuggestedContent('');
-    
+
     setIsImproving(true);
     setError(null);
-    
 
     try {
       console.log('🔧 Improving content with request:', improvementRequest);
@@ -237,11 +236,25 @@ MAKE SUBSTANTIAL CHANGES THAT CLEARLY ADDRESS THIS REQUEST.`
     // Update content
     onContentUpdate(suggestedContent, originalTitle);
 
-    // Clear EVERYTHING for clean state
+    // FORCE clear EVERYTHING immediately - multiple times for Vercel
     setShowSuggestion(false);
     setSuggestedContent('');
     setImprovementRequest('');
     setError(null);
+
+    // Force React to flush state updates in production
+    setTimeout(() => {
+      setShowSuggestion(false);
+      setSuggestedContent('');
+      setImprovementRequest('');
+      setError(null);
+    }, 0);
+
+    // Double-check after a short delay
+    setTimeout(() => {
+      setShowSuggestion(false);
+      setSuggestedContent('');
+    }, 100);
   };
 
   // Reject the suggestion - CLEAN EVERYTHING  
@@ -263,10 +276,10 @@ MAKE SUBSTANTIAL CHANGES THAT CLEARLY ADDRESS THIS REQUEST.`
   return (
     <div className="space-y-4">
       {/* Main improvement interface */}
-      <Card className="border-2 border-purple-200">
-        <CardHeader className="bg-purple-50 pb-6">
+      <Card className="border-2 border-gray-200">
+        <CardHeader className="bg-gray-50 pb-6">
           <CardTitle className="flex items-center">
-            <Wand2 className="w-5 h-5 text-purple-600 mr-2" />
+            <Wand2 className="w-5 h-5 text-gray-600 mr-2" />
             <span>Ask for Improvements</span>
           </CardTitle>
         </CardHeader>
@@ -290,7 +303,7 @@ MAKE SUBSTANTIAL CHANGES THAT CLEARLY ADDRESS THIS REQUEST.`
                     key={index}
                     onClick={() => handleQuickSuggestion(suggestion)}
                     disabled={isImproving}
-                    className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-full hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {suggestion}
                   </button>
@@ -306,7 +319,7 @@ MAKE SUBSTANTIAL CHANGES THAT CLEARLY ADDRESS THIS REQUEST.`
               <textarea
                 value={improvementRequest}
                 onChange={(e) => setImprovementRequest(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg h-24 focus:ring-2 focus:ring-purple-500"
+                className="w-full p-3 border border-gray-300 rounded-lg h-24 focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g., 'make the conclusion stronger', 'add more examples', 'make it less formal'"
                 disabled={isImproving}
               />
@@ -317,7 +330,7 @@ MAKE SUBSTANTIAL CHANGES THAT CLEARLY ADDRESS THIS REQUEST.`
               <button
                 onClick={handleImproveContent}
                 disabled={isImproving || !improvementRequest.trim()}
-                className="px-6 py-2 bg-purple-600 text-white rounded-md font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {isImproving ? (
                   <>

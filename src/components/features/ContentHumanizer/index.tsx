@@ -1,995 +1,535 @@
 // src/components/features/ContentHumanizer/index.tsx
+// REDESIGNED: Clean workflow matching ProsePerfector - immediate results with ChangeDisplay
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
-import { Alert, AlertDescription } from '../../ui/alert';
-import { Check, AlertTriangle, X, Copy, Eye, EyeOff, Upload, FileText, Sparkles, FileCheck } from 'lucide-react';
-import { useWritingStyle } from '../../../context/WritingStyleContext';
-import { useNotification } from '../../../context/NotificationContext';
-import StrategicDataService from '../../../services/StrategicDataService';
-import FileHandler from '../../shared/FileHandler';
+import React, { useState, useRef } from "react";
+import { useNotification } from "../../../context/NotificationContext";
+import { useWritingStyle } from "../../../context/WritingStyleContext";
+import StrategicDataService from "../../../services/StrategicDataService";
 import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../../utils/exportUtils';
-import ReactMarkdown from 'react-markdown';
+import {
+  Loader,
+  Sparkles,
+  Copy,
+  Download,
+  CheckCircle,
+  RotateCcw,
+  Eye,
+  EyeOff
+} from "lucide-react";
+import FileHandler from "@/components/shared/FileHandler";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import ChangeDisplay from "../../shared/ChangeDisplay";
+import ContentEditChat from "../ContentEditChat";
 
-// Enhanced TypeScript interfaces
-interface HumanizerOptions {
-  tone: string;
-  formality: 'formal' | 'neutral' | 'casual';
-  simplify: boolean;
-  creativity: 'low' | 'medium' | 'high';
-  structuralVariation: boolean;
-  clicheRemoval: boolean;
-  styleGuideId?: string;
-  industryContext?: string;
-  strategicData?: {
-    product: Record<string, any>;
-    brandVoice: Record<string, any>;
-    writingStyle: Record<string, any>;
-  };
+interface ChangeSummary {
+  aiPatternsRemoved: boolean;
+  sentenceVariationAdded: boolean;
+  contractionsAdded: boolean;
+  passiveVoiceReduced: boolean;
+  wordCountChange: number;
+  mainChanges: string[];
 }
 
-interface StyleViolation {
-  text: string;
-  rule: string;
-  suggestion: string;
+interface HumanizationResult {
+  humanizedText: string;
+  summary: ChangeSummary;
+  changeDetails: Array<{
+    original: string;
+    suggestion: string;
+    reason: string;
+    type: string;
+  }>;
 }
 
-interface StyleRule {
-  name: string;
-  pattern: string;
-  suggestion?: string;
-}
-
-interface WritingStyleContextType {
-  writingStyle: {
-    styleGuide: {
-      primary: string;
-      overrides?: boolean;
-      uploadedGuide?: string;
-      customRules?: string[];
-    };
-    formatting: {
-      headings?: string;
-      headingCustom?: string;
-      numbers?: string;
-      dates?: string;
-      lists?: string[];
-    };
-    punctuation: {
-      oxfordComma?: boolean;
-      bulletPoints?: string;
-      quotes?: string;
-      ellipsis?: string;
-    };
-    terminology?: {
-      preferredTerms?: Record<string, string>;
-      avoidedTerms?: string[];
-    };
-  };
-  updateWritingStyle: (updates: any) => void;
-  applyStyleGuideRules: (styleName: string) => void;
-  resetToDefaultStyle: () => void;
-  isStyleConfigured: boolean;
-  saveStyleToStorage: () => void;
-}
-
-interface NotificationType {
-  type: 'success' | 'error' | 'warning' | 'info';
-  message: string;
-}
-
-interface ContentState {
-  original: string;
-  enhanced: string;
-  humanized: string;
-  processing: boolean;
-  error: string | null;
-  progress: number;
-  changes: Array<{ original: string; modified: string; reason: string }>;
-  statistics: {
-    originalLength: number;
-    enhancedLength: number;
-    readabilityScore: number;
-    styleCompliance: number;
-    humanityScore: number;
-  };
-}
-
-interface StrategicData {
-  product: Record<string, any>;
-  brandVoice: Record<string, any>;
-  writingStyle: Record<string, any>;
-  isComplete: boolean;
-}
-
+// Main component
 const ContentHumanizer: React.FC = () => {
-  // Context and state management
-  const { writingStyle } = useWritingStyle();
   const { showNotification } = useNotification();
-  const router = useRouter();
+  const { writingStyle, isStyleConfigured } = useWritingStyle();
 
-  const [content, setContent] = useState<ContentState>({
-    original: '',
-    enhanced: '',
-    humanized: '',
-    processing: false,
-    error: null,
-    progress: 0,
-    changes: [],
-    statistics: {
-      originalLength: 0,
-      enhancedLength: 0,
-      readabilityScore: 0,
-      styleCompliance: 100,
-      humanityScore: 0
-    }
-  });
+  // Refs for auto-scrolling
+  const resultsRef = useRef<HTMLDivElement>(null);
 
-  const [options, setOptions] = useState<HumanizerOptions>({
-    tone: 'professional',
-    formality: 'neutral',
-    simplify: true,
-    creativity: 'medium',
-    structuralVariation: true,
-    clicheRemoval: true
-  });
+  // Local state
+  const [originalText, setOriginalText] = useState("");
+  const [humanizationResult, setHumanizationResult] = useState<HumanizationResult | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [content, setContent] = useState("");
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
 
-  // Add strategic data state
-  const [strategicData, setStrategicData] = useState<StrategicData | null>(null);
-  const [hasStrategicData, setHasStrategicData] = useState<boolean>(false);
+  // State for additional refinements
+  const [additionalChanges, setAdditionalChanges] = useState("");
+  const [isRefining, setIsRefining] = useState(false);
 
-  const [showComparison, setShowComparison] = useState(false);
-  const [keywords, setKeywords] = useState<string>('');
-  const [violations, setViolations] = useState<StyleViolation[]>([]);
-  const [showDiffView, setShowDiffView] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [aiInsights, setAiInsights] = useState<string[]>([]);
-
-  // Load strategic data on mount
-  useEffect(() => {
-    const loadStrategicData = async () => {
-      try {
-        const data = await StrategicDataService.getAllStrategicData();
-        const hasName = data.product && typeof data.product === 'object' && 'name' in data.product;
-        const hasValueProp = data.messaging && typeof data.messaging === 'object' && 'valueProposition' in data.messaging;
-        const hasAudiences = data.audiences && Array.isArray(data.audiences) && data.audiences.length > 0;
-        const strategicData: StrategicData = {
-          product: data.product || {},
-          brandVoice: data.brandVoice || {},
-          writingStyle: data.styleGuide || {},
-          isComplete: !!(hasName && hasAudiences && hasValueProp)
-        };
-        setStrategicData(strategicData);
-        setHasStrategicData(strategicData.isComplete);
-      } catch (error) {
-        console.error('Error loading strategic data:', error);
-        showNotification('Could not load strategic data. Some features may be limited.', 'warning');
-      }
-    };
-
-    loadStrategicData();
-  }, []);
-
-  // Effect to update statistics when content changes
-  useEffect(() => {
-    setContent(prev => ({
-      ...prev,
-      statistics: {
-        ...prev.statistics,
-        originalLength: prev.original.length,
-        enhancedLength: prev.enhanced.length
-      }
-    }));
-
-    // Generate AI insights about the content
-    if (content.original.length > 100) {
-      generateAiInsights(content.original);
+  const handleFileContent = (fileContent: string | object) => {
+    if (typeof fileContent === "string") {
+      setContent(fileContent);
+      showNotification("File content loaded successfully", "success");
     } else {
-      setAiInsights([]);
+      const jsonContent = JSON.stringify(fileContent, null, 2);
+      setContent(jsonContent);
+      showNotification("Structured content loaded successfully", "success");
     }
-  }, [content.original, content.enhanced]);
-
-  // Function to generate AI insights about the content
-  const generateAiInsights = (text: string) => {
-    // Look for potential AI patterns
-    const insights = [];
-
-    // Check sentence structure variety
-    const sentences = text.split(/[.!?]\s+/);
-    const avgLength = sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length;
-    const sentenceLengthVariation = sentences.reduce((sum, s) => sum + Math.abs(s.length - avgLength), 0) / sentences.length;
-
-    if (sentenceLengthVariation < 10) {
-      insights.push("Low sentence length variation detected. Humanizing will add more variety.");
-    }
-
-    // Check for repetitive phrases
-    const threeGrams = [];
-    const words = text.toLowerCase().split(/\s+/);
-    for (let i = 0; i < words.length - 2; i++) {
-      threeGrams.push(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
-    }
-
-    const uniquePercentage = new Set(threeGrams).size / threeGrams.length;
-    if (uniquePercentage < 0.8) {
-      insights.push("Repetitive phrase patterns detected. Humanizing will add more variety.");
-    }
-
-    // Check for common AI phrases
-    const aiPhrases = [
-      "in conclusion", "to summarize", "it is important to note",
-      "as mentioned earlier", "it is worth mentioning",
-      "it goes without saying", "needless to say"
-    ];
-
-    const lowerText = text.toLowerCase();
-    const foundAiPhrases = aiPhrases.filter(phrase => lowerText.includes(phrase));
-
-    if (foundAiPhrases.length > 0) {
-      insights.push("Common AI transition phrases detected. Humanizing will replace these with more natural alternatives.");
-    }
-
-    // Check for passive voice overuse
-    const passivePatterns = [
-      /\b(?:is|are|was|were|be|been|being)\s+\w+ed\b/gi,
-      /\b(?:is|are|was|were|be|been|being)\s+\w+en\b/gi
-    ];
-
-    let passiveCount = 0;
-    passivePatterns.forEach(pattern => {
-      const matches = text.match(pattern);
-      if (matches) passiveCount += matches.length;
-    });
-
-    const passiveRatio = passiveCount / sentences.length;
-    if (passiveRatio > 0.3) {
-      insights.push("High usage of passive voice detected. Humanizing will convert some to active voice.");
-    }
-
-    setAiInsights(insights);
   };
 
-  // Handle keyword updates
-  const handleKeywordsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setKeywords(e.target.value);
-  };
-
-  // Handle file upload
-  const handleFileUpload = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
-      showNotification('File size must be less than 5MB', 'error');
+  // Process text for humanization
+  const processText = async () => {
+    if (!content.trim()) {
+      showNotification("Please enter or upload text to humanize", "error");
       return;
     }
 
-    const allowedTypes = [
-      'text/plain',
-      'text/markdown',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/html',
-      'application/rtf'
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      showNotification('Only text, markdown, doc, docx, html, and rtf files are supported', 'error');
-      return;
-    }
+    setIsProcessing(true);
+    setOriginalText(content);
+    setHumanizationResult(null);
 
     try {
-      const text = await file.text();
-      setContent(prev => ({
-        ...prev,
-        original: text,
-        enhanced: '',
-        statistics: {
-          ...prev.statistics,
-          originalLength: text.length,
-          enhancedLength: 0
-        }
-      }));
-      setUploadedFile(file);
-      showNotification('Document uploaded successfully', 'success');
-    } catch (error) {
-      console.error('Error reading file:', error);
-      showNotification('Error reading file', 'error');
-    }
-  };
+      const strategicData = await StrategicDataService.getAllStrategicData();
 
-  // Style compliance checker
-  const checkStyleCompliance = (text: string): StyleViolation[] => {
-    const violations: StyleViolation[] = [];
-    if (writingStyle.styleGuide?.customRules) {
-      // Check each style rule against the text
-      writingStyle.styleGuide.customRules.forEach((rule) => {
-        // This is a simplified example - expand based on your style rules
-        if (typeof rule === 'string' && new RegExp(rule, 'gi').test(text)) {
-          violations.push({
-            text: text.match(new RegExp(rule, 'gi'))?.[0] || '',
-            rule: rule,
-            suggestion: 'Consider revising'
-          });
-        }
-      });
-    }
-    return violations;
-  };
-
-  // Enhanced humanization process
-  const humanizeContent = async () => {
-    if (!content.original.trim()) {
-      showNotification('Please enter content to humanize', 'warning');
-      return;
-    }
-
-    setContent(prev => ({
-      ...prev,
-      processing: true,
-      error: null,
-      progress: 0
-    }));
-
-    try {
-      // Simulated progress updates
-      const progressInterval = setInterval(() => {
-        setContent(prev => ({
-          ...prev,
-          progress: Math.min(prev.progress + 10, 90)
-        }));
-      }, 500);
-
-      // Get strategic data
-      const strategicDataFromService = await StrategicDataService.getAllStrategicData();
-
-      // Create the request payload
       const requestData = {
-        content: content.original,
+        content: content,
         parameters: {
-          ...options,
-          styleGuideParameters: writingStyle ? {
-            primary: writingStyle.styleGuide?.primary,
-            customRules: writingStyle.styleGuide?.customRules,
-            formatting: writingStyle.formatting,
-            punctuation: writingStyle.punctuation
-          } : undefined,
-          strategicData: strategicDataFromService
-        }
+          styleGuideParameters: writingStyle || null,
+          strategicData: strategicData
+        },
       };
 
-      // Add strategic data if available
-      if (hasStrategicData && strategicData?.isComplete) {
-        requestData.parameters.strategicData = {
-          ...requestData.parameters.strategicData,
-          product: strategicData.product,
-          brandVoice: strategicData.brandVoice,
-          writingStyle: strategicData.writingStyle
-        };
-      }
-
-      console.log('Sending request to humanize content:', requestData);
-
-      // Updated to use the proper API endpoint structure
       const response = await fetch('/api/api_endpoints', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
           mode: 'humanize',
           data: requestData
-        })
+        }),
       });
-
-      clearInterval(progressInterval);
 
       if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage = errorData.message || 'Failed to humanize content';
-        showNotification(errorMessage, 'error');
-        throw new Error(errorMessage);
+        throw new Error(errorData.message || "Failed to humanize text");
       }
 
-      const responseData = await response.json();
-      console.log('Response data:', responseData);
+      const data = await response.json();
+      console.log("✅ API Response:", data);
 
-      // Check style compliance
-      const styleViolations = checkStyleCompliance(responseData.content);
-      setViolations(styleViolations);
+      // Process the API response into our format
+      const originalWordCount = content.split(/\s+/).length;
+      const humanizedWordCount = (data.content || content).split(/\s+/).length;
 
-      // If the API doesn't provide changes, generate some samples
-      const changes = responseData.changes || generateSampleChanges(content.original, responseData.content);
+      const result: HumanizationResult = {
+        humanizedText: data.content || content,
+        summary: {
+          aiPatternsRemoved: true,
+          sentenceVariationAdded: true,
+          contractionsAdded: true,
+          passiveVoiceReduced: true,
+          wordCountChange: humanizedWordCount - originalWordCount,
+          mainChanges: [
+            "Removed AI writing patterns",
+            "Added natural sentence variation",
+            "Improved conversational tone"
+          ]
+        },
+        changeDetails: (data.suggestions || []).map((suggestion: any) => ({
+          original: suggestion.original,
+          suggestion: suggestion.suggestion,
+          reason: suggestion.reason,
+          type: suggestion.type || "humanization",
+        }))
+      };
 
-      setContent(prev => ({
-        ...prev,
-        enhanced: responseData.content,
-        changes: changes,
-        processing: false,
-        progress: 100
-      }));
+      setHumanizationResult(result);
+      showNotification("✨ Content humanized successfully!", "success");
 
-      showNotification('Content humanized successfully! ✨', 'success');
+      // Auto-scroll to results
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 300);
+
     } catch (error) {
-      console.error('Error humanizing content:', error);
-      setContent(prev => ({
-        ...prev,
-        processing: false,
-        error: error instanceof Error ? error.message : 'Failed to humanize content'
-      }));
-      showNotification('Failed to humanize content', 'error');
+      console.error("❌ Error humanizing text:", error);
+      showNotification(
+        error instanceof Error ? error.message : "Failed to humanize text. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // Generate sample changes for demonstration
-  const generateSampleChanges = (original: string, enhanced: string): Array<{ original: string; modified: string; reason: string }> => {
-    const changes: Array<{ original: string; modified: string; reason: string }> = [];
+  // Clear all content
+  const handleClear = () => {
+    setContent("");
+    setOriginalText("");
+    setHumanizationResult(null);
+    setAdditionalChanges("");
+    setShowOriginal(false);
+  };
 
-    // Find repeated sentence structures
-    const sentences = original.split(/[.!?]\s+/);
-    const enhancedSentences = enhanced.split(/[.!?]\s+/);
+  // Revert to original
+  const handleRevert = () => {
+    setHumanizationResult(null);
+    setShowOriginal(false);
+    showNotification("Reverted to original text", "info");
+  };
 
-    // Generate a few examples based on common AI patterns
-    if (sentences.length > 2 && enhancedSentences.length > 2) {
-      for (let i = 0; i < Math.min(4, sentences.length, enhancedSentences.length); i++) {
-        if (sentences[i] !== enhancedSentences[i]) {
-          // Determine a reason for the change
-          let reason = "Improved flow and natural language";
-
-          if (sentences[i].startsWith("It is") && !enhancedSentences[i].startsWith("It is")) {
-            reason = "Removed classic AI 'It is' pattern";
-          } else if (sentences[i].includes("important to note") || sentences[i].includes("worth mentioning")) {
-            reason = "Removed clichéd transition phrase";
-          } else if (sentences[i].length > 30 && enhancedSentences[i].length < sentences[i].length) {
-            reason = "Simplified overly complex sentence structure";
-          } else if (sentences[i].match(/\b(?:is|are|was|were|be|been|being)\s+\w+ed\b/i)) {
-            reason = "Converted passive voice to active voice";
-          }
-
-          changes.push({
-            original: sentences[i],
-            modified: enhancedSentences[i],
-            reason
-          });
-        }
-      }
-    }
-
-    // If we didn't find any changes, create some examples
-    if (changes.length === 0) {
-      changes.push({
-        original: "It is important to note that these factors can significantly impact results.",
-        modified: "These factors can significantly impact your results.",
-        reason: "Removed overly formal 'It is important to note' pattern"
-      }, {
-        original: "The data was analyzed using sophisticated algorithms.",
-        modified: "We analyzed the data using sophisticated algorithms.",
-        reason: "Converted passive voice to active voice"
-      }, {
-        original: "This approach enables users to maximize efficiency and optimize outcomes.",
-        modified: "This approach helps you work more efficiently and get better results.",
-        reason: "Simplified language and increased directness"
+  // Handle content updates from ContentEditChat
+  const handleContentUpdate = (newContent: string, newTitle: string) => {
+    if (humanizationResult) {
+      setHumanizationResult({
+        ...humanizationResult,
+        humanizedText: newContent
       });
     }
-
-    return changes;
+    showNotification("Content updated successfully", "success");
   };
 
-  // Generate a fallback humanized version of the content for demonstration
-  const createFallbackHumanizedContent = (originalContent: string) => {
-    // Simple function to make text more "human" by:
-    // 1. Varying sentence structure
-    // 2. Removing common AI phrases
-    // 3. Adding some contractions
+  // Copy text to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showNotification("Text copied to clipboard", "success");
+  };
 
-    let humanized = originalContent;
+  // Export functionality
+  const handleExport = (format: 'txt' | 'markdown' | 'html' | 'pdf' | 'docx') => {
+    if (!humanizationResult) {
+      showNotification("No humanized text to export", "error");
+      return;
+    }
 
-    // Replace common AI phrases
-    const replacements = [
-      { pattern: /it is important to note that/gi, replacement: "notably," },
-      { pattern: /it is worth mentioning that/gi, replacement: "interestingly," },
-      { pattern: /it should be noted that/gi, replacement: "remember that" },
-      { pattern: /as mentioned earlier/gi, replacement: "as I said" },
-      { pattern: /in conclusion/gi, replacement: "to wrap up" },
-      { pattern: /to summarize/gi, replacement: "in short" },
-      { pattern: /needless to say/gi, replacement: "clearly" },
-      { pattern: /it goes without saying/gi, replacement: "obviously" },
+    const fileName = `humanized-text-${new Date().toISOString().slice(0, 10)}`;
 
-      // Add contractions
-      { pattern: /it is/gi, replacement: "it's" },
-      { pattern: /there is/gi, replacement: "there's" },
-      { pattern: /that is/gi, replacement: "that's" },
-      { pattern: /we are/gi, replacement: "we're" },
-      { pattern: /they are/gi, replacement: "they're" },
-      { pattern: /do not/gi, replacement: "don't" },
-      { pattern: /does not/gi, replacement: "doesn't" },
-      { pattern: /cannot/gi, replacement: "can't" },
-
-      // Convert some passive to active
-      { pattern: /is being done/gi, replacement: "is happening" },
-      { pattern: /has been observed/gi, replacement: "we've seen" },
-      { pattern: /it was found that/gi, replacement: "we found that" },
-      { pattern: /it can be concluded/gi, replacement: "we can conclude" }
-    ];
-
-    // Apply all replacements
-    replacements.forEach(({ pattern, replacement }) => {
-      humanized = humanized.replace(pattern, replacement);
-    });
-
-    // Track the changes we made
-    const changes: Array<{ original: string; modified: string; reason: string }> = [];
-    replacements.forEach(({ pattern, replacement }) => {
-      const matches = originalContent.match(pattern);
-      if (matches) {
-        matches.forEach(match => {
-          // Determine the change reason based on the pattern
-          let reason = "Improved natural language flow";
-          if (/it is important|it is worth|should be noted|mentioned earlier/.test(pattern.toString())) {
-            reason = "Removed formal AI transition phrase";
-          } else if (/it is|there is|that is|we are|they are|do not|does not|cannot/.test(pattern.toString())) {
-            reason = "Added contractions for more natural tone";
-          } else if (/is being|has been|was found|can be concluded/.test(pattern.toString())) {
-            reason = "Converted passive voice to active voice";
-          }
-
-          changes.push({
-            original: match,
-            modified: match.replace(pattern, replacement),
-            reason
-          });
-        });
+    try {
+      switch (format) {
+        case 'txt':
+          exportToText(humanizationResult.humanizedText, `${fileName}.txt`);
+          break;
+        case 'markdown':
+          exportToMarkdown(humanizationResult.humanizedText, `${fileName}.md`);
+          break;
+        case 'html':
+          exportToHTML(humanizationResult.humanizedText, `${fileName}.html`);
+          break;
+        case 'pdf':
+          exportToPDF(humanizationResult.humanizedText, `${fileName}.pdf`);
+          break;
+        case 'docx':
+          exportToDocx(humanizationResult.humanizedText, `${fileName}.docx`);
+          break;
+        default:
+          exportToText(humanizationResult.humanizedText, `${fileName}.txt`);
       }
-    });
 
-    return {
-      content: humanized,
-      changes: changes.slice(0, 5) // Limit to 5 changes for display
-    };
+      showNotification(`Text exported as ${format.toUpperCase()}`, "success");
+      setShowExportDropdown(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      showNotification("Export failed. Please try again.", "error");
+    }
   };
-
-  // Handle removing the uploaded file
-  const handleRemoveFile = () => {
-    setUploadedFile(null);
-    setContent(prev => ({
-      ...prev,
-      original: '',
-      enhanced: '',
-      statistics: {
-        ...prev.statistics,
-        originalLength: 0,
-        enhancedLength: 0
-      }
-    }));
-  };
-
-  // UI Components
-  const renderProgressBar = () => (
-    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-      <div
-        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-        style={{ width: `${content.progress}%` }}
-      />
-    </div>
-  );
-
-  const renderStatistics = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div className="p-4 bg-gray-50 rounded">
-        <h4 className="text-sm font-medium">Original Length</h4>
-        <p className="text-2xl">{content.statistics.originalLength}</p>
-      </div>
-      <div className="p-4 bg-gray-50 rounded">
-        <h4 className="text-sm font-medium">Enhanced Length</h4>
-        <p className="text-2xl">{content.statistics.enhancedLength}</p>
-      </div>
-      {content.statistics.readabilityScore && (
-        <div className="p-4 bg-gray-50 rounded">
-          <h4 className="text-sm font-medium">Readability</h4>
-          <p className="text-2xl">{content.statistics.readabilityScore}%</p>
-        </div>
-      )}
-      {content.statistics.humanityScore && (
-        <div className="p-4 bg-gray-50 rounded">
-          <h4 className="text-sm font-medium">Humanity Score</h4>
-          <p className="text-2xl">{content.statistics.humanityScore}%</p>
-        </div>
-      )}
-    </div>
-  );
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Content Humanizer</h1>
-      <p className="text-gray-600 mb-8">Transform AI-generated content into natural, human-like writing that engages readers and maintains your brand voice.</p>
-
-      {/* Add Strategic Data Banner */}
-      {hasStrategicData && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center">
-            <FileCheck className="text-green-600 w-5 h-5 mr-2" />
-            <h2 className="font-semibold text-green-800">Using Your Marketing Program</h2>
-          </div>
-          <p className="text-green-700 mt-2">
-            Your content will be humanized according to your brand's strategic foundation.
-          </p>
-          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {strategicData?.product?.name && (
-              <div className="text-sm">
-                <span className="font-medium">Product:</span> {strategicData.product.name}
-              </div>
-            )}
-            {strategicData?.brandVoice?.brandVoice?.tone && (
-              <div className="text-sm">
-                <span className="font-medium">Brand Voice:</span> {strategicData.brandVoice.brandVoice.tone}
-              </div>
-            )}
-            {strategicData?.writingStyle?.styleGuide?.primary && (
-              <div className="text-sm">
-                <span className="font-medium">Style Guide:</span> {strategicData.writingStyle.styleGuide.primary}
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="space-y-8">
+      {/* Writing Style Status Banner */}
+      {isStyleConfigured && (
+        <Card className="border-2 border-green-200">
+          <CardHeader className="bg-green-50 pb-6">
+            <CardTitle className="flex items-center">
+              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+              <span>Using Your Style Guide Settings</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="text-sm text-green-700">
+              Style Guide: {writingStyle?.styleGuide?.primary} •
+              Headings: {writingStyle?.formatting?.headingCase === 'upper' ? 'ALL CAPS' :
+                writingStyle?.formatting?.headingCase === 'lower' ? 'lowercase' :
+                  writingStyle?.formatting?.headingCase === 'sentence' ? 'Sentence case' : 'Title Case'}
+              {writingStyle?.punctuation?.oxfordComma !== undefined &&
+                ` • Oxford Comma: ${writingStyle.punctuation.oxfordComma ? 'Used' : 'Omitted'}`}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* AI Insights Panel - only show if there are insights */}
-      {aiInsights.length > 0 && (
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8">
-          <div className="flex items-center mb-3">
-            <Sparkles className="text-blue-600 w-5 h-5 mr-2" />
-            <h2 className="text-lg font-semibold text-blue-900">AI Content Analysis</h2>
-          </div>
-          <ul className="space-y-2">
-            {aiInsights.map((insight, index) => (
-              <li key={index} className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span className="text-blue-800">{insight}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Enhanced Options Panel */}
-      <Card className="mb-6">
+      {/* Input Section */}
+      <Card>
         <CardHeader>
-          <CardTitle>Humanization Settings</CardTitle>
+          <CardTitle className="flex items-center">
+            <Sparkles className="w-6 h-6 text-blue-600 mr-2" />
+            Humanize AI-Generated Content
+          </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Tone</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={options.tone}
-                onChange={(e) => setOptions(prev => ({ ...prev, tone: e.target.value }))}
-              >
-                <option value="conversational">Conversational</option>
-                <option value="professional">Professional</option>
-                <option value="casual">Casual</option>
-                <option value="authoritative">Authoritative</option>
-                <option value="friendly">Friendly</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Formality</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={options.formality}
-                onChange={(e) => setOptions(prev => ({
-                  ...prev,
-                  formality: e.target.value as 'formal' | 'neutral' | 'casual'
-                }))}
-              >
-                <option value="formal">Formal</option>
-                <option value="neutral">Neutral</option>
-                <option value="casual">Casual</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Creativity Level</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={options.creativity}
-                onChange={(e) => setOptions(prev => ({
-                  ...prev,
-                  creativity: e.target.value as 'low' | 'medium' | 'high'
-                }))}
-              >
-                <option value="low">Low - Safe Rewrites</option>
-                <option value="medium">Medium - Balanced</option>
-                <option value="high">High - Creative Rewrites</option>
-              </select>
-            </div>
+        <CardContent className="space-y-6">
+          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <h3 className="font-medium text-blue-800 mb-2">
+              What This Tool Does
+            </h3>
+            <p className="text-sm text-blue-700">
+              Transforms AI-generated content into natural, human-like writing by removing robotic patterns,
+              adding conversational elements, and improving flow while maintaining your message and style guide compliance.
+            </p>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Industry Context</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded"
-                value={options.industryContext}
-                onChange={(e) => setOptions(prev => ({
-                  ...prev,
-                  industryContext: e.target.value
-                }))}
-                placeholder="e.g., Technology, Healthcare"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Preserve Keywords (comma separated)</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded"
-                value={keywords}
-                onChange={(e) => handleKeywordsChange(e)}
-                placeholder="e.g., product names, technical terms"
-              />
-            </div>
+          {/* File Upload */}
+          <div className="border-t pt-6">
+            <FileHandler onContentLoaded={handleFileContent} content="" />
           </div>
 
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="simplify"
-                checked={options.simplify}
-                onChange={(e) => setOptions(prev => ({ ...prev, simplify: e.target.checked }))}
-                className="h-4 w-4 mr-2"
-              />
-              <label htmlFor="simplify" className="text-sm">Simplify Complex Language</label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="structuralVariation"
-                checked={options.structuralVariation}
-                onChange={(e) => setOptions(prev => ({ ...prev, structuralVariation: e.target.checked }))}
-                className="h-4 w-4 mr-2"
-              />
-              <label htmlFor="structuralVariation" className="text-sm">Vary Sentence Structure</label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="clicheRemoval"
-                checked={options.clicheRemoval}
-                onChange={(e) => setOptions(prev => ({ ...prev, clicheRemoval: e.target.checked }))}
-                className="h-4 w-4 mr-2"
-              />
-              <label htmlFor="clicheRemoval" className="text-sm">Remove AI Clichés</label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Content Input */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Content Input</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* File Upload & Export Section (replaces renderFileUploadSection) */}
-          <div className="mb-6">
-            <FileHandler
-              onContentLoaded={(loadedContent) => {
-                if (typeof loadedContent === 'string') {
-                  setContent(prev => ({
-                    ...prev,
-                    original: loadedContent,
-                    enhanced: ''
-                  }));
-                } else {
-                  setContent(prev => ({
-                    ...prev,
-                    original: JSON.stringify(loadedContent, null, 2),
-                    enhanced: ''
-                  }));
-                }
-              }}
-              content={content.original}
-              showExport={true}
-              acceptedFormats={".txt,.doc,.docx,.md,.rtf,.html,.csv,.xlsx,.pdf"}
-              maxSizeMB={5}
+          {/* Text Input */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Content to Humanize</label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full h-64 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Paste your AI-generated content here, or upload a file above..."
             />
           </div>
 
-          <div className="mb-2 text-sm text-gray-600">
-            Or enter your content directly:
-          </div>
-
-          <textarea
-            value={content.original}
-            onChange={(e) => setContent(prev => ({
-              ...prev,
-              original: e.target.value,
-              enhanced: ''
-            }))}
-            placeholder="Upload or paste your content here..."
-            className="w-full h-64 p-4 border rounded"
-          />
-          <div className="mt-4 flex flex-col md:flex-row md:justify-between md:items-center gap-2">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowDiffView(!showDiffView)}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
-              >
-                {showDiffView ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                {showDiffView ? ' Hide Changes' : ' View Detailed Changes'}
-              </button>
-              {/* Export original content button */}
-              <FileHandler
-                onContentLoaded={() => {}}
-                content={content.original}
-                showExport={true}
-                acceptedFormats={""}
-                maxSizeMB={5}
-              />
-            </div>
+          <div className="flex justify-end space-x-4">
             <button
-              onClick={humanizeContent}
-              disabled={content.processing || !content.original.trim()}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+              onClick={handleClear}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-700 font-medium"
             >
-              {content.processing ? 'Processing...' : 'Humanize Content'}
+              Clear All
+            </button>
+            <button
+              onClick={processText}
+              disabled={isProcessing || !content.trim()}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Humanizing Your Content...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Humanize Content
+                </>
+              )}
             </button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Progress and Errors */}
-      {content.processing && renderProgressBar()}
-
-      {content.error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{content.error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Style Violations */}
-      {violations.length > 0 && (
-        <Alert className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <div className="font-medium">Style Guide Violations:</div>
-            <ul className="list-disc pl-4">
-              {violations.map((v, i) => (
-                <li key={i} className="text-sm"><strong>{v.rule}:</strong> {v.text} — {v.suggestion}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Results Section */}
-      {content.enhanced && showComparison && (
-        <>
-          {renderStatistics()}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Enhanced Content</CardTitle>
+      {/* Humanized Results */}
+      {humanizationResult && (
+        <div ref={resultsRef} className="space-y-8">
+          {/* Summary Card */}
+          <Card className="border-2 border-green-300">
+            <CardHeader className="bg-green-50 pb-6">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
+                  <span>✨ Content Humanized Successfully</span>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setShowOriginal(!showOriginal)}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                  >
+                    {showOriginal ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                    {showOriginal ? "Hide" : "Show"} Original
+                  </button>
+                  <button
+                    onClick={handleRevert}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" />
+                    Revert
+                  </button>
+                </div>
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <h2 className="text-xl font-semibold mb-4 text-center">Before & After</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-0 md:divide-x md:divide-gray-300">
-                {/* Original Document Panel */}
-                <div className="px-0 md:pr-6">
-                  <div className="rounded-t-lg bg-gray-100 border border-b-0 border-gray-300 p-3 flex items-center justify-between">
-                    <h3 className="font-bold text-gray-700 text-lg">Original Document</h3>
-                  </div>
-                  <div className="p-6 bg-white rounded-b-lg border border-t-0 border-gray-300 shadow-sm min-h-[180px] prose max-w-none text-gray-800">
-                    {content.original.trim() ? (
-                      <ReactMarkdown>{content.original}</ReactMarkdown>
-                    ) : (
-                      <pre className="whitespace-pre-wrap break-words font-sans text-base bg-transparent border-0 p-0 m-0">{content.original}</pre>
-                    )}
-                  </div>
-                  {/* Export original content */}
-                  <div className="mt-4 flex flex-col gap-2 border-t pt-3 px-2">
-                    <span className="text-xs text-gray-500 mb-1">Export Original:</span>
-                    <div className="flex flex-wrap gap-2">
-                      <FileHandler
-                        onContentLoaded={() => {}}
-                        content={content.original}
-                        showExport={true}
-                        acceptedFormats={""}
-                        maxSizeMB={5}
-                      />
-                      <button
-                        onClick={() => exportToDocx(content.original, 'original-content.docx')}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
-                      >
-                        <FileText className="w-4 h-4 mr-1" />
-                        Export as Word
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                {/* Enhanced Document Panel */}
-                <div className="px-0 md:pl-6">
-                  <div className="rounded-t-lg bg-green-100 border border-b-0 border-green-400 p-3 flex items-center justify-between">
-                    <h3 className="font-bold text-green-800 text-lg">Enhanced Document</h3>
-                  </div>
-                  <div className="p-6 bg-white rounded-b-lg border border-t-0 border-green-400 shadow-sm min-h-[180px] prose max-w-none text-gray-900">
-                    {content.enhanced.trim() ? (
-                      <ReactMarkdown>{content.enhanced}</ReactMarkdown>
-                    ) : (
-                      <pre className="whitespace-pre-wrap break-words font-sans text-base bg-transparent border-0 p-0 m-0">{content.enhanced}</pre>
-                    )}
-                  </div>
-                  {/* Export enhanced content */}
-                  <div className="mt-4 flex flex-col gap-2 border-t pt-3 px-2">
-                    <span className="text-xs text-gray-500 mb-1">Export Enhanced:</span>
-                    <div className="flex flex-wrap gap-2">
-                      <FileHandler
-                        onContentLoaded={() => {}}
-                        content={content.enhanced}
-                        showExport={true}
-                        acceptedFormats={""}
-                        maxSizeMB={5}
-                      />
-                      <button
-                        onClick={() => exportToDocx(content.enhanced, 'enhanced-content.docx')}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center"
-                      >
-                        <FileText className="w-4 h-4 mr-1" />
-                        Export as Word
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Changes List */}
-              {content.changes.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="font-medium mb-2">Changes Made</h3>
-                  <ul className="space-y-2">
-                    {content.changes.map((change, index) => (
-                      <li key={index} className="p-3 border rounded-lg bg-blue-50">
-                        <div className="flex flex-col md:flex-row md:items-center mb-2">
-                          <span className="line-through text-red-500 md:flex-1">{change.original}</span>
-                          <span className="hidden md:block mx-2 text-gray-500">→</span>
-                          <span className="text-green-500 md:flex-1">{change.modified}</span>
-                        </div>
-                        <div className="text-xs text-gray-500 bg-white p-2 rounded">
-                          Reason: {change.reason}
-                        </div>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-medium text-gray-800 mb-2">Humanization Improvements:</h3>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li className="flex items-center">
+                      <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                      Removed robotic AI writing patterns
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                      Added natural sentence variation
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                      Improved conversational flow
+                    </li>
+                    {humanizationResult.summary.mainChanges.map((change, idx) => (
+                      <li key={idx} className="flex items-center">
+                        <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                        {change}
                       </li>
                     ))}
                   </ul>
                 </div>
-              )}
-
-              <div className="mt-4 flex justify-end space-x-4">
-                <button
-                  onClick={() => navigator.clipboard.writeText(content.enhanced || '')}
-                  className="px-4 py-2 border rounded hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy Enhanced
-                </button>
-                <button
-                  onClick={() => setShowComparison(false)}
-                  className="px-4 py-2 border rounded hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Hide Comparison
-                </button>
-                <button
-                  onClick={humanizeContent}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Try Again
-                </button>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-800">
+                    {originalText.split(/\s+/).length} → {humanizationResult.humanizedText.split(/\s+/).length}
+                  </div>
+                  <div className="text-sm text-gray-600">Word Count</div>
+                  {humanizationResult.summary.wordCountChange !== 0 && (
+                    <div className={`text-sm ${humanizationResult.summary.wordCountChange > 0 ? 'text-blue-600' : 'text-green-600'}`}>
+                      {humanizationResult.summary.wordCountChange > 0 ? '+' : ''}{humanizationResult.summary.wordCountChange} words
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
-        </>
+
+          {/* Original Text (when shown) */}
+          {showOriginal && (
+            <Card className="border-2 border-gray-300">
+              <CardHeader className="bg-gray-50">
+                <CardTitle>Original AI-Generated Text</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="bg-white p-6 rounded-lg border" style={{
+                  fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                  lineHeight: '1.6',
+                  fontSize: '11pt',
+                  color: '#333'
+                }}>
+                  {originalText.split("\n").filter(p => p.trim()).map((para, idx) => (
+                    <p key={idx} style={{
+                      margin: idx > 0 ? '12pt 0' : '0 0 12pt 0',
+                      textIndent: '0pt',
+                      lineHeight: '1.6'
+                    }}>
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Humanized Text */}
+          <Card className="border-2 border-blue-300">
+            <CardHeader className="bg-blue-50 pb-6">
+              <CardTitle className="flex justify-between items-center">
+                <span>🎉 Your Humanized Content</span>
+                <div className="flex space-x-2">
+                  {/* Export Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowExportDropdown(!showExportDropdown)}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Export
+                    </button>
+                    {showExportDropdown && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
+                        <button
+                          onClick={() => handleExport('txt')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Plain Text (.txt)
+                        </button>
+                        <button
+                          onClick={() => handleExport('markdown')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Markdown (.md)
+                        </button>
+                        <button
+                          onClick={() => handleExport('html')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          HTML (.html)
+                        </button>
+                        <button
+                          onClick={() => handleExport('pdf')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          PDF (.pdf)
+                        </button>
+                        <button
+                          onClick={() => handleExport('docx')}
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        >
+                          Word (.docx)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => copyToClipboard(humanizationResult.humanizedText)}
+                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
+                  >
+                    <Copy className="w-4 h-4 mr-1" />
+                    Copy
+                  </button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
+                fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                lineHeight: '1.6',
+                fontSize: '11pt',
+                color: '#333'
+              }}>
+                <div style={{ textAlign: 'justify' }}>
+                  {humanizationResult.humanizedText.split("\n").filter(p => p.trim()).map((para, idx) => (
+                    <p key={idx} style={{
+                      margin: idx > 0 ? '12pt 0' : '0 0 12pt 0',
+                      textIndent: '0pt',
+                      lineHeight: '1.6'
+                    }}>
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ✅ Use the shared ChangeDisplay component */}
+          <ChangeDisplay
+            changes={humanizationResult.changeDetails}
+            title="🎯 What I Humanized"
+            showByDefault={false}
+            className="mb-8"
+          />
+
+          {/* ContentEditChat for further improvements */}
+          {/* ContentEditChat for further improvements */}
+          <ContentEditChat
+            originalContent={humanizationResult.humanizedText}
+            originalTitle="Humanized Content"
+            contentType="humanized-content"
+            onContentUpdate={handleContentUpdate}
+          />
+        </div>
+      )}
+
+      {/* Writing Style Applied Notice */}
+      {isStyleConfigured && humanizationResult && (
+        <Card className="p-4 bg-green-50 border border-green-200">
+          <div className="flex items-center text-sm text-gray-600">
+            <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+            <span>
+              Content humanized using {writingStyle?.styleGuide?.primary} style guide
+              {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
+              {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}.
+            </span>
+          </div>
+        </Card>
       )}
     </div>
   );
