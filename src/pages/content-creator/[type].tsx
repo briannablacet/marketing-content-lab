@@ -77,7 +77,8 @@ function cleanGeneratedContent(content: string): string {
   cleaned = cleaned.replace(/^Engaging Opening\s*$/gm, '## Introduction');
   cleaned = cleaned.replace(/^Engaging opening\s*$/gm, '## Introduction'); // ADD THIS (lowercase)
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-
+  // Add this line AFTER all your existing replace statements, before the return:
+  cleaned = cleaned.replace(/^([A-Z][A-Za-z\s]{15,60})$/gm, '## $1');
   return cleaned.trim();
 }
 
