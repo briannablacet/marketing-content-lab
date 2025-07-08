@@ -66,7 +66,7 @@ const SOCIAL_PLATFORMS = [
 // Clean content function for blog posts
 function cleanGeneratedContent(content: string): string {
   if (!content) return content;
-  
+
   let cleaned = content;
   cleaned = cleaned.replace(/^H1:\s*(.+)$/gm, '# $1');
   cleaned = cleaned.replace(/^H2:\s*(.+)$/gm, '## $1');
@@ -74,14 +74,14 @@ function cleanGeneratedContent(content: string): string {
   cleaned = cleaned.replace(/^Strong Conclusion\s*$/gm, '## Key Takeaways');
   cleaned = cleaned.replace(/^Engaging Opening\s*$/gm, '## Introduction');
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-  
+
   return cleaned.trim();
 }
 
 // Apply heading case
 function applyHeadingCase(text: string, headingCase: string): string {
   if (!headingCase) return text;
-  
+
   switch (headingCase) {
     case 'upper':
       return text.toUpperCase();
@@ -109,7 +109,7 @@ function renderFormattedContent(content: string, writingStyle: any) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    
+
     if (!line) {
       if (currentParagraph.length > 0) {
         elements.push(
@@ -131,11 +131,11 @@ function renderFormattedContent(content: string, writingStyle: any) {
         );
         currentParagraph = [];
       }
-      
+
       const headingText = line.substring(2).trim();
       elements.push(
-        <h1 
-          key={elements.length} 
+        <h1
+          key={elements.length}
           className="text-3xl font-bold mb-6 mt-8 text-gray-900 leading-tight"
         >
           {applyHeadingCase(headingText, writingStyle?.formatting?.headingCase)}
@@ -153,11 +153,11 @@ function renderFormattedContent(content: string, writingStyle: any) {
         );
         currentParagraph = [];
       }
-      
+
       const headingText = line.substring(3).trim();
       elements.push(
-        <h2 
-          key={elements.length} 
+        <h2
+          key={elements.length}
           className="text-2xl font-bold mb-4 mt-8 text-gray-900 leading-tight"
         >
           {applyHeadingCase(headingText, writingStyle?.formatting?.headingCase)}
@@ -175,11 +175,11 @@ function renderFormattedContent(content: string, writingStyle: any) {
         );
         currentParagraph = [];
       }
-      
+
       const headingText = line.substring(4).trim();
       elements.push(
-        <h3 
-          key={elements.length} 
+        <h3
+          key={elements.length}
           className="text-xl font-bold mb-3 mt-6 text-gray-900 leading-tight"
         >
           {applyHeadingCase(headingText, writingStyle?.formatting?.headingCase)}
@@ -248,7 +248,7 @@ const ContentCreatorPage = () => {
     if (type && router.isReady) {
       const typeFromUrl = Array.isArray(type) ? type[0] : type;
       const foundType = CONTENT_TYPES.find((t) => t.id === typeFromUrl);
-      
+
       if (foundType) {
         setContentType(foundType);
       } else {
@@ -369,7 +369,7 @@ const ContentCreatorPage = () => {
 
         if (response.ok) {
           const data = await response.json();
-          
+
           setGeneratedContent({
             content: "Social posts generated successfully",
             socialPosts: data.socialPosts,
@@ -438,11 +438,11 @@ const ContentCreatorPage = () => {
         if (content) {
           const contentText = content.content || content;
           const cleanedContent = cleanGeneratedContent(contentText);
-          
+
           setGeneratedContent(cleanedContent);
           setGeneratedTitle(content.title || "Generated Content");
           setStep(4);
-          
+
           showNotification("✨ Content generated successfully!", "success");
         } else {
           throw new Error("Invalid response format from API");
@@ -486,7 +486,7 @@ const ContentCreatorPage = () => {
     const fileName = `content-${new Date().toISOString().slice(0, 10)}`;
 
     try {
-      const cleanContentForExport = typeof generatedContent === 'string' 
+      const cleanContentForExport = typeof generatedContent === 'string'
         ? generatedContent.replace(/^#+\s*/gm, '')
         : generatedContent;
 
@@ -944,7 +944,7 @@ const ContentCreatorPage = () => {
               color: '#333'
             }}>
               {renderFormattedContent(generatedContent, writingStyle)}
-              
+
               <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-gray-500">
                 <span>Word count: {typeof generatedContent === 'string' ? generatedContent.split(/\s+/).length : 0}</span>
               </div>
@@ -1069,19 +1069,17 @@ const ContentCreatorPage = () => {
           {[1, 2, 3, 4].map((stepNum) => (
             <div key={stepNum} className="flex items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step >= stepNum
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= stepNum
                     ? "bg-blue-600 text-white"
                     : "bg-gray-300 text-gray-600"
-                }`}
+                  }`}
               >
                 {stepNum}
               </div>
               {stepNum < 4 && (
                 <div
-                  className={`w-12 h-0.5 ${
-                    step > stepNum ? "bg-blue-600" : "bg-gray-300"
-                  }`}
+                  className={`w-12 h-0.5 ${step > stepNum ? "bg-blue-600" : "bg-gray-300"
+                    }`}
                 />
               )}
             </div>
