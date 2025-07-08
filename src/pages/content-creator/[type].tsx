@@ -187,7 +187,7 @@ function renderFormattedContent(content: string, writingStyle: any) {
       elements.push(
         <h3
           key={elements.length}
-          className="text-xl font-bold mb-3 mt-6 text-gray-900 leading-tight"
+          className="text-lg font-semibold mb-3 mt-6 text-gray-900 leading-tight"
         >
           {applyHeadingCase(headingText, writingStyle?.formatting?.headingCase)}
         </h3>
@@ -206,7 +206,7 @@ function renderFormattedContent(content: string, writingStyle: any) {
     );
   }
 
-  return elements;
+  return <div>{elements}</div>;
 }
 
 const ContentCreatorPage = () => {
