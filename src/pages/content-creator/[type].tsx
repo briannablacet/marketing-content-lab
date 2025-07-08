@@ -1,5 +1,5 @@
 // src/pages/content-creator/[type].tsx
-// FINAL WORKING VERSION: Step-based flow with working social posts interface
+
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
