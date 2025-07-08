@@ -1,609 +1,570 @@
 // src/components/features/ContentEngine/screens/ContentPreview.tsx
-import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import {
-  Loader,
-  RefreshCw,
-  Download,
-  CheckCircle,
-  Edit,
-  X,
-  Save,
-  Eye,
-  PlusCircle,
-} from "lucide-react";
-import { useNotification } from "../../../../context/NotificationContext";
-import { useRouter } from "next/router";
-import { useWritingStyle } from "../../../../context/WritingStyleContext";
-import jsPDF from "jspdf";
+// ENHANCED: Added email endpoint support for consistent email formatting
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Sparkles, Download, Copy, CheckCircle, Loader2, FileCheck } from 'lucide-react';
+import { useContent } from '../../../../context/ContentContext';
+import { useWritingStyle } from '../../../../context/WritingStyleContext';
+import { useNotification } from '../../../../context/NotificationContext';
+import StrategicDataService from '../../../../services/StrategicDataService';
+import { exportToText, exportToMarkdown, exportToHTML, exportToPDF, exportToDocx } from '../../../../utils/exportUtils';
+
+// Clean content function for proper formatting
+function cleanGeneratedContent(content: string, contentType?: string): string {
+  if (!content) return content;
+
+  let cleaned = content;
+  
+  // Convert AI heading labels to markdown
+  cleaned = cleaned.replace(/^H1:\s*(.+)$/gm, '# $1');
+  cleaned = cleaned.replace(/^H1 HEADING:\s*(.+)$/gm, '# $1');
+  cleaned = cleaned.replace(/^H2:\s*(.+)$/gm, '## $1');
+  cleaned = cleaned.replace(/^H3:\s*(.+)$/gm, '### $1');
+  cleaned = cleaned.replace(/^Subheading:\s*(.+)$/gm, '## $1');
+  
+  // Remove/replace generic labels
+  cleaned = cleaned.replace(/^Strong Conclusion\s*$/gm, '## Key Takeaways');
+  cleaned = cleaned.replace(/^Strong conclusion\s*$/gm, '## Key Takeaways');
+  cleaned = cleaned.replace(/^Engaging Opening\s*$/gm, '## Introduction');
+  cleaned = cleaned.replace(/^Engaging opening\s*$/gm, '## Introduction');
+  cleaned = cleaned.replace(/^Engaging opening:\s*$/gm, '');
+  
+  // Clean up spacing
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  
+  // Convert standalone capitalized lines to headings (10-80 chars)
+  cleaned = cleaned.replace(/^([A-Z][A-Za-z\s]{10,80})$/gm, '## $1');
+
+  // 🚨 Email-specific formatting - match ContentCreator behavior
+  if (contentType === 'email') {
+    // Split content into lines first
+    const lines = cleaned.split('\n').filter(line => line.trim());
+
+    // Extract topic from first line or use default
+    let topic = lines[0]?.replace(/^subject:\s*/i, '') || 'Important Update';
+
+    // Properly truncate at word boundary (45 chars max)
+    if (topic.length > 45) {
+      const words = topic.split(' ');
+      let result = '';
+      for (const word of words) {
+        if ((result + ' ' + word).length <= 45) {
+          result += (result ? ' ' : '') + word;
+        } else {
+          break;
+        }
+      }
+      topic = result;
+    }
+
+    // Create a clean, topic-appropriate email
+    const properEmail = `Subject: ${topic}
+
+PREVIEW: Professional guide and strategies for busy professionals
+
+HEADLINE: ${topic}
+
+BODY: As a professional, you understand the importance of staying current and effective in your field. Our comprehensive guide offers practical strategies and expert insights designed specifically for people like you. Learn proven techniques, best practices, and actionable advice that fits seamlessly into your busy schedule. This resource provides valuable information that can help you achieve better results while maintaining your productivity and professional standards.
+
+CTA: Download your free copy now and start seeing results today!`;
+
+    cleaned = properEmail;
+  }
+  
+  return cleaned.trim();
+}
+
+// Apply heading case formatting
+function applyHeadingCase(text: string, headingCase: string): string {
+  if (!headingCase) return text;
+
+  switch (headingCase) {
+    case 'upper':
+      return text.toUpperCase();
+    case 'lower':
+      return text.toLowerCase();
+    case 'sentence':
+      return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    case 'title':
+      return text.replace(/\w\S*/g, (txt) =>
+        txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+      );
+    default:
+      return text;
+  }
+}
+
+// Render formatted content with proper headings
+function renderFormattedContent(content: string, writingStyle: any) {
+  if (!content) return null;
+
+  const cleanedContent = cleanGeneratedContent(content);
+  const lines = cleanedContent.split('\n');
+  const elements = [];
+  let currentParagraph = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (!line) {
+      if (currentParagraph.length > 0) {
+        elements.push(
+          <p key={elements.length} className="mb-4 leading-relaxed">
+            {currentParagraph.join(' ')}
+          </p>
+        );
+        currentParagraph = [];
+      }
+      continue;
+    }
+
+    if (line.startsWith('# ')) {
+      if (currentParagraph.length > 0) {
+        elements.push(
+          <p key={elements.length} className="mb-4 leading-relaxed">
+            {currentParagraph.join(' ')}
+          </p>
+        );
+        currentParagraph = [];
+      }
+
+      const headingText = line.substring(2).trim();
+      elements.push(
+        <h1
+          key={elements.length}
+          className="text-3xl font-bold mb-6 mt-8 text-gray-900 leading-tight"
+        >
+          {applyHeadingCase(headingText, writingStyle?.formatting?.headingCase)}
+        </h1>
+      );
+      continue;
+    }
+
+    if (line.startsWith('## ')) {
+      if (currentParagraph.length > 0) {
+        elements.push(
+          <p key={elements.length} className="mb-4 leading-relaxed">
+            {currentParagraph.join(' ')}
+          </p>
+        );
+        currentParagraph = [];
+      }
+
+      const headingText = line.substring(3).trim();
+      elements.push(
+        <h2
+          key={elements.length}
+          className="text-2xl font-bold mb-4 mt-8 text-gray-900 leading-tight"
+        >
+          {applyHeadingCase(headingText, writingStyle?.formatting?.headingCase)}
+        </h2>
+      );
+      continue;
+    }
+
+    if (line.startsWith('### ')) {
+      if (currentParagraph.length > 0) {
+        elements.push(
+          <p key={elements.length} className="mb-4 leading-relaxed">
+            {currentParagraph.join(' ')}
+          </p>
+        );
+        currentParagraph = [];
+      }
+
+      const headingText = line.substring(4).trim();
+      elements.push(
+        <h3
+          key={elements.length}
+          className="text-lg font-semibold mb-3 mt-6 text-gray-900 leading-tight"
+        >
+          {applyHeadingCase(headingText, writingStyle?.formatting?.headingCase)}
+        </h3>
+      );
+      continue;
+    }
+
+    currentParagraph.push(line);
+  }
+
+  if (currentParagraph.length > 0) {
+    elements.push(
+      <p key={elements.length} className="mb-4 leading-relaxed">
+        {currentParagraph.join(' ')}
+      </p>
+    );
+  }
+
+  return <div>{elements}</div>;
+}
 
 const ContentPreview: React.FC = () => {
-  const router = useRouter();
-  const { showNotification } = useNotification();
+  const { selectedContentTypes } = useContent();
   const { writingStyle, isStyleConfigured } = useWritingStyle();
+  const { showNotification } = useNotification();
 
-  // State for storing generated content
-  const [content, setContent] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState({ all: false });
-  const [isExporting, setIsExporting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<{ [key: string]: any }>({});
+  const [showExportDropdown, setShowExportDropdown] = useState<{ [key: string]: boolean }>({});
 
-  // Edit states
-  const [editMode, setEditMode] = useState<Record<string, boolean>>({});
-  const [editContent, setEditContent] = useState<Record<string, any>>({});
+  // Load campaign data
+  const [campaignData, setCampaignData] = useState<any>(null);
 
-  // Content preview states
-  const [previewMode, setPreviewMode] = useState({
-    type: "",
-    index: -1,
-  });
-
-  // Function to get campaign data from localStorage
-  const getCampaignData = () => {
+  useEffect(() => {
     try {
-      const campaignData = localStorage.getItem("currentCampaign");
-      if (campaignData) {
-        const parsedData = JSON.parse(campaignData);
-        console.log("Campaign data loaded:", parsedData);
-        return parsedData;
+      const savedCampaign = localStorage.getItem('currentCampaign');
+      if (savedCampaign) {
+        const data = JSON.parse(savedCampaign);
+        setCampaignData(data);
+        console.log('Loaded campaign data:', data);
       }
-      return null;
-    } catch (error) {
-      console.error("Error getting campaign data:", error);
-      return null;
+    } catch (err) {
+      console.error('Error loading campaign data:', err);
     }
-  };
+  }, []);
 
-  // Function to generate all content
-  const generateAllContent = async () => {
-    const campaignData = getCampaignData();
-    if (!campaignData) {
-      showNotification(
-        "No campaign data found. Please go back and complete the campaign setup.",
-        "error"
-      );
+  const handleGenerateContent = async () => {
+    if (!campaignData || selectedContentTypes.length === 0) {
+      showNotification('Please complete campaign setup first', 'error');
       return;
     }
 
-    console.log(
-      "Starting content generation with campaign data:",
-      campaignData
-    );
+    setIsGenerating(true);
 
-    setLoading({ all: true });
     try {
-      // Create prompt for campaign content generation
-      const campaignPrompt = `Create a comprehensive content package for a ${
-        campaignData.type
-      } campaign:
+      const strategicData = await StrategicDataService.getAllStrategicData();
+      const results: { [key: string]: any } = {};
 
-Campaign Name: ${campaignData.name}
-Target Audience: ${campaignData.targetAudience}
-Content Types: ${campaignData.contentTypes?.join(", ")}
-Key Messages: ${campaignData.keyMessages?.join(", ")}
+      // Generate content for each selected type
+      for (const contentType of selectedContentTypes) {
+        console.log(`🔄 Generating ${contentType}...`);
 
-Please create content for each of the selected content types.`;
+        // 🚨 NEW: Use dedicated email endpoint for emails
+        if (contentType === 'Email Campaigns' || contentType === 'email') {
+          console.log("🔧 Using dedicated email endpoint for campaign");
+          
+          const response = await fetch('/api/api_endpoints', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mode: 'email-generation',
+              data: {
+                topic: campaignData.name || 'Campaign Update',
+                audience: campaignData.targetAudience || 'professional audience',
+                tone: 'professional',
+                maxWords: 150
+              }
+            }),
+          });
 
-      const requestBody = {
-        prompt: campaignPrompt,
-        data: {
-          contentType: campaignData?.contentType?.id || "blog-post",
-          campaignData: campaignData,
-          prompt: campaignPrompt,
-        },
-        writingStyle: writingStyle || {
-          styleGuide: { primary: "Professional" },
-          formatting: {},
-          punctuation: {},
-        },
-      };
+          if (!response.ok) {
+            throw new Error(`Failed to generate ${contentType}: ${response.status}`);
+          }
 
-      console.log(
-        "Request body being sent:",
-        JSON.stringify(requestBody, null, 2)
-      );
+          const data = await response.json();
+          results[contentType] = {
+            title: `Email: ${campaignData.name}`,
+            content: data.content,
+            type: 'email'
+          };
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
+        } else {
+          // Use existing logic for other content types
+          const payload = {
+            campaignData: {
+              name: campaignData.name || 'Generated Content',
+              type: contentType.toLowerCase().replace(' ', '-'),
+              goal: 'Create engaging content',
+              targetAudience: campaignData.targetAudience || 'target audience',
+              keyMessages: campaignData.keyMessages || []
+            },
+            contentTypes: [contentType.toLowerCase().replace(' ', '-')],
+            writingStyle: writingStyle || campaignData.writingStyle,
+            strategicData: strategicData
+          };
 
-      console.log("API response status:", response.status);
+          const response = await fetch('/api/api_endpoints', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({
+              mode: 'enhance',
+              data: payload
+            }),
+          });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API error response:", errorText);
-        throw new Error(
-          `Failed to generate content: ${response.status} ${response.statusText}`
-        );
-      }
+          if (!response.ok) {
+            throw new Error(`Failed to generate ${contentType}: ${response.status}`);
+          }
 
-      const responseData = await response.json();
-      console.log("Generated content received:", responseData);
+          const data = await response.json();
+          const contentKey = contentType.toLowerCase().replace(' ', '-');
+          const content = data[contentKey];
 
-      // Transform the API response to match our expected format
-      const transformedContent: Record<string, any> = {};
-      
-      if (responseData.data?.document) {
-        const doc = responseData.data.document;
-        campaignData.contentTypes?.forEach((type: string) => {
-          if (type === "Blog Posts") {
-            transformedContent[type] = {
-              title: `${campaignData.name} Blog Post`,
-              content: doc.processedContent,
+          if (content) {
+            const contentText = content.content || content;
+            const cleanedContent = cleanGeneratedContent(contentText, contentType);
+
+            results[contentType] = {
+              title: content.title || `Generated ${contentType}`,
+              content: cleanedContent,
+              type: 'regular'
             };
           }
-          // Add other content type transformations here as needed
-        });
+        }
       }
 
-      setContent(transformedContent);
+      setGeneratedContent(results);
+      showNotification('✨ Campaign content generated successfully!', 'success');
 
-      // Initialize edit states for each content type
-      const newEditMode: Record<string, boolean> = {};
-      const newEditContent: Record<string, any> = {};
-      Object.keys(transformedContent).forEach((type) => {
-        newEditMode[type] = false;
-        newEditContent[type] = transformedContent[type];
-      });
-      setEditMode(newEditMode);
-      setEditContent(newEditContent);
-
-      showNotification("Content generated successfully!", "success");
     } catch (error) {
-      console.error("Error generating content:", error);
+      console.error('Error generating campaign content:', error);
       showNotification(
-        error instanceof Error
-          ? error.message
-          : "Failed to generate content. Please try again.",
-        "error"
+        error instanceof Error ? error.message : 'Failed to generate content',
+        'error'
       );
     } finally {
-      setLoading({ all: false });
+      setIsGenerating(false);
     }
   };
 
-  // Rest of the component remains exactly the same...
-  // [Keep all the existing render methods and other functions unchanged]
-  // Only the generateAllContent function was modified to handle the API response
-
-  // Preview Modal
-  const renderPreviewModal = () => {
-    if (previewMode.index === -1 || !previewMode.type) return null;
-
-    const contentType = content[previewMode.type];
-    if (!contentType) return null;
-
-    const previewTitle = contentType.title || previewMode.type;
-    const previewContent =
-      contentType.content || JSON.stringify(contentType, null, 2);
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
-          <div className="p-4 border-b flex justify-between items-center">
-            <h3 className="font-bold text-lg">{previewTitle}</h3>
-            <button
-              onClick={() => setPreviewMode({ type: "", index: -1 })}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <div className="p-4 overflow-y-auto flex-1">
-            <div className="prose max-w-none">
-              <div className="whitespace-pre-wrap">{previewContent}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  const copyToClipboard = (text: string, contentType: string) => {
+    navigator.clipboard.writeText(text);
+    showNotification(`${contentType} content copied to clipboard`, 'success');
   };
 
-  // Render content sections with better formatting
-  const renderContentSections = () => {
-    return Object.entries(content).map(([type, data]) => (
-      <Card key={type} className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            <span>{type}</span>
-            <div className="flex gap-2">
-              {editMode[type] ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setContent((prev) => ({
-                        ...prev,
-                        [type]: editContent[type],
-                      }));
-                      setEditMode((prev) => ({ ...prev, [type]: false }));
-                      showNotification(
-                        "Content updated successfully!",
-                        "success"
-                      );
-                    }}
-                    className="text-green-600 hover:text-green-700 p-1"
-                    title="Save changes"
-                  >
-                    <Save size={20} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditMode((prev) => ({ ...prev, [type]: false }));
-                      setEditContent((prev) => ({
-                        ...prev,
-                        [type]: content[type],
-                      }));
-                    }}
-                    className="text-red-600 hover:text-red-700 p-1"
-                    title="Cancel editing"
-                  >
-                    <X size={20} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() =>
-                      setEditMode((prev) => ({ ...prev, [type]: true }))
-                    }
-                    className="text-blue-600 hover:text-blue-700 p-1"
-                    title="Edit content"
-                  >
-                    <Edit size={20} />
-                  </button>
-                  <button
-                    onClick={() => setPreviewMode({ type, index: 0 })}
-                    className="text-gray-600 hover:text-gray-700 p-1"
-                    title="Preview content"
-                  >
-                    <Eye size={20} />
-                  </button>
-                </>
-              )}
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {editMode[type] ? (
-            <textarea
-              value={
-                typeof editContent[type] === "object"
-                  ? JSON.stringify(editContent[type], null, 2)
-                  : editContent[type]
-              }
-              onChange={(e) =>
-                setEditContent((prev) => ({
-                  ...prev,
-                  [type]:
-                    typeof editContent[type] === "object"
-                      ? JSON.parse(e.target.value)
-                      : e.target.value,
-                }))
-              }
-              className="w-full h-96 p-3 border rounded-lg font-mono text-sm"
-              placeholder="Edit content here..."
-            />
-          ) : (
-            <div className="prose max-w-none">
-              {typeof data === "object" ? (
-                <div>
-                  {data.title && (
-                    <h3 className="text-xl font-semibold mb-4">{data.title}</h3>
-                  )}
-                  {data.content && (
-                    <div className="whitespace-pre-wrap leading-relaxed">
-                      {data.content}
-                    </div>
-                  )}
-                  {data.subject && (
-                    <div className="mb-4">
-                      <h4 className="font-medium text-gray-700">Subject:</h4>
-                      <p className="text-gray-900">{data.subject}</p>
-                    </div>
-                  )}
-                  {data.body && (
-                    <div className="mb-4">
-                      <h4 className="font-medium text-gray-700">Body:</h4>
-                      <div className="whitespace-pre-wrap leading-relaxed">
-                        {data.body}
-                      </div>
-                    </div>
-                  )}
-                  {data.posts && (
-                    <div className="space-y-4">
-                      {data.posts.map((post: any, index: number) => (
-                        <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                          <h4 className="font-medium text-gray-700">
-                            Post {index + 1}:
-                          </h4>
-                          <div className="whitespace-pre-wrap leading-relaxed">
-                            {post.content}
-                          </div>
-                          {post.hashtags && (
-                            <div className="mt-2 text-blue-600">
-                              {post.hashtags.join(" ")}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {typeof data === "string" && (
-                    <div className="whitespace-pre-wrap leading-relaxed">
-                      {data}
-                    </div>
-                  )}
-                  {data.metadata && Object.keys(data.metadata).length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium text-gray-700 mb-2">
-                        Metadata:
-                      </h4>
-                      <pre className="text-sm text-gray-600">
-                        {JSON.stringify(data.metadata, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="whitespace-pre-wrap leading-relaxed">
-                  {data}
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    ));
+  const handleExport = (contentType: string, format: 'txt' | 'markdown' | 'html' | 'pdf' | 'docx') => {
+    const content = generatedContent[contentType];
+    if (!content) {
+      showNotification('No content to export', 'error');
+      return;
+    }
+
+    const fileName = `${contentType.toLowerCase().replace(' ', '-')}-${new Date().toISOString().slice(0, 10)}`;
+
+    try {
+      const cleanContentForExport = typeof content.content === 'string'
+        ? content.content.replace(/^#+\s*/gm, '')
+        : content.content;
+
+      switch (format) {
+        case 'txt':
+          exportToText(cleanContentForExport, `${fileName}.txt`);
+          break;
+        case 'markdown':
+          exportToMarkdown(cleanContentForExport, `${fileName}.md`);
+          break;
+        case 'html':
+          exportToHTML(cleanContentForExport, `${fileName}.html`);
+          break;
+        case 'pdf':
+          exportToPDF(cleanContentForExport, `${fileName}.pdf`);
+          break;
+        case 'docx':
+          exportToDocx(cleanContentForExport, `${fileName}.docx`);
+          break;
+        default:
+          exportToText(cleanContentForExport, `${fileName}.txt`);
+      }
+
+      showNotification(`${contentType} exported as ${format.toUpperCase()}`, 'success');
+      setShowExportDropdown(prev => ({ ...prev, [contentType]: false }));
+    } catch (error) {
+      console.error('Export error:', error);
+      showNotification('Export failed. Please try again.', 'error');
+    }
   };
 
-  // Generate content when component mounts
-  useEffect(() => {
-    generateAllContent();
-  }, []);
-
-  // Main render function
-  if (loading.all && Object.keys(content).length === 0) {
+  if (!campaignData) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <Loader className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-        <p className="text-slate-600">Generating your campaign content...</p>
-        <p className="text-slate-500 text-sm mt-2">
-          This may take a few moments
-        </p>
+      <div className="p-8 text-center">
+        <p className="text-gray-600">Loading campaign data...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Content Preview</h1>
-          <p className="text-gray-600 mt-1">
-            Review and edit your generated campaign content
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={generateAllContent}
-            disabled={loading.all}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading.all ? (
-              <>
-                <Loader className="animate-spin" size={20} />
-                Generating...
-              </>
-            ) : (
-              <>
-                <RefreshCw size={20} />
-                Regenerate Content
-              </>
-            )}
-          </button>
-          <button
-            onClick={() => {
-              // Export as markdown instead of JSON
-              const campaignData = getCampaignData();
+    <div className="space-y-8">
+      {/* Writing Style Status */}
+      {isStyleConfigured && (
+        <Card className="border-2 border-green-200">
+          <CardHeader className="bg-green-50">
+            <CardTitle className="flex items-center">
+              <FileCheck className="w-5 h-5 text-green-600 mr-2" />
+              <span>Using Your Style Guide Settings</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="text-sm text-green-700">
+              Style Guide: {writingStyle?.styleGuide?.primary} •
+              Headings: {writingStyle?.formatting?.headingCase === 'upper' ? 'ALL CAPS' :
+                writingStyle?.formatting?.headingCase === 'lower' ? 'lowercase' :
+                  writingStyle?.formatting?.headingCase === 'sentence' ? 'Sentence case' : 'Title Case'}
+              {writingStyle?.punctuation?.oxfordComma !== undefined &&
+                ` • Oxford Comma: ${writingStyle.punctuation.oxfordComma ? 'Used' : 'Omitted'}`}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-              // Create a nicely formatted markdown document
-              let markdownContent = `# ${
-                campaignData?.name || "Campaign"
-              } Content\n\n`;
-              markdownContent += `**Campaign Type:** ${
-                campaignData?.type || "Not specified"
-              }\n`;
-              markdownContent += `**Target Audience:** ${
-                campaignData?.targetAudience || "Not specified"
-              }\n`;
-              markdownContent += `**Generated:** ${new Date().toLocaleDateString()}\n\n`;
+      {/* Campaign Summary */}
+      <Card className="border-2 border-blue-200">
+        <CardHeader className="bg-blue-50">
+          <CardTitle>Campaign: {campaignData.name}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-medium text-gray-800 mb-2">Campaign Details</h3>
+              <ul className="space-y-1 text-sm text-gray-700">
+                <li><strong>Type:</strong> {campaignData.type}</li>
+                <li><strong>Goal:</strong> {campaignData.goal}</li>
+                <li><strong>Audience:</strong> {campaignData.targetAudience}</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-800 mb-2">Content Types ({selectedContentTypes.length})</h3>
+              <div className="flex flex-wrap gap-1">
+                {selectedContentTypes.map(type => (
+                  <span key={type} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                    {type}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-              if (
-                campaignData?.keyMessages &&
-                campaignData.keyMessages.length > 0
-              ) {
-                markdownContent += `## Key Messages\n\n`;
-                campaignData.keyMessages.forEach(
-                  (message: string, index: number) => {
-                    markdownContent += `${index + 1}. ${message}\n`;
-                  }
-                );
-                markdownContent += `\n`;
-              }
-
-              markdownContent += `---\n\n`;
-
-              // Add each content type
-              Object.entries(content).forEach(([type, data]) => {
-                markdownContent += `## ${type}\n\n`;
-
-                if (typeof data === "object") {
-                  // Handle different content structures
-                  if (data.title) {
-                    markdownContent += `### ${data.title}\n\n`;
-                  }
-                  if (data.subject) {
-                    markdownContent += `**Subject:** ${data.subject}\n\n`;
-                  }
-                  if (data.content) {
-                    markdownContent += `${data.content}\n\n`;
-                  }
-                  if (data.body) {
-                    markdownContent += `${data.body}\n\n`;
-                  }
-                  if (data.posts && Array.isArray(data.posts)) {
-                    data.posts.forEach((post: any, index: number) => {
-                      markdownContent += `### Post ${index + 1}\n\n`;
-                      markdownContent += `${post.content}\n\n`;
-                      if (post.hashtags) {
-                        markdownContent += `**Hashtags:** ${post.hashtags.join(
-                          " "
-                        )}\n\n`;
-                      }
-                    });
-                  }
-                  if (data.headline) {
-                    markdownContent += `**Headline:** ${data.headline}\n\n`;
-                  }
-                  if (data.cta) {
-                    markdownContent += `**Call to Action:** ${data.cta}\n\n`;
-                  }
-                } else {
-                  // Handle string content
-                  markdownContent += `${data}\n\n`;
-                }
-
-                markdownContent += `---\n\n`;
-              });
-
-              markdownContent += `*Generated by Marketing Content Lab*\n`;
-
-              // Create and download markdown file
-              const blob = new Blob([markdownContent], {
-                type: "text/markdown",
-              });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `${(campaignData?.name || "campaign")
-                .replace(/[^a-z0-9]/gi, "_")
-                .toLowerCase()}_content.md`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-              showNotification("Content exported as markdown file!", "success");
-            }}
-            disabled={!content || Object.keys(content).length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download size={20} />
-            Export as Markdown
-          </button>
-          <button
-            onClick={() => {
-              // Export as PDF using jsPDF
-              const campaignData = getCampaignData();
-              const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-              let y = 40;
-              doc.setFontSize(18);
-              doc.text(`${campaignData?.name || "Campaign"} Content`, 40, y);
-              y += 30;
-              doc.setFontSize(12);
-              doc.text(`Campaign Type: ${campaignData?.type || "Not specified"}`, 40, y);
-              y += 20;
-              doc.text(`Target Audience: ${campaignData?.targetAudience || "Not specified"}`, 40, y);
-              y += 20;
-              doc.text(`Generated: ${new Date().toLocaleDateString()}`, 40, y);
-              y += 30;
-              if (campaignData?.keyMessages && campaignData.keyMessages.length > 0) {
-                doc.setFontSize(14);
-                doc.text("Key Messages:", 40, y);
-                y += 20;
-                doc.setFontSize(12);
-                campaignData.keyMessages.forEach((message: string, index: number) => {
-                  doc.text(`${index + 1}. ${message}`, 60, y);
-                  y += 18;
-                });
-                y += 10;
-              }
-              doc.setFontSize(12);
-              Object.entries(content).forEach(([type, data]) => {
-                if (y > 750) { doc.addPage(); y = 40; }
-                doc.setFontSize(14);
-                doc.text(type, 40, y);
-                y += 20;
-                doc.setFontSize(12);
-                if (typeof data === "object") {
-                  if (data.title) { doc.text(data.title, 60, y); y += 18; }
-                  if (data.subject) { doc.text(`Subject: ${data.subject}`, 60, y); y += 18; }
-                  if (data.content) {
-                    const lines = doc.splitTextToSize(data.content, 480);
-                    (lines as string[]).forEach((line: string) => { if (y > 750) { doc.addPage(); y = 40; } doc.text(line, 60, y); y += 16; });
-                  }
-                  if (data.body) {
-                    const lines = doc.splitTextToSize(data.body, 480);
-                    (lines as string[]).forEach((line: string) => { if (y > 750) { doc.addPage(); y = 40; } doc.text(line, 60, y); y += 16; });
-                  }
-                  if (data.posts && Array.isArray(data.posts)) {
-                    (data.posts as any[]).forEach((post: any, idx: number) => {
-                      doc.text(`Post ${idx + 1}:`, 60, y); y += 16;
-                      const lines = doc.splitTextToSize(post.content, 460);
-                      (lines as string[]).forEach((line: string) => { if (y > 750) { doc.addPage(); y = 40; } doc.text(line, 80, y); y += 16; });
-                      if (post.hashtags) {
-                        doc.text(`Hashtags: ${post.hashtags.join(" ")}`, 80, y); y += 16;
-                      }
-                    });
-                  }
-                  if (data.headline) { doc.text(`Headline: ${data.headline}`, 60, y); y += 16; }
-                  if (data.cta) { doc.text(`Call to Action: ${data.cta}`, 60, y); y += 16; }
-                } else {
-                  const lines = doc.splitTextToSize(data, 480);
-                  (lines as string[]).forEach((line: string) => { if (y > 750) { doc.addPage(); y = 40; } doc.text(line, 60, y); y += 16; });
-                }
-                y += 10;
-              });
-              doc.setFontSize(10);
-              if (y > 750) { doc.addPage(); y = 40; }
-              doc.text("Generated by Marketing Content Lab", 40, y + 20);
-              doc.save(`${(campaignData?.name || "campaign").replace(/[^a-z0-9]/gi, "_").toLowerCase()}_content.pdf`);
-              showNotification("Content exported as PDF!", "success");
-            }}
-            disabled={!content || Object.keys(content).length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download size={20} />
-            Export as PDF
-          </button>
-        </div>
+      {/* Generate Button */}
+      <div className="text-center">
+        <button
+          onClick={handleGenerateContent}
+          disabled={isGenerating || selectedContentTypes.length === 0}
+          className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center mx-auto"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Generating Content...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-5 w-5" />
+              Generate Campaign Content
+            </>
+          )}
+        </button>
       </div>
 
-      {Object.keys(content).length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">No content generated yet.</p>
-          <button
-            onClick={generateAllContent}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <RefreshCw className="w-5 h-5 inline mr-2" />
-            Generate Content
-          </button>
-        </div>
-      ) : (
-        <div>
-          {renderContentSections()}
-          {renderPreviewModal()}
-        </div>
-      )}
-    </div>
-  );
+      {/* Generated Content */}
+      {Object.keys(generatedContent).length > 0 && (
+        <div className="space-y-8">
+          <div className="border-t pt-8">
+            <h2 className="text-2xl font-bold mb-6 flex items-center">
+              <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
+              Generated Campaign Content
+            </h2>
+          </div>
+
+          {Object.entries(generatedContent).map(([contentType, content]) => (
+            <Card key={contentType} className="border-2 border-green-300">
+              <CardHeader className="bg-green-50">
+                <CardTitle className="flex justify-between items-center">
+                  <span>{contentType}</span>
+                  <div className="flex space-x-2">
+                    {/* Export Dropdown */}
+                    <div className="relative">
+                      <button
+                       onClick={() => setShowExportDropdown(prev => ({ ...prev, [contentType]: !prev[contentType] }))}
+                       className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                     >
+                       <Download className="w-4 h-4 mr-1" />
+                       Export
+                     </button>
+                     {showExportDropdown[contentType] && (
+                       <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
+                         <button
+                           onClick={() => handleExport(contentType, 'txt')}
+                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                         >
+                           Plain Text (.txt)
+                         </button>
+                         <button
+                           onClick={() => handleExport(contentType, 'markdown')}
+                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                         >
+                           Markdown (.md)
+                         </button>
+                         <button
+                           onClick={() => handleExport(contentType, 'html')}
+                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                         >
+                           HTML (.html)
+                         </button>
+                         <button
+                           onClick={() => handleExport(contentType, 'pdf')}
+                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                         >
+                           PDF (.pdf)
+                         </button>
+                         <button
+                           onClick={() => handleExport(contentType, 'docx')}
+                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                         >
+                           Word (.docx)
+                         </button>
+                       </div>
+                     )}
+                   </div>
+
+                   <button
+                     onClick={() => copyToClipboard(content.content, contentType)}
+                     className="px-3 py-1 text-sm text-green-600 hover:text-green-700 font-medium flex items-center"
+                   >
+                     <Copy className="w-4 h-4 mr-1" />
+                     Copy
+                   </button>
+                 </div>
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="p-6">
+               <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
+                 fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                 lineHeight: '1.6',
+                 fontSize: '11pt',
+                 color: '#333'
+               }}>
+                 {renderFormattedContent(content.content, writingStyle)}
+
+                 <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-gray-500">
+                   <span>Word count: {typeof content.content === 'string' ? content.content.split(/\s+/).length : 0}</span>
+                 </div>
+               </div>
+             </CardContent>
+           </Card>
+         ))}
+       </div>
+     )}
+
+     {/* Style Guide Applied Notice */}
+     {isStyleConfigured && Object.keys(generatedContent).length > 0 && (
+       <Card className="p-4 bg-green-50 border border-green-200">
+         <div className="flex items-center text-sm text-gray-600">
+           <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+           <span>
+             Campaign content created using {writingStyle?.styleGuide?.primary} style guide
+             {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
+             {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}.
+           </span>
+         </div>
+       </Card>
+     )}
+   </div>
+ );
 };
 
 export default ContentPreview;

@@ -1,5 +1,5 @@
 // src/components/features/ContentRepurposer/index.tsx
-// ENHANCED: Better social media generation + existing markdown cleaning
+// ENHANCED: Better email generation using dedicated endpoint + existing functionality
 
 import React, { useState, useRef } from "react";
 import { useNotification } from "../../../context/NotificationContext";
@@ -26,7 +26,7 @@ import ContentEditChat from "../ContentEditChat";
 
 interface RepurposingResult {
   repurposedText: string;
-  socialPosts?: { [key: string]: any }; // NEW: For social media results
+  socialPosts?: { [key: string]: any }; // For social media results
   summary: {
     sourceFormat: string;
     targetFormat: string;
@@ -56,7 +56,7 @@ const CONTENT_FORMATS = [
   { value: 'infographic-text', label: 'Infographic Text' }
 ];
 
-// NEW: Social media platform options
+// Social media platform options
 const SOCIAL_PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: '💼', color: 'bg-blue-600' },
   { value: 'twitter', label: 'Twitter/X', icon: '🐦', color: 'bg-black' },
@@ -76,12 +76,12 @@ const cleanRepurposedContent = (content: string): string => {
   // Remove markdown headings (### → plain text) but preserve the text
   cleaned = cleaned.replace(/^#{1,6}\s+(.+)$/gm, '$1');
 
-  // Remove bold markdown (**text** and __text__ → text)
-  cleaned = cleaned.replace(/(\*\*|__)(.*?)\1/g, '$2');
-
-  // Remove italic markdown (*text* and _text_ → text)
-  cleaned = cleaned.replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, '$1');
-  cleaned = cleaned.replace(/(?<!_)_(?!_)([^_]+)_(?!_)/g, '$1');
+  // Remove all asterisk formatting - be aggressive
+  cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1'); // Remove **bold**
+  cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1');     // Remove *any single asterisks*
+  cleaned = cleaned.replace(/\*/g, '');                // Remove any remaining asterisks
+  cleaned = cleaned.replace(/__([^_]+)__/g, '$1');     // Remove __underline bold__
+  cleaned = cleaned.replace(/_([^_]+)_/g, '$1');       // Remove _italic_
 
   // Remove inline code (`code` → code)
   cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
@@ -132,7 +132,7 @@ const ContentRepurposer: React.FC = () => {
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
 
-  // NEW: Social media specific options
+  // Social media specific options
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['linkedin']);
   const [socialTone, setSocialTone] = useState('professional');
   const [includeHashtags, setIncludeHashtags] = useState(true);
@@ -150,7 +150,7 @@ const ContentRepurposer: React.FC = () => {
     }
   };
 
-  // NEW: Handle platform selection for social media
+  // Handle platform selection for social media
   const handlePlatformToggle = (platform: string) => {
     setSelectedPlatforms(prev =>
       prev.includes(platform)
@@ -159,7 +159,7 @@ const ContentRepurposer: React.FC = () => {
     );
   };
 
-  // ENHANCED: Process content with special handling for social media
+  // ENHANCED: Process content with special handling for email and social media
   const processContent = async () => {
     if (!content.trim()) {
       showNotification("Please enter or upload content to repurpose", "error");
@@ -184,8 +184,77 @@ const ContentRepurposer: React.FC = () => {
     try {
       const strategicData = await StrategicDataService.getAllStrategicData();
 
-      // NEW: Special handling for social media repurposing
-      if (targetFormat === 'social-media') {
+      // 🚨 NEW: Special handling for email repurposing using dedicated endpoint
+      if (targetFormat === 'email') {
+        console.log("🔧 Using dedicated email endpoint for repurposing");
+
+        const response = await fetch('/api/api_endpoints', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'email-generation',
+            data: {
+              topic: content.substring(0, 100), // Use first 100 chars as topic
+              audience: 'professional audience',
+              tone: socialTone,
+              maxWords: 150
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to generate email");
+        }
+
+        const data = await response.json();
+
+        const result: RepurposingResult = {
+          repurposedText: data.content,
+          summary: {
+            sourceFormat: CONTENT_FORMATS.find(f => f.value === sourceFormat)?.label || sourceFormat,
+            targetFormat: 'Email (150 words)',
+            adaptationsApplied: [
+              "Converted to professional email format",
+              "Applied 150-word limit for optimal engagement",
+              "Added proper email structure (Subject, Preview, Body, CTA)",
+              "Optimized for email best practices"
+            ],
+            wordCountChange: data.content.split(/\s+/).length - content.split(/\s+/).length,
+            mainChanges: [
+              `Converted from ${sourceFormat} to professional email format`,
+              "Applied email-specific structure and length limits",
+              "Optimized subject line and preview text",
+              "Added clear call-to-action"
+            ]
+          },
+          changeDetails: [
+            {
+              original: "Long-form content",
+              suggestion: "Structured email with subject, preview, body, and CTA",
+              reason: "Email format requires specific structure for optimal performance",
+              type: "format-adaptation"
+            },
+            {
+              original: "Variable length content",
+              suggestion: "150-word optimized email",
+              reason: "150 words is optimal for email engagement and readability",
+              type: "length-optimization"
+            },
+            {
+              original: "General content tone",
+              suggestion: "Professional email tone",
+              reason: "Email requires more direct, action-oriented messaging",
+              type: "tone-adjustment"
+            }
+          ]
+        };
+
+        setRepurposingResult(result);
+        showNotification("✨ Email generated successfully!", "success");
+
+      } else if (targetFormat === 'social-media' && selectedPlatforms.length > 0) {
+        // Existing social media handling (unchanged)
         const socialData = {
           content: content,
           platforms: selectedPlatforms,
@@ -225,7 +294,7 @@ const ContentRepurposer: React.FC = () => {
 
         const result: RepurposingResult = {
           repurposedText: combinedText,
-          socialPosts: data.socialPosts, // Store the structured social posts
+          socialPosts: data.socialPosts,
           summary: {
             sourceFormat: CONTENT_FORMATS.find(f => f.value === sourceFormat)?.label || sourceFormat,
             targetFormat: `Social Media (${selectedPlatforms.join(', ')})`,
@@ -277,7 +346,7 @@ const ContentRepurposer: React.FC = () => {
         showNotification(`✨ Social media posts created for ${selectedPlatforms.length} platform${selectedPlatforms.length > 1 ? 's' : ''}!`, "success");
 
       } else {
-        // Regular repurposing for non-social formats
+        // Existing regular repurposing for other formats (unchanged)
         const requestData = {
           content: content,
           sourceFormat: sourceFormat,
@@ -418,7 +487,7 @@ const ContentRepurposer: React.FC = () => {
     showNotification("Text copied to clipboard", "success");
   };
 
-  // NEW: Copy individual social post
+  // Copy individual social post
   const copySocialPost = (platform: string, content: string) => {
     navigator.clipboard.writeText(content);
     showNotification(`${platform} post copied to clipboard`, "success");
@@ -542,7 +611,7 @@ const ContentRepurposer: React.FC = () => {
             </div>
           </div>
 
-          {/* NEW: Social Media Options (show when target format is social-media) */}
+          {/* Social Media Options (show when target format is social-media) */}
           {targetFormat === 'social-media' && (
             <Card className="bg-purple-50 border-purple-200">
               <CardHeader className="pb-4">
@@ -561,8 +630,8 @@ const ContentRepurposer: React.FC = () => {
                         key={platform.value}
                         onClick={() => handlePlatformToggle(platform.value)}
                         className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${selectedPlatforms.includes(platform.value)
-                            ? 'border-purple-500 bg-purple-100 text-purple-800'
-                            : 'border-gray-300 bg-white text-gray-700 hover:border-purple-300'
+                          ? 'border-purple-500 bg-purple-100 text-purple-800'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-purple-300'
                           }`}
                       >
                         <div className="text-center">
@@ -659,12 +728,14 @@ const ContentRepurposer: React.FC = () => {
               {isProcessing ? (
                 <>
                   <Loader className="w-4 h-4 mr-2 animate-spin" />
-                  {targetFormat === 'social-media' ? 'Creating Social Posts...' : 'Repurposing Content...'}
+                  {targetFormat === 'social-media' ? 'Creating Social Posts...' :
+                    targetFormat === 'email' ? 'Creating Email...' : 'Repurposing Content...'}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  {targetFormat === 'social-media' ? 'Create Social Posts' : 'Repurpose Content'}
+                  {targetFormat === 'social-media' ? 'Create Social Posts' :
+                    targetFormat === 'email' ? 'Create Email' : 'Repurpose Content'}
                 </>
               )}
             </button>
@@ -672,7 +743,7 @@ const ContentRepurposer: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Repurposed Results */}
+      {/* Rest of the component remains exactly the same... */}
       {repurposingResult && (
         <div ref={resultsRef} className="space-y-8">
           {/* Summary Card */}
@@ -681,7 +752,8 @@ const ContentRepurposer: React.FC = () => {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
-                  <span>✨ Content {targetFormat === 'social-media' ? 'Transformed into Social Posts' : 'Repurposed Successfully'}</span>
+                  <span>✨ Content {targetFormat === 'social-media' ? 'Transformed into Social Posts' :
+                    targetFormat === 'email' ? 'Transformed into Email' : 'Repurposed Successfully'}</span>
                 </div>
                 <div className="flex space-x-2">
                   <button
@@ -776,7 +848,7 @@ const ContentRepurposer: React.FC = () => {
             </Card>
           )}
 
-          {/* NEW: Individual Social Media Posts Display */}
+          {/* Individual Social Media Posts Display */}
           {targetFormat === 'social-media' && repurposingResult.socialPosts ? (
             <div className="space-y-4">
               {Object.entries(repurposingResult.socialPosts).map(([platform, postData]: [string, any]) => {
@@ -910,7 +982,7 @@ const ContentRepurposer: React.FC = () => {
             </Card>
           )}
 
-          {/* ✅ Use the shared ChangeDisplay component */}
+          {/* Use the shared ChangeDisplay component */}
           <ChangeDisplay
             changes={repurposingResult.changeDetails}
             title="🎯 What I Adapted"
