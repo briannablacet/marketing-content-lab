@@ -104,9 +104,10 @@ function applyHeadingCase(text: string, headingCase: string): string {
 // Render formatted content
 function renderFormattedContent(content: string, writingStyle: any) {
   if (!content) return null;
-  console.log("📝 First few lines on Vercel:", lines.slice(0, 5));
+
   const cleanedContent = cleanGeneratedContent(content);
   const lines = cleanedContent.split('\n');
+  console.log("📝 First few lines on Vercel:", lines.slice(0, 5));
   const elements = [];
   let currentParagraph = [];
 
