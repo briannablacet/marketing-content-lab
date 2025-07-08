@@ -81,7 +81,7 @@ const cleanRepurposedContent = (content: string): string => {
   cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1');     // Remove *any single asterisks*
   cleaned = cleaned.replace(/\*/g, '');                // Remove any remaining asterisks
   cleaned = cleaned.replace(/__([^_]+)__/g, '$1');     // Remove __underline bold__
-  cleaned = cleaned.replace(/_([^_]+)_/g, '$1');       // Remove _italic_
+  cleaned = cleaned.replace(/_([^_]+)_/g, '$1');       // Remove _italic_f
 
   // Remove inline code (`code` → code)
   cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
@@ -138,7 +138,7 @@ const ContentRepurposer: React.FC = () => {
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeEmojis, setIncludeEmojis] = useState(true);
   const [includeCallToAction, setIncludeCallToAction] = useState(true);
-
+  const [selectedSocialVariations, setSelectedSocialVariations] = useState({});
   const handleFileContent = (fileContent: string | object) => {
     if (typeof fileContent === "string") {
       setContent(fileContent);
@@ -149,14 +149,20 @@ const ContentRepurposer: React.FC = () => {
       showNotification("Structured content loaded successfully", "success");
     }
   };
-
-  // Handle platform selection for social media
-  const handlePlatformToggle = (platform: string) => {
+  const handlePlatformToggle = (platform) => {
     setSelectedPlatforms(prev =>
       prev.includes(platform)
         ? prev.filter(p => p !== platform)
         : [...prev, platform]
     );
+  };
+
+  // Handle platform selection for social media
+  const handleSocialVariationSelect = (platform, variationId) => {
+    setSelectedSocialVariations(prev => ({
+      ...prev,
+      [platform]: variationId
+    }));
   };
 
   // ENHANCED: Process content with special handling for email and social media
@@ -288,9 +294,11 @@ const ContentRepurposer: React.FC = () => {
 
         // Create combined text for display
         const combinedText = Object.entries(data.socialPosts)
-          .map(([platform, postData]: [string, any]) =>
-            `${platform.toUpperCase()} POST:\n${postData.content}\n(${postData.characterCount} characters)`
-          ).join('\n\n---\n\n');
+          .map(([platform, platformData]: [string, any]) => {
+            const platformInfo = SOCIAL_PLATFORMS.find(p => p.value === platform);
+            const firstVariation = platformData.variations?.[0] || {};
+            return `${platformInfo?.icon || '📱'} ${platformInfo?.label || platform.toUpperCase()}\n${firstVariation.content || 'No content generated'}\n(${firstVariation.characterCount || 0} characters)`;
+          }).join('\n\n---\n\n');
 
         const result: RepurposingResult = {
           repurposedText: combinedText,
@@ -851,8 +859,9 @@ const ContentRepurposer: React.FC = () => {
           {/* Individual Social Media Posts Display */}
           {targetFormat === 'social-media' && repurposingResult.socialPosts ? (
             <div className="space-y-4">
-              {Object.entries(repurposingResult.socialPosts).map(([platform, postData]: [string, any]) => {
+              {Object.entries(repurposingResult.socialPosts).map(([platform, platformData]: [string, any]) => {
                 const platformInfo = SOCIAL_PLATFORMS.find(p => p.value === platform) || { icon: '📱', label: platform, color: 'bg-gray-600' };
+                const selectedVariationId = selectedSocialVariations[platform] || 1;
 
                 return (
                   <Card key={platform} className="border-2 border-blue-300">
@@ -862,34 +871,52 @@ const ContentRepurposer: React.FC = () => {
                           <span className="text-2xl mr-2">{platformInfo.icon}</span>
                           <span>{platformInfo.label} Post</span>
                           <span className="ml-2 text-sm text-gray-600">
-                            ({postData.characterCount} characters)
+                            ({platformData.variations?.length || 0} variations)
                           </span>
                         </div>
                         <button
-                          onClick={() => copySocialPost(platform, postData.content)}
+                          onClick={() => {
+                            const selectedVariation = platformData.variations?.find((v: any) => v.id === selectedVariationId) || platformData.variations?.[0];
+                            copySocialPost(platform, selectedVariation?.content || '');
+                          }}
                           className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
                         >
                           <Copy className="w-4 h-4 mr-1" />
-                          Copy
+                          Copy Selected
                         </button>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
-                      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm" style={{
-                        fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-                        lineHeight: '1.5',
-                        fontSize: '11pt',
-                        color: '#333'
-                      }}>
-                        <div style={{ whiteSpace: 'pre-wrap' }}>
-                          {postData.content}
-                        </div>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {(platformData.variations || []).map((variation: any) => (
+                          <button
+                            key={variation.id}
+                            onClick={() => handleSocialVariationSelect(platform, variation.id)}
+                            className={`px-3 py-1 text-xs rounded-md transition-all ${selectedVariationId === variation.id
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-white text-gray-700 hover:bg-purple-100 border'
+                              }`}
+                          >
+                            {variation.approach} ({variation.characterCount} chars)
+                          </button>
+                        ))}
                       </div>
+
+                      {(() => {
+                        const selectedVariation = platformData.variations?.find((v: any) => v.id === selectedVariationId) || platformData.variations?.[0];
+                        return selectedVariation ? (
+                          <div className="whitespace-pre-wrap text-sm bg-white p-3 rounded border">
+                            {selectedVariation.content}
+                          </div>
+                        ) : (
+                          <div className="text-gray-500 p-3">No content available</div>
+                        );
+                      })()}
 
                       {/* Platform guidelines */}
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <div className="text-xs text-gray-600">
-                          <strong>Platform Guidelines:</strong> {postData.maxLength}
+                          <strong>Platform Guidelines:</strong> {platformData.maxLength}
                         </div>
                       </div>
                     </CardContent>
