@@ -1,5 +1,5 @@
 // src/components/features/ContentEngine/screens/ContentPreview.tsx
-// ENHANCED: Added email endpoint support for consistent email formatting
+// ENHANCED: Added email nurture flow support for campaign email generation
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -15,28 +15,28 @@ function cleanGeneratedContent(content: string, contentType?: string): string {
   if (!content) return content;
 
   let cleaned = content;
-  
+
   // Convert AI heading labels to markdown
   cleaned = cleaned.replace(/^H1:\s*(.+)$/gm, '# $1');
   cleaned = cleaned.replace(/^H1 HEADING:\s*(.+)$/gm, '# $1');
   cleaned = cleaned.replace(/^H2:\s*(.+)$/gm, '## $1');
   cleaned = cleaned.replace(/^H3:\s*(.+)$/gm, '### $1');
   cleaned = cleaned.replace(/^Subheading:\s*(.+)$/gm, '## $1');
-  
+
   // Remove/replace generic labels
   cleaned = cleaned.replace(/^Strong Conclusion\s*$/gm, '## Key Takeaways');
   cleaned = cleaned.replace(/^Strong conclusion\s*$/gm, '## Key Takeaways');
   cleaned = cleaned.replace(/^Engaging Opening\s*$/gm, '## Introduction');
   cleaned = cleaned.replace(/^Engaging opening\s*$/gm, '## Introduction');
   cleaned = cleaned.replace(/^Engaging opening:\s*$/gm, '');
-  
+
   // Clean up spacing
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-  
+
   // Convert standalone capitalized lines to headings (10-80 chars)
   cleaned = cleaned.replace(/^([A-Z][A-Za-z\s]{10,80})$/gm, '## $1');
 
-  // 🚨 Email-specific formatting - match ContentCreator behavior
+  // Email-specific formatting - match ContentCreator behavior
   if (contentType === 'email') {
     // Split content into lines first
     const lines = cleaned.split('\n').filter(line => line.trim());
@@ -71,7 +71,7 @@ CTA: Download your free copy now and start seeing results today!`;
 
     cleaned = properEmail;
   }
-  
+
   return cleaned.trim();
 }
 
@@ -199,7 +199,9 @@ function renderFormattedContent(content: string, writingStyle: any) {
   return <div>{elements}</div>;
 }
 
-const ContentPreview: React.FC = () => {
+interface ContentPreviewProps { }
+
+const ContentPreview: React.FC<ContentPreviewProps> = () => {
   const { selectedContentTypes } = useContent();
   const { writingStyle, isStyleConfigured } = useWritingStyle();
   const { showNotification } = useNotification();
@@ -240,33 +242,35 @@ const ContentPreview: React.FC = () => {
       for (const contentType of selectedContentTypes) {
         console.log(`🔄 Generating ${contentType}...`);
 
-        // 🚨 NEW: Use dedicated email endpoint for emails
+        // 🚨 NEW: Use email nurture flow for Email Campaigns
         if (contentType === 'Email Campaigns' || contentType === 'email') {
-          console.log("🔧 Using dedicated email endpoint for campaign");
-          
+          console.log("🔧 Using email nurture flow for campaign");
+
           const response = await fetch('/api/api_endpoints', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              mode: 'email-generation',
+              mode: 'email-nurture-flow',
               data: {
-                topic: campaignData.name || 'Campaign Update',
+                campaignName: campaignData.name || 'Campaign Update',
                 audience: campaignData.targetAudience || 'professional audience',
-                tone: 'professional',
-                maxWords: 150
+                keyMessages: campaignData.keyMessages || [],
+                campaignType: campaignData.type || 'awareness',
+                numEmails: 5 // Create a 5-email nurture sequence
               }
             }),
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to generate ${contentType}: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Failed to generate ${contentType}: ${response.status}`);
           }
 
           const data = await response.json();
           results[contentType] = {
-            title: `Email: ${campaignData.name}`,
-            content: data.content,
-            type: 'email'
+            title: `Email Nurture Flow: ${campaignData.name}`,
+            content: data.nurtureFlow || data.content,
+            type: 'email-flow'
           };
 
         } else {
@@ -479,92 +483,94 @@ const ContentPreview: React.FC = () => {
                     {/* Export Dropdown */}
                     <div className="relative">
                       <button
-                       onClick={() => setShowExportDropdown(prev => ({ ...prev, [contentType]: !prev[contentType] }))}
-                       className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
-                     >
-                       <Download className="w-4 h-4 mr-1" />
-                       Export
-                     </button>
-                     {showExportDropdown[contentType] && (
-                       <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
-                         <button
-                           onClick={() => handleExport(contentType, 'txt')}
-                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                         >
-                           Plain Text (.txt)
-                         </button>
-                         <button
-                           onClick={() => handleExport(contentType, 'markdown')}
-                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                         >
-                           Markdown (.md)
-                         </button>
-                         <button
-                           onClick={() => handleExport(contentType, 'html')}
-                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                         >
-                           HTML (.html)
-                         </button>
-                         <button
-                           onClick={() => handleExport(contentType, 'pdf')}
-                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                         >
-                           PDF (.pdf)
-                         </button>
-                         <button
-                           onClick={() => handleExport(contentType, 'docx')}
-                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                         >
-                           Word (.docx)
-                         </button>
-                       </div>
-                     )}
-                   </div>
+                        onClick={() => setShowExportDropdown(prev => ({ ...prev, [contentType]: !prev[contentType] }))}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center"
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Export
+                      </button>
+                      {showExportDropdown[contentType] && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
+                          <button
+                            onClick={() => handleExport(contentType, 'txt')}
+                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          >
+                            Plain Text (.txt)
+                          </button>
+                          <button
+                            onClick={() => handleExport(contentType, 'markdown')}
+                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          >
+                            Markdown (.md)
+                          </button>
+                          <button
+                            onClick={() => handleExport(contentType, 'html')}
+                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          >
+                            HTML (.html)
+                          </button>
+                          <button
+                            onClick={() => handleExport(contentType, 'pdf')}
+                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          >
+                            PDF (.pdf)
+                          </button>
+                          <button
+                            onClick={() => handleExport(contentType, 'docx')}
+                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          >
+                            Word (.docx)
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-                   <button
-                     onClick={() => copyToClipboard(content.content, contentType)}
-                     className="px-3 py-1 text-sm text-green-600 hover:text-green-700 font-medium flex items-center"
-                   >
-                     <Copy className="w-4 h-4 mr-1" />
-                     Copy
-                   </button>
-                 </div>
-               </CardTitle>
-             </CardHeader>
-             <CardContent className="p-6">
-               <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
-                 fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-                 lineHeight: '1.6',
-                 fontSize: '11pt',
-                 color: '#333'
-               }}>
-                 {renderFormattedContent(content.content, writingStyle)}
+                    <button
+                      onClick={() => copyToClipboard(content.content, contentType)}
+                      className="px-3 py-1 text-sm text-green-600 hover:text-green-700 font-medium flex items-center"
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copy
+                    </button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm" style={{
+                  fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                  lineHeight: '1.6',
+                  fontSize: '11pt',
+                  color: '#333'
+                }}>
+                  {renderFormattedContent(content.content, writingStyle)}
 
-                 <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-gray-500">
-                   <span>Word count: {typeof content.content === 'string' ? content.content.split(/\s+/).length : 0}</span>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
-         ))}
-       </div>
-     )}
+                  <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-gray-500">
+                    <span>Word count: {typeof content.content === 'string' ? content.content.split(/\s+/).length : 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-     {/* Style Guide Applied Notice */}
-     {isStyleConfigured && Object.keys(generatedContent).length > 0 && (
-       <Card className="p-4 bg-green-50 border border-green-200">
-         <div className="flex items-center text-sm text-gray-600">
-           <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-           <span>
-             Campaign content created using {writingStyle?.styleGuide?.primary} style guide
-             {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
-             {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}.
-           </span>
-         </div>
-       </Card>
-     )}
-   </div>
- );
+      {/* Style Guide Applied Notice */}
+      {isStyleConfigured && Object.keys(generatedContent).length > 0 && (
+        <Card className="p-4 bg-green-50 border border-green-200">
+          <div className="flex items-center text-sm text-gray-600">
+            <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+            <span>
+              Campaign content created using {writingStyle?.styleGuide?.primary} style guide
+              {writingStyle?.formatting?.headingCase === 'upper' && ' with ALL CAPS headings'}
+              {writingStyle?.formatting?.numberFormat === 'numerals' && ' and numerical format'}.
+            </span>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
 };
 
 export default ContentPreview;
+
+// Remove any static generation functions that might be causing conflicts

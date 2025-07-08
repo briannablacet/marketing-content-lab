@@ -1564,6 +1564,8 @@ Keep it concise, professional, and actionable. Total word count must not exceed 
     return res.status(500).json({ error: "Failed to generate email" });
   }
 }
+
+
 // Handler for ContentEditChat targeted improvements
 async function handleContentImprove(data: any, res: NextApiResponse) {
   try {
@@ -1599,6 +1601,158 @@ Return only the improved content.`;
   } catch (error) {
     console.error("Content improve error:", error);
     return res.status(500).json({ error: "Failed to improve content" });
+  }
+}
+
+// Handler for email nurture flow generation
+async function handleEmailNurtureFlow(data: any, res: NextApiResponse) {
+  try {
+    const {
+      campaignName,
+      audience,
+      keyMessages,
+      campaignType,
+      numEmails = 5
+    } = data;
+
+    console.log("🔄 Generating email nurture flow:", { campaignName, audience, numEmails });
+
+    // Define email purposes based on campaign type
+    const emailPurposes = {
+      'awareness': [
+        'Welcome and introduce your brand',
+        'Share valuable industry insights',
+        'Provide educational content',
+        'Build trust with social proof',
+        'Invite further engagement'
+      ],
+      'lead_generation': [
+        'Welcome and set expectations',
+        'Identify pain points and challenges',
+        'Present your solution',
+        'Share success stories and case studies',
+        'Strong call-to-action to convert'
+      ],
+      'conversion': [
+        'Welcome and confirm interest',
+        'Address common objections',
+        'Demonstrate clear value and ROI',
+        'Share testimonials and proof',
+        'Create urgency with limited offer'
+      ],
+      'retention': [
+        'Thank them for being a customer',
+        'Share advanced tips and best practices',
+        'Introduce new features or services',
+        'Request feedback and testimonials',
+        'Offer exclusive benefits or upgrades'
+      ]
+    };
+
+    const purposes = emailPurposes[campaignType] || emailPurposes['awareness'];
+    const emails = [];
+
+    // Generate each email in the sequence
+    for (let i = 0; i < numEmails; i++) {
+      const emailNumber = i + 1;
+      const purpose = purposes[i] || purposes[purposes.length - 1];
+      
+      const prompt = `Create a professional email for an email nurture sequence.
+
+CAMPAIGN: ${campaignName}
+EMAIL NUMBER: ${emailNumber} of ${numEmails}
+PURPOSE: ${purpose}
+AUDIENCE: ${audience}
+KEY MESSAGES: ${keyMessages.join(', ')}
+
+Create a 150-word email with this structure:
+- Subject line (max 45 characters)
+- Preview text (max 20 words)
+- Headline
+- Body (conversational, professional tone)
+- Clear call-to-action
+
+Make this email ${emailNumber === 1 ? 'welcoming and introductory' : 
+emailNumber === numEmails ? 'action-oriented with strong CTA' : 
+'educational and value-focused'}.
+
+CRITICAL: Use this EXACT format with line breaks:
+
+Subject: [subject line]
+
+Preview: [preview text]
+
+Headline: [headline]
+
+Body: [body content]
+
+CTA: [call to action]
+
+Follow this format exactly with line breaks before each section.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-turbo",
+        temperature: 0.7,
+        messages: [
+          {
+            role: "system",
+            content: "You are an email marketing expert. Create professional, engaging emails that drive results. Keep to 150 words total."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      const emailContent = response.choices[0].message.content || '';
+      
+      emails.push({
+        emailNumber: emailNumber,
+        purpose: purpose,
+        content: emailContent,
+        sendDelay: emailNumber === 1 ? 'Immediate' : `${(emailNumber - 1) * 3} days after signup`
+      });
+    }
+
+    // Format the complete nurture flow
+    const nurtureFlow = `EMAIL NURTURE FLOW: ${campaignName}
+Campaign Type: ${campaignType}
+Target Audience: ${audience}
+Total Emails: ${numEmails}
+
+${emails.map(email => `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EMAIL ${email.emailNumber}: ${email.purpose}
+Send Timing: ${email.sendDelay}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${email.content}
+
+`).join('')}
+
+IMPLEMENTATION NOTES:
+• Set up automated triggers in your email platform
+• Track open rates, click rates, and conversions for each email
+• A/B test subject lines for optimal performance
+• Consider personalizing based on recipient behavior
+• Monitor unsubscribe rates and adjust timing if needed`;
+
+    console.log("✅ Email nurture flow generated successfully");
+
+    return res.status(200).json({
+      nurtureFlow: nurtureFlow,
+      emails: emails,
+      campaignName: campaignName,
+      totalEmails: numEmails
+    });
+
+  } catch (error) {
+    console.error("❌ Email nurture flow error:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({
+      error: `Email nurture flow generation failed: ${errorMessage}`
+    });
   }
 }
 
@@ -1651,6 +1805,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (mode === "social-media") {
     return handleSocialMediaGeneration(data, res);
     console.log("🎯 Using social media handler");
+  } else if (mode === "email-nurture-flow") {
+    return handleEmailNurtureFlow(data, res);
   } else {
     console.log("❌ Unknown mode:", mode);
     return res.status(400).json({ error: "Invalid mode" });
