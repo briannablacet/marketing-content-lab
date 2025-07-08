@@ -69,16 +69,17 @@ function cleanGeneratedContent(content: string): string {
 
   let cleaned = content;
   cleaned = cleaned.replace(/^H1:\s*(.+)$/gm, '# $1');
+  cleaned = cleaned.replace(/^H1 HEADING:\s*(.+)$/gm, '# $1'); // ADD THIS
   cleaned = cleaned.replace(/^H2:\s*(.+)$/gm, '## $1');
   cleaned = cleaned.replace(/^H3:\s*(.+)$/gm, '### $1');
-  cleaned = cleaned.replace(/^Subheading:\s*(.+)$/gm, '## $1'); // ADD THIS
+  cleaned = cleaned.replace(/^Subheading:\s*(.+)$/gm, '## $1');
   cleaned = cleaned.replace(/^Strong Conclusion\s*$/gm, '## Key Takeaways');
-  cleaned = cleaned.replace(/^Strong conclusion\s*$/gm, '## Key Takeaways'); // ADD THIS (lowercase)
+  cleaned = cleaned.replace(/^Strong conclusion\s*$/gm, '## Key Takeaways');
   cleaned = cleaned.replace(/^Engaging Opening\s*$/gm, '## Introduction');
-  cleaned = cleaned.replace(/^Engaging opening\s*$/gm, '## Introduction'); // ADD THIS (lowercase)
+  cleaned = cleaned.replace(/^Engaging opening\s*$/gm, '## Introduction'); // ADD THIS
+  cleaned = cleaned.replace(/^Engaging opening:\s*$/gm, ''); // ADD THIS to remove the label entirely
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-  // Add this line AFTER all your existing replace statements, before the return:
-  cleaned = cleaned.replace(/^([A-Z][A-Za-z\s]{15,60})$/gm, '## $1');
+  cleaned = cleaned.replace(/^([A-Z][A-Za-z\s]{10,80})$/gm, '## $1');
   return cleaned.trim();
 }
 
