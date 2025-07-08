@@ -458,8 +458,8 @@ const ContentCreatorPage = () => {
 
   const handleContentUpdate = (newContent, newTitle) => {
     const cleanedContent = cleanGeneratedContent(newContent);
-    // Remove ALL asterisks (both ** and single *)
-    const finalContent = cleanedContent.replace(/\*+/g, '');
+    // Also remove markdown asterisks from ContentEditChat results
+    const finalContent = cleanedContent.replace(/\*\*(.*?)\*\*/g, '$1');
     setGeneratedContent(finalContent);
     if (newTitle && newTitle !== generatedTitle) {
       setGeneratedTitle(newTitle);
