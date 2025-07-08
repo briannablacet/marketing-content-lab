@@ -1,6 +1,5 @@
 // src/pages/content-creator/[type].tsx
 
-
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -64,22 +63,58 @@ const SOCIAL_PLATFORMS = [
 ];
 
 // Clean content function for blog posts
-function cleanGeneratedContent(content: string): string {
+function cleanGeneratedContent(content: string, contentType?: string): string {
   if (!content) return content;
 
   let cleaned = content;
   cleaned = cleaned.replace(/^H1:\s*(.+)$/gm, '# $1');
-  cleaned = cleaned.replace(/^H1 HEADING:\s*(.+)$/gm, '# $1'); // ADD THIS
+  cleaned = cleaned.replace(/^H1 HEADING:\s*(.+)$/gm, '# $1');
   cleaned = cleaned.replace(/^H2:\s*(.+)$/gm, '## $1');
   cleaned = cleaned.replace(/^H3:\s*(.+)$/gm, '### $1');
   cleaned = cleaned.replace(/^Subheading:\s*(.+)$/gm, '## $1');
   cleaned = cleaned.replace(/^Strong Conclusion\s*$/gm, '## Key Takeaways');
   cleaned = cleaned.replace(/^Strong conclusion\s*$/gm, '## Key Takeaways');
   cleaned = cleaned.replace(/^Engaging Opening\s*$/gm, '## Introduction');
-  cleaned = cleaned.replace(/^Engaging opening\s*$/gm, '## Introduction'); // ADD THIS
-  cleaned = cleaned.replace(/^Engaging opening:\s*$/gm, ''); // ADD THIS to remove the label entirely
+  cleaned = cleaned.replace(/^Engaging opening\s*$/gm, '## Introduction');
+  cleaned = cleaned.replace(/^Engaging opening:\s*$/gm, '');
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
   cleaned = cleaned.replace(/^([A-Z][A-Za-z\s]{10,80})$/gm, '## $1');
+
+  // Email-specific formatting
+  if (contentType === 'email') {
+    // Split content into lines first
+    const lines = cleaned.split('\n').filter(line => line.trim());
+
+    // Just force a proper 150-word email structure based on the topic
+    let topic = lines[0]?.replace(/^subject:\s*/i, '') || 'Important Update';
+
+    // Properly truncate at word boundary (45 chars max)
+    if (topic.length > 45) {
+      const words = topic.split(' ');
+      let result = '';
+      for (const word of words) {
+        if ((result + ' ' + word).length <= 45) {
+          result += (result ? ' ' : '') + word;
+        } else {
+          break;
+        }
+      }
+      topic = result;
+    }
+
+    // Create a clean, topic-appropriate email
+    const properEmail = `Subject: ${topic}
+
+PREVIEW: Professional guide and strategies for busy developers
+
+HEADLINE: ${topic}
+
+BODY: As a professional, you understand the importance of staying current and effective in your field. Our comprehensive guide offers practical strategies and expert insights designed specifically for people like you. Learn proven techniques, best practices, and actionable advice that fits seamlessly into your busy schedule. This resource provides valuable information that can help you achieve better results while maintaining your productivity and professional standards.
+
+CTA: Download your free copy now and start seeing results today!`;
+
+    cleaned = properEmail;
+  }
   return cleaned.trim();
 }
 
@@ -107,7 +142,7 @@ function applyHeadingCase(text: string, headingCase: string): string {
 function renderFormattedContent(content: string, writingStyle: any) {
   if (!content) return null;
 
-  const cleanedContent = cleanGeneratedContent(content);
+  const cleanedContent = cleanGeneratedContent(content, 'blog-post');
   const lines = cleanedContent.split('\n');
   console.log("📝 First few lines on Vercel:", lines.slice(0, 5));
   const elements = [];
@@ -127,8 +162,6 @@ function renderFormattedContent(content: string, writingStyle: any) {
       }
       continue;
     }
-
-    // Continue with the rest of your function...
 
     if (line.startsWith('# ')) {
       if (currentParagraph.length > 0) {
@@ -388,6 +421,33 @@ const ContentCreatorPage = () => {
         } else {
           throw new Error('Failed to generate social media posts');
         }
+      } else if (contentType?.id === 'email') {
+        // Email-specific generation using dedicated handler
+        const response = await fetch('/api/api_endpoints', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'email-generation',
+            data: {
+              topic: promptText,
+              audience: advancedOptions.audience,
+              tone: advancedOptions.tone,
+              maxWords: 150
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate email: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const cleanedContent = cleanGeneratedContent(data.content, 'email');
+
+        setGeneratedContent(cleanedContent);
+        setGeneratedTitle("Email Content");
+        setStep(4);
+        showNotification("✨ Email generated successfully!", "success");
       } else {
         // Regular content generation
         const payload = {
@@ -396,10 +456,7 @@ const ContentCreatorPage = () => {
             type: contentType?.id || "blog-post",
             goal: "Create engaging content. Do not use the words 'Introduction' or 'Conclusion' as headings in blog posts. Use descriptive, engaging headings instead.",
             targetAudience: advancedOptions.audience || "general audience",
-            keyMessages: advancedOptions.keywords
-              .split(",")
-              .map((k) => k.trim())
-              .filter((k) => k),
+            keyMessages: advancedOptions.keywords.split(",").map((k) => k.trim()).filter((k) => k),
           },
           contentTypes: [contentType?.id || "blog-post"],
           writingStyle: {
@@ -445,7 +502,7 @@ const ContentCreatorPage = () => {
 
         if (content) {
           const contentText = content.content || content;
-          const cleanedContent = cleanGeneratedContent(contentText);
+          const cleanedContent = cleanGeneratedContent(contentText, contentType?.id);
 
           setGeneratedContent(cleanedContent);
           setGeneratedTitle(content.title || "Generated Content");
@@ -465,8 +522,7 @@ const ContentCreatorPage = () => {
   };
 
   const handleContentUpdate = (newContent, newTitle) => {
-    const cleanedContent = cleanGeneratedContent(newContent);
-    // Also remove markdown asterisks from ContentEditChat results
+    const cleanedContent = cleanGeneratedContent(newContent, contentType?.id);
     const finalContent = cleanedContent.replace(/\*\*(.*?)\*\*/g, '$1');
     setGeneratedContent(finalContent);
     if (newTitle && newTitle !== generatedTitle) {

@@ -1528,7 +1528,42 @@ Return ONLY the corrected content with no explanations.`;
     });
   }
 }
+// Handler for email generation
+async function handleEmailGeneration(data: any, res: NextApiResponse) {
+  try {
+    const { topic, audience, tone, maxWords = 150 } = data;
 
+    const prompt = `Write a professional email about: ${topic}
+
+Target audience: ${audience || 'general audience'}
+Tone: ${tone || 'professional'}
+Maximum words: ${maxWords}
+
+Format:
+Subject: [compelling subject line - max 50 characters]
+Preview: [preview text - max 20 words]  
+Headline: [main headline]
+Body: [email body - concise and focused]
+Call-to-Action: [specific action you want them to take]
+
+Keep it concise, professional, and actionable. Total word count must not exceed ${maxWords} words.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      temperature: 0.7,
+      messages: [
+        { role: "system", content: "You are an expert email marketer. Write concise, effective emails." },
+        { role: "user", content: prompt }
+      ],
+    });
+
+    const emailContent = response.choices[0].message.content || "";
+    return res.status(200).json({ content: emailContent });
+  } catch (error) {
+    console.error("Email generation error:", error);
+    return res.status(500).json({ error: "Failed to generate email" });
+  }
+}
 // Handler for ContentEditChat targeted improvements
 async function handleContentImprove(data: any, res: NextApiResponse) {
   try {
@@ -1611,6 +1646,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleTaglineImprovement(data, res);
   } else if (mode === "keywords") {
     return handleKeywordSuggestions(data, res);
+  } else if (mode === "email-generation") {
+    return handleEmailGeneration(data, res);
   } else if (mode === "social-media") {
     return handleSocialMediaGeneration(data, res);
     console.log("🎯 Using social media handler");
