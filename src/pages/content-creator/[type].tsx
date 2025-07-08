@@ -71,8 +71,11 @@ function cleanGeneratedContent(content: string): string {
   cleaned = cleaned.replace(/^H1:\s*(.+)$/gm, '# $1');
   cleaned = cleaned.replace(/^H2:\s*(.+)$/gm, '## $1');
   cleaned = cleaned.replace(/^H3:\s*(.+)$/gm, '### $1');
+  cleaned = cleaned.replace(/^Subheading:\s*(.+)$/gm, '## $1'); // ADD THIS
   cleaned = cleaned.replace(/^Strong Conclusion\s*$/gm, '## Key Takeaways');
+  cleaned = cleaned.replace(/^Strong conclusion\s*$/gm, '## Key Takeaways'); // ADD THIS (lowercase)
   cleaned = cleaned.replace(/^Engaging Opening\s*$/gm, '## Introduction');
+  cleaned = cleaned.replace(/^Engaging opening\s*$/gm, '## Introduction'); // ADD THIS (lowercase)
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
 
   return cleaned.trim();
@@ -104,7 +107,7 @@ function renderFormattedContent(content: string, writingStyle: any) {
 
   const cleanedContent = cleanGeneratedContent(content);
   const lines = cleanedContent.split('\n');
-  const elements = [];
+   const elements = [];
   let currentParagraph = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -121,6 +124,8 @@ function renderFormattedContent(content: string, writingStyle: any) {
       }
       continue;
     }
+
+    // Continue with the rest of your function...
 
     if (line.startsWith('# ')) {
       if (currentParagraph.length > 0) {
@@ -1070,8 +1075,8 @@ const ContentCreatorPage = () => {
             <div key={stepNum} className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= stepNum
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-300 text-gray-600"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-300 text-gray-600"
                   }`}
               >
                 {stepNum}
