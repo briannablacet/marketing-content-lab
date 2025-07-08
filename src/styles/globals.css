@@ -41,12 +41,3 @@ body {
 button {
   cursor: pointer;
 }
-
-.force-bold {
-  font-weight: bold !important;
-  color: #1e40af !important;
-  /* Tailwind blue-800 */
-  background: none !important;
-  font-size: 1.25em !important;
-  border: none !important;
-}

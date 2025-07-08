@@ -192,7 +192,7 @@ async function handleEnhancedContent(requestData: any, res: NextApiResponse) {
     prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
 ${styleInstructions}
 
-⚠️ HEADING ENFORCEMENT: Use clear headings and subheadings in plain text format.
+⚠️ HEADING ENFORCEMENT: Use clear headings and subheadings in plain text format. Include an H1 heading at the top. Do not put colons at the ends of headings and subheadings.
 
 You are a professional magazine writer. Write a compelling 1,500-word article about: "${campaignData.name}"
 
@@ -325,33 +325,7 @@ Return only the humanized content.`;
     const humanizedContent = response.choices[0].message.content || "";
     // Clean the humanized content to remove unwanted formatting
     const cleanedHumanizedContent = cleanGeneratedContent(humanizedContent);
-
-// Add change details for the ChangeDisplay component
-const changeDetails = [
-  {
-    original: "It is important to note that",
-    suggestion: "Notably,",
-    reason: "Removed formal AI transition phrase",
-    type: "humanization"
-  },
-  {
-    original: "was analyzed",
-    suggestion: "we analyzed", 
-    reason: "Converted passive voice to active voice",
-    type: "humanization"
-  },
-  {
-    original: "it is",
-    suggestion: "it's",
-    reason: "Added contractions for natural tone",
-    type: "humanization"
-  }
-];
-
-return res.status(200).json({ 
-  content: cleanedHumanizedContent,
-  suggestions: changeDetails
-});
+    return res.status(200).json({ content: cleanedHumanizedContent });
   } catch (error) {
     console.error("Content humanizer error:", error);
     return res.status(500).json({ error: "Failed to humanize content" });
@@ -690,7 +664,227 @@ Return only the repurposed content.`;
     return res.status(500).json({ error: "Failed to repurpose content" });
   }
 }
+// src/pages/api/api_endpoints.ts
+// REPLACE your handleSocialMediaGeneration function with this clean version:
 
+async function handleSocialMediaGeneration(data: any, res: NextApiResponse) {
+  try {
+    console.log("🚀 Social Media Generation Started");
+    console.log("📊 Request Data:", data);
+
+    const {
+      content,
+      platforms = ['linkedin'],
+      tone = 'professional',
+      includeHashtags = true,
+      includeEmojis = true,
+      callToAction = true,
+      strategicData,
+      writingStyle,
+      numVariations = 3
+    } = data;
+
+    console.log("🎯 Number of variations requested:", numVariations);
+    console.log("📱 Platforms:", platforms);
+
+    if (!content || typeof content !== "string") {
+      return res.status(400).json({ error: "Missing or invalid content" });
+    }
+
+    // Build style guide instructions
+    const styleInstructions = buildStyleGuideInstructions(
+      writingStyle || strategicData?.writingStyle,
+      strategicData?.brandVoice,
+      strategicData?.messaging
+    );
+
+    const socialPosts: { [key: string]: any } = {};
+
+    for (const platform of platforms) {
+      let maxLength = "";
+      let platformGuidelines = "";
+
+      switch (platform.toLowerCase()) {
+        case 'linkedin':
+          maxLength = "1,300 characters (about 200-250 words)";
+          platformGuidelines = `
+- Professional yet engaging tone
+- Use line breaks for readability  
+- Include 3-5 relevant hashtags at the end
+- Add a clear call-to-action
+- Use emojis sparingly but strategically
+- Consider starting with a hook or question
+- LinkedIn users appreciate insights and professional value`;
+          break;
+
+        case 'twitter':
+        case 'x':
+          maxLength = "280 characters total";
+          platformGuidelines = `
+- Concise and punchy
+- Use 1-2 hashtags maximum (they count toward character limit)
+- Include emojis for engagement
+- Strong hook in first 8 words
+- Consider thread format if content is complex
+- Use Twitter-style language (brief, conversational)`;
+          break;
+
+        case 'facebook':
+          maxLength = "500-800 characters for best engagement";
+          platformGuidelines = `
+- Conversational and friendly tone
+- Use storytelling when possible
+- Include 2-3 hashtags
+- Ask questions to encourage comments
+- Use emojis to break up text
+- Facebook users like relatable, human content`;
+          break;
+
+        case 'instagram':
+          maxLength = "2,200 characters but first 125 characters are crucial";
+          platformGuidelines = `
+- Visual-first platform (mention this content needs an image)
+- Start with an engaging first line
+- Use line breaks for readability
+- Include 5-10 relevant hashtags (can go up to 30)
+- Stories should be engaging and personal
+- Use emojis throughout
+- Instagram users love authentic, behind-the-scenes content`;
+          break;
+
+        default:
+          maxLength = "300-500 characters";
+          platformGuidelines = "General social media best practices";
+      }
+
+      const platformPrompt = `🚨 STYLE GUIDE COMPLIANCE:
+${styleInstructions}
+
+Create ${numVariations} different engaging ${platform} posts based on this content. Each should have a unique angle or approach.
+
+ORIGINAL CONTENT:
+${content}
+
+PLATFORM: ${platform.toUpperCase()}
+MAX LENGTH: ${maxLength}
+TONE: ${tone}
+
+PLATFORM GUIDELINES:
+${platformGuidelines}
+
+REQUIREMENTS:
+- Create ${numVariations} DIFFERENT variations with unique angles
+- Each variation should stay within ${maxLength}
+- Make each post engaging and scroll-stopping
+- ${includeHashtags ? 'Include relevant hashtags' : 'No hashtags'}
+- ${includeEmojis ? 'Use emojis strategically' : 'No emojis'}
+- ${callToAction ? 'Include a clear call-to-action' : 'No call-to-action needed'}
+- Follow the style guide rules exactly
+- Remove any markdown formatting
+
+VARIATION APPROACHES (use these for inspiration):
+1. Question/Hook approach - Start with an engaging question
+2. Statistic/Insight approach - Lead with a compelling stat or insight  
+3. Story/Personal approach - Use storytelling or personal angle
+4. Tip/Actionable approach - Focus on actionable advice
+5. Contrarian/Bold approach - Challenge conventional thinking
+
+Return ONLY a JSON array of ${numVariations} posts like this:
+["post 1 text here", "post 2 text here", "post 3 text here"]
+
+No explanations, just the JSON array.`;
+
+      console.log(`🔍 ${platform.toUpperCase()} PROMPT:`, platformPrompt.substring(0, 200) + "...");
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-turbo",
+        temperature: 0.8,
+        max_tokens: platform.toLowerCase() === 'twitter' ? 200 : 500,
+        messages: [
+          {
+            role: "system",
+            content: `You are a social media expert specializing in ${platform}. Create multiple engaging, platform-specific content variations that follow all style guidelines. Return only a JSON array of post variations with no explanations.`
+          },
+          {
+            role: "user",
+            content: platformPrompt
+          }
+        ]
+      });
+
+      let postVariations: string[] = [];
+
+      try {
+        const rawResponse = response.choices[0].message.content?.trim() || '';
+        console.log(`📝 Raw ${platform} response:`, rawResponse.substring(0, 100) + "...");
+
+        // Try to parse as JSON array
+        const parsed = JSON.parse(rawResponse);
+
+        // Validate it's an array with the right number of items
+        if (!Array.isArray(parsed)) {
+          throw new Error(`AI returned non-array response for ${platform}`);
+        }
+
+        if (parsed.length === 0) {
+          throw new Error(`AI returned empty array for ${platform}`);
+        }
+
+        // Clean each variation
+        postVariations = parsed.map((post, index) => {
+          if (typeof post !== 'string') {
+            throw new Error(`AI returned non-string post ${index + 1} for ${platform}`);
+          }
+
+          let cleaned = cleanGeneratedContent(post);
+          cleaned = cleaned.replace(/^["']|["']$/g, ''); // Remove quotes
+
+          if (!cleaned.trim()) {
+            throw new Error(`AI returned empty post ${index + 1} for ${platform}`);
+          }
+
+          return cleaned;
+        });
+
+      } catch (parseError) {
+        console.error(`❌ Failed to parse ${platform} variations:`, parseError);
+
+        // STRICT: No fallbacks in beta! Return error instead
+        return res.status(500).json({
+          error: `Failed to generate ${platform} posts. Please try again.`,
+          details: parseError instanceof Error ? parseError.message : 'Unknown parsing error'
+        });
+      }
+
+      // Store the variations with metadata
+      socialPosts[platform] = {
+        platform: platform,
+        maxLength: maxLength,
+        guidelines: platformGuidelines.trim(),
+        variations: postVariations.slice(0, numVariations).map((content, index) => ({
+          id: index + 1,
+          content: content,
+          characterCount: content.length,
+          approach: ['Question/Hook', 'Statistic/Insight', 'Story/Personal', 'Tip/Actionable', 'Contrarian/Bold'][index] || 'Creative'
+        }))
+      };
+    }
+
+    console.log("✅ Generated social post variations for platforms:", Object.keys(socialPosts));
+    console.log("📊 Total variations created:",
+      Object.values(socialPosts).reduce((total: number, platform: any) => total + platform.variations.length, 0)
+    );
+
+    return res.status(200).json({ socialPosts });
+
+  } catch (error) {
+    console.error("❌ Social media generation error:", error);
+    return res.status(500).json({
+      error: "Failed to generate social media content",
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
 // Handler for AB test generator
 async function handleABTestGenerator(data: any, res: NextApiResponse) {
   try {
@@ -1379,6 +1573,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { mode, data } = body;
+
   console.log("🔍 API called with mode:", mode);
   if (mode === "humanize") {
     return handleContentHumanizer(data, res);
@@ -1414,7 +1609,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleTaglineImprovement(data, res);
   } else if (mode === "keywords") {
     return handleKeywordSuggestions(data, res);
+  } else if (mode === "social-media") {
+    return handleSocialMediaGeneration(data, res);
+    console.log("🎯 Using social media handler");
   } else {
+    console.log("❌ Unknown mode:", mode);
     return res.status(400).json({ error: "Invalid mode" });
   }
 }

@@ -212,6 +212,12 @@ MAKE SUBSTANTIAL CHANGES THAT CLEARLY ADDRESS THIS REQUEST.`
 
       const improvedContent = data.enhancedText || originalContent;
 
+      // Type check before using .trim()
+      if (typeof improvedContent !== "string") {
+        setError("The AI did not return valid text. Please try again.");
+        return;
+      }
+
       // Check if the content actually changed
       if (improvedContent.trim() === originalContent.trim()) {
         setError('The AI returned the same content. Try rephrasing your request or being more specific.');

@@ -68,7 +68,21 @@ export const CONTENT_TYPES = {
       'A/B Testing Ideas',
       'Sequence Planning',
       'Personalization Options'
-    ]
+    ],
+    'Press Release': {
+      description: 'Create newsworthy press releases that generate media coverage and build brand credibility',
+      activities: [
+        'Company announcements and news',
+        'Product launches and updates',
+        'Partnership and milestone announcements',
+        'Award recognition and achievements'
+      ],
+      aiSupport: [
+        'AP Style formatting',
+        'Media-ready headlines',
+        'Quote generation and attribution'
+      ]
+    },
   },
   'Digital Ads': {
     description: 'Create compelling ad copy for search, social, and display campaigns',
