@@ -51,6 +51,11 @@ const CONTENT_TYPES = [
     id: 'case-study',
     title: 'Case Study',
     description: 'Create compelling case studies that showcase your success stories and build credibility.'
+  },
+  {
+    id: 'press-release',
+    title: 'Press Release',
+    description: 'Create newsworthy press releases that generate media coverage and build brand credibility.'
   }
 ];
 
@@ -62,7 +67,8 @@ const SOCIAL_PLATFORMS = [
   { value: 'instagram', label: 'Instagram', icon: '📷', color: 'bg-pink-600' }
 ];
 
-// Clean content function for blog posts
+// Clean content function for different content types
+// Clean content function for all content types - FIXED PRESS RELEASE FORMAT
 function cleanGeneratedContent(content: string, contentType?: string): string {
   if (!content) return content;
 
@@ -82,13 +88,9 @@ function cleanGeneratedContent(content: string, contentType?: string): string {
 
   // Email-specific formatting
   if (contentType === 'email') {
-    // Split content into lines first
     const lines = cleaned.split('\n').filter(line => line.trim());
-
-    // Just force a proper 150-word email structure based on the topic
     let topic = lines[0]?.replace(/^subject:\s*/i, '') || 'Important Update';
 
-    // Properly truncate at word boundary (45 chars max)
     if (topic.length > 45) {
       const words = topic.split(' ');
       let result = '';
@@ -102,7 +104,6 @@ function cleanGeneratedContent(content: string, contentType?: string): string {
       topic = result;
     }
 
-    // Create a clean, topic-appropriate email
     const properEmail = `Subject: ${topic}
 
 PREVIEW: Professional guide and strategies for busy developers
@@ -115,8 +116,86 @@ CTA: Download your free copy now and start seeing results today!`;
 
     cleaned = properEmail;
   }
+
+  // FIXED: Press release-specific formatting - NO ASTERISKS
+  if (contentType === 'press-release') {
+    const lines = cleaned.split('\n').filter(line => line.trim());
+
+    // Extract key information from the content
+    let title = '';
+    let dateline = '';
+    let lead = '';
+    let body = '';
+
+    // Find title (usually first substantial line)
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.length > 20 && line.length < 120 && !line.includes('FOR IMMEDIATE RELEASE')) {
+        title = line.replace(/^(Title:|Headline:)\s*/i, '');
+        break;
+      }
+    }
+
+    // Extract date info
+    const dateMatch = cleaned.match(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i);
+    dateline = dateMatch ? dateMatch[0] : new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // Extract first substantial paragraph as lead
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.length > 50 && !line.includes('FOR IMMEDIATE RELEASE') && !line.includes(title)) {
+        lead = line;
+        break;
+      }
+    }
+
+    // Extract body content (filter out unwanted content)
+    const bodyLines = lines.filter(line => {
+      const trimmed = line.trim();
+      return trimmed.length > 30 &&
+        !trimmed.includes('FOR IMMEDIATE RELEASE') &&
+        !trimmed.includes(title) &&
+        trimmed !== lead &&
+        !trimmed.match(/contact:/i) &&
+        !trimmed.match(/email:/i) &&
+        !trimmed.match(/phone:/i) &&
+        !trimmed.match(/^(Introduction|Key Details|Executive Quote|Lead Paragraph|Section \d+:|Overview|Summary|Background)/i) && // Remove AI section headers
+        !trimmed.match(/^\*\*.*\*\*$/); // Remove markdown bold headers like **Introduction To The New Product**
+    });
+
+    body = bodyLines.slice(0, 2).join('\n\n');
+
+    // Create properly formatted press release - NO SECTION LABELS
+    const formattedPress = `FOR IMMEDIATE RELEASE
+
+${dateline}
+
+# ${title || 'Company Announces Major Development'}
+
+[City, State] — ${lead || 'Company today announced a significant development that will impact the industry and provide value to customers and stakeholders.'}
+
+${body || 'This announcement represents a strategic initiative designed to enhance customer experience and drive business growth. The development aligns with company objectives and market demands.'}
+
+"[Quote about the announcement and its significance]," said [Company Spokesperson], [Title]. "[Additional quote about company commitment and future outlook]."
+
+## About [Company Name]
+[Company Name] is a leading provider of [industry/services], dedicated to delivering exceptional value and innovative solutions to customers worldwide. Founded in [year], the company has established itself as a trusted partner in the [industry] sector.
+
+## Media Contact
+[Contact Name]
+[Company Name]
+Phone: [Phone Number]
+Email: [Email Address]`;
+
+    cleaned = formattedPress;
+  }
   return cleaned.trim();
 }
+
 
 // Apply heading case
 function applyHeadingCase(text: string, headingCase: string): string {
@@ -448,13 +527,34 @@ const ContentCreatorPage = () => {
         setGeneratedTitle("Email Content");
         setStep(4);
         showNotification("✨ Email generated successfully!", "success");
+
+
       } else {
         // Regular content generation
         const payload = {
           campaignData: {
             name: promptText || "Generated Content",
             type: contentType?.id || "blog-post",
-            goal: "Create engaging content. Do not use the words 'Introduction' or 'Conclusion' as headings in blog posts. Use descriptive, engaging headings instead.",
+            goal: contentType?.id === "press-release"
+              ? `WRITE A REAL PRESS RELEASE FORMAT - MAX 250 WORDS:
+              
+FOR IMMEDIATE RELEASE
+[Date] - [City, State] 
+
+HEADLINE: [Attention-grabbing headline]
+
+[Lead paragraph: WHO, WHAT, WHEN, WHERE, WHY in 2-3 sentences]
+
+[Body paragraph 1: Key details and one executive quote]
+
+[Body paragraph 2: Additional context if needed]
+
+About [Company]: [Brief company boilerplate - use strategic data if available]
+
+Contact: [Name, title, phone, email]
+
+NO BLOG SECTIONS. NO INTRODUCTION/CONCLUSION HEADERS. Follow AP press release style exactly.`
+              : "Create engaging content. Do not use the words 'Introduction' or 'Conclusion' as headings in blog posts. Use descriptive, engaging headings instead.",
             targetAudience: advancedOptions.audience || "general audience",
             keyMessages: advancedOptions.keywords.split(",").map((k) => k.trim()).filter((k) => k),
           },

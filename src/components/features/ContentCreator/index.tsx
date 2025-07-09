@@ -9,7 +9,7 @@ import StrategicDataService from '../../../services/StrategicDataService';
 import { Sparkles, ArrowLeft, FileText, CheckCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-// Content types with full details
+// Content types with full details - FIXED PRESS RELEASE ID
 const CONTENT_TYPES = [
   {
     id: 'blog-post',
