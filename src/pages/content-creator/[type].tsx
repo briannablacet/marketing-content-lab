@@ -261,6 +261,76 @@ ${benefits.map(benefit => `- ${benefit}`).join('\n\n')}
 
   cleaned = formattedLandingPage;
 }
+// Case study-specific formatting
+if (contentType === 'case-study') {
+  const lines = cleaned.split('\n').filter(line => line.trim());
+  
+  // Extract key information from the content
+  let title = '';
+  let challenge = '';
+  let solution = '';
+  let results = '';
+  let quote = '';
+  
+  // Find title (usually first substantial line)
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.length > 15 && line.length < 100) {
+      title = line.replace(/^(Title:|Case Study:|#+\s*)\s*/i, ''); // Remove hashtags too
+      break;
+    }
+  }
+  
+  // Get all content and split into sections
+  const allContent = lines.join(' ').replace(/\s+/g, ' ');
+  
+  // Split by sentence endings for parsing
+  const sentences = allContent.split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .filter(sentence => {
+      const trimmed = sentence.trim();
+      return trimmed.length > 30 && 
+             !trimmed.includes(title) &&
+             !trimmed.match(/^(The|This|It|In|Case Study)/i);
+    });
+  
+  if (sentences.length >= 3) {
+    challenge = sentences[0].trim();
+    solution = sentences[1].trim();
+    results = sentences[2].trim();
+    
+    // Look for quote-like content
+    if (sentences.length > 3) {
+      quote = sentences[3].trim();
+    }
+  }
+  
+  // Create properly formatted case study
+  const formattedCaseStudy = `# ${title}
+
+## The Challenge
+
+${challenge}
+
+## Our Solution
+
+${solution}
+
+## Results Achieved
+
+${results}
+
+${quote ? `## Client Testimonial
+
+"${quote}"
+
+*[Client Name, Title, Company]*` : ''}
+
+## About [Company Name]
+
+[Brief company background and relevant expertise]`;
+
+  cleaned = formattedCaseStudy;
+}
   return cleaned.trim();
 }
 
