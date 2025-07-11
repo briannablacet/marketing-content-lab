@@ -193,6 +193,74 @@ Email: [Email Address]`;
 
     cleaned = formattedPress;
   }
+  // Landing page-specific formatting
+if (contentType === 'landing-page') {
+  const lines = cleaned.split('\n').filter(line => line.trim());
+  
+  // Extract key information from the content
+  let heroHeadline = '';
+  let valueProposition = '';
+  let benefits = [];
+  
+  // Find hero headline (usually first substantial line)
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.length > 15 && line.length < 80) {
+      heroHeadline = line.replace(/^(Title:|Headline:)\s*/i, '');
+      break;
+    }
+  }
+  
+  // Extract value proposition and benefits from remaining content
+  const contentLines = lines.filter(line => {
+    const trimmed = line.trim();
+    return trimmed.length > 20 && 
+           trimmed !== heroHeadline &&
+           !trimmed.match(/^(Hero|Headline|Benefits|Features|CTA|Call.to.Action)/i);
+  });
+  
+  if (contentLines.length > 0) {
+    valueProposition = contentLines[0];
+    
+    // Get the full remaining content as one string
+    const remainingContent = contentLines.slice(1).join(' ');
+    
+    // Split by sentence endings followed by capital letters (better sentence detection)
+    const sentences = remainingContent.split(/(?<=[.!?])\s+(?=[A-Z])/)
+      .filter(sentence => {
+        const trimmed = sentence.trim();
+        return trimmed.length > 40 && // Longer sentences only
+               !trimmed.match(/^(This|The|It|In|Before|Understanding)/i) && // Remove generic starts
+               !trimmed.includes('##'); // Remove any markdown headers
+      })
+      .slice(0, 4); // Limit to 4 benefits
+    
+    benefits = sentences.map(sentence => {
+      let benefit = sentence.trim();
+      // Clean up sentence fragments and common AI phrases
+      benefit = benefit.replace(/^(of the eBook|This part of the eBook|This section)/i, 'This guide');
+      benefit = benefit.replace(/\s+/g, ' ').trim();
+      // Ensure proper sentence ending
+      if (benefit && !benefit.match(/[.!?]$/)) benefit += '.';
+      return benefit;
+    }).filter(benefit => benefit.length > 20);
+  }
+  
+  // Create properly formatted landing page
+  const formattedLandingPage = `# ${heroHeadline}
+
+${valueProposition}
+
+## Key Benefits
+
+${benefits.map(benefit => `- ${benefit}`).join('\n\n')}
+
+## Ready to Get Started?
+
+[Call to Action Button]`;
+
+  cleaned = formattedLandingPage;
+}
   return cleaned.trim();
 }
 
