@@ -137,87 +137,133 @@ const BrandCompass: React.FC = () => {
         }
     }, []);
 
-    // Export as PDF-friendly HTML
-    const exportCompass = () => {
+    // Export as PDF-friendly HTML (Print button) - FIXED VERSION
+    const exportCompass = async () => {
         const compassContent = document.getElementById('brand-compass-content');
-        if (!compassContent) return;
+        if (!compassContent) {
+            console.error('Could not find brand-compass-content element');
+            return;
+        }
 
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
+        try {
+            // Dynamically import html2canvas
+            const html2canvas = (await import('html2canvas')).default;
 
-        printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${brandData.businessName} Brand Compass</title>
-          <style>
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              line-height: 1.6;
-              color: #1f2937;
-              max-width: 8.5in;
-              margin: 0 auto;
-              padding: 1in;
-            }
-            .header { text-align: center; margin-bottom: 2rem; border-bottom: 3px solid #3b82f6; padding-bottom: 1rem; }
-            .section { margin-bottom: 2rem; break-inside: avoid; }
-            .section-title { 
-              font-size: 1.25rem; 
-              font-weight: bold; 
-              color: #1e40af; 
-              margin-bottom: 1rem;
-              display: flex;
-              align-items: center;
-              gap: 0.5rem;
-            }
-            .highlight-box { 
-              background: #f8fafc; 
-              border-left: 4px solid #3b82f6; 
-              padding: 1rem; 
-              margin: 1rem 0;
-              border-radius: 0 0.5rem 0.5rem 0;
-            }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-            .pill { 
-              display: inline-block; 
-              background: #dbeafe; 
-              color: #1e40af; 
-              padding: 0.25rem 0.75rem; 
-              border-radius: 9999px; 
-              font-size: 0.875rem;
-              margin: 0.25rem 0.25rem 0.25rem 0;
-            }
-            .checklist { list-style: none; padding: 0; }
-            .checklist li { 
-              display: flex; 
-              align-items: flex-start; 
-              gap: 0.5rem; 
-              margin-bottom: 0.5rem; 
-            }
-            .checklist li:before { 
-              content: "✓"; 
-              color: #059669; 
-              font-weight: bold; 
-              flex-shrink: 0;
-            }
-            @media print {
-              body { margin: 0; padding: 0.5in; }
-              .section { break-inside: avoid; }
-            }
-          </style>
-        </head>
-        <body>
-          ${compassContent.innerHTML}
-        </body>
-      </html>
-    `);
+            // Create canvas from the element
+            const canvas = await html2canvas(compassContent, {
+                scale: 2, // Higher quality
+                useCORS: true,
+                allowTaint: false,
+                backgroundColor: null,
+                width: compassContent.scrollWidth,
+                height: compassContent.scrollHeight,
+                scrollX: 0,
+                scrollY: 0
+            });
 
-        printWindow.document.close();
-        printWindow.print();
+            // Create PDF
+            const { jsPDF } = await import('jspdf');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: [canvas.width / 2, canvas.height / 2] // Scale down for PDF
+            });
+
+            // Add the canvas as image to PDF
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+
+            // Download the PDF
+            pdf.save(`${brandData.businessName || 'Brand'}_Compass.pdf`);
+
+            console.log('✅ Brand Compass PDF exported successfully');
+        } catch (error) {
+            console.error('❌ Error creating visual PDF:', error);
+
+            // Fallback to print dialog
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) return;
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <title>${brandData.businessName} Brand Compass</title>
+                        <style>
+                            body { 
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                line-height: 1.6;
+                                color: #1f2937;
+                                max-width: 8.5in;
+                                margin: 0 auto;
+                                padding: 0.5in;
+                            }
+                            @media print {
+                                body { margin: 0; padding: 0.5in; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${compassContent.innerHTML}
+                    </body>
+                </html>
+            `);
+
+            printWindow.document.close();
+            printWindow.print();
+        }
     };
 
-    // Download as text/pdf/docx
-    const exportCompassFile = (format: 'txt' | 'pdf' | 'docx' = 'txt') => {
+    // Download as visual PDF or text/docx (Export dropdown)
+    const exportCompassFile = async (format: 'txt' | 'pdf' | 'docx' = 'txt') => {
+        // Visual PDF export (same as exportCompass)
+        if (format === 'pdf') {
+            const compassContent = document.getElementById('brand-compass-content');
+            if (!compassContent) {
+                console.error('Could not find brand-compass-content element');
+                return;
+            }
+
+            try {
+                // Dynamically import html2canvas
+                const html2canvas = (await import('html2canvas')).default;
+
+                // Create canvas from the element
+                const canvas = await html2canvas(compassContent, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: null,
+                    width: compassContent.scrollWidth,
+                    height: compassContent.scrollHeight,
+                    scrollX: 0,
+                    scrollY: 0
+                });
+
+                // Create PDF
+                const { jsPDF } = await import('jspdf');
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'px',
+                    format: [canvas.width / 2, canvas.height / 2]
+                });
+
+                // Add the canvas as image to PDF
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+
+                // Download the PDF
+                pdf.save(`${brandData.businessName || 'Brand'}_Compass.pdf`);
+
+                console.log('✅ Brand Compass PDF exported successfully');
+                return;
+            } catch (error) {
+                console.error('❌ Error creating visual PDF:', error);
+                // Fall through to text export as backup
+            }
+        }
+
+        // Text and DOCX exports (original code)
         const content = `
 # ${(brandData.businessName || '').toUpperCase()} BRAND COMPASS
 ${Array(50).fill('=').join('')}
@@ -244,7 +290,8 @@ ${brandData.keyBenefits?.map(benefit => `- ${benefit}`).join('\n') || 'Not defin
 ${brandData.targetAudiences?.map(audience => `- ${audience.role} in ${audience.industry}`).join('\n') || 'Not defined'}
 
 **BRAND VOICE**
-Archetype: ${brandData.brandArchetype || 'Not defined'}\nTone: ${brandData.brandVoice?.tone || 'Not defined'}
+Archetype: ${brandData.brandArchetype || 'Not defined'}
+Tone: ${brandData.brandVoice?.tone || 'Not defined'}
 
 **BRAND BOILERPLATES**
 ${brandData.boilerplates?.map((boilerplate, index) => `${index + 1}. ${boilerplate.text} (${boilerplate.wordCount} words)`).join('\n\n') || 'Not defined'}
@@ -252,14 +299,11 @@ ${brandData.boilerplates?.map((boilerplate, index) => `${index + 1}. ${boilerpla
 ${Array(50).fill('=').join('')}
 Generated by Marketing Content Lab - Brand Compass`;
 
-        if (format === 'pdf') {
-            exportToPDF(content, `${brandData.businessName || 'Brand'}_Compass.pdf`);
-            return;
-        }
         if (format === 'docx') {
             exportToDocx(content, `${brandData.businessName || 'Brand'}_Compass.docx`);
             return;
         }
+
         // Default: txt
         const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);

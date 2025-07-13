@@ -18,6 +18,7 @@ import { BrandVoiceProvider } from '@/context/BrandVoiceContext';
 import { AuthProvider } from '@/context/AuthContext';
 import Navbar from '@/components/shared/Navbar';
 import { Toaster } from 'react-hot-toast';
+import { ContentLibraryProvider } from '../context/ContentLibraryContext';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -31,13 +32,15 @@ function MyApp({ Component, pageProps }: AppProps) {
                 <BrandVoiceProvider>
                   <WalkthroughProvider>
                     <AuthProvider>
-                      <div className="min-h-screen bg-gray-50">
-                        <Navbar />
-                        <main className="container mx-auto px-4 py-8">
-                          <Component {...pageProps} />
-                        </main>
-                        <Toaster position="top-right" />
-                      </div>
+                      <ContentLibraryProvider>
+                        <div className="min-h-screen bg-gray-50">
+                          <Navbar />
+                          <main className="container mx-auto px-4 py-8">
+                            <Component {...pageProps} />
+                          </main>
+                          <Toaster position="top-right" />
+                        </div>
+                      </ContentLibraryProvider>
                     </AuthProvider>
                   </WalkthroughProvider>
                 </BrandVoiceProvider>
