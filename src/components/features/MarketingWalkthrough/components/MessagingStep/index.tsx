@@ -1,5 +1,5 @@
 // src/components/features/MessageFramework/index.tsx
-// Message Framework with Message House export option
+ 
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';

@@ -1,5 +1,5 @@
 // src/components/features/BrandCompass/index.tsx
-// Beautiful Brand Compass that displays messaging in Message House format
+
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../ui/card';
