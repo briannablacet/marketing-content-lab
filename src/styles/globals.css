@@ -41,3 +41,15 @@ body {
 button {
   cursor: pointer;
 }
+
+@media print {
+  .page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
