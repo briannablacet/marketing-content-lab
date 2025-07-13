@@ -1,5 +1,5 @@
 // src/components/features/BrandCompass/index.tsx
-// FIXED: Working PDF export with proper page breaks that keep sections together
+// VERCEL COMPATIBLE: Uses browser print instead of html2pdf.js
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../ui/card';
@@ -130,94 +130,121 @@ const BrandCompass: React.FC = () => {
     }
   }, []);
 
-  // FIXED: Proper PDF export with better page break control
-  const exportToPDF = async () => {
+  // VERCEL COMPATIBLE: Print-to-PDF function that works everywhere
+  const exportToPDF = () => {
     setIsExporting(true);
 
-    try {
-      // Dynamically import html2pdf
-      const html2pdf = (await import('html2pdf.js')).default;
-
-      const element = document.getElementById('brand-compass-content');
-
-      if (!element) {
-        alert('Content not found for export');
-        return;
-      }
-
-      // Enhanced PDF options for better page breaks
-      const opt = {
-        margin: [0.75, 0.5, 0.75, 0.5], // top, left, bottom, right margins
-        filename: `${brandData.businessName || 'Brand'}_Compass.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 1.5, // Reduced scale for better page fitting
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: '#ffffff',
-          removeContainer: true,
-          scrollX: 0,
-          scrollY: 0
-        },
-        jsPDF: {
-          unit: 'in',
-          format: 'letter', // 8.5 x 11 inches
-          orientation: 'portrait',
-          compress: true,
-          putOnlyUsedFonts: true
-        },
-        pagebreak: {
-          mode: ['avoid-all', 'css', 'legacy'],
-          before: '.page-break-before',
-          after: '.page-break-after'
+    // Add custom print styles
+    const printStyles = `
+      <style media="print">
+        @page {
+          margin: 0.75in;
+          size: 8.5in 11in;
         }
-      };
-
-      // Add temporary CSS for better page breaks during PDF generation
-      const tempStyle = document.createElement('style');
-      tempStyle.innerHTML = `
-        @media print {
-          .avoid-break-inside {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .page-break-before {
-            page-break-before: always !important;
-            break-before: page !important;
-          }
-          .message-house-section {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .pillars-grid {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .foundation-section {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
+        
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+          line-height: 1.5;
+          color: #1f2937 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
-      `;
-      document.head.appendChild(tempStyle);
+        
+        .print-hide { display: none !important; }
+        
+        .brand-compass-content {
+          background: linear-gradient(to bottom right, #eff6ff, #e0e7ff) !important;
+          padding: 2rem !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+        
+        .avoid-break-inside {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        
+        .page-break-before {
+          page-break-before: always !important;
+          break-before: page !important;
+        }
+        
+        .message-house-section {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        
+        /* Ensure colors print properly */
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        /* Card backgrounds */
+        .card-bg {
+          background-color: rgba(255, 255, 255, 0.9) !important;
+        }
+        
+        /* SVG colors */
+        svg polygon {
+          fill: #2563eb !important;
+          stroke: #1d4ed8 !important;
+        }
+        
+        svg text {
+          fill: white !important;
+        }
+        
+        /* Theme colors */
+        .text-blue-900 { color: #1e3a8a !important; }
+        .text-blue-600 { color: #2563eb !important; }
+        .text-gray-700 { color: #374151 !important; }
+        .text-gray-800 { color: #1f2937 !important; }
+        .text-gray-500 { color: #6b7280 !important; }
+        .text-green-500 { color: #10b981 !important; }
+        
+        /* Backgrounds */
+        .bg-blue-50 { background-color: #eff6ff !important; }
+        .bg-gray-50 { background-color: #f9fafb !important; }
+        .bg-white { background-color: white !important; }
+        
+        /* Borders */
+        .border-blue-200 { border-color: #bfdbfe !important; }
+        .border-blue-600 { border-color: #2563eb !important; }
+        .border-blue-400 { border-color: #60a5fa !important; }
+        .border-green-500 { border-color: #10b981 !important; }
+      </style>
+    `;
 
-      // Generate and download PDF
-      await html2pdf().set(opt).from(element).save();
+    // Add print styles to document head
+    const printStyleElement = document.createElement('div');
+    printStyleElement.innerHTML = printStyles;
+    document.head.appendChild(printStyleElement);
 
-      // Remove temporary style
-      document.head.removeChild(tempStyle);
-
-    } catch (error) {
-      console.error('PDF export error:', error);
-      alert('Failed to export PDF. Please try again.');
-    } finally {
-      setIsExporting(false);
+    // Hide export buttons
+    const exportButtons = document.querySelector('.print-hide-parent');
+    if (exportButtons) {
+      exportButtons.classList.add('print-hide');
     }
-  };
 
-  // Print function for browser printing
-  const printCompass = () => {
-    window.print();
+    // Set page title for PDF
+    const originalTitle = document.title;
+    document.title = `${brandData.businessName || 'Brand'}_Compass`;
+
+    // Trigger print dialog
+    setTimeout(() => {
+      window.print();
+
+      // Cleanup after print
+      setTimeout(() => {
+        document.head.removeChild(printStyleElement);
+        if (exportButtons) {
+          exportButtons.classList.remove('print-hide');
+        }
+        document.title = originalTitle;
+        setIsExporting(false);
+      }, 1000);
+    }, 500);
   };
 
   // Text export for backup
@@ -310,7 +337,8 @@ Generated by Marketing Content Lab - Brand Compass`;
 
   return (
     <div className="max-w-6xl mx-auto p-8">
-      <div className="flex items-center justify-end mb-8">
+      {/* Export Controls - Will be hidden during print */}
+      <div className="print-hide-parent flex items-center justify-end mb-8">
         <div className="flex items-center gap-4">
           <div className="relative">
             <button
@@ -319,16 +347,16 @@ Generated by Marketing Content Lab - Brand Compass`;
               disabled={isExporting}
             >
               <Download className="w-5 h-5" />
-              {isExporting ? 'Exporting...' : 'Export'}
+              {isExporting ? 'Preparing PDF...' : 'Export'}
             </button>
             {showExportDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-10">
+              <div className="absolute right-0 mt-2 w-64 bg-white border rounded-md shadow-lg z-10">
                 <button
                   onClick={() => { exportToPDF(); setShowExportDropdown(false); }}
                   disabled={isExporting}
                   className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 disabled:opacity-50"
                 >
-                  📄 PDF (Styled) - RECOMMENDED
+                  📄 PDF (Print to Save) - RECOMMENDED
                 </button>
                 <button
                   onClick={() => { exportToText(); setShowExportDropdown(false); }}
@@ -336,21 +364,17 @@ Generated by Marketing Content Lab - Brand Compass`;
                 >
                   📝 Text (.txt)
                 </button>
+                <div className="px-4 py-2 text-xs text-gray-500 border-t">
+                  PDF opens print dialog - choose "Save as PDF"
+                </div>
               </div>
             )}
           </div>
-          <button
-            onClick={printCompass}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <Printer className="w-5 h-5" />
-            Print
-          </button>
         </div>
       </div>
 
-      {/* Brand Compass Content - FIXED with proper page break classes */}
-      <div id="brand-compass-content" className={`bg-gradient-to-br ${theme.gradient} rounded-2xl p-8 shadow-lg print:shadow-none print:rounded-none`}>
+      {/* Brand Compass Content */}
+      <div className={`brand-compass-content bg-gradient-to-br ${theme.gradient} rounded-2xl p-8 shadow-lg`}>
 
         {/* Header - Keep together */}
         <div className="text-center mb-12 pb-8 border-b-2 border-blue-200 avoid-break-inside">
@@ -374,7 +398,7 @@ Generated by Marketing Content Lab - Brand Compass`;
         <div className="grid md:grid-cols-2 gap-8 mb-12 avoid-break-inside">
 
           {/* Mission */}
-          <Card className="p-6 bg-white bg-opacity-80 shadow-sm">
+          <Card className="p-6 bg-white bg-opacity-80 shadow-sm card-bg">
             <div className={`flex items-center gap-3 mb-4 ${theme.accent}`}>
               <Target className="w-6 h-6" />
               <h3 className="text-xl font-bold">Mission</h3>
@@ -385,7 +409,7 @@ Generated by Marketing Content Lab - Brand Compass`;
           </Card>
 
           {/* Vision */}
-          <Card className="p-6 bg-white bg-opacity-80 shadow-sm">
+          <Card className="p-6 bg-white bg-opacity-80 shadow-sm card-bg">
             <div className={`flex items-center gap-3 mb-4 ${theme.accent}`}>
               <Eye className="w-6 h-6" />
               <h3 className="text-xl font-bold">Vision</h3>
@@ -429,7 +453,7 @@ Generated by Marketing Content Lab - Brand Compass`;
             </div>
 
             {/* Core Message Card */}
-            <Card className="p-8 bg-white bg-opacity-90 shadow-lg border-4 border-blue-600 border-t-0 relative -mt-1">
+            <Card className="p-8 bg-white bg-opacity-90 shadow-lg border-4 border-blue-600 border-t-0 relative -mt-1 card-bg">
               <div className="text-center">
                 <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide flex items-center justify-center gap-2">
                   <Star className="w-4 h-4" />
@@ -443,10 +467,10 @@ Generated by Marketing Content Lab - Brand Compass`;
           </div>
 
           {/* PILLARS - Supporting Messages - Keep together */}
-          <div className="grid md:grid-cols-3 gap-6 mb-6 pillars-grid avoid-break-inside">
+          <div className="grid md:grid-cols-3 gap-6 mb-6 avoid-break-inside">
             {brandData.messagePillars && brandData.messagePillars.length > 0 ? (
               brandData.messagePillars.filter(Boolean).map((pillar, index) => (
-                <Card key={index} className="p-6 bg-white bg-opacity-80 shadow-sm border-l-4 border-blue-400">
+                <Card key={index} className="p-6 bg-white bg-opacity-80 shadow-sm border-l-4 border-blue-400 card-bg">
                   <div className="text-center">
                     <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide flex items-center justify-center gap-2">
                       <MessageSquare className="w-4 h-4" />
@@ -467,7 +491,7 @@ Generated by Marketing Content Lab - Brand Compass`;
           </div>
 
           {/* FOUNDATION - Proof Points - Keep together */}
-          <Card className="p-8 bg-white bg-opacity-80 shadow-sm border-b-4 border-green-500 foundation-section avoid-break-inside">
+          <Card className="p-8 bg-white bg-opacity-80 shadow-sm border-b-4 border-green-500 avoid-break-inside card-bg">
             <div className="text-center mb-6">
               <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide flex items-center justify-center gap-2">
                 <CheckCircle className="w-4 h-4" />
@@ -493,7 +517,7 @@ Generated by Marketing Content Lab - Brand Compass`;
 
         {/* Target Audiences - Keep together, new page if needed */}
         {brandData.targetAudiences && brandData.targetAudiences.length > 0 && (
-          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside">
+          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside card-bg">
             <div className={`flex items-center gap-3 mb-6 ${theme.accent}`}>
               <Users className="w-6 h-6" />
               <h3 className="text-xl font-bold">Target Audiences</h3>
@@ -516,7 +540,7 @@ Generated by Marketing Content Lab - Brand Compass`;
 
         {/* Brand Boilerplates - Keep together, new page if needed */}
         {brandData.boilerplates && brandData.boilerplates.length > 0 && (
-          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside">
+          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside card-bg">
             <div className={`flex items-center gap-3 mb-6 ${theme.accent}`}>
               <FileText className="w-6 h-6" />
               <h3 className="text-xl font-bold">Brand Boilerplates</h3>
@@ -536,7 +560,7 @@ Generated by Marketing Content Lab - Brand Compass`;
 
         {/* Brand Voice & Personality - Keep together, new page if needed */}
         {(brandData.brandArchetype || brandData.brandVoice?.tone || brandData.brandVoice?.personalityDescription) && (
-          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside">
+          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside card-bg">
             <div className={`flex items-center gap-3 mb-6 ${theme.accent}`}>
               <Sparkles className="w-6 h-6" />
               <h3 className="text-xl font-bold">Brand Voice & Personality</h3>
