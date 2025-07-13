@@ -43,6 +43,24 @@ button {
 }
 
 @media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .message-house-print,
+  .message-house-print * {
+    visibility: visible !important;
+  }
+
+  .message-house-print {
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    background: white !important;
+    z-index: 9999;
+  }
+
   .page-break {
     break-before: page;
     page-break-before: always;

@@ -1,5 +1,5 @@
 // src/components/features/BrandCompass/index.tsx
-// VERCEL COMPATIBLE: Uses browser print instead of html2pdf.js
+// WORKING PDF EXPORT that captures all colors and styling
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../ui/card';
@@ -130,121 +130,102 @@ const BrandCompass: React.FC = () => {
     }
   }, []);
 
-  // VERCEL COMPATIBLE: Print-to-PDF function that works everywhere
-  const exportToPDF = () => {
+  // WORKING PDF EXPORT using html2canvas and jsPDF - captures all styling
+  const exportToPDF = async () => {
     setIsExporting(true);
 
-    // Add custom print styles
-    const printStyles = `
-      <style media="print">
-        @page {
-          margin: 0.75in;
-          size: 8.5in 11in;
-        }
-        
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-          line-height: 1.5;
-          color: #1f2937 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        
-        .print-hide { display: none !important; }
-        
-        .brand-compass-content {
-          background: linear-gradient(to bottom right, #eff6ff, #e0e7ff) !important;
-          padding: 2rem !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-        }
-        
-        .avoid-break-inside {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-        
-        .page-break-before {
-          page-break-before: always !important;
-          break-before: page !important;
-        }
-        
-        .message-house-section {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-        
-        /* Ensure colors print properly */
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        
-        /* Card backgrounds */
-        .card-bg {
-          background-color: rgba(255, 255, 255, 0.9) !important;
-        }
-        
-        /* SVG colors */
-        svg polygon {
-          fill: #2563eb !important;
-          stroke: #1d4ed8 !important;
-        }
-        
-        svg text {
-          fill: white !important;
-        }
-        
-        /* Theme colors */
-        .text-blue-900 { color: #1e3a8a !important; }
-        .text-blue-600 { color: #2563eb !important; }
-        .text-gray-700 { color: #374151 !important; }
-        .text-gray-800 { color: #1f2937 !important; }
-        .text-gray-500 { color: #6b7280 !important; }
-        .text-green-500 { color: #10b981 !important; }
-        
-        /* Backgrounds */
-        .bg-blue-50 { background-color: #eff6ff !important; }
-        .bg-gray-50 { background-color: #f9fafb !important; }
-        .bg-white { background-color: white !important; }
-        
-        /* Borders */
-        .border-blue-200 { border-color: #bfdbfe !important; }
-        .border-blue-600 { border-color: #2563eb !important; }
-        .border-blue-400 { border-color: #60a5fa !important; }
-        .border-green-500 { border-color: #10b981 !important; }
-      </style>
-    `;
+    try {
+      // Dynamically import the libraries
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
 
-    // Add print styles to document head
-    const printStyleElement = document.createElement('div');
-    printStyleElement.innerHTML = printStyles;
-    document.head.appendChild(printStyleElement);
+      const element = document.getElementById('brand-compass-content');
+      if (!element) {
+        throw new Error('Content not found for export');
+      }
 
-    // Hide export buttons
-    const exportButtons = document.querySelector('.print-hide-parent');
-    if (exportButtons) {
-      exportButtons.classList.add('print-hide');
+      console.log('Starting PDF generation...');
+
+      // Create canvas from the element with high quality
+      const canvas = await html2canvas(element, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        onclone: (clonedDoc) => {
+          // Ensure all styles are applied to the cloned document
+          const clonedElement = clonedDoc.getElementById('brand-compass-content');
+          if (clonedElement) {
+            clonedElement.style.transform = 'scale(1)';
+            clonedElement.style.transformOrigin = 'top left';
+          }
+        }
+      });
+
+      console.log('Canvas created, generating PDF...');
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Calculate dimensions to fit the page
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Add the image to PDF
+      const imgData = canvas.toDataURL('image/png');
+
+      if (imgHeight <= pageHeight) {
+        // Fits on one page
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      } else {
+        // Multiple pages needed
+        let position = 0;
+        const pageData = canvas;
+
+        while (position < pageData.height) {
+          const pageCanvas = document.createElement('canvas');
+          const pageCtx = pageCanvas.getContext('2d');
+
+          pageCanvas.width = pageData.width;
+          pageCanvas.height = Math.min(pageData.height - position, (pageHeight * pageData.width) / imgWidth);
+
+          if (pageCtx) {
+            pageCtx.drawImage(pageData, 0, position, pageData.width, pageCanvas.height, 0, 0, pageData.width, pageCanvas.height);
+
+            const pageImgData = pageCanvas.toDataURL('image/png');
+            const pageImgHeight = (pageCanvas.height * imgWidth) / pageCanvas.width;
+
+            if (position > 0) {
+              pdf.addPage();
+            }
+
+            pdf.addImage(pageImgData, 'PNG', 0, 0, imgWidth, pageImgHeight);
+            position += pageCanvas.height;
+          }
+        }
+      }
+
+      // Save the PDF
+      const fileName = `${brandData.businessName || 'Brand'}_Compass.pdf`;
+      pdf.save(fileName);
+
+      console.log('PDF generated successfully!');
+
+    } catch (error) {
+      console.error('PDF export error:', error);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setShowExportDropdown(false);
     }
-
-    // Set page title for PDF
-    const originalTitle = document.title;
-    document.title = `${brandData.businessName || 'Brand'}_Compass`;
-
-    // Trigger print dialog
-    setTimeout(() => {
-      window.print();
-
-      // Cleanup after print
-      setTimeout(() => {
-        document.head.removeChild(printStyleElement);
-        if (exportButtons) {
-          exportButtons.classList.remove('print-hide');
-        }
-        document.title = originalTitle;
-        setIsExporting(false);
-      }, 1000);
-    }, 500);
   };
 
   // Text export for backup
@@ -296,6 +277,7 @@ Generated by Marketing Content Lab - Brand Compass`;
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    setShowExportDropdown(false);
   };
 
   const themeStyles = {
@@ -337,8 +319,8 @@ Generated by Marketing Content Lab - Brand Compass`;
 
   return (
     <div className="max-w-6xl mx-auto p-8">
-      {/* Export Controls - Will be hidden during print */}
-      <div className="print-hide-parent flex items-center justify-end mb-8">
+      {/* Export Controls */}
+      <div className="flex items-center justify-end mb-8">
         <div className="flex items-center gap-4">
           <div className="relative">
             <button
@@ -347,25 +329,25 @@ Generated by Marketing Content Lab - Brand Compass`;
               disabled={isExporting}
             >
               <Download className="w-5 h-5" />
-              {isExporting ? 'Preparing PDF...' : 'Export'}
+              {isExporting ? 'Creating PDF...' : 'Export'}
             </button>
             {showExportDropdown && (
               <div className="absolute right-0 mt-2 w-64 bg-white border rounded-md shadow-lg z-10">
                 <button
-                  onClick={() => { exportToPDF(); setShowExportDropdown(false); }}
+                  onClick={exportToPDF}
                   disabled={isExporting}
                   className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 disabled:opacity-50"
                 >
-                  📄 PDF (Print to Save) - RECOMMENDED
+                  📄 PDF with Full Styling - RECOMMENDED
                 </button>
                 <button
-                  onClick={() => { exportToText(); setShowExportDropdown(false); }}
+                  onClick={exportToText}
                   className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                 >
                   📝 Text (.txt)
                 </button>
                 <div className="px-4 py-2 text-xs text-gray-500 border-t">
-                  PDF opens print dialog - choose "Save as PDF"
+                  PDF captures all colors and design exactly as shown
                 </div>
               </div>
             )}
@@ -374,10 +356,10 @@ Generated by Marketing Content Lab - Brand Compass`;
       </div>
 
       {/* Brand Compass Content */}
-      <div className={`brand-compass-content bg-gradient-to-br ${theme.gradient} rounded-2xl p-8 shadow-lg`}>
+      <div id="brand-compass-content" className={`bg-gradient-to-br ${theme.gradient} rounded-2xl p-8 shadow-lg`}>
 
-        {/* Header - Keep together */}
-        <div className="text-center mb-12 pb-8 border-b-2 border-blue-200 avoid-break-inside">
+        {/* Header */}
+        <div className="text-center mb-12 pb-8 border-b-2 border-blue-200">
           <div className="mb-6">
             <h1 className={`text-4xl font-bold ${theme.primary} mb-2`}>
               {brandData.businessName || 'Your Brand'}
@@ -394,11 +376,11 @@ Generated by Marketing Content Lab - Brand Compass`;
           )}
         </div>
 
-        {/* Core Identity Grid - Keep together */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12 avoid-break-inside">
+        {/* Core Identity Grid */}
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
 
           {/* Mission */}
-          <Card className="p-6 bg-white bg-opacity-80 shadow-sm card-bg">
+          <Card className="p-6 bg-white bg-opacity-80 shadow-sm">
             <div className={`flex items-center gap-3 mb-4 ${theme.accent}`}>
               <Target className="w-6 h-6" />
               <h3 className="text-xl font-bold">Mission</h3>
@@ -409,7 +391,7 @@ Generated by Marketing Content Lab - Brand Compass`;
           </Card>
 
           {/* Vision */}
-          <Card className="p-6 bg-white bg-opacity-80 shadow-sm card-bg">
+          <Card className="p-6 bg-white bg-opacity-80 shadow-sm">
             <div className={`flex items-center gap-3 mb-4 ${theme.accent}`}>
               <Eye className="w-6 h-6" />
               <h3 className="text-xl font-bold">Vision</h3>
@@ -420,15 +402,15 @@ Generated by Marketing Content Lab - Brand Compass`;
           </Card>
         </div>
 
-        {/* MESSAGE HOUSE SECTION - Force page break before if needed and keep together */}
-        <div className="mb-12 message-house-section page-break-before">
+        {/* MESSAGE HOUSE SECTION */}
+        <div className="mb-12">
           <div className={`flex items-center gap-3 mb-8 ${theme.accent}`}>
             <Home className="w-7 h-7" />
             <h3 className="text-2xl font-bold">Strategic Message Framework</h3>
           </div>
 
-          {/* ROOF - Core Message with Triangular Top - Keep together */}
-          <div className="relative mb-6 avoid-break-inside">
+          {/* ROOF - Core Message with Triangular Top */}
+          <div className="relative mb-6">
             {/* Triangular Roof using SVG */}
             <div className="flex justify-center mb-0">
               <svg width="500" height="100" viewBox="0 0 500 100" className="block">
@@ -453,7 +435,7 @@ Generated by Marketing Content Lab - Brand Compass`;
             </div>
 
             {/* Core Message Card */}
-            <Card className="p-8 bg-white bg-opacity-90 shadow-lg border-4 border-blue-600 border-t-0 relative -mt-1 card-bg">
+            <Card className="p-8 bg-white bg-opacity-90 shadow-lg border-4 border-blue-600 border-t-0 relative -mt-1">
               <div className="text-center">
                 <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide flex items-center justify-center gap-2">
                   <Star className="w-4 h-4" />
@@ -466,11 +448,11 @@ Generated by Marketing Content Lab - Brand Compass`;
             </Card>
           </div>
 
-          {/* PILLARS - Supporting Messages - Keep together */}
-          <div className="grid md:grid-cols-3 gap-6 mb-6 avoid-break-inside">
+          {/* PILLARS - Supporting Messages */}
+          <div className="grid md:grid-cols-3 gap-6 mb-6">
             {brandData.messagePillars && brandData.messagePillars.length > 0 ? (
               brandData.messagePillars.filter(Boolean).map((pillar, index) => (
-                <Card key={index} className="p-6 bg-white bg-opacity-80 shadow-sm border-l-4 border-blue-400 card-bg">
+                <Card key={index} className="p-6 bg-white bg-opacity-80 shadow-sm border-l-4 border-blue-400">
                   <div className="text-center">
                     <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide flex items-center justify-center gap-2">
                       <MessageSquare className="w-4 h-4" />
@@ -490,8 +472,8 @@ Generated by Marketing Content Lab - Brand Compass`;
             )}
           </div>
 
-          {/* FOUNDATION - Proof Points - Keep together */}
-          <Card className="p-8 bg-white bg-opacity-80 shadow-sm border-b-4 border-green-500 avoid-break-inside card-bg">
+          {/* FOUNDATION - Proof Points */}
+          <Card className="p-8 bg-white bg-opacity-80 shadow-sm border-b-4 border-green-500">
             <div className="text-center mb-6">
               <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide flex items-center justify-center gap-2">
                 <CheckCircle className="w-4 h-4" />
@@ -515,9 +497,9 @@ Generated by Marketing Content Lab - Brand Compass`;
           </Card>
         </div>
 
-        {/* Target Audiences - Keep together, new page if needed */}
+        {/* Target Audiences */}
         {brandData.targetAudiences && brandData.targetAudiences.length > 0 && (
-          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside card-bg">
+          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm">
             <div className={`flex items-center gap-3 mb-6 ${theme.accent}`}>
               <Users className="w-6 h-6" />
               <h3 className="text-xl font-bold">Target Audiences</h3>
@@ -538,9 +520,9 @@ Generated by Marketing Content Lab - Brand Compass`;
           </Card>
         )}
 
-        {/* Brand Boilerplates - Keep together, new page if needed */}
+        {/* Brand Boilerplates */}
         {brandData.boilerplates && brandData.boilerplates.length > 0 && (
-          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside card-bg">
+          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm">
             <div className={`flex items-center gap-3 mb-6 ${theme.accent}`}>
               <FileText className="w-6 h-6" />
               <h3 className="text-xl font-bold">Brand Boilerplates</h3>
@@ -558,9 +540,9 @@ Generated by Marketing Content Lab - Brand Compass`;
           </Card>
         )}
 
-        {/* Brand Voice & Personality - Keep together, new page if needed */}
+        {/* Brand Voice & Personality */}
         {(brandData.brandArchetype || brandData.brandVoice?.tone || brandData.brandVoice?.personalityDescription) && (
-          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm avoid-break-inside card-bg">
+          <Card className="p-6 mb-8 bg-white bg-opacity-80 shadow-sm">
             <div className={`flex items-center gap-3 mb-6 ${theme.accent}`}>
               <Sparkles className="w-6 h-6" />
               <h3 className="text-xl font-bold">Brand Voice & Personality</h3>
@@ -596,8 +578,8 @@ Generated by Marketing Content Lab - Brand Compass`;
           </Card>
         )}
 
-        {/* Footer - Keep together */}
-        <div className="text-center pt-8 border-t border-blue-200 avoid-break-inside">
+        {/* Footer */}
+        <div className="text-center pt-8 border-t border-blue-200">
           <div className="flex items-center justify-center gap-2 text-blue-600 mb-2">
             <Compass className="w-5 h-5" />
             <span className="font-medium">Your Brand North Star</span>

@@ -236,7 +236,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     return hasValueProp && (hasPillar || hasBenefits);
   };
 
-  // FIXED: Export Message House with proper PDF using html2pdf
+  // WORKING PDF EXPORT using canvas and jsPDF
   const exportMessageHousePDF = async () => {
     if (!hasContent()) {
       showNotification('Please complete your message framework before exporting', 'error');
@@ -246,51 +246,95 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     setIsExporting(true);
 
     try {
-      // Dynamically import html2pdf
-      const html2pdf = (await import('html2pdf.js')).default;
+      // Dynamically import the libraries
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
 
       const element = document.getElementById('message-house-preview');
-
       if (!element) {
-        alert('Content not found for export');
-        return;
+        throw new Error('Content not found for export');
       }
 
       // Get business name for file naming
       const productInfo = JSON.parse(safeLocalStorage.getItem('marketingProduct') || '{}');
       const businessName = productInfo?.name || 'Your Brand';
-      const fileName = `${businessName}_MessageHouse.pdf`;
 
-      // PDF options that capture styling properly
-      const opt = {
-        margin: 0.5,
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: '#ffffff',
-          width: element.scrollWidth,
-          height: element.scrollHeight
-        },
-        jsPDF: {
-          unit: 'in',
-          format: 'a4',
-          orientation: 'portrait',
-          compress: true
+      showNotification('Generating PDF... please wait', 'info');
+
+      // Create canvas from the element with high quality
+      const canvas = await html2canvas(element, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        onclone: (clonedDoc) => {
+          // Ensure all styles are applied to the cloned document
+          const clonedElement = clonedDoc.getElementById('message-house-preview');
+          if (clonedElement) {
+            clonedElement.style.transform = 'scale(1)';
+            clonedElement.style.transformOrigin = 'top left';
+          }
         }
-      };
+      });
 
-      // Generate and download PDF
-      await html2pdf().set(opt).from(element).save();
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
 
-      showNotification('Message House exported as PDF', 'success');
+      // Calculate dimensions to fit the page
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Add the image to PDF
+      const imgData = canvas.toDataURL('image/png');
+
+      if (imgHeight <= pageHeight) {
+        // Fits on one page
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      } else {
+        // Multiple pages needed
+        let position = 0;
+        const pageData = canvas;
+
+        while (position < pageData.height) {
+          const pageCanvas = document.createElement('canvas');
+          const pageCtx = pageCanvas.getContext('2d');
+
+          pageCanvas.width = pageData.width;
+          pageCanvas.height = Math.min(pageData.height - position, (pageHeight * pageData.width) / imgWidth);
+
+          if (pageCtx) {
+            pageCtx.drawImage(pageData, 0, position, pageData.width, pageCanvas.height, 0, 0, pageData.width, pageCanvas.height);
+
+            const pageImgData = pageCanvas.toDataURL('image/png');
+            const pageImgHeight = (pageCanvas.height * imgWidth) / pageCanvas.width;
+
+            if (position > 0) {
+              pdf.addPage();
+            }
+
+            pdf.addImage(pageImgData, 'PNG', 0, 0, imgWidth, pageImgHeight);
+            position += pageCanvas.height;
+          }
+        }
+      }
+
+      // Save the PDF
+      pdf.save(`${businessName}_MessageHouse.pdf`);
+
+      showNotification('Message House exported as PDF successfully!', 'success');
       setShowMessageHouseExport(false);
 
     } catch (error) {
       console.error('PDF export error:', error);
-      alert('Failed to export PDF. Please try again.');
+      showNotification('Failed to export PDF. Please try again.', 'error');
     } finally {
       setIsExporting(false);
     }
@@ -773,11 +817,11 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
 
             {/* Message House Preview */}
             <div className="p-6">
-              <div id="message-house-preview" className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 print:shadow-none print:rounded-none">
+              <div id="message-house-preview" className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 print:shadow-none print:rounded-none">
 
                 {/* Header */}
-                <div className="text-center mb-6 pb-4 border-b-2 border-blue-200">
-                  <h1 className="text-2xl font-bold text-blue-900 mb-2">
+                <div className="text-center mb-8 pb-6 border-b-2 border-blue-200">
+                  <h1 className="text-3xl font-bold text-blue-900 mb-2">
                     {(() => {
                       try {
                         const productInfo = JSON.parse(safeLocalStorage.getItem('marketingProduct') || '{}');
@@ -787,29 +831,29 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                       }
                     })()}
                   </h1>
-                  <div className="text-lg text-blue-600 font-light italic flex items-center justify-center gap-2">
-                    <Home className="w-4 h-4" />
+                  <div className="text-xl text-blue-600 font-light italic flex items-center justify-center gap-2">
+                    <Home className="w-5 h-5" />
                     Message House
                   </div>
                 </div>
 
                 {/* ROOF - Core Message with Triangular Top */}
-                <div className="relative mb-4">
+                <div className="relative mb-6">
                   {/* Triangular Roof using SVG */}
                   <div className="flex justify-center mb-0">
-                    <svg width="300" height="60" viewBox="0 0 300 60" className="block">
+                    <svg width="400" height="80" viewBox="0 0 400 80" className="block">
                       <polygon
-                        points="150,8 50,52 250,52"
+                        points="200,12 80,68 320,68"
                         fill="#2563eb"
                         stroke="#1d4ed8"
-                        strokeWidth="1"
+                        strokeWidth="2"
                       />
                       <text
-                        x="150"
-                        y="35"
+                        x="200"
+                        y="45"
                         textAnchor="middle"
                         fill="white"
-                        fontSize="10"
+                        fontSize="12"
                         fontWeight="600"
                         className="uppercase tracking-wide"
                       >
@@ -819,23 +863,23 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                   </div>
 
                   {/* Core Message Card */}
-                  <Card className="p-4 bg-white bg-opacity-90 shadow-sm border-4 border-blue-600 border-t-0 relative -mt-1">
+                  <div className="p-6 bg-white bg-opacity-90 shadow-lg border-4 border-blue-600 border-t-0 relative -mt-1 rounded-lg">
                     <div className="text-center">
-                      <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide flex items-center justify-center gap-1">
-                        <Star className="w-3 h-3" />
+                      <div className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide flex items-center justify-center gap-1">
+                        <Star className="w-4 h-4" />
                         Core Message
                       </div>
-                      <div className="text-lg font-bold text-gray-800 leading-relaxed">
+                      <div className="text-xl font-bold text-gray-800 leading-relaxed">
                         {framework.valueProposition || 'Your core value proposition will appear here'}
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 </div>
 
                 {/* PILLARS - Supporting Messages */}
-                <div className="grid md:grid-cols-3 gap-3 mb-4">
+                <div className="grid md:grid-cols-3 gap-4 mb-6">
                   {[framework.pillar1, framework.pillar2, framework.pillar3].map((pillar, index) => (
-                    <Card key={index} className="p-3 bg-white bg-opacity-80 shadow-sm border-l-4 border-blue-400">
+                    <div key={index} className="p-4 bg-white bg-opacity-80 shadow-sm border-l-4 border-blue-400 rounded-lg">
                       <div className="text-center">
                         <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide flex items-center justify-center gap-1">
                           <MessageSquare className="w-3 h-3" />
@@ -845,38 +889,38 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                           {pillar || `Message pillar ${index + 1} will appear here`}
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
 
                 {/* FOUNDATION - Proof Points */}
-                <Card className="p-4 bg-white bg-opacity-80 shadow-sm border-b-4 border-green-500">
-                  <div className="text-center mb-3">
+                <div className="p-6 bg-white bg-opacity-80 shadow-sm border-b-4 border-green-500 rounded-lg">
+                  <div className="text-center mb-4">
                     <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide flex items-center justify-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
+                      <CheckCircle className="w-4 h-4" />
                       Foundation (Proof Points)
                     </div>
                   </div>
                   {framework.keyBenefits && framework.keyBenefits.some(b => b.trim()) ? (
-                    <div className="grid md:grid-cols-2 gap-2">
+                    <div className="grid md:grid-cols-2 gap-3">
                       {framework.keyBenefits.filter(b => b.trim()).map((benefit, index) => (
-                        <div key={index} className="flex items-start gap-2 p-2 bg-gray-50 rounded text-xs">
-                          <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                        <div key={index} className="flex items-start gap-2 p-3 bg-gray-50 rounded text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                           <span className="text-gray-700">{benefit}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center text-gray-500 py-2 text-xs">
+                    <div className="text-center text-gray-500 py-3 text-sm">
                       <p>Your key benefits will appear here as proof points</p>
                     </div>
                   )}
-                </Card>
+                </div>
 
                 {/* Usage Instructions Preview */}
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2 text-xs">
-                    <Sparkles className="w-3 h-3" />
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2 text-sm">
+                    <Sparkles className="w-4 h-4" />
                     How to Use Your Message House
                   </h4>
                   <ul className="text-xs text-blue-700 space-y-1">
@@ -914,7 +958,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
                     <FileText className="w-5 h-5 text-red-600" />
                     <div>
                       <div className="font-medium">
-                        {isExporting ? 'Exporting PDF...' : 'PDF Document (STYLED)'}
+                        {isExporting ? 'Creating PDF...' : 'PDF Document (STYLED)'}
                       </div>
                       <div className="text-sm text-gray-500">.pdf format - RECOMMENDED</div>
                     </div>
