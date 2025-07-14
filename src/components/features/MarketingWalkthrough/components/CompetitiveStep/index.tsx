@@ -1,5 +1,5 @@
 // src/components/features/MarketingWalkthrough/components/CompetitiveStep/index.tsx
-// Enhanced competitive analysis with better URL support and error handling
+// Enhanced competitive analysis with better URL support and error handling + AUTO-FOCUS FIXED
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
@@ -116,14 +116,22 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     };
   }, [competitorToAnalyze]);
 
-  // Effect to focus on newly added competitor input
+  // FIXED: Effect to focus on newly added competitor input
   useEffect(() => {
-    if (focusCompetitorIndex !== null && newCompetitorRef.current) {
-      newCompetitorRef.current.focus();
-      // Reset focus index after focusing
-      setFocusCompetitorIndex(null);
+    if (focusCompetitorIndex !== null) {
+      // Wait for React to render the new competitor input, then focus it
+      setTimeout(() => {
+        const competitorInput = document.querySelector(`input[data-competitor-index="${focusCompetitorIndex}"]`) as HTMLInputElement;
+        if (competitorInput) {
+          competitorInput.focus();
+          console.log('✅ Focused new competitor input!');
+        } else {
+          console.log('❌ Could not find new competitor input');
+        }
+        setFocusCompetitorIndex(null);
+      }, 50);
     }
-  }, [focusCompetitorIndex]);
+  }, [focusCompetitorIndex, competitors.length]);
 
   // Save competitors to local storage and notify parent component
   useEffect(() => {
@@ -137,15 +145,16 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     }
   }, [competitors, onDataChange]);
 
-  // Add competitor with focus handling
+  // FIXED: Add competitor with focus handling
   const addCompetitor = () => {
-    setCompetitors([
+    const newCompetitors = [
       ...competitors,
       { name: '', description: '', knownMessages: [], strengths: [], weaknesses: [] }
-    ]);
+    ];
+    setCompetitors(newCompetitors);
 
-    // Set focus on the newly added competitor
-    setFocusCompetitorIndex(competitors.length);
+    // Set focus on the newly added competitor (will be the last one)
+    setFocusCompetitorIndex(newCompetitors.length - 1);
   };
 
   const removeCompetitor = (index: number) => {
@@ -173,7 +182,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
   // ENHANCED: Proper API call with better error handling and URL support
   const handleAnalyzeCompetitor = async (competitorName: string) => {
     if (!competitorName.trim()) {
-      showNotification('error', 'Please enter a competitor name or URL');
+      showNotification('Please enter a competitor name or URL', 'error');
       return;
     }
 
@@ -190,9 +199,9 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
       // Show different notification based on input type
       if (inputIsUrl) {
-        showNotification('info', `Analyzing website: ${competitorName}`);
+        showNotification(`Analyzing website: ${competitorName}`, 'info');
       } else {
-        showNotification('info', `Researching company: ${competitorName}`);
+        showNotification(`Researching company: ${competitorName}`, 'info');
       }
 
       // Use the enhanced API structure
@@ -273,9 +282,9 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
         ].filter(Boolean);
 
         if (foundData.length > 0) {
-          showNotification('success', `Analysis complete! Found: ${foundData.join(', ')}`);
+          showNotification(`Analysis complete! Found: ${foundData.join(', ')}`, 'success');
         } else {
-          showNotification('warning', 'Analysis complete, but limited data was found');
+          showNotification('Analysis complete, but limited data was found', 'warning');
         }
 
       } else {
@@ -301,9 +310,9 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
 
       // Show specific error message
       if (errorMessage.includes('No analysis data found')) {
-        showNotification('warning', `Limited data available for ${competitorName}. Try a larger competitor or check the URL.`);
+        showNotification(`Limited data available for ${competitorName}. Try a larger competitor or check the URL.`, 'warning');
       } else {
-        showNotification('error', `Analysis failed: ${errorMessage}`);
+        showNotification(`Analysis failed: ${errorMessage}`, 'error');
       }
 
       setError(`Failed to analyze ${competitorName}: ${errorMessage}`);
@@ -345,14 +354,14 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
     if (hasValidCompetitors) {
       localStorage.setItem('marketingCompetitors',
         JSON.stringify(competitors.filter(comp => comp.name.trim() !== '')));
-      showNotification('success', 'Competitor analysis saved');
+      showNotification('Competitor analysis saved', 'success');
 
       // Navigate to next step if in walkthrough
       if (onNext) {
         onNext();
       }
     } else {
-      showNotification('info', 'No competitors added. You can come back to this step later.');
+      showNotification('No competitors added. You can come back to this step later.', 'info');
       // Allow skipping this step
       if (onNext) {
         onNext();
@@ -458,11 +467,10 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
       {competitors.map((competitor, index) => (
         <Card key={index} className="p-6">
           <div className="space-y-6">
-            {/* Name Input with Enhanced Visual Cues */}
+            {/* FIXED: Name Input with Enhanced Visual Cues + data attribute for focus */}
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <input
-                  ref={index === competitors.length - 1 ? newCompetitorRef : null}
                   type="text"
                   value={competitor.name}
                   onChange={(e) => handleNameChange(index, e.target.value)}
@@ -470,6 +478,7 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
                   className={`w-full p-3 border rounded-lg pr-12 ${competitor.error ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     } ${isURL(competitor.name) ? 'text-blue-700 font-medium' : ''
                     }`}
+                  data-competitor-index={index}
                 />
 
                 {/* Visual indicator for URL vs company name */}
@@ -730,31 +739,31 @@ const CompetitiveStep: React.FC<CompetitiveStepProps> = ({
             </div>
           </div>
         </Card>
-      )}
+        )}
 
-      {/* Summary Card - Show when we have successful analyses */}
-      {competitors.some(comp => comp.description && !comp.error) && (
-        <Card className="bg-green-50 border-green-200 p-6">
-          <div className="flex items-start gap-3">
-            <Sparkles className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-            <div>
-              <h3 className="font-semibold text-green-900 mb-2">Analysis Complete! 🎉</h3>
-              <p className="text-green-700 text-sm mb-3">
-                You now have competitive intelligence on {competitors.filter(comp => comp.description && !comp.error).length} competitor(s).
-                Use this data to:
-              </p>
-              <ul className="text-green-700 text-sm space-y-1 list-disc list-inside">
-                <li>Identify messaging gaps in your market</li>
-                <li>Differentiate your positioning</li>
-                <li>Discover new market opportunities</li>
-                <li>Refine your value proposition</li>
-              </ul>
+        {/* Summary Card - Show when we have successful analyses */}
+        {competitors.some(comp => comp.description && !comp.error) && (
+          <Card className="bg-green-50 border-green-200 p-6">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="font-semibold text-green-900 mb-2">Analysis Complete! 🎉</h3>
+                <p className="text-green-700 text-sm mb-3">
+                  You now have competitive intelligence on {competitors.filter(comp => comp.description && !comp.error).length} competitor(s).
+                  Use this data to:
+                </p>
+                <ul className="text-green-700 text-sm space-y-1 list-disc list-inside">
+                  <li>Identify messaging gaps in your market</li>
+                  <li>Differentiate your positioning</li>
+                  <li>Discover new market opportunities</li>
+                  <li>Refine your value proposition</li>
+                </ul>
+              </div>
             </div>
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-export default CompetitiveStep;
+          </Card>
+        )}
+      </div>
+    );
+   };
+   
+   export default CompetitiveStep;

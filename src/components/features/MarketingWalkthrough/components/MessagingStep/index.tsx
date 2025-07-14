@@ -201,7 +201,11 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       index: newIndex
     });
   };
-
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('input:not([readonly]), textarea:not([readonly])');
+    const lastInput = inputs[inputs.length - 1] as HTMLInputElement;
+    lastInput?.focus();
+  }, 50);
   // Remove a field (benefit)
   const removeField = (field: 'keyBenefits', index: number) => {
     setFramework(prev => ({

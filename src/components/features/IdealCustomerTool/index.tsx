@@ -1,5 +1,5 @@
 // src/components/features/IdealCustomerGenerator/index.tsx
-// ACTUALLY FIXED - Wide + No blank profiles
+// ACTUALLY FIXED - Wide + No blank profiles + AUTO-FOCUS FIXED
 
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Trash2, Save, CheckCircle, Sparkles, Loader, AlertCircle } from 'lucide-react';
@@ -102,6 +102,17 @@ const IdealCustomerGenerator: React.FC = () => {
         const updatedProfiles = [...profiles, newProfile];
         setProfiles(updatedProfiles);
         setActiveProfile(newProfile.id);
+
+        // AUTO-FOCUS: Focus the role input of the new profile
+        setTimeout(() => {
+            const roleInput = document.querySelector(`input[data-profile-role="${newProfile.id}"]`) as HTMLInputElement;
+            if (roleInput) {
+                roleInput.focus();
+                console.log('✅ Focused new profile role input!');
+            } else {
+                console.log('❌ Could not find new profile role input');
+            }
+        }, 50);
     };
 
     const deleteProfile = (profileId: string) => {
@@ -132,7 +143,20 @@ const IdealCustomerGenerator: React.FC = () => {
     const addChallenge = () => {
         const current = getCurrentProfile();
         if (current) {
-            updateProfile('challenges', [...current.challenges, '']);
+            const newChallenges = [...current.challenges, ''];
+            updateProfile('challenges', newChallenges);
+
+            // AUTO-FOCUS: Focus the new challenge input
+            setTimeout(() => {
+                const newChallengeIndex = newChallenges.length - 1;
+                const challengeInput = document.querySelector(`input[data-challenge="${current.id}-${newChallengeIndex}"]`) as HTMLInputElement;
+                if (challengeInput) {
+                    challengeInput.focus();
+                    console.log('✅ Focused new challenge input!');
+                } else {
+                    console.log('❌ Could not find new challenge input');
+                }
+            }, 50);
         }
     };
 
@@ -428,6 +452,7 @@ const IdealCustomerGenerator: React.FC = () => {
                                         onChange={(e) => updateProfile('role', e.target.value)}
                                         className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="e.g., Marketing Director, CEO"
+                                        data-profile-role={currentProfile.id}
                                     />
                                 </div>
 
@@ -467,6 +492,7 @@ const IdealCustomerGenerator: React.FC = () => {
                                                 onChange={(e) => updateChallenge(index, e.target.value)}
                                                 className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                 placeholder="What problems do they face?"
+                                                data-challenge={`${currentProfile.id}-${index}`}
                                             />
                                             {currentProfile.challenges.length > 1 && (
                                                 <button

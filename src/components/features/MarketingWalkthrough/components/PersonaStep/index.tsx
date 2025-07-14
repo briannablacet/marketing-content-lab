@@ -1,5 +1,5 @@
 // src/components/features/MarketingWalkthrough/components/PersonaStep/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNotification } from '../../../../../context/NotificationContext';
 import { Sparkles, Plus, X, Loader } from 'lucide-react';
 
@@ -19,6 +19,10 @@ interface PersonaStepProps {
 
 const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, setFormData }) => {
   const { showNotification } = useNotification();
+  
+  // Create refs for the inputs we want to focus
+  const newPersonaInputRef = useRef<HTMLInputElement>(null);
+  const newChallengeRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const [personas, setPersonas] = useState<TargetAudience[]>(() => {
     const saved = localStorage.getItem('marketingTargetAudiences');
@@ -34,6 +38,10 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
 
   const [suggestions, setSuggestions] = useState<TargetAudience[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Track when we need to focus new elements
+  const [focusNewPersona, setFocusNewPersona] = useState(false);
+  const [focusNewChallenge, setFocusNewChallenge] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('marketingTargetAudiences', JSON.stringify(personas));
@@ -49,7 +57,24 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
     }
   }, [personas]);
 
+  // Effect to focus new persona input
+  useEffect(() => {
+    if (focusNewPersona && newPersonaInputRef.current) {
+      newPersonaInputRef.current.focus();
+      setFocusNewPersona(false);
+    }
+  }, [focusNewPersona, personas.length]);
 
+  // Effect to focus new challenge input
+  useEffect(() => {
+    if (focusNewChallenge) {
+      const inputRef = newChallengeRefs.current[focusNewChallenge];
+      if (inputRef) {
+        inputRef.focus();
+        setFocusNewChallenge(null);
+      }
+    }
+  }, [focusNewChallenge]);
 
   const handleTextChange = (index: number, field: keyof TargetAudience, value: string) => {
     const updated = [...personas];
@@ -67,6 +92,10 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
     const updated = [...personas];
     updated[personaIndex].challenges.push('');
     setPersonas(updated);
+    
+    // Set up focus for the new challenge input
+    const challengeKey = `${personaIndex}-${updated[personaIndex].challenges.length - 1}`;
+    setFocusNewChallenge(challengeKey);
   };
 
   const removeChallenge = (personaIndex: number, challengeIndex: number) => {
@@ -77,6 +106,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
 
   const addPersona = () => {
     setPersonas([...personas, { role: '', industry: '', challenges: [''] }]);
+    setFocusNewPersona(true);
   };
 
   const removePersona = (index: number) => {
@@ -178,6 +208,7 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
             value={persona.role}
             onChange={(e) => handleTextChange(idx, 'role', e.target.value)}
             className="w-full p-2 border rounded"
+            ref={idx === personas.length - 1 ? newPersonaInputRef : null}
           />
           <input
             type="text"
@@ -194,23 +225,40 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
                 value={challenge}
                 onChange={(e) => handleChallengeChange(idx, cIdx, e.target.value)}
                 className="w-full p-2 border rounded"
+                ref={(el) => {
+                  // Store ref for the newest challenge input
+                  const challengeKey = `${idx}-${cIdx}`;
+                  newChallengeRefs.current[challengeKey] = el;
+                }}
               />
               {persona.challenges.length > 1 && (
                 <button onClick={() => removeChallenge(idx, cIdx)} className="text-sm text-red-500">X</button>
               )}
             </div>
           ))}
-          <button onClick={() => addChallenge(idx)} className="text-sm text-blue-500">+ Add challenge</button>
+          <button 
+            onClick={() => addChallenge(idx)} 
+            className="text-sm text-blue-500 hover:text-blue-700 transition-colors"
+          >
+            + Add challenge
+          </button>
         </div>
       ))}
 
       <div className="space-x-4">
-        <button onClick={addPersona} className="bg-gray-200 px-4 py-2 rounded">+ Add another profile</button>
+        <button 
+          onClick={addPersona} 
+          className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded transition-colors"
+        >
+          + Add another profile
+        </button>
         <button
           onClick={handleAISuggestion}
-          className="bg-blue-500 text-white px-4 py-2 rounded inline-flex items-center"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-flex items-center transition-colors"
+          disabled={loading}
         >
-          {loading ? <Loader className="animate-spin mr-2" size={16} /> : <Sparkles className="mr-2" size={16} />} Help me identify my ideal customer
+          {loading ? <Loader className="animate-spin mr-2" size={16} /> : <Sparkles className="mr-2" size={16} />} 
+          Help me identify my ideal customer
         </button>
       </div>
 
@@ -222,7 +270,12 @@ const PersonaStep: React.FC<PersonaStepProps> = ({ onNext, onBack, formData, set
               <p><strong>Role:</strong> {s.role}</p>
               <p><strong>Industry:</strong> {s.industry}</p>
               <p><strong>Challenges:</strong> {s.challenges.join(', ')}</p>
-              <button onClick={() => addSuggestion(s)} className="text-sm text-green-600 mt-1">+ Add this customer profile</button>
+              <button 
+                onClick={() => addSuggestion(s)} 
+                className="text-sm text-green-600 hover:text-green-700 mt-1 transition-colors"
+              >
+                + Add this customer profile
+              </button>
             </div>
           ))}
         </div>
