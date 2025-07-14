@@ -1,5 +1,5 @@
 // src/pages/competitive-analysis.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import CompetitiveStep from '@/components/features/MarketingWalkthrough/components/CompetitiveStep';
 import ScreenTemplate from '@/components/shared/UIComponents';
 import { WritingStyleProvider } from '@/context/WritingStyleContext';
@@ -69,19 +69,27 @@ const CompetitiveAnalysisPage = () => {
       // Wait a bit to show the saving state
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      showNotification('success', 'Competitor analysis saved successfully');
+      showNotification('Competitor analysis saved successfully', 'success');
     } catch (error) {
       console.error('Error saving analysis:', error);
-      showNotification('error', 'Failed to save analysis. Please try again.');
+      showNotification('Failed to save analysis. Please try again.', 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Handler for competitor data changes
-  const handleCompetitorDataChange = (data: Competitor[]) => {
-    setCompetitorData(data);
-    // We'll check if the data seems to be using fallback values
+  // FIXED: Handler for competitor data changes - use useCallback to prevent infinite loops
+  const handleCompetitorDataChange = useCallback((data: Competitor[]) => {
+    // Only update if the data has actually changed
+    setCompetitorData(prevData => {
+      // Compare the data to see if it's actually different
+      if (JSON.stringify(prevData) === JSON.stringify(data)) {
+        return prevData; // Don't update if it's the same
+      }
+      return data;
+    });
+
+    // Check if the data seems to be using fallback values
     const usedFallback = data.some(comp =>
       comp.description?.includes("sample data") ||
       (comp.strengths.length === 3 &&
@@ -91,7 +99,7 @@ const CompetitiveAnalysisPage = () => {
 
     // Only show the analysis note if we're using fallback data
     setShowAnalysisNote(usedFallback);
-  };
+  }, []); // Empty dependency array since this function doesn't depend on any state
 
   // Function to dismiss the analysis note
   const dismissAnalysisNote = () => {
