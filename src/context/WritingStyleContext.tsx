@@ -166,35 +166,21 @@ export const WritingStyleProvider: React.FC<{ children: ReactNode }> = ({ childr
     console.log('🔄 Writing style reset to defaults');
   };
 
-  // FIXED: Memoize isStyleConfigured to prevent recalculation on every render
   const isStyleConfigured = useMemo(() => {
-    const result = isLoaded && (
-      writingStyle.completed === true ||
-      writingStyle.styleGuide.primary !== 'Chicago Manual of Style' ||
-      writingStyle.formatting.headingCase !== 'title' ||
-      writingStyle.formatting.numberFormat !== 'mixed' ||
-      writingStyle.punctuation.oxfordComma !== true ||
-      (writingStyle.styleGuide.customRules && writingStyle.styleGuide.customRules.length > 0)
+    if (!writingStyle || !writingStyle.completed) return false;
+
+    // Check if essential properties exist before accessing nested properties
+    const hasStyleGuide = writingStyle.styleGuide?.primary;
+    const hasFormatting = writingStyle.formatting?.headingCase || writingStyle.formatting?.numberFormat;
+    const hasPunctuation = writingStyle.punctuation?.oxfordComma !== undefined;
+    const hasCustomRules = writingStyle.styleGuide?.customRules?.length > 0;
+
+    return !!(
+      writingStyle.completed &&
+      hasStyleGuide &&
+      (hasFormatting || hasPunctuation || hasCustomRules)
     );
-
-    // Only log when the result actually changes
-    console.log('🔍 isStyleConfigured calculated:', {
-      isLoaded,
-      completed: writingStyle.completed,
-      primary: writingStyle.styleGuide.primary,
-      result
-    });
-
-    return result;
-  }, [
-    isLoaded,
-    writingStyle.completed,
-    writingStyle.styleGuide.primary,
-    writingStyle.formatting.headingCase,
-    writingStyle.formatting.numberFormat,
-    writingStyle.punctuation.oxfordComma,
-    writingStyle.styleGuide.customRules?.length
-  ]);
+  }, [writingStyle]);
 
   const value: WritingStyleContextType = useMemo(() => ({
     writingStyle,

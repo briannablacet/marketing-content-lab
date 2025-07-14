@@ -13,6 +13,7 @@ import {
   User,
   Menu,
   X,
+  Archive,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import dynamic from "next/dynamic";
@@ -180,18 +181,16 @@ const Navbar: React.FC = () => {
                   setCreationMenuOpen(false);
                   setEnhancementMenuOpen(false);
                 }}
-                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                  strategicMenuOpen
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                }`}
+                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${strategicMenuOpen
+                  ? "bg-blue-100 text-blue-700"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                  }`}
               >
                 <BarChart2 className="w-4 h-4 mr-1" />
                 Brandscape
                 <ChevronDown
-                  className={`ml-1 w-4 h-4 transition-transform ${
-                    strategicMenuOpen ? "transform rotate-180" : ""
-                  }`}
+                  className={`ml-1 w-4 h-4 transition-transform ${strategicMenuOpen ? "transform rotate-180" : ""
+                    }`}
                 />
               </button>
 
@@ -317,18 +316,16 @@ const Navbar: React.FC = () => {
                   setStrategicMenuOpen(false);
                   setEnhancementMenuOpen(false);
                 }}
-                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                  creationMenuOpen
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                }`}
+                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${creationMenuOpen
+                  ? "bg-blue-100 text-blue-700"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                  }`}
               >
                 <Edit className="w-4 h-4 mr-1" />
                 Creation Hub
                 <ChevronDown
-                  className={`ml-1 w-4 h-4 transition-transform ${
-                    creationMenuOpen ? "transform rotate-180" : ""
-                  }`}
+                  className={`ml-1 w-4 h-4 transition-transform ${creationMenuOpen ? "transform rotate-180" : ""
+                    }`}
                 />
               </button>
               {creationMenuOpen && (
@@ -396,18 +393,16 @@ const Navbar: React.FC = () => {
                   setStrategicMenuOpen(false);
                   setCreationMenuOpen(false);
                 }}
-                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                  enhancementMenuOpen
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                }`}
+                className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${enhancementMenuOpen
+                  ? "bg-blue-100 text-blue-700"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                  }`}
               >
                 <Sparkles className="w-4 h-4 mr-1" />
                 Enhancement Studio
                 <ChevronDown
-                  className={`ml-1 w-4 h-4 transition-transform ${
-                    enhancementMenuOpen ? "transform rotate-180" : ""
-                  }`}
+                  className={`ml-1 w-4 h-4 transition-transform ${enhancementMenuOpen ? "transform rotate-180" : ""
+                    }`}
                 />
               </button>
               {enhancementMenuOpen && (
@@ -454,15 +449,24 @@ const Navbar: React.FC = () => {
                 </div>
               )}
             </div>
-
+            {/* Content Library Link */}
+            <Link
+              href="/content-library"
+              className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${router.pathname === "/content-library"
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                }`}
+            >
+              <Archive className="w-4 h-4 mr-1" />
+              Content Library
+            </Link>
             {/* Settings Link */}
             <Link
               href="/settings"
-              className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${
-                router.pathname === "/settings"
-                  ? "bg-blue-100 text-blue-700"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-              }`}
+              className={`px-3 py-2 rounded-md text-sm font-medium inline-flex items-center ${router.pathname === "/settings"
+                ? "bg-blue-100 text-blue-700"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                }`}
             >
               <Settings className="w-4 h-4 mr-1" />
               Settings
@@ -576,9 +580,8 @@ const Navbar: React.FC = () => {
                     <span>Brandscape</span>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      mobileStrategicOpen ? "transform rotate-180" : ""
-                    }`}
+                    className={`w-4 h-4 transition-transform ${mobileStrategicOpen ? "transform rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {mobileStrategicOpen && (
@@ -672,9 +675,8 @@ const Navbar: React.FC = () => {
                     <span>Creation Hub</span>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      mobileCreationOpen ? "transform rotate-180" : ""
-                    }`}
+                    className={`w-4 h-4 transition-transform ${mobileCreationOpen ? "transform rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {mobileCreationOpen && (
@@ -729,9 +731,8 @@ const Navbar: React.FC = () => {
                     <span>Enhancement Studio</span>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      mobileEnhancementOpen ? "transform rotate-180" : ""
-                    }`}
+                    className={`w-4 h-4 transition-transform ${mobileEnhancementOpen ? "transform rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {mobileEnhancementOpen && (
@@ -765,14 +766,24 @@ const Navbar: React.FC = () => {
                   </div>
                 )}
               </div>
-
+              {/* Mobile Content Library Link */}
+              <Link
+                href="/content-library"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`block px-4 py-3 rounded-md text-gray-700 hover:bg-gray-50 ${router.pathname === "/content-library" ? "bg-blue-50 text-blue-700" : ""
+                  }`}
+              >
+                <div className="flex items-center">
+                  <Archive className="w-4 h-4 mr-2" />
+                  <span>Content Library</span>
+                </div>
+              </Link>
               {/* Mobile Settings Link */}
               <Link
                 href="/settings"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block px-4 py-3 rounded-md text-gray-700 hover:bg-gray-50 ${
-                  router.pathname === "/settings" ? "bg-blue-50 text-blue-700" : ""
-                }`}
+                className={`block px-4 py-3 rounded-md text-gray-700 hover:bg-gray-50 ${router.pathname === "/settings" ? "bg-blue-50 text-blue-700" : ""
+                  }`}
               >
                 <div className="flex items-center">
                   <Settings className="w-4 h-4 mr-2" />
