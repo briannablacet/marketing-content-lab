@@ -518,7 +518,7 @@ Return only the adapted boilerplate text. Do not include explanations.`;
   }
 }
 
-// Handler for tagline generation
+// Handler for tagline generation - 80% FOUNDATION FOR HUMAN POLISH
 async function handleTaglineGeneration(data: any, res: NextApiResponse) {
   try {
     const {
@@ -540,91 +540,158 @@ async function handleTaglineGeneration(data: any, res: NextApiResponse) {
       strategicData?.brandVoice,
       strategicData?.messaging
     );
-    const prompt = `🚨 MANDATORY STYLE RULES - FOLLOW EXACTLY:
-${styleInstructions}
 
-Write a catchy, brand-appropriate tagline for the following business.
+    // COMPREHENSIVE FORBIDDEN WORDS LIST
+    const forbiddenWords = [
+      'revolutionize', 'revolutionizing', 'revolution',
+      'empower', 'empowering', 'empowerment',
+      'master', 'mastering', 'mastery',
+      'unleash', 'unleashing',
+      'unchain', 'unchaining',
+      'evolve', 'evolving', 'evolution',
+      'reinvent', 'reinventing',
+      'transform', 'transforming', 'transformation',
+      'disrupt', 'disrupting', 'disruption',
+      'unlock', 'unlocking',
+      'elevate', 'elevating',
+      'optimize', 'optimizing',
+      'leverage', 'leveraging',
+      'synergy', 'synergize',
+      'paradigm', 'innovative', 'cutting-edge',
+      'next-level', 'game-changing', 'breakthrough',
+      'seamless', 'scalable', 'robust',
+      'dynamic', 'strategic', 'holistic',
+      'comprehensive', 'integrated', 'streamlined',
+      'maximize', 'accelerate', 'amplify', 'amplified'
+    ];
 
-Business Name: ${businessName}
-Description: ${description}
-Audiences: ${(audiences || []).join(", ")}
-Promise: ${promise}
-Tone: ${tone}
-Style: ${style}
-Archetype: ${archetype}
-Personality: ${(personality || []).join(", ")}
+    // 80% FOUNDATION PROMPT
+    const prompt = `Generate 20 tagline foundations for ${businessName} that a human can easily polish into perfect taglines.
 
-Return only the tagline. Do not include explanations.`;
-    console.log("🔍 PROMPT BEING SENT TO AI:", prompt);
-    const completions = await Promise.all(
-      Array.from({ length: numOptions }).map(() =>
-        openai.chat.completions.create({
-          model: "gpt-4-turbo",
-          temperature: 0.8,
-          messages: [
-            { role: "system", content: "You are a branding expert." },
-            { role: "user", content: prompt },
-          ],
-        })
-      )
-    );
-    const taglines = completions.map((c) => c.choices[0].message.content?.trim() || "");
-    const cleanedTaglines = taglines.map(cleanTagline);
-    return res.status(200).json(cleanedTaglines);
+Business: ${description}
+
+Focus on FEELINGS and OUTCOMES customers want:
+- How do they want to FEEL about their business?
+- What RESULT do they want to achieve?
+- What WORRY do they want to eliminate?
+- What would make them confident/proud/successful?
+
+Use these FEELING/TIME concepts that work:
+Life, Future, Tomorrow, Today, Finally, Always, Never, Simple, Smart, Better, Right, Sure, Easy, Fast, Clear
+
+GOOD FOUNDATIONS we created by hand:
+"Talent for Life" - life concept + outcome
+"Tomorrow's Team, Today" - time concept + feeling prepared  
+"Intelligence at Work" - outcome + action
+"See Tomorrow's Hire" - action + future concept
+"Data Beats Hunches" - comparison + confidence
+
+These work because they:
+- Focus on customer outcomes, not product features
+- Use emotional or time-based concepts
+- Sound conversational and natural
+- Are specific enough to mean something
+- Give humans a strong foundation to refine
+
+AVOID:
+- Generic business motivation: "Make It Happen", "Act Now"
+- Corporate jargon and buzzwords
+- Explaining what the product does
+- Forced creativity or wordplay
+
+FORBIDDEN WORDS (DO NOT USE):
+${forbiddenWords.join(', ')}
+
+Requirements:
+- 2-4 words maximum
+- Focus on FEELINGS and OUTCOMES
+- Natural, conversational language
+- Strong foundation that humans can polish
+- Specific to this business type
+
+Return exactly 20 tagline foundations in this format:
+"Foundation One"
+"Foundation Two"
+etc.`;
+
+    console.log("🔍 GENERATING 20 TAGLINE FOUNDATIONS FOR HUMAN POLISH");
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      temperature: 0.7, // Balanced for good foundations
+      max_tokens: 600,
+      messages: [
+        {
+          role: "system",
+          content: `You create tagline foundations that humans can easily refine into great taglines. Focus on emotions, outcomes, and natural language. Avoid corporate buzzwords. Think about how customers want to FEEL, not what the product does. Create solid 80% foundations that humans can polish to 100%.`
+        },
+        { role: "user", content: prompt }
+      ],
+    });
+
+    const content = response.choices[0].message.content?.trim() || "";
+    console.log("📝 AI Response length:", content.length);
+
+    // Parse and filter the response
+    let allTaglines = content.split('\n')
+      .map(line => cleanTagline(line.trim()))
+      .filter(line => line.length > 0 && line.split(' ').length <= 6);
+
+    console.log(`📊 Generated ${allTaglines.length} initial foundations`);
+
+    // Remove any that contain forbidden words
+    const cleanTaglines = allTaglines.filter(tagline => {
+      const taglineLower = tagline.toLowerCase();
+      const hasForbiddenWord = forbiddenWords.some(word =>
+        taglineLower.includes(word.toLowerCase())
+      );
+
+      if (hasForbiddenWord) {
+        console.log(`❌ Rejected for forbidden words: "${tagline}"`);
+        return false;
+      }
+      return true;
+    });
+
+    console.log(`✅ ${cleanTaglines.length} foundations passed forbidden word filter`);
+
+    // Remove exact duplicates and similar phrases
+    const uniqueTaglines = [];
+    const usedWords = new Set();
+
+    for (const tagline of cleanTaglines) {
+      const words = tagline.toLowerCase().split(/\s+/);
+      const hasOverlap = words.some(word => usedWords.has(word));
+
+      if (!hasOverlap && uniqueTaglines.length < 15) {
+        uniqueTaglines.push(tagline);
+        words.forEach(word => usedWords.add(word));
+        console.log(`✅ Accepted foundation: "${tagline}"`);
+      } else if (hasOverlap) {
+        console.log(`🔄 Rejected for word overlap: "${tagline}"`);
+      }
+    }
+
+    // Take the best 5 for the UI
+    const finalTaglines = uniqueTaglines.slice(0, numOptions);
+
+    console.log(`🎯 Returning ${finalTaglines.length} foundations to UI:`);
+    finalTaglines.forEach((tagline, i) => console.log(`${i + 1}. "${tagline}"`));
+
+    // If we don't have enough, fill with the remaining clean ones
+    while (finalTaglines.length < numOptions && cleanTaglines.length > finalTaglines.length) {
+      const remaining = cleanTaglines.find(t => !finalTaglines.includes(t));
+      if (remaining) {
+        finalTaglines.push(remaining);
+      } else {
+        break;
+      }
+    }
+
+    return res.status(200).json(finalTaglines);
   } catch (error) {
     console.error("Tagline generation error:", error);
     return res.status(500).json({ error: "Failed to generate taglines" });
-  }
-}
-
-// Handler for persona generation
-async function handlePersonaGenerator(data: any, res: NextApiResponse) {
-  try {
-    const { productName, productType, currentPersona } = data;
-    const prompt = `Generate 3 ideal customer personas for the following product. Return ONLY a valid JSON array with this exact format:
-
-[
-  {
-    "role": "Job title or role",
-    "industry": "Industry they work in",
-    "challenges": ["Challenge 1", "Challenge 2", "Challenge 3"]
-  }
-]
-
-Product Name: ${productName}
-Product Type/Description: ${productType}
-Current Persona: ${currentPersona ? JSON.stringify(currentPersona) : 'N/A'}
-
-Important: Return ONLY the JSON array, no explanations or additional text.`;
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: "You are a B2B marketing strategist." },
-        { role: "user", content: prompt },
-      ],
-    });
-    let personasText = response.choices[0].message.content || "[]";
-    let parsed;
-    try {
-      parsed = JSON.parse(personasText);
-    } catch {
-      // Try to extract JSON array from the text
-      const match = personasText.match(/\[[\s\S]*\]/);
-      if (match) {
-        try {
-          parsed = JSON.parse(match[0]);
-        } catch {
-          parsed = [{ role: "Sample Role", industry: "Sample Industry", challenges: ["Sample Challenge"] }];
-        }
-      } else {
-        parsed = [{ role: "Sample Role", industry: "Sample Industry", challenges: ["Sample Challenge"] }];
-      }
-    }
-    return res.status(200).json({ personas: parsed });
-  } catch (error) {
-    console.error("Persona generation error:", error);
-    return res.status(500).json({ error: "Failed to generate personas" });
   }
 }
 
@@ -1656,7 +1723,7 @@ async function handleEmailNurtureFlow(data: any, res: NextApiResponse) {
     for (let i = 0; i < numEmails; i++) {
       const emailNumber = i + 1;
       const purpose = purposes[i] || purposes[purposes.length - 1];
-      
+
       const prompt = `Create a professional email for an email nurture sequence.
 
 CAMPAIGN: ${campaignName}
@@ -1672,9 +1739,9 @@ Create a 150-word email with this structure:
 - Body (conversational, professional tone)
 - Clear call-to-action
 
-Make this email ${emailNumber === 1 ? 'welcoming and introductory' : 
-emailNumber === numEmails ? 'action-oriented with strong CTA' : 
-'educational and value-focused'}.
+Make this email ${emailNumber === 1 ? 'welcoming and introductory' :
+          emailNumber === numEmails ? 'action-oriented with strong CTA' :
+            'educational and value-focused'}.
 
 CRITICAL: Use this EXACT format with line breaks:
 
@@ -1706,7 +1773,7 @@ Follow this format exactly with line breaks before each section.`;
       });
 
       const emailContent = response.choices[0].message.content || '';
-      
+
       emails.push({
         emailNumber: emailNumber,
         purpose: purpose,

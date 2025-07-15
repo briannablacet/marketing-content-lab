@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Card } from '@/components/ui/card';
-import { Plus, X, Package } from 'lucide-react';
+import { Plus, X, Package, Lightbulb } from 'lucide-react';
 import { useNotification } from '../../../../../context/NotificationContext';
 import StrategicDataService from '../../../../../services/StrategicDataService';
 
@@ -182,6 +182,7 @@ const ProductStep = () => {
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
+
               {/* Tagline (optional) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Do you already have a tagline? (Optional)</label>
@@ -193,17 +194,53 @@ const ProductStep = () => {
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
+
+              {/* ENHANCED DESCRIPTION GUIDANCE */}
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-blue-800 mb-2">💡 Write Better Descriptions for Better AI Results</h4>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Avoid marketing speak - describe what you actually do for customers:
+                    </p>
+                    <div className="grid md:grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <div className="font-medium text-red-600 mb-2">❌ Avoid buzzword soup:</div>
+                        <div className="space-y-1 text-red-700">
+                          <div>"Leverage cutting-edge solutions to empower..."</div>
+                          <div>"Transform your business with innovative..."</div>
+                          <div>"Unlock potential through disruptive..."</div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium text-green-600 mb-2">✅ Use simple, clear language:</div>
+                        <div className="space-y-1 text-green-700">
+                          <div>"Accounting software for restaurants"</div>
+                          <div>"CRM that helps sales teams track leads"</div>
+                          <div>"App that schedules employee shifts"</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Product Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Share a description of your business. Don't worry if it's not perfect.</label>
                 <textarea
                   value={productType}
                   onChange={(e) => setProductType(e.target.value)}
-                  placeholder="Describe the services or products you offer."
+                  placeholder="Example: We make project management software for marketing teams. Our tool helps marketers plan campaigns, track deadlines, and collaborate with designers without endless email chains."
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={4}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Explain what you do like you're talking to a friend, not writing a press release.
+                </p>
               </div>
+
               {/* Key Benefits */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">What are the main benefits for your clients?</label>

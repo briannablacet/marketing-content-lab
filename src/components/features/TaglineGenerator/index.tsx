@@ -177,7 +177,7 @@ const TaglineGenerator: React.FC = () => {
         const loadData = async () => {
             try {
                 setIsLoading(true);
-                
+
                 const {
                     productName,
                     productDescription,
@@ -257,14 +257,14 @@ const TaglineGenerator: React.FC = () => {
     // Handle archetype change with database save
     const handleArchetypeChange = async (value: string) => {
         setArchetype(value);
-        
+
         try {
             await StrategicDataService.setStrategicDataValue('brandArchetype', value);
             localStorage.setItem('brandArchetype', value);
         } catch (error) {
             console.error('Error saving archetype to database:', error);
         }
-        
+
         const selected = BRAND_ARCHETYPES.find(a => a.name === value);
         if (selected) {
             setTone(selected.defaultTone);
@@ -314,7 +314,7 @@ const TaglineGenerator: React.FC = () => {
 
             const result = await response.json();
             const cleanedTaglines = result.map((tagline: string) => cleanTaglineContent(tagline));
-            
+
             console.log('✅ Generated taglines:', cleanedTaglines);
             setTaglineOptions(cleanedTaglines);
             setSelectedTaglineIndex(0);
@@ -340,7 +340,7 @@ const TaglineGenerator: React.FC = () => {
         try {
             await StrategicDataService.setStrategicDataValue('tagline', finalValue);
             localStorage.setItem('brandTagline', finalValue);
-            
+
             setIsAccepted(true);
             setIsSaved(true); // Mark as saved - this should move it to top!
             console.log('✅ Tagline saved! Should move to top now.');
@@ -501,6 +501,19 @@ const TaglineGenerator: React.FC = () => {
                                 />
                             </div>
 
+                            {/* Add this guidance box here - after business description but before the generate button */}
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-start gap-2">
+                                    <Wand2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <h4 className="font-medium text-blue-800 mb-2">💡 Human-AI Collaboration</h4>
+                                        <p className="text-sm text-blue-700">
+                                            We generate strong tagline foundations that you can easily refine and polish. The best results come from combining AI efficiency with human creativity — so feel free to edit and improve any suggestions!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Ideal customers or audiences</label>
                                 <div className="space-y-3">
@@ -566,7 +579,7 @@ const TaglineGenerator: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
-                            
+
                             <button
                                 onClick={generateTaglines}
                                 disabled={isGenerating}
@@ -598,25 +611,23 @@ const TaglineGenerator: React.FC = () => {
                             {/* Multiple tagline options with manual editing */}
                             {taglineOptions.length > 1 && (
                                 <div className="mb-6">
-                                    <p className="text-sm text-gray-600 mb-3">Select and edit your favorite option:</p>
+                                   <p className="text-sm text-gray-600 mb-3">Select and edit your favorite option. These are foundations — polish them to perfection:</p>
                                     <div className="space-y-3">
                                         {taglineOptions.map((option, index) => (
-                                            <div 
+                                            <div
                                                 key={index}
-                                                className={`p-4 border-2 rounded-lg transition-all ${
-                                                    selectedTaglineIndex === index 
-                                                        ? 'border-blue-500 bg-blue-50' 
+                                                className={`p-4 border-2 rounded-lg transition-all ${selectedTaglineIndex === index
+                                                        ? 'border-blue-500 bg-blue-50'
                                                         : 'border-gray-200 hover:border-blue-300'
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <button
                                                         onClick={() => handleSelectTagline(index)}
-                                                        className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                                                            selectedTaglineIndex === index 
-                                                                ? 'border-blue-500 bg-blue-500' 
+                                                        className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${selectedTaglineIndex === index
+                                                                ? 'border-blue-500 bg-blue-500'
                                                                 : 'border-gray-300'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {selectedTaglineIndex === index && (
                                                             <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
