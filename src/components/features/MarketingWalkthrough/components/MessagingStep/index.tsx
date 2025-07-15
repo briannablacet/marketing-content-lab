@@ -1,5 +1,5 @@
 // src/components/features/MessageFramework/index.tsx
-// COMPLETE FILE with working PDF export that captures ALL styling
+// FIXED: Now properly pulls value prop from all sources and updates when data changes
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
@@ -68,18 +68,44 @@ const adaptWritingStyle = (contextStyle: any) => {
 };
 
 const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, setFormData }) => {
-  console.log("🔍 Checking localStorage:", safeLocalStorage.getItem('marketingValueProp'));
-
   const { showNotification } = useNotification();
   const router = useRouter();
   const { writingStyle } = useWritingStyle();
 
+  // FIXED: Improved value prop loading function
+  const getLatestValueProp = () => {
+    console.log('🔍 Getting latest value prop from all sources...');
+
+    // Priority order: formData → localStorage → empty
+    const sources = [
+      { name: 'formData.valueProp', value: formData?.valueProp },
+      { name: 'localStorage marketingValueProp', value: safeLocalStorage.getItem('marketingValueProp') },
+      {
+        name: 'messageFramework.valueProposition', value: (() => {
+          try {
+            const mf = JSON.parse(safeLocalStorage.getItem('messageFramework') || '{}');
+            return mf.valueProposition;
+          } catch { return null; }
+        })()
+      }
+    ];
+
+    for (const source of sources) {
+      if (source.value && typeof source.value === 'string' && source.value.trim()) {
+        console.log(`✅ Using value prop from ${source.name}:`, source.value);
+        return source.value;
+      }
+    }
+
+    console.log('❌ No value prop found in any source');
+    return '';
+  };
+
   const [framework, setFramework] = useState<MessageFramework>(() => {
-    // Get value prop from localStorage on initial load
-    const savedValueProp = safeLocalStorage.getItem('marketingValueProp') || '';
+    const initialValueProp = getLatestValueProp();
 
     return {
-      valueProposition: formData?.valueProp || savedValueProp || '',
+      valueProposition: initialValueProp,
       pillar1: '',
       pillar2: '',
       pillar3: '',
@@ -114,31 +140,44 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
   // Add a state to track missing product info
   const [missingProductInfo, setMissingProductInfo] = useState(false);
 
-  // Update framework when formData changes OR load from localStorage
+  // FIXED: Enhanced effect to watch for value prop changes from multiple sources
   useEffect(() => {
-    let valueToUse = '';
+    const latestValueProp = getLatestValueProp();
 
-    // First try formData
-    if (formData?.valueProp) {
-      valueToUse = formData.valueProp;
-      console.log("Using value prop from formData:", formData.valueProp);
-    } else {
-      // Fallback to localStorage
-      const savedValueProp = safeLocalStorage.getItem('marketingValueProp');
-      if (savedValueProp) {
-        valueToUse = savedValueProp;
-        console.log("Using value prop from localStorage:", savedValueProp);
-      }
-    }
-
-    if (valueToUse) {
+    // Only update if we actually have a new value prop and it's different
+    if (latestValueProp && latestValueProp !== framework.valueProposition) {
+      console.log('🔄 Updating framework with new value prop:', latestValueProp);
       setFramework(prev => ({
         ...prev,
-        valueProposition: valueToUse
+        valueProposition: latestValueProp
       }));
-      console.log("🔍 Framework after setting value prop:", framework);
     }
-  }, [formData]);
+  }, [formData?.valueProp]); // Re-run when formData.valueProp changes
+
+  // FIXED: Enhanced effect to also listen for localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const latestValueProp = getLatestValueProp();
+      if (latestValueProp && latestValueProp !== framework.valueProposition) {
+        console.log('🔄 Storage changed, updating value prop:', latestValueProp);
+        setFramework(prev => ({
+          ...prev,
+          valueProposition: latestValueProp
+        }));
+      }
+    };
+
+    // Listen for localStorage changes (from other tabs/components)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also check periodically in case changes happen in same tab
+    const interval = setInterval(handleStorageChange, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [framework.valueProposition]);
 
   // Load saved message framework from localStorage
   useEffect(() => {
@@ -146,8 +185,20 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
       const savedFramework = safeLocalStorage.getItem('messageFramework');
       if (savedFramework) {
         const parsedFramework = JSON.parse(savedFramework);
-        setFramework(parsedFramework);
-        console.log("Loaded saved message framework:", parsedFramework);
+
+        // FIXED: Always prioritize the latest value prop over saved framework
+        const latestValueProp = getLatestValueProp();
+
+        setFramework({
+          ...parsedFramework,
+          valueProposition: latestValueProp || parsedFramework.valueProposition || ''
+        });
+
+        console.log("Loaded saved message framework with updated value prop:", {
+          saved: parsedFramework.valueProposition,
+          latest: latestValueProp,
+          final: latestValueProp || parsedFramework.valueProposition
+        });
       }
     } catch (error) {
       console.error('Error loading saved message framework:', error);
@@ -206,6 +257,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     const lastInput = inputs[inputs.length - 1] as HTMLInputElement;
     lastInput?.focus();
   }, 50);
+
   // Remove a field (benefit)
   const removeField = (field: 'keyBenefits', index: number) => {
     setFramework(prev => ({
@@ -240,7 +292,7 @@ const MessageFramework: React.FC<MessageFrameworkProps> = ({ onSave, formData, s
     return hasValueProp && (hasPillar || hasBenefits);
   };
 
-  // WORKING PDF EXPORT using canvas and jsPDF
+  // WORKING PDF export using canvas and jsPDF
   const exportMessageHousePDF = async () => {
     if (!hasContent()) {
       showNotification('Please complete your message framework before exporting', 'error');
@@ -665,6 +717,9 @@ Generated by Marketing Content Lab - Message House`;
       // Save to localStorage
       safeLocalStorage.setItem('messageFramework', JSON.stringify(cleanedFramework));
 
+      // FIXED: Also save value prop to the primary storage location
+      safeLocalStorage.setItem('marketingValueProp', framework.valueProposition);
+
       // Also update product valueProposition for consistency
       try {
         const savedProduct = safeLocalStorage.getItem('marketingProduct');
@@ -1077,7 +1132,7 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
         <div className="mb-8">
           {isEditingValueProp ? (
             <textarea
-              value={framework.valueProposition || safeLocalStorage.getItem('marketingValueProp') || ''}
+              value={framework.valueProposition}
               onChange={(e) => updateField('valueProposition', e.target.value)}
               className="w-full p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
               rows={4}
@@ -1087,8 +1142,8 @@ ${cleanedFramework.keyBenefits.map((benefit, index) => `${index + 1}. ${benefit}
           ) : (
             <div className="relative">
               <div className="p-4 bg-gray-50 rounded-lg border mb-2 text-lg">
-                {framework.valueProposition || safeLocalStorage.getItem('marketingValueProp') ?
-                  applyWritingStyle(framework.valueProposition || safeLocalStorage.getItem('marketingValueProp') || '', adaptWritingStyle(writingStyle)) : (
+                {framework.valueProposition ?
+                  applyWritingStyle(framework.valueProposition, adaptWritingStyle(writingStyle)) : (
                     <span className="text-gray-400 italic">No value proposition added yet</span>
                   )}
               </div>
