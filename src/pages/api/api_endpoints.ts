@@ -1822,6 +1822,120 @@ IMPLEMENTATION NOTES:
     });
   }
 }
+// Add this function to your api_endpoints.ts file
+
+// Handler for persona/ideal customer generation
+async function handlePersonaGenerator(data: any, res: NextApiResponse) {
+  try {
+    const { productName, productType, currentPersona } = data;
+
+    if (!productName || typeof productName !== "string") {
+      return res.status(400).json({ error: "Missing or invalid product name" });
+    }
+
+    console.log("🎯 Generating personas for:", productName);
+
+    const prompt = `Generate 3 detailed ideal customer personas for this product:
+
+Product: ${productName}
+Product Type: ${productType || 'Not specified'}
+${currentPersona ? `Current persona example: ${JSON.stringify(currentPersona)}` : ''}
+
+For each persona, provide:
+- Specific job role/title
+- Industry they work in  
+- 3-4 key challenges they face
+
+Focus on realistic, specific personas that would actually buy this product.
+
+Return ONLY a JSON object with this exact format:
+{
+  "personas": [
+    {
+      "role": "Marketing Director",
+      "industry": "SaaS Technology", 
+      "challenges": ["Scaling content production", "Maintaining brand consistency", "Measuring content ROI", "Team efficiency"]
+    },
+    {
+      "role": "Content Marketing Manager",
+      "industry": "B2B Services",
+      "challenges": ["Creating engaging content", "Managing editorial calendar", "Cross-team collaboration", "Content quality control"]
+    },
+    {
+      "role": "Startup Founder", 
+      "industry": "Early-stage Technology",
+      "challenges": ["Limited marketing budget", "Wearing multiple hats", "Building brand awareness", "Converting leads"]
+    }
+  ]
+}
+
+No explanations, just the JSON.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      temperature: 0.7,
+      messages: [
+        {
+          role: "system",
+          content: "You are a marketing research expert. Create realistic, specific customer personas. Return only valid JSON with no explanations."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
+    });
+
+    const aiResponse = response.choices[0].message.content?.trim() || '';
+    console.log("📊 AI persona response:", aiResponse.substring(0, 200) + "...");
+
+    // Parse the response
+    let result;
+    try {
+      result = JSON.parse(aiResponse);
+    } catch (parseError) {
+      console.error("❌ Failed to parse persona JSON:", parseError);
+
+      // Try to extract JSON from the response
+      const match = aiResponse.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          result = JSON.parse(match[0]);
+        } catch (secondParseError) {
+          throw new Error("Could not parse AI response into valid JSON");
+        }
+      } else {
+        throw new Error("No valid JSON found in AI response");
+      }
+    }
+
+    // Validate the structure
+    if (!result.personas || !Array.isArray(result.personas)) {
+      throw new Error("Invalid response structure - missing personas array");
+    }
+
+    if (result.personas.length === 0) {
+      throw new Error("No personas generated");
+    }
+
+    // Validate each persona
+    result.personas.forEach((persona: any, index: number) => {
+      if (!persona.role || !persona.industry || !Array.isArray(persona.challenges)) {
+        throw new Error(`Invalid persona structure at index ${index}`);
+      }
+    });
+
+    console.log(`✅ Generated ${result.personas.length} personas successfully`);
+    return res.status(200).json(result);
+
+  } catch (error) {
+    console.error("❌ Persona generation error:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({
+      error: `Persona generation failed: ${errorMessage}`
+    });
+  }
+}
 
 // MAIN HANDLER FUNCTION
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -1871,11 +1985,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return handleEmailGeneration(data, res);
   } else if (mode === "social-media") {
     return handleSocialMediaGeneration(data, res);
-    console.log("🎯 Using social media handler");
-  } else if (mode === "email-nurture-flow") {
+} else if (mode === "personas") {
+    return handlePersonaGenerator(data, res);
+} else if (mode === "email-nurture-flow") {
     return handleEmailNurtureFlow(data, res);
-  } else {
+} else {
     console.log("❌ Unknown mode:", mode);
     return res.status(400).json({ error: "Invalid mode" });
-  }
+}
 }
