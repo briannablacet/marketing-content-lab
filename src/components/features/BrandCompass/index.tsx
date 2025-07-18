@@ -101,13 +101,29 @@ const BrandCompass: React.FC = () => {
         };
       });
 
+      // Helper to get the latest value prop from all sources
+      const getLatestValueProp = (messageFramework: any, allData: any, productInfo: any) => {
+        const sources = [
+          { name: 'localStorage marketingValueProp', value: localStorage.getItem('marketingValueProp') },
+          { name: 'messageFramework.valueProposition', value: messageFramework?.valueProposition },
+          { name: 'allData.messaging.valueProposition', value: allData.messaging?.valueProposition },
+          { name: 'productInfo.valueProposition', value: productInfo?.valueProposition }
+        ];
+        for (const source of sources) {
+          if (source.value && typeof source.value === 'string' && source.value.trim()) {
+            return source.value;
+          }
+        }
+        return '';
+      };
+
       // Combine all sources
       const combinedData: BrandData = {
         businessName: productInfo?.name || allData.product?.name || 'Your Brand',
         mission: mission,
         vision: vision,
         tagline: tagline,
-        valueProposition: messageFramework?.valueProposition || allData.messaging?.valueProposition || productInfo?.valueProposition,
+        valueProposition: getLatestValueProp(messageFramework, allData, productInfo),
         messagePillars: [
           messageFramework?.pillar1,
           messageFramework?.pillar2,
